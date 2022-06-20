@@ -215,27 +215,27 @@ void oneapi_set_global_memory(SyclQueue *queue_,
   std::string matched_name(memory_name);
 
 // This macros will change global ptr of KernelGlobals via name matching
-#  define KERNEL_TEX(type, name) \
+#  define KERNEL_DATA_ARRAY(type, name) \
     else if (#name == matched_name) \
     { \
-      globals->name = (type *)memory_device_pointer; \
+      globals->__##name = (type *)memory_device_pointer; \
       return; \
     }
   if (false) {
   }
-  else if ("__integrator_state" == matched_name) {
+  else if ("integrator_state" == matched_name) {
     globals->integrator_state = (IntegratorStateGPU *)memory_device_pointer;
     return;
   }
-  KERNEL_TEX(KernelData, __data)
-#  include "kernel/textures.h"
+  KERNEL_DATA_ARRAY(KernelData, data)
+#  include "kernel/data_arrays.h"
   else
   {
     std::cerr << "Can't found global/constant memory with name \"" << matched_name << "\"!"
               << std::endl;
     assert(false);
   }
-#  undef KERNEL_TEX
+#  undef KERNEL_DATA_ARRAY
 }
 
 // TODO: Move device information to OneapiDevice initialized on creation and use it.

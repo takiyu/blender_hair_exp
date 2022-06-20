@@ -18,9 +18,9 @@ struct IntegratorQueueCounter;
 
 typedef struct KernelGlobalsGPU {
 
-#define KERNEL_TEX(type, name) const type *name = nullptr;
-#include "kernel/textures.h"
-#undef KERNEL_TEX
+#define KERNEL_DATA_ARRAY(type, name) const type *__##name = nullptr;
+#include "kernel/data_arrays.h"
+#undef KERNEL_DATA_ARRAY
   IntegratorStateGPU *integrator_state;
   const KernelData *__data;
 #ifdef WITH_ONEAPI_SYCL_HOST_ENABLED
@@ -41,7 +41,7 @@ typedef ccl_global KernelGlobalsGPU *ccl_restrict KernelGlobals;
 
 /* data lookup defines */
 
-#define kernel_tex_fetch(tex, index) tex[index]
-#define kernel_tex_array(tex) tex
+#define kernel_data_fetch(name, index) __##name[index]
+#define kernel_data_array(name) __##name
 
 CCL_NAMESPACE_END

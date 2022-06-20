@@ -74,7 +74,7 @@ ccl_device_inline float4 svm_image_texture_read(const TextureInfo &info, int x, 
 
 ccl_device_inline float4 svm_image_texture_read_2d(int id, int x, int y)
 {
-  const TextureInfo &info = kernel_tex_fetch(__texture_info, id);
+  const TextureInfo &info = kernel_data_fetch(texture_info, id);
 
   /* Wrap */
   if (info.extension == EXTENSION_REPEAT) {
@@ -91,7 +91,7 @@ ccl_device_inline float4 svm_image_texture_read_2d(int id, int x, int y)
 
 ccl_device_inline float4 svm_image_texture_read_3d(int id, int x, int y, int z)
 {
-  const TextureInfo &info = kernel_tex_fetch(__texture_info, id);
+  const TextureInfo &info = kernel_data_fetch(texture_info, id);
 
   /* Wrap */
   if (info.extension == EXTENSION_REPEAT) {
@@ -126,7 +126,7 @@ static float svm_image_texture_frac(float x, int *ix)
 
 ccl_device float4 kernel_tex_image_interp(KernelGlobals, int id, float x, float y)
 {
-  const TextureInfo &info = kernel_tex_fetch(__texture_info, id);
+  const TextureInfo &info = kernel_data_fetch(texture_info, id);
 
   if (info.extension == EXTENSION_CLIP) {
     if (x < 0.0f || y < 0.0f || x > 1.0f || y > 1.0f) {
@@ -279,7 +279,7 @@ template<typename T> struct NanoVDBInterpolator {
 
 ccl_device float4 kernel_tex_image_interp_3d(KernelGlobals, int id, float3 P, int interp)
 {
-  const TextureInfo &info = kernel_tex_fetch(__texture_info, id);
+  const TextureInfo &info = kernel_data_fetch(texture_info, id);
 
   if (info.use_transform_3d) {
     Transform tfm = info.transform_3d;
