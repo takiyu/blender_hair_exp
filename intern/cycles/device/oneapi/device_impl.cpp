@@ -25,7 +25,7 @@ OneapiDevice::OneapiDevice(const DeviceInfo &info,
                            Profiler &profiler)
     : Device(info, stats, profiler),
       device_queue(nullptr),
-      texture_info(this, "__texture_info", MEM_GLOBAL),
+      texture_info(this, "texture_info", MEM_GLOBAL),
       kg_memory(nullptr),
       kg_memory_device(nullptr),
       kg_memory_size(0),
