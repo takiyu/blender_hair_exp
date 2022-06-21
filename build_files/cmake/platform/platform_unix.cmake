@@ -38,9 +38,15 @@ if(EXISTS ${LIBDIR})
   message(STATUS "Using pre-compiled LIBDIR: ${LIBDIR}")
 
   file(GLOB LIB_SUBDIRS ${LIBDIR}/*)
+
   # Ignore Mesa software OpenGL libraries, they are not intended to be
   # linked against but to optionally override at runtime.
   list(REMOVE_ITEM LIB_SUBDIRS ${LIBDIR}/mesa)
+
+  # Ignore DPC++ as it contains its own copy of LLVM/CLang which we do
+  # not need to be ever discovered for the Blender linking.
+  list(REMOVE_ITEM LIB_SUBDIRS ${LIBDIR}/dpcpp)
+
   # NOTE: Make sure "proper" compiled zlib comes first before the one
   # which is a part of OpenCollada. They have different ABI, and we
   # do need to use the official one.
