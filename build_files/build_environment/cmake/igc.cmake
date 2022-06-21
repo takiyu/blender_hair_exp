@@ -88,7 +88,7 @@ ExternalProject_Add(external_igc
   URL file://${PACKAGE_DIR}/${IGC_FILE}
   DOWNLOAD_DIR ${DOWNLOAD_DIR}
   URL_HASH ${IGC_HASH_TYPE}=${IGC_HASH}
-  CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${LIBDIR}/igc ${DEFAULT_CMAKE_FLAGS} ${IGC_EXTRA_ARGS}
+  CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${LIBDIR}/dpcpp/lib/igc ${DEFAULT_CMAKE_FLAGS} ${IGC_EXTRA_ARGS}
 
   # IGC is pretty set in its way where sub projects ought to live, for some it offers
   # hooks to supply alternatives folders, other are just hardocded with no way to configure
