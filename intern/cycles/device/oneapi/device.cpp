@@ -67,7 +67,7 @@ bool device_oneapi_init()
 #  include "kernel/device/oneapi/dll_interface_template.h"
 #  undef DLL_INTERFACE_CALL
 
-  VLOG(1) << "oneAPI kernel shared library has been loaded successfully";
+  VLOG_INFO << "oneAPI kernel shared library has been loaded successfully";
 
   // We need to have this oneapi kernel shared library during all life-span of the Blender.
   // So it is not unloaded because of this.
@@ -152,7 +152,7 @@ static void device_iterator_cb(const char *id, const char *name, int num, void *
   info.display_device = false;
 
   devices->push_back(info);
-  VLOG(1) << "Added device \"" << name << "\" with id \"" << info.id << "\".";
+  VLOG_INFO << "Added device \"" << name << "\" with id \"" << info.id << "\".";
 }
 #endif
 

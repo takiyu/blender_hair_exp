@@ -65,8 +65,8 @@ int OneapiDeviceQueue::num_concurrent_states(const size_t state_size) const
     num_states = 1024 * 512;
   }
 
-  VLOG(3) << "GPU queue concurrent states: " << num_states << ", using up to "
-          << string_human_readable_size(num_states * state_size);
+  VLOG_DEVICE_STATS << "GPU queue concurrent states: " << num_states << ", using up to "
+                    << string_human_readable_size(num_states * state_size);
 
   return num_states;
 }
