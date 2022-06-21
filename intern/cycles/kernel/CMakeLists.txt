@@ -764,10 +764,9 @@ if(WITH_CYCLES_DEVICE_ONEAPI)
     endforeach()
   else()
     # If AOT is disabled, build for spir64
-    set (CYCLES_ONEAPI_GPU_COMPILATION_OPTIONS "-internal_options '-ze-opt-large-register-file -ze-opt-regular-grf-kernel integrator_intersect'")
     list(APPEND sycl_compiler_flags
       -fsycl-targets=spir64
-      -Xsycl-target-backend=spir64 "${CYCLES_ONEAPI_GPU_COMPILATION_OPTIONS}")
+      -Xsycl-target-backend=spir64 "${CYCLES_ONEAPI_SYCL_OPTIONS_spir64}")
   endif()
 
   if(WITH_NANOVDB)
