@@ -503,9 +503,9 @@ set(LEVEL_ZERO_HASH c39bb05a8e5898aa6c444e1704105b93d3f1888b9c333f8e7e73825ffbfb
 set(LEVEL_ZERO_HASH_TYPE SHA256)
 set(LEVEL_ZERO_FILE level-zero-${LEVEL_ZERO_VERSION}.tar.gz)
 
-set(DPCPP_VERSION 20220529)
+set(DPCPP_VERSION 20220620)
 set(DPCPP_URI https://github.com/intel/llvm/archive/refs/tags/sycl-nightly/${DPCPP_VERSION}.tar.gz)
-set(DPCPP_HASH 1a9b95b4fd589e97dc7ce8bad24909d79605ffcafd5c68ef5bdad8c1eeefcafd)
+set(DPCPP_HASH a5f41abd5229d28afa92cbd8a5d8d786ee698bf239f722929fd686276bad692c)
 set(DPCPP_HASH_TYPE SHA256)
 set(DPCPP_FILE DPCPP-${DPCPP_VERSION}.tar.gz)
 
@@ -518,9 +518,9 @@ set(DPCPP_FILE DPCPP-${DPCPP_VERSION}.tar.gz)
 # will take care of building them, unpack is being done in dpcpp_deps.cmake
 
 # Source llvm/lib/SYCLLowerIR/CMakeLists.txt
-set(VCINTRINSICS_VERSION 8b6e209fe1269a2c6470b36dfbaa0e051d2a100f)
+set(VCINTRINSICS_VERSION 984bb27baacce6ee5c716c2e64845f2a1928025b)
 set(VCINTRINSICS_URI https://github.com/intel/vc-intrinsics/archive/${VCINTRINSICS_VERSION}.tar.gz)
-set(VCINTRINSICS_HASH 19fb13ac32f7138c6ab9f015ba1025a42a4775ef845ff4af4df6d4ff4f4bbb29)
+set(VCINTRINSICS_HASH abea415a15a0dd11fdc94dee8fb462910f2548311b787e02f42509789e1b0d7b)
 set(VCINTRINSICS_HASH_TYPE SHA256)
 set(VCINTRINSICS_FILE vc-intrinsics-${VCINTRINSICS_VERSION}.tar.gz)
 
@@ -549,9 +549,9 @@ set(MP11_FILE mp11-${MP11_VERSION}.tar.gz)
 
 # Source llvm-spirv/CMakeLists.txt (repo)
 # Source llvm-spirv/spirv-headers-tag.conf (hash)
-set(SPIRV_HEADERS_VERSION 4995a2f2723c401eb0ea3e10c81298906bf1422b)
+set(SPIRV_HEADERS_VERSION 36c0c1596225e728bd49abb7ef56a3953e7ed468)
 set(SPIRV_HEADERS_URI https://github.com/KhronosGroup/SPIRV-Headers/archive/${SPIRV_HEADERS_VERSION}.tar.gz)
-set(SPIRV_HEADERS_HASH 2c9fe1bbd74a74fdabe40a7ffb322527dfc008c79e1d19d3cf41a5f006d9ab60)
+set(SPIRV_HEADERS_HASH 7a5c89633f8740456fe8adee052033e134476d267411d1336c0cb1e587a9229a)
 set(SPIRV_HEADERS_HASH_TYPE SHA256)
 set(SPIRV_HEADERS_FILE SPIR-V-Headers-${SPIRV_HEADERS_VERSION}.tar.gz)
 
