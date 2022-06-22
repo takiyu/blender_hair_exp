@@ -40,9 +40,10 @@ void oneapi_check_usm(SyclQueue *queue_, const void *usm_ptr, bool allow_host = 
       queue->get_device().get_info<sycl::info::device::device_type>();
   sycl::usm::alloc usm_type = get_pointer_type(usm_ptr, queue->get_context());
   (void)usm_type;
-  assert(
-      usm_type == sycl::usm::alloc::device ||
-      ((device_type == sycl::info::device_type::host || (device_type == sycl::info::device_type::is_cpu || allow_host) && usm_type == sycl::usm::alloc::host));
+  assert(usm_type == sycl::usm::alloc::device ||
+         ((device_type == sycl::info::device_type::host ||
+           device_type == sycl::info::device_type::is_cpu || allow_host) &&
+          usm_type == sycl::usm::alloc::host));
 #  endif
 }
 
