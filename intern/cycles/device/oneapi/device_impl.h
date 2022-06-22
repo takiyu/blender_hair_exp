@@ -15,17 +15,17 @@ class DeviceQueue;
 
 class OneapiDevice : public Device {
  private:
-  SyclQueue *device_queue;
+  SyclQueue *device_queue_;
 
   using ConstMemMap = map<string, device_vector<uchar> *>;
-  ConstMemMap m_const_mem_map;
-  device_vector<TextureInfo> texture_info;
-  bool need_texture_info;
-  void *kg_memory;
-  void *kg_memory_device;
-  size_t kg_memory_size = (size_t)0;
-  OneAPIDLLInterface oneapi_dll;
-  std::string oneapi_error_string;
+  ConstMemMap const_mem_map_;
+  device_vector<TextureInfo> texture_info_;
+  bool need_texture_info_;
+  void *kg_memory_;
+  void *kg_memory_device_;
+  size_t kg_memory_size_ = (size_t)0;
+  OneAPIDLLInterface oneapi_dll_;
+  std::string oneapi_error_string_;
 
  public:
   virtual BVHLayoutMask get_bvh_layout_mask() const override;

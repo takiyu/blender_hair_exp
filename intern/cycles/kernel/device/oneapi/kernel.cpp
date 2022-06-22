@@ -718,7 +718,8 @@ static std::vector<sycl::device> oneapi_available_devices()
 
   std::vector<sycl::device> available_devices;
   for (const sycl::platform &platform : oneapi_platforms) {
-    /* ignore OpenCL platforms to avoid using the same devices through both Level-Zero and OpenCL. */
+    /* ignore OpenCL platforms to avoid using the same devices through both Level-Zero and OpenCL.
+     */
     if (platform.get_backend() == sycl::backend::opencl) {
       continue;
     }
@@ -837,7 +838,8 @@ char *oneapi_device_capabilities()
     GET_NUM_ATTR(max_mem_alloc_size)
 
     /* NOTE(@nsirgien): Implementation doesn't use image support as bindless images aren't
-     * supported so we always return false, even if device supports HW texture usage acceleration. */
+     * supported so we always return false, even if device supports HW texture usage acceleration.
+     */
     bool image_support = false;
     WRITE_ATTR("image_support", (size_t)image_support)
 
