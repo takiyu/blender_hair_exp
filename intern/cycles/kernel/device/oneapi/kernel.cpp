@@ -684,23 +684,6 @@ static int parse_driver_build_version(const sycl::device &device)
   return driver_build_version;
 }
 
-static std::string make_prettier_device_name(const std::string &orig_device_name)
-{
-  std::string new_device_name = orig_device_name;
-
-  size_t start_pos = new_device_name.find("(R)");
-  if (start_pos != std::string::npos) {
-    new_device_name.replace(start_pos, 3, "\xC2\xAE");
-  }
-
-  start_pos = new_device_name.find("(TM)");
-  if (start_pos != std::string::npos) {
-    new_device_name.replace(start_pos, 4, "\xE2\x84\xA2");
-  }
-
-  return new_device_name;
-}
-
 static std::vector<sycl::device> oneapi_available_devices()
 {
   bool allow_all_devices = false;
@@ -788,8 +771,7 @@ char *oneapi_device_capabilities()
 
   const std::vector<sycl::device> &oneapi_devices = oneapi_available_devices();
   for (const sycl::device &device : oneapi_devices) {
-    const std::string &name = make_prettier_device_name(
-        device.get_info<sycl::info::device::name>());
+    const std::string &name = device.get_info<sycl::info::device::name>();
 
     capabilities << std::string("\t") << name << "\n";
 #  define WRITE_ATTR(attribute_name, attribute_variable) \
@@ -874,7 +856,7 @@ void oneapi_iterate_devices(OneAPIDeviceIteratorCallback cb, void *user_ptr)
   for (sycl::device &device : devices) {
     const std::string &platform_name =
         device.get_platform().get_info<sycl::info::platform::name>();
-    std::string name = make_prettier_device_name(device.get_info<sycl::info::device::name>());
+    std::string name = device.get_info<sycl::info::device::name>();
     std::string id = "ONEAPI_" + platform_name + "_" + name;
     (cb)(id.c_str(), name.c_str(), num, user_ptr);
     num++;

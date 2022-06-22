@@ -1567,7 +1567,12 @@ class CyclesPreferences(bpy.types.AddonPreferences):
             return
 
         for device in devices:
-            box.prop(device, "use", text=device.name)
+            import unicodedata
+            box.prop(device, "use", text=device.name
+                    .replace('(TM)', unicodedata.lookup('TRADE MARK SIGN'))
+                    .replace('(R)', unicodedata.lookup('REGISTERED SIGN'))
+                    .replace('(C)', unicodedata.lookup('COPYRIGHT SIGN'))
+                    )
 
     def draw_impl(self, layout, context):
         row = layout.row()
