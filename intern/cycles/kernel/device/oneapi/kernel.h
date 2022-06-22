@@ -7,8 +7,8 @@
 
 #  include <stddef.h>
 
-// NOTE(@nsirgien): Should match underlying type in the declaration inside "kernel/types.h"
-// TODO: use kernel/types.h directly
+/* NOTE(@nsirgien): Should match underlying type in the declaration inside "kernel/types.h"
+ * TODO: use kernel/types.h directly. */
 enum DeviceKernel : int;
 
 #  ifndef CYCLES_KERNEL_ONEAPI_EXPORT
@@ -33,9 +33,9 @@ typedef void (*OneAPIDeviceIteratorCallback)(const char *id,
 typedef void (*OneAPIErrorCallback)(const char *error, void *user_ptr);
 
 struct KernelContext {
-  // Queue, associated with selected device
+  /* Queue, associated with selected device */
   SyclQueue *queue;
-  // Pointer to USM device memory with all global/constant allocation on this device
+  /* Pointer to USM device memory with all global/constant allocation on this device */
   void *kernel_globals;
 };
 

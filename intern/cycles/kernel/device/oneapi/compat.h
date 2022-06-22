@@ -48,7 +48,7 @@
 #define kernel_assert(cond)
 #define ccl_may_alias
 
-// clang-format off
+/* clang-format off */
 
 /* kernel.h adapters */
 #define ccl_gpu_kernel(block_num_threads, thread_num_registers)
@@ -146,7 +146,7 @@ void oneapi_kernel_##name(KernelGlobalsGPU *ccl_restrict kg, \
 
 /* GPU texture objects */
 
-// clang-format on
+/* clang-format on */
 
 /* Types */
 /* It's not possible to use sycl types like sycl::float3, sycl::int3, etc
@@ -192,10 +192,10 @@ ccl_always_inline float3 make_float3(float x)
 #include "util/half.h"
 #include "util/types.h"
 
-// NOTE(@nsirgien): Declaring these functions after types headers is very important because they
-// include oneAPI headers, which transitively include math.h headers which will cause redefintions
-// of the math defines because math.h also uses them and having them defined before math.h include
-// - it actually UB
+/* NOTE(@nsirgien): Declaring these functions after types headers is very important because they
+ * include oneAPI headers, which transitively include math.h headers which will cause redefintions
+ * of the math defines because math.h also uses them and having them defined before math.h include
+ * is actually UB. */
 /* Use fast math functions - get them from sycl::native namespace for native math function
  * implementations */
 #define cosf(x) sycl::native::cos(((float)(x)))

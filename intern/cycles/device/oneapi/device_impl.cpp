@@ -35,7 +35,7 @@ OneapiDevice::OneapiDevice(const DeviceInfo &info,
 
   oneapi_dll.oneapi_set_error_cb(queue_error_cb, &oneapi_error_string);
 
-  // Oneapi calls should be initialised on this moment;
+  /* Oneapi calls should be initialised on this moment. */
   assert(oneapi_dll.oneapi_create_queue != nullptr);
 
   bool is_finished_ok = oneapi_dll.oneapi_create_queue(device_queue, info.num);
@@ -93,8 +93,8 @@ BVHLayoutMask OneapiDevice::get_bvh_layout_mask() const
 bool OneapiDevice::load_kernels(const uint requested_features)
 {
   assert(device_queue);
-  // NOTE(@nsirgien): oneAPI can support compilation of kernel code with sertain feature set
-  // with specialization constants, but it hasn't been implemented yet.
+  /* NOTE(@nsirgien): oneAPI can support compilation of kernel code with sertain feature set
+   * with specialization constants, but it hasn't been implemented yet. */
   (void)requested_features;
 
   bool is_finished_ok = oneapi_dll.oneapi_run_test_kernel(device_queue);
@@ -120,20 +120,20 @@ void OneapiDevice::generic_alloc(device_memory &mem)
 {
   size_t memory_size = mem.memory_size();
 
-  // TODO(@nsirgien): In future, if scene doesn't fit into device memory, then
-  // we can use USM host memory.
-  // Because of the expected performance impact, implementation of this has had a low priority
-  // and is not implemented yet.
+  /* TODO(@nsirgien): In future, if scene doesn't fit into device memory, then
+   * we can use USM host memory.
+   * Because of the expected performance impact, implementation of this has had a low priority
+   * and is not implemented yet. */
 
   assert(device_queue);
-  // NOTE(@nsirgien): There are three types of Unified Shared Memory (USM) in oneAPI: host, device
-  // and shared. For new project it maybe more beneficial to use USM shared memory, because it
-  // provides automatic migration mechanism in order to allow to use the same pointer on host and
-  // on device, without need to worry about explicit memory transfer operations. But for
-  // Blender/Cycles this type of memory is not very suitable in current application architecture,
-  // because Cycles already uses two different pointer for host activity and device activity, and
-  // also has to perform all needed memory transfer operations. So, USM device memory
-  // type has been used for oneAPI device in order to better fit in Cycles architecture.
+  /* NOTE(@nsirgien): There are three types of Unified Shared Memory (USM) in oneAPI: host, device
+   * and shared. For new project it maybe more beneficial to use USM shared memory, because it
+   * provides automatic migration mechanism in order to allow to use the same pointer on host and
+   * on device, without need to worry about explicit memory transfer operations. But for
+   * Blender/Cycles this type of memory is not very suitable in current application architecture,
+   * because Cycles already uses two different pointer for host activity and device activity, and
+   * also has to perform all needed memory transfer operations. So, USM device memory
+   * type has been used for oneAPI device in order to better fit in Cycles architecture. */
   void *device_pointer = oneapi_dll.oneapi_usm_alloc_device(device_queue, memory_size);
   if (device_pointer == nullptr) {
     size_t max_memory_on_device = oneapi_dll.oneapi_get_memcapacity(device_queue);
@@ -156,14 +156,14 @@ void OneapiDevice::generic_copy_to(device_memory &mem)
 {
   size_t memory_size = mem.memory_size();
 
-  // copy operation from host shouldn't be requested if there is no memory allocated on host.
+  /* Copy operation from host shouldn't be requested if there is no memory allocated on host. */
   assert(mem.host_pointer);
   assert(device_queue);
   oneapi_dll.oneapi_usm_memcpy(
       device_queue, (void *)mem.device_pointer, (void *)mem.host_pointer, memory_size);
 }
 
-// TODO: Make sycl::queue part of OneapiQueue and avoid using pointers to sycl::queue.
+/* TODO: Make sycl::queue part of OneapiQueue and avoid using pointers to sycl::queue. */
 SyclQueue *OneapiDevice::sycl_queue()
 {
   return device_queue;
@@ -376,7 +376,7 @@ void OneapiDevice::tex_alloc(device_texture &mem)
   generic_alloc(mem);
   generic_copy_to(mem);
 
-  // Resize if needed. Also, in case of resize - allocate in advance for future allocs.
+  /* Resize if needed. Also, in case of resize - allocate in advance for future allocs. */
   const uint slot = mem.slot;
   if (slot >= texture_info.size()) {
     texture_info.resize(slot + 128);
@@ -390,7 +390,7 @@ void OneapiDevice::tex_alloc(device_texture &mem)
 
 void OneapiDevice::tex_free(device_texture &mem)
 {
-  // There is no texture memory in SYCL.
+  /* There is no texture memory in SYCL. */
   if (mem.device_pointer) {
     generic_free(mem);
   }
@@ -403,8 +403,8 @@ unique_ptr<DeviceQueue> OneapiDevice::gpu_queue_create()
 
 bool OneapiDevice::should_use_graphics_interop()
 {
-  // NOTE(@nsirgien): oneAPI doesn't yet support direct writing into graphics API objects, so
-  // return false.
+  /* NOTE(@nsirgien): oneAPI doesn't yet support direct writing into graphics API objects, so
+   * return false. */
   return false;
 }
 

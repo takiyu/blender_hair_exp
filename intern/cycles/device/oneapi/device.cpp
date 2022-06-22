@@ -47,7 +47,7 @@ bool device_oneapi_init()
 #  endif
   void *lib_handle = LOAD_ONEAPI_SHARED_LIBRARY(lib_path.c_str());
 
-  // This shouldn't happens, but still make sense to have a branch for this
+  /* This shouldn't happen, but it still makes sense to have a branch for this. */
   if (lib_handle == NULL) {
     LOG(ERROR) << "oneAPI kernel shared library cannot be loaded for some reason. This should not "
                   "happen, however, it occurs hence oneAPI rendering will be disabled";
@@ -69,16 +69,16 @@ bool device_oneapi_init()
 
   VLOG_INFO << "oneAPI kernel shared library has been loaded successfully";
 
-  // We need to have this oneapi kernel shared library during all life-span of the Blender.
-  // So it is not unloaded because of this.
-  // FREE_SHARED_LIBRARY(lib_handle);
+  /* We need to have this oneapi kernel shared library during all life-span of the Blender.
+   * So it is not unloaded because of this.
+   * FREE_SHARED_LIBRARY(lib_handle); */
 
-  // NOTE(@nsirgien): we need to enable JIT cache from here and
-  // right now this cache policy is controlled by env. variables
-  // NOTE(hallade) we also disable use of copy engine as it
-  // improves stability as of intel/llvm sycl-nightly/20220529.
-  // All these env variable can be set beforehand by end-users and
-  // will in that case -not- be overwritten.
+  /* NOTE(@nsirgien): we need to enable JIT cache from here and
+   * right now this cache policy is controlled by env. variables. */
+  /* NOTE(hallade) we also disable use of copy engine as it
+   * improves stability as of intel/llvm sycl-nightly/20220529.
+   * All these env variable can be set beforehand by end-users and
+   * will in that case -not- be overwritten. */
 #  ifdef _WIN32
   if (getenv("SYCL_CACHE_PERSISTENT") == nullptr) {
     _putenv_s("SYCL_CACHE_PERSISTENT", "1");
@@ -136,7 +136,7 @@ static void device_iterator_cb(const char *id, const char *name, int num, void *
   info.description = name;
   info.num = num;
 
-  // NOTE(@nsirgien): Should be unique at least on proper oneapi installation
+  /* NOTE(@nsirgien): Should be unique at least on proper oneapi installation. */
   info.id = id;
 
   info.has_nanovdb = true;
@@ -144,11 +144,11 @@ static void device_iterator_cb(const char *id, const char *name, int num, void *
 
   info.has_gpu_queue = true;
 
-  // NOTE(@nsirgien): oneAPI right now is focused on one device usage. In future it maybe will
-  // change, but right now peer access from one device to another device is not supported
+  /* NOTE(@nsirgien): oneAPI right now is focused on one device usage. In future it maybe will
+   * change, but right now peer access from one device to another device is not supported. */
   info.has_peer_memory = false;
 
-  // NOTE(@nsirgien): Seems not possible to know from SYCL/oneAPI or Level0.
+  /* NOTE(@nsirgien): Seems not possible to know from SYCL/oneAPI or Level0. */
   info.display_device = false;
 
   devices->push_back(info);

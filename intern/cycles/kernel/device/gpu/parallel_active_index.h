@@ -68,11 +68,11 @@ void gpu_parallel_active_index_array_impl(const uint num_states,
           int[GPU_PARALLEL_ACTIVE_INDEX_DEFAULT_BLOCK_SIZE + 1]>(item_id.get_group());
   int *warp_offset = *ptr;
 
-  // NOTE(@nsirgien): Here we calculate the same value as below but
-  // faster for DPC++ : seems CUDA converting "%", "/", "*" based calculations below into
-  // something faster already but DPC++ doesn't, so it's better to use
-  // direct request of needed parameters - switching from this computation to computation below
-  // will cause 2.5x performance slowdown.
+  /* NOTE(@nsirgien): Here we calculate the same value as below but
+   * faster for DPC++ : seems CUDA converting "%", "/", "*" based calculations below into
+   * something faster already but DPC++ doesn't, so it's better to use
+   * direct request of needed parameters - switching from this computation to computation below
+   * will cause 2.5x performance slowdown. */
   const uint thread_index = item_id.get_local_id(0);
   const uint thread_warp = item_id.get_sub_group().get_local_id();
 
@@ -123,8 +123,8 @@ __device__ void gpu_parallel_active_index_array_impl(const uint num_states,
   }
 
 #ifdef __KERNEL_ONEAPI__
-  // NOTE(@nsirgien): For us here only local memory writing (warp_offset) is important,
-  // so faster local barriers can be used.
+  /* NOTE(@nsirgien): For us here only local memory writing (warp_offset) is important,
+   * so faster local barriers can be used. */
   ccl_gpu_local_syncthreads();
 #else
   ccl_gpu_syncthreads();
@@ -146,8 +146,8 @@ __device__ void gpu_parallel_active_index_array_impl(const uint num_states,
   }
 
 #ifdef __KERNEL_ONEAPI__
-  // NOTE(@nsirgien): For us here only important local memory writing (warp_offset),
-  // so faster local barriers can be used.
+  /* NOTE(@nsirgien): For us here only important local memory writing (warp_offset),
+   * so faster local barriers can be used. */
   ccl_gpu_local_syncthreads();
 #else
   ccl_gpu_syncthreads();

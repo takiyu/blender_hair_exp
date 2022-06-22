@@ -1,4 +1,4 @@
-// device_capabilities() returns a C string that must be free'd with oneapi_free()
+/* device_capabilities() returns a C string that must be free'd with oneapi_free(). */
 DLL_INTERFACE_CALL(oneapi_device_capabilities, char *)
 DLL_INTERFACE_CALL(oneapi_free, void, void *)
 DLL_INTERFACE_CALL(oneapi_get_memcapacity, size_t, SyclQueue *queue)
@@ -26,9 +26,9 @@ DLL_INTERFACE_CALL(oneapi_usm_memset,
 
 DLL_INTERFACE_CALL(oneapi_run_test_kernel, bool, SyclQueue *queue)
 
-// Operation with Kernel globals structure - map of global/constant allocation, which filles before
-// render/kernel execution As we don't know in cycles sizeof this - Cycles will manage just as
-// pointer
+/* Operation with Kernel globals structure - map of global/constant allocation - filled before
+ * render/kernel execution As we don't know in cycles sizeof this - Cycles will manage just as
+ * pointer. */
 DLL_INTERFACE_CALL(oneapi_kernel_globals_size, bool, SyclQueue *queue, size_t &kernel_global_size)
 DLL_INTERFACE_CALL(oneapi_set_global_memory,
                    void,

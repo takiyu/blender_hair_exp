@@ -3,8 +3,8 @@
 
 #pragma once
 
-// from public source :
-// https://gitlab.freedesktop.org/mesa/mesa/-/blob/main/include/pci_ids/iris_pci_ids.h
+/* from public source :
+ * https://gitlab.freedesktop.org/mesa/mesa/-/blob/main/include/pci_ids/iris_pci_ids.h */
 const static std::set<uint32_t> intel_arc_alchemist_device_ids = {
     0x4f80, 0x4f81, 0x4f82, 0x4f83, 0x4f84, 0x4f87, 0x4f88, 0x5690, 0x5691,
     0x5692, 0x5693, 0x5694, 0x5695, 0x5696, 0x5697, 0x56a0, 0x56a1, 0x56a2,

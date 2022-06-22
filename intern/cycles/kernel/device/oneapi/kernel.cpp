@@ -3,7 +3,7 @@
 
 #ifdef WITH_ONEAPI
 
-// clang-format off
+/* clang-format off */
 #  include "kernel.h"
 #  include <iostream>
 #  include <map>
@@ -19,7 +19,7 @@
 #  include "kernel/device/oneapi/kernel_templates.h"
 
 #  include "kernel/device/gpu/kernel.h"
-// clang-format on
+/* clang-format on */
 
 static OneAPIErrorCallback s_error_cb = nullptr;
 static void *s_error_user_ptr = nullptr;
@@ -214,7 +214,7 @@ void oneapi_set_global_memory(SyclQueue *queue_,
 
   std::string matched_name(memory_name);
 
-// This macros will change global ptr of KernelGlobals via name matching
+/* This macro will change global ptr of KernelGlobals via name matching. */
 #  define KERNEL_DATA_ARRAY(type, name) \
     else if (#name == matched_name) \
     { \
@@ -238,8 +238,8 @@ void oneapi_set_global_memory(SyclQueue *queue_,
 #  undef KERNEL_DATA_ARRAY
 }
 
-// TODO: Move device information to OneapiDevice initialized on creation and use it.
-// TODO: Move below function to oneapi/queue.cpp
+/* TODO: Move device information to OneapiDevice initialized on creation and use it. */
+/* TODO: Move below function to oneapi/queue.cpp. */
 size_t oneapi_kernel_preferred_local_size(SyclQueue *queue_,
                                           const DeviceKernel kernel,
                                           const size_t kernel_global_size)
@@ -318,7 +318,7 @@ bool oneapi_enqueue_kernel(KernelContext *kernel_context,
       device_kernel == DEVICE_KERNEL_INTEGRATOR_COMPACT_PATHS_ARRAY ||
       device_kernel == DEVICE_KERNEL_INTEGRATOR_COMPACT_SHADOW_PATHS_ARRAY) {
     int num_states = *((int *)(args[0]));
-    // Round up to the next work-group
+    /* Round up to the next work-group. */
     size_t groups_count = (num_states + local_size - 1) / local_size;
     /* NOTE(@nsirgien): Because for now non-uniform workgroups don't work on most of
        oneAPI devices,here ise xtending of work size to match uniform requirements  */
@@ -706,8 +706,8 @@ static std::vector<sycl::device> oneapi_available_devices()
   if (getenv("CYCLES_ONEAPI_ALL_DEVICES") != nullptr)
     allow_all_devices = true;
 
-    // Host device is useful only for debugging at the moment
-    // so we hide this device with default build settings
+    /* Host device is useful only for debugging at the moment
+     * so we hide this device with default build settings. */
 #  ifdef WITH_ONEAPI_SYCL_HOST_ENABLED
   bool allow_host = true;
 #  else
@@ -718,7 +718,7 @@ static std::vector<sycl::device> oneapi_available_devices()
 
   std::vector<sycl::device> available_devices;
   for (const sycl::platform &platform : oneapi_platforms) {
-    // ignore OpenCL platforms to avoid using the same devices through both Level-Zero and OpenCL
+    /* ignore OpenCL platforms to avoid using the same devices through both Level-Zero and OpenCL. */
     if (platform.get_backend() == sycl::backend::opencl) {
       continue;
     }
@@ -729,7 +729,7 @@ static std::vector<sycl::device> oneapi_available_devices()
 
     for (const sycl::device &device : oneapi_devices) {
       if (allow_all_devices) {
-        // still filter out host device if build doesn't support it.
+        /* still filter out host device if build doesn't support it. */
         if (allow_host || !device.is_host()) {
           available_devices.push_back(device);
         }
@@ -737,9 +737,9 @@ static std::vector<sycl::device> oneapi_available_devices()
       else {
         bool filter_out = false;
 
-        // For now we support all Intel(R) Arc(TM) devices
-        // and any future GPU with more than 128 execution units
-        // official support can be broaden to older and smaller GPUs once ready
+        /* For now we support all Intel(R) Arc(TM) devices
+         * and any future GPU with more than 128 execution units
+         * official support can be broaden to older and smaller GPUs once ready. */
         if (device.is_gpu() && platform.get_backend() == sycl::backend::ext_oneapi_level_zero) {
           ze_device_handle_t ze_device = sycl::get_native<sycl::backend::ext_oneapi_level_zero>(
               device);
@@ -752,7 +752,7 @@ static std::vector<sycl::device> oneapi_available_devices()
           if (!is_dg2 || number_of_eus < 128)
             filter_out = true;
 
-          // if not already filtered out, check driver version
+          /* if not already filtered out, check driver version. */
           if (!filter_out) {
             int driver_build_version = parse_driver_build_version(device);
             if ((driver_build_version > 100000 &&
@@ -836,8 +836,8 @@ char *oneapi_device_capabilities()
     GET_NUM_ATTR(address_bits)
     GET_NUM_ATTR(max_mem_alloc_size)
 
-    // NOTE(@nsirgien): Implementation doesn't use image support as bindless images aren't
-    // supported so we always return false, even if device supports HW texture usage acceleration
+    /* NOTE(@nsirgien): Implementation doesn't use image support as bindless images aren't
+     * supported so we always return false, even if device supports HW texture usage acceleration. */
     bool image_support = false;
     WRITE_ATTR("image_support", (size_t)image_support)
 
