@@ -723,6 +723,8 @@ if(WITH_CYCLES_DEVICE_ONEAPI)
       -fsycl
       -fsycl-unnamed-lambda
       -fdelayed-template-parsing
+      -mllvm -inlinedefault-threshold=300
+      -mllvm -inlinehint-threshold=400
       -shared
       -DWITH_ONEAPI
       -ffast-math
