@@ -303,6 +303,13 @@ static void rna_Mesh_update_facemask(Main *bmain, Scene *scene, PointerRNA *ptr)
   rna_Mesh_update_draw(bmain, scene, ptr);
 }
 
+static void rna_Mesh_update_positions_tag(Main *bmain, Scene *scene, PointerRNA *ptr)
+{
+  Mesh *mesh = (Mesh *)ptr->data;
+  BKE_mesh_tag_coords_changed(mesh);
+  rna_Mesh_update_data_legacy_deg_tag_all(bmain, scene, ptr);
+}
+
 /** \} */
 
 /* -------------------------------------------------------------------- */
@@ -1110,7 +1117,7 @@ static int rna_MeshPoly_vertices_get_length(const PointerRNA *ptr,
 {
   const MPoly *mp = (MPoly *)ptr->data;
   /* NOTE: raw access uses dummy item, this _could_ crash,
-   * watch out for this, mface uses it but it can't work here. */
+   * watch out for this, #MFace uses it but it can't work here. */
   return (length[0] = mp->totloop);
 }
 
@@ -1743,7 +1750,7 @@ static void rna_def_mvert(BlenderRNA *brna)
 
   prop = RNA_def_property(srna, "co", PROP_FLOAT, PROP_TRANSLATION);
   RNA_def_property_ui_text(prop, "Location", "");
-  RNA_def_property_update(prop, 0, "rna_Mesh_update_data_legacy_deg_tag_all");
+  RNA_def_property_update(prop, 0, "rna_Mesh_update_positions_tag");
 
   prop = RNA_def_property(srna, "normal", PROP_FLOAT, PROP_DIRECTION);
   RNA_def_property_array(prop, 3);

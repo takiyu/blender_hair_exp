@@ -306,8 +306,8 @@ static void seq_view_collection_rect_timeline(Scene *scene, SeqCollection *strip
   int xmargin = FPS;
 
   SEQ_ITERATOR_FOREACH (seq, strips) {
-    xmin = min_ii(xmin, seq->startdisp);
-    xmax = max_ii(xmax, seq->enddisp);
+    xmin = min_ii(xmin, SEQ_time_left_handle_frame_get(seq));
+    xmax = max_ii(xmax, SEQ_time_right_handle_frame_get(seq));
 
     ymin = min_ii(ymin, seq->machine);
     ymax = max_ii(ymax, seq->machine);
@@ -373,7 +373,7 @@ void SEQUENCER_OT_view_selected(wmOperatorType *ot)
 
   /* Api callbacks. */
   ot->exec = sequencer_view_selected_exec;
-  ot->poll = ED_operator_sequencer_active;
+  ot->poll = sequencer_editing_initialized_and_active;
 
   /* Flags. */
   ot->flag = OPTYPE_REGISTER;

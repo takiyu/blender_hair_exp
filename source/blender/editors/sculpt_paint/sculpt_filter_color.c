@@ -339,11 +339,9 @@ static int sculpt_color_filter_invoke(bContext *C, wmOperator *op, const wmEvent
   if (use_automasking) {
     /* Update the active face set manually as the paint cursor is not enabled when using the Mesh
      * Filter Tool. */
-    float mouse[2];
+    float mval_fl[2] = {UNPACK2(event->mval)};
     SculptCursorGeometryInfo sgi;
-    mouse[0] = event->mval[0];
-    mouse[1] = event->mval[1];
-    SCULPT_cursor_geometry_info_update(C, &sgi, mouse, false);
+    SCULPT_cursor_geometry_info_update(C, &sgi, mval_fl, false);
   }
 
   /* Disable for multires and dyntopo for now */
@@ -378,7 +376,7 @@ void SCULPT_OT_color_filter(struct wmOperatorType *ot)
   /* identifiers */
   ot->name = "Filter Color";
   ot->idname = "SCULPT_OT_color_filter";
-  ot->description = "Applies a filter to modify the current sculpt vertex colors";
+  ot->description = "Applies a filter to modify the active color attribute";
 
   /* api callbacks */
   ot->invoke = sculpt_color_filter_invoke;

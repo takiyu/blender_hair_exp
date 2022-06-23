@@ -121,7 +121,7 @@ static void mesh_copy_data(Main *bmain, ID *id_dst, const ID *id_src, const int 
   CustomData_MeshMasks mask = CD_MASK_MESH;
 
   if (mesh_src->id.tag & LIB_TAG_NO_MAIN) {
-    /* For copies in depsgraph, keep data like origindex and orco. */
+    /* For copies in depsgraph, keep data like #CD_ORIGINDEX and #CD_ORCO. */
     CustomData_MeshMasks_update(&mask, &CD_MASK_DERIVEDMESH);
   }
 
@@ -1726,7 +1726,7 @@ void BKE_mesh_transform(Mesh *me, const float mat[4][4], bool do_keys)
       mul_m3_v3(m3, *lnors);
     }
   }
-  BKE_mesh_normals_tag_dirty(me);
+  BKE_mesh_tag_coords_changed(me);
 }
 
 void BKE_mesh_translate(Mesh *me, const float offset[3], const bool do_keys)
@@ -1748,6 +1748,7 @@ void BKE_mesh_translate(Mesh *me, const float offset[3], const bool do_keys)
       }
     }
   }
+  BKE_mesh_tag_coords_changed_uniformly(me);
 }
 
 void BKE_mesh_tessface_ensure(Mesh *mesh)
@@ -1946,7 +1947,7 @@ void BKE_mesh_vert_coords_apply(Mesh *mesh, const float (*vert_coords)[3])
   for (int i = 0; i < mesh->totvert; i++, mv++) {
     copy_v3_v3(mv->co, vert_coords[i]);
   }
-  BKE_mesh_normals_tag_dirty(mesh);
+  BKE_mesh_tag_coords_changed(mesh);
 }
 
 void BKE_mesh_vert_coords_apply_with_mat4(Mesh *mesh,
@@ -1960,7 +1961,7 @@ void BKE_mesh_vert_coords_apply_with_mat4(Mesh *mesh,
   for (int i = 0; i < mesh->totvert; i++, mv++) {
     mul_v3_m4v3(mv->co, mat, vert_coords[i]);
   }
-  BKE_mesh_normals_tag_dirty(mesh);
+  BKE_mesh_tag_coords_changed(mesh);
 }
 
 void BKE_mesh_calc_normals_split_ex(Mesh *mesh, MLoopNorSpaceArray *r_lnors_spacearr)
