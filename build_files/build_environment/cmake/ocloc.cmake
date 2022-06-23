@@ -4,7 +4,7 @@ set(OCLOC_EXTRA_ARGS
   -DNEO_SKIP_UNIT_TESTS=1
   -DNEO_BUILD_WITH_OCL=0
   -DBUILD_WITH_L0=0
-  -DIGC_DIR=${LIBDIR}/igc
+  -DIGC_DIR=${LIBDIR}/dpcpp/lib/igc
   -DGMM_DIR=${LIBDIR}/gmmlib
 )
 
