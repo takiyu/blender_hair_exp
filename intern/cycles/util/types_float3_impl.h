@@ -83,7 +83,7 @@ ccl_device_inline void print_float3(const char *label, const float3 &a)
 {
   printf("%s: %.8f %.8f %.8f\n", label, (double)a.x, (double)a.y, (double)a.z);
 }
-#endif /* !defined(__KERNEL_GPU__) || defined(__KERNEL_ONEAPI__) */
+#endif /* !defined(__KERNEL_GPU__) */
 
 CCL_NAMESPACE_END
 
