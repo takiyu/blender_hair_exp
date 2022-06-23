@@ -88,7 +88,7 @@ ExternalProject_Add(external_igc
   URL file://${PACKAGE_DIR}/${IGC_FILE}
   DOWNLOAD_DIR ${DOWNLOAD_DIR}
   URL_HASH ${IGC_HASH_TYPE}=${IGC_HASH}
-  CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${LIBDIR}/dpcpp/lib/igc ${DEFAULT_CMAKE_FLAGS} ${IGC_EXTRA_ARGS}
+  CMAKE_ARGS -DCMAKE_INSTALL_PREFIX=${LIBDIR}/igc ${DEFAULT_CMAKE_FLAGS} ${IGC_EXTRA_ARGS}
 
   # IGC is pretty set in its way where sub projects ought to live, for some it offers
   # hooks to supply alternatives folders, other are just hardocded with no way to configure
@@ -103,6 +103,7 @@ ExternalProject_Add(external_igc
     ${CMAKE_COMMAND} -E create_symlink ${BUILD_DIR}/igc_vcintrinsics/src/external_igc_vcintrinsics/ ${BUILD_DIR}/igc/src/vc-intrinsics
   PREFIX ${BUILD_DIR}/igc
   INSTALL_DIR ${LIBDIR}/igc
+  INSTALL_COMMAND ${CMAKE_COMMAND} --install . --strip
   CMAKE_GENERATOR ${IGC_GENERATOR}
 )
 
