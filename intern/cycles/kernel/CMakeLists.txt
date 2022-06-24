@@ -884,7 +884,7 @@ if(WITH_CYCLES_DEVICE_ONEAPI)
         sycl.dll
         pi_level_zero.dll
     )
-    delayed_install("${sycl_compiler_root}" "${SYCL_RUNTIME_DEPENDENCIES}" ${CMAKE_INSTALL_PREFIX})
+    delayed_install("${sycl_compiler_root}" "${SYCL_RUNTIME_DEPENDENCIES}" "../")
   elseif(UNIX AND NOT APPLE)
     file(GLOB SYCL_RUNTIME_DEPENDENCIES
               ${sycl_compiler_root}/../lib/libsycl.so
