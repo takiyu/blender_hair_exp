@@ -884,7 +884,16 @@ if(WITH_CYCLES_DEVICE_ONEAPI)
         sycl.dll
         pi_level_zero.dll
     )
-    delayed_install("${sycl_compiler_root}" "${SYCL_RUNTIME_DEPENDENCIES}" "../")
+    if(NOT WITH_BLENDER)
+      # For the Cycles standalone put libraries next to the Cycles application.
+      delayed_install("${sycl_compiler_root}" "${SYCL_RUNTIME_DEPENDENCIES}" ${CYCLES_INSTALL_PATH})
+    else()
+      # For Blender put the libraries next to the Blender executable.
+      #
+      # Note that the installation path in the delayed_install is relative to the versioned folder,
+      # which means we need to go one level up.
+      delayed_install("${sycl_compiler_root}" "${SYCL_RUNTIME_DEPENDENCIES}" "../")
+    endif()
   elseif(UNIX AND NOT APPLE)
     file(GLOB SYCL_RUNTIME_DEPENDENCIES
               ${sycl_compiler_root}/../lib/libsycl.so
