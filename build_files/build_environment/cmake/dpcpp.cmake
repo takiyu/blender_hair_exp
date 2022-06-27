@@ -102,6 +102,6 @@ if(BUILD_MODE STREQUAL Release AND WIN32)
       COMMAND ${CMAKE_COMMAND} -E rm -f ${LIBDIR}/dpcpp/bin/clang-cl.exe
       COMMAND ${CMAKE_COMMAND} -E rm -f ${LIBDIR}/dpcpp/bin/clang-cpp.exe
       COMMAND ${CMAKE_COMMAND} -E rm -f ${LIBDIR}/dpcpp/bin/clang.exe
-      COMMAND ${CMAKE_COMMAND} -E copy_directory ${LIBDIR}/dpcpp ${HARVEST_TARGET}/dppp
+      COMMAND ${CMAKE_COMMAND} -E copy_directory ${LIBDIR}/dpcpp ${HARVEST_TARGET}/dpcpp
   )
 endif()
