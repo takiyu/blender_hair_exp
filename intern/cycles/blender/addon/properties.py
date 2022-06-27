@@ -1556,7 +1556,7 @@ class CyclesPreferences(bpy.types.AddonPreferences):
                     col.label(text="and AMD driver version 22.10 or newer", icon='BLANK1')
             elif device_type == 'ONEAPI':
                 import sys
-                col.label(text="Requires Intel GPU with Xe architecture", icon='BLANK1')
+                col.label(text="Requires Intel GPU with Xe-HPG architecture", icon='BLANK1')
                 if sys.platform.startswith("win"):
                     col.label(text="and Windows driver version 101.1660 or newer", icon='BLANK1')
                 elif sys.platform.startswith("linux"):
