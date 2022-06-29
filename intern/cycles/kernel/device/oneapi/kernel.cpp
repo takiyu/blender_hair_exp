@@ -311,6 +311,13 @@ bool oneapi_enqueue_kernel(KernelContext *kernel_context,
       kernel_context->queue, device_kernel, global_size);
   assert(global_size % local_size == 0);
 
+  /* Local size for DEVICE_KERNEL_INTEGRATOR_ACTIVE_PATHS_ARRAY needs to be enforced so we
+   * overwrite it outside of oneapi_kernel_preferred_local_size. */
+  if (device_kernel == DEVICE_KERNEL_INTEGRATOR_ACTIVE_PATHS_ARRAY) {
+    local_size = GPU_PARALLEL_ACTIVE_INDEX_DEFAULT_BLOCK_SIZE;
+  }
+
+  /* Kernels listed below need a specific number of work groups. */
   if (device_kernel == DEVICE_KERNEL_INTEGRATOR_ACTIVE_PATHS_ARRAY ||
       device_kernel == DEVICE_KERNEL_INTEGRATOR_QUEUED_PATHS_ARRAY ||
       device_kernel == DEVICE_KERNEL_INTEGRATOR_QUEUED_SHADOW_PATHS_ARRAY ||
@@ -321,13 +328,10 @@ bool oneapi_enqueue_kernel(KernelContext *kernel_context,
     int num_states = *((int *)(args[0]));
     /* Round up to the next work-group. */
     size_t groups_count = (num_states + local_size - 1) / local_size;
-    /* NOTE(@nsirgien): Because for now non-uniform workgroups don't work on most of
-       oneAPI devices,here ise xtending of work size to match uniform requirements  */
+    /* NOTE(@nsirgien): As for now non-uniform workgroups don't work on most oneAPI devices, we
+     * extend work size to fit uniformity requirements. */
     global_size = groups_count * local_size;
 
-    if (device_kernel == DEVICE_KERNEL_INTEGRATOR_ACTIVE_PATHS_ARRAY) {
-      local_size = GPU_PARALLEL_ACTIVE_INDEX_DEFAULT_BLOCK_SIZE;
-    }
 #  ifdef WITH_ONEAPI_SYCL_HOST_ENABLED
     if (queue->get_device().is_host()) {
       global_size = 1;
