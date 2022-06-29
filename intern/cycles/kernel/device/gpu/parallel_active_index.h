@@ -22,21 +22,7 @@ CCL_NAMESPACE_BEGIN
  * ccl_gpu_thread_warp, ccl_gpu_warp_index, ccl_gpu_num_warps for all devices
  * and keep device specific code in compat.h */
 
-#ifdef __KERNEL_METAL__
-void gpu_parallel_active_index_array_impl(const uint num_states,
-                                          ccl_global int *indices,
-                                          ccl_global int *num_indices,
-                                          const uint is_active,
-                                          const uint blocksize,
-                                          const int thread_index,
-                                          const uint state_index,
-                                          const int ccl_gpu_warp_size,
-                                          const int thread_warp,
-                                          const int warp_index,
-                                          const int num_warps,
-                                          threadgroup int *warp_offset)
-{
-#elif defined(__KERNEL_ONEAPI__)
+#ifdef __KERNEL_ONEAPI__
 #  ifdef WITH_ONEAPI_SYCL_HOST_ENABLED
 template<typename IsActiveOp>
 void cpu_serial_active_index_array_impl(const uint num_states,
@@ -52,7 +38,8 @@ void cpu_serial_active_index_array_impl(const uint num_states,
   *num_indices = write_index;
   return;
 }
-#  endif
+#  endif /* WITH_ONEAPI_SYCL_HOST_ENABLED */
+
 template<typename IsActiveOp>
 void gpu_parallel_active_index_array_impl(const uint num_states,
                                           ccl_global int *ccl_restrict indices,
@@ -83,12 +70,28 @@ void gpu_parallel_active_index_array_impl(const uint num_states,
 
   /* Test if state corresponding to this thread is active. */
   const uint is_active = (state_index < num_states) ? is_active_op(state_index) : 0;
-#else
+#else /* !__KERNEL__ONEAPI__ */
+#  ifndef __KERNEL_METAL__
 template<uint blocksize, typename IsActiveOp>
-__device__ void gpu_parallel_active_index_array_impl(const uint num_states,
-                                                     ccl_global int *indices,
-                                                     ccl_global int *num_indices,
-                                                     IsActiveOp is_active_op)
+__device__
+#  endif
+    void
+    gpu_parallel_active_index_array_impl(const uint num_states,
+                                         ccl_global int *indices,
+                                         ccl_global int *num_indices,
+#  ifdef __KERNEL_METAL__
+                                         const uint is_active,
+                                         const uint blocksize,
+                                         const int thread_index,
+                                         const uint state_index,
+                                         const int ccl_gpu_warp_size,
+                                         const int thread_warp,
+                                         const int warp_index,
+                                         const int num_warps,
+                                         threadgroup int *warp_offset)
+{
+#  else
+                                          IsActiveOp is_active_op)
 {
   extern ccl_gpu_shared int warp_offset[];
 
@@ -102,8 +105,8 @@ __device__ void gpu_parallel_active_index_array_impl(const uint num_states,
 
   /* Test if state corresponding to this thread is active. */
   const uint is_active = (state_index < num_states) ? is_active_op(state_index) : 0;
-#endif
-
+#  endif
+#endif /* !__KERNEL_ONEAPI__ */
   /* For each thread within a warp compute how many other active states precede it. */
 #ifdef __KERNEL_ONEAPI__
   const uint thread_offset = sycl::exclusive_scan_over_group(
