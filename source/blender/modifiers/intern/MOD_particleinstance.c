@@ -666,6 +666,7 @@ ModifierTypeInfo modifierType_ParticleInstance = {
     /* requiredDataMask */ requiredDataMask,
     /* freeData */ NULL,
     /* isDisabled */ isDisabled,
+    /* ensureDepsgraphNodes */ NULL,
     /* updateDepsgraph */ updateDepsgraph,
     /* dependsOnTime */ NULL,
     /* dependsOnNormals */ NULL,

@@ -209,6 +209,7 @@ ModifierTypeInfo modifierType_Weld = {
     /* requiredDataMask */ requiredDataMask,
     /* freeData */ nullptr,
     /* isDisabled */ nullptr,
+    /* ensureDepsgraphNodes */ NULL,
     /* updateDepsgraph */ nullptr,
     /* dependsOnTime */ nullptr,
     /* dependsOnNormals */ nullptr,

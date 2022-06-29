@@ -12,6 +12,7 @@ static void node_declare(NodeDeclarationBuilder &b)
   b.add_output<decl::Geometry>(N_("Curve"));
   b.add_output<decl::Geometry>(N_("Volume"));
   b.add_output<decl::Geometry>(N_("Instances"));
+  b.add_output<decl::Geometry>(N_("Simulation"));
 }
 
 static void node_geo_exec(GeoNodeExecParams params)
@@ -23,6 +24,7 @@ static void node_geo_exec(GeoNodeExecParams params)
   GeometrySet volumes;
   GeometrySet curves;
   GeometrySet instances;
+  GeometrySet simulation;
 
   if (geometry_set.has<MeshComponent>()) {
     meshes.add(*geometry_set.get_component_for_read<MeshComponent>());
@@ -39,12 +41,16 @@ static void node_geo_exec(GeoNodeExecParams params)
   if (geometry_set.has<InstancesComponent>()) {
     instances.add(*geometry_set.get_component_for_read<InstancesComponent>());
   }
+  if (geometry_set.has<SimulationComponent>()) {
+    simulation.add(*geometry_set.get_component_for_read<SimulationComponent>());
+  }
 
   params.set_output("Mesh", meshes);
   params.set_output("Point Cloud", point_clouds);
   params.set_output("Curve", curves);
   params.set_output("Volume", volumes);
   params.set_output("Instances", instances);
+  params.set_output("Simulation", simulation);
 }
 
 }  // namespace blender::nodes::node_geo_separate_components_cc

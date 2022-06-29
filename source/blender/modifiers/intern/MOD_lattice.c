@@ -182,6 +182,7 @@ ModifierTypeInfo modifierType_Lattice = {
     /* requiredDataMask */ requiredDataMask,
     /* freeData */ NULL,
     /* isDisabled */ isDisabled,
+    /* ensureDepsgraphNodes */ NULL,
     /* updateDepsgraph */ updateDepsgraph,
     /* dependsOnTime */ NULL,
     /* dependsOnNormals */ NULL,

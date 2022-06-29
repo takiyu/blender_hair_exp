@@ -21,6 +21,7 @@
 #include "BKE_anonymous_attribute.hh"
 #include "BKE_attribute_access.hh"
 #include "BKE_geometry_set.h"
+#include "BKE_rigidbody.h"
 
 struct Curves;
 struct Collection;
@@ -452,6 +453,10 @@ struct GeometrySet {
    * Returns true when the geometry set has any data that is not an instance.
    */
   bool has_realized_data() const;
+  /**
+   * Return true if the geometry set has a simulation component.
+   */
+  bool has_simulation() const;
   /**
    * Return true if the geometry set has any component that isn't empty.
    */
@@ -1028,4 +1033,129 @@ class VolumeComponent : public GeometryComponent {
   void ensure_owns_direct_data() override;
 
   static constexpr inline GeometryComponentType static_type = GEO_COMPONENT_TYPE_VOLUME;
+};
+
+/**
+ * A geometry component that stores simulation data to be used outside of nodes.
+ */
+class SimulationComponent : public GeometryComponent {
+ public:
+  struct ShapeConstructionInfo {
+    std::string name_;
+    eCollisionShapeType type_ = COLLISION_SHAPE_BOX;
+    blender::float3 half_extent_ = {1.0f, 1.0f, 1.0f};
+    float radius_ = 1.0f;
+    float height_ = 1.0f;
+    float margin_ = 0.0f;
+    std::unique_ptr<GeometrySet> mesh_;
+
+    ShapeConstructionInfo(blender::StringRef name,
+                          eCollisionShapeType type,
+                          const blender::float3 &size,
+                          float radius,
+                          float height,
+                          float margin,
+                          GeometrySet mesh)
+        : type_(type),
+          half_extent_(size),
+          radius_(radius),
+          height_(height),
+          margin_(margin),
+          mesh_(std::make_unique<GeometrySet>(std::move(mesh)))
+    {
+    }
+
+    ShapeConstructionInfo(blender::StringRef name) : name_(name)
+    {
+    }
+
+    ShapeConstructionInfo(const ShapeConstructionInfo &other)
+        : name_(other.name_),
+          type_(other.type_),
+          half_extent_(other.half_extent_),
+          radius_(other.radius_),
+          height_(other.height_),
+          margin_(other.margin_)
+    {
+      if (other.mesh_) {
+        mesh_ = std::make_unique<GeometrySet>(*other.mesh_);
+      }
+    }
+
+    ShapeConstructionInfo(ShapeConstructionInfo &&other)
+        : name_(other.name_),
+          type_(other.type_),
+          half_extent_(other.half_extent_),
+          radius_(other.radius_),
+          height_(other.height_),
+          margin_(other.margin_),
+          mesh_(std::move(other.mesh_))
+    {
+      other.type_ = COLLISION_SHAPE_BOX;
+    }
+
+    ShapeConstructionInfo &operator=(const ShapeConstructionInfo &other)
+    {
+      if (this == &other) {
+        return *this;
+      }
+      this->~ShapeConstructionInfo();
+      new (this) ShapeConstructionInfo(other);
+      return *this;
+    }
+
+    ShapeConstructionInfo &operator=(ShapeConstructionInfo &&other)
+    {
+      if (this == &other) {
+        return *this;
+      }
+      this->~ShapeConstructionInfo();
+      new (this) ShapeConstructionInfo(std::move(other));
+      return *this;
+    }
+
+    bool owns_direct_data() const
+    {
+      return mesh_->owns_direct_data();
+    }
+
+    void ensure_owns_direct_data()
+    {
+      mesh_->ensure_owns_direct_data();
+    }
+
+    uint64_t hash() const
+    {
+      return blender::get_default_hash(name_);
+    }
+
+    friend bool operator==(const ShapeConstructionInfo &a, const ShapeConstructionInfo &b)
+    {
+      return a.name_ == b.name_;
+    }
+  };
+
+  /**
+   * Indexed set containing parameters for constructing rigid bodies.
+   * Points store an index ("handle") into this set.
+   */
+  using Shapes = blender::VectorSet<ShapeConstructionInfo>;
+
+ private:
+  Shapes shapes_;
+
+ public:
+  SimulationComponent();
+  ~SimulationComponent();
+  GeometryComponent *copy() const override;
+
+  blender::VectorSet<ShapeConstructionInfo> &shapes();
+  const blender::VectorSet<ShapeConstructionInfo> &shapes() const;
+  void clear();
+  int add_shape(const ShapeConstructionInfo &info);
+
+  bool owns_direct_data() const override;
+  void ensure_owns_direct_data() override;
+
+  static constexpr inline GeometryComponentType static_type = GEO_COMPONENT_TYPE_SIMULATION;
 };

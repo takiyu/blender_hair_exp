@@ -305,6 +305,7 @@ ModifierTypeInfo modifierType_Collision = {
     /* requiredDataMask */ NULL,
     /* freeData */ freeData,
     /* isDisabled */ NULL,
+    /* ensureDepsgraphNodes */ NULL,
     /* updateDepsgraph */ updateDepsgraph,
     /* dependsOnTime */ dependsOnTime,
     /* dependsOnNormals */ NULL,

@@ -87,7 +87,13 @@ void RB_dworld_export(rbDynamicsWorld *world, const char *filename);
 /* Add RigidBody to dynamics world */
 void RB_dworld_add_body(rbDynamicsWorld *world, rbRigidBody *body, int col_groups);
 
-/* Remove RigidBody from dynamics world */
+void RB_dworld_add_body_ex(rbDynamicsWorld *world,
+                           rbRigidBody *object,
+                           int col_groups,
+                           int filter_group,
+                           int filter_mask);
+
+    /* Remove RigidBody from dynamics world */
 void RB_dworld_remove_body(rbDynamicsWorld *world, rbRigidBody *body);
 
 /* Collision detection */
@@ -118,6 +124,9 @@ void RB_body_set_type(rbRigidBody *body, int type, float mass);
 
 /* Collision Shape */
 void RB_body_set_collision_shape(rbRigidBody *body, rbCollisionShape *shape);
+
+int RB_body_get_collision_groups(rbRigidBody *body);
+void RB_body_get_collision_group_ex(rbRigidBody *body, int *r_col_groups, int *r_filter_group, int *r_filter_mask);
 
 /* ............ */
 
@@ -182,7 +191,12 @@ void RB_body_set_loc_rot(rbRigidBody *body, const float loc[3], const float rot[
 /* Set RigidBody's local scaling */
 void RB_body_set_scale(rbRigidBody *body, const float scale[3]);
 
-/* ............ */
+void RB_body_reset_loc_rot(rbDynamicsWorld *world,
+                           rbRigidBody *object,
+                           const float loc[3],
+                           const float rot[4]);
+
+    /* ............ */
 
 /* Get RigidBody's position as a vector */
 void RB_body_get_position(rbRigidBody *body, float v_out[3]);
@@ -194,6 +208,10 @@ void RB_body_get_scale(rbRigidBody *object, float v_out[3]);
 /* ............ */
 
 void RB_body_apply_central_force(rbRigidBody *body, const float v_in[3]);
+void RB_body_clear_forces(rbDynamicsWorld *world, rbRigidBody *body);
+
+void RB_dworld_rebuild_islands(rbDynamicsWorld *world);
+
 
 /* ********************************** */
 /* Collision Shape Methods */
@@ -353,6 +371,8 @@ void RB_constraint_set_solver_iterations(rbConstraint *con, int num_solver_itera
 void RB_constraint_set_breaking_threshold(rbConstraint *con, float threshold);
 
 /* ********************************** */
+
+int RB_debug_get_world_index(rbDynamicsWorld *dworld, rbRigidBody *body);
 
 #ifdef __cplusplus
 }

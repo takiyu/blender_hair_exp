@@ -328,6 +328,7 @@ ModifierTypeInfo modifierType_VolumeDisplace = {
     /* requiredDataMask */ nullptr,
     /* freeData */ nullptr,
     /* isDisabled */ nullptr,
+    /* ensureDepsgraphNodes */ NULL,
     /* updateDepsgraph */ updateDepsgraph,
     /* dependsOnTime */ dependsOnTime,
     /* dependsOnNormals */ nullptr,

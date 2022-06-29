@@ -494,6 +494,7 @@ ModifierTypeInfo modifierType_Displace = {
     /* requiredDataMask */ requiredDataMask,
     /* freeData */ NULL,
     /* isDisabled */ isDisabled,
+    /* ensureDepsgraphNodes */ NULL,
     /* updateDepsgraph */ updateDepsgraph,
     /* dependsOnTime */ dependsOnTime,
     /* dependsOnNormals */ dependsOnNormals,

@@ -734,7 +734,8 @@ static void mesh_calc_modifiers(struct Depsgraph *depsgraph,
                                 /* return args */
                                 Mesh **r_deform,
                                 Mesh **r_final,
-                                GeometrySet **r_geometry_set)
+                                GeometrySet **r_geometry_set,
+                                bool *r_need_caching)
 {
   /* Input and final mesh. Final mesh is only created the moment the first
    * constructive modifier is executed, or a deform modifier needs normals
@@ -873,6 +874,10 @@ static void mesh_calc_modifiers(struct Depsgraph *depsgraph,
         have_non_onlydeform_modifiers_appled) {
       BKE_modifier_set_error(ob, md, "Modifier requires original data, bad stack position");
       continue;
+    }
+
+    if (r_need_caching && (mti->flags & eModifierTypeFlag_NeedCaching)) {
+      *r_need_caching = true;
     }
 
     if (sculpt_mode && (!has_multires || multires_applied || sculpt_dyntopo)) {
@@ -1617,6 +1622,7 @@ static void mesh_build_data(struct Depsgraph *depsgraph,
 
   Mesh *mesh_eval = nullptr, *mesh_deform_eval = nullptr;
   GeometrySet *geometry_set_eval = nullptr;
+  bool need_caching = false;
   mesh_calc_modifiers(depsgraph,
                       scene,
                       ob,
@@ -1627,7 +1633,8 @@ static void mesh_build_data(struct Depsgraph *depsgraph,
                       true,
                       &mesh_deform_eval,
                       &mesh_eval,
-                      &geometry_set_eval);
+                      &geometry_set_eval,
+                      &need_caching);
 
   /* The modifier stack evaluation is storing result in mesh->runtime.mesh_eval, but this result
    * is not guaranteed to be owned by object.
@@ -1647,6 +1654,7 @@ static void mesh_build_data(struct Depsgraph *depsgraph,
   ob->runtime.mesh_deform_eval = mesh_deform_eval;
   ob->runtime.last_data_mask = *dataMask;
   ob->runtime.last_need_mapping = need_mapping;
+  BKE_object_runtime_ensure_geometry_cache(ob, need_caching);
 
   BKE_object_boundbox_calc_from_mesh(ob, mesh_eval);
 
@@ -1876,7 +1884,7 @@ Mesh *mesh_create_eval_final(Depsgraph *depsgraph,
 {
   Mesh *result;
   mesh_calc_modifiers(
-      depsgraph, scene, ob, true, false, dataMask, false, false, nullptr, &result, nullptr);
+      depsgraph, scene, ob, true, false, dataMask, false, false, nullptr, &result, nullptr, nullptr);
   return result;
 }
 
@@ -1887,7 +1895,7 @@ Mesh *mesh_create_eval_no_deform(Depsgraph *depsgraph,
 {
   Mesh *result;
   mesh_calc_modifiers(
-      depsgraph, scene, ob, false, false, dataMask, false, false, nullptr, &result, nullptr);
+      depsgraph, scene, ob, false, false, dataMask, false, false, nullptr, &result, nullptr, nullptr);
   return result;
 }
 
@@ -1898,7 +1906,7 @@ Mesh *mesh_create_eval_no_deform_render(Depsgraph *depsgraph,
 {
   Mesh *result;
   mesh_calc_modifiers(
-      depsgraph, scene, ob, false, false, dataMask, false, false, nullptr, &result, nullptr);
+      depsgraph, scene, ob, false, false, dataMask, false, false, nullptr, &result, nullptr, nullptr);
   return result;
 }
 

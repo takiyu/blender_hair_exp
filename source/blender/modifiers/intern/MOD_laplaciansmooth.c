@@ -629,6 +629,7 @@ ModifierTypeInfo modifierType_LaplacianSmooth = {
     /* requiredDataMask */ required_data_mask,
     /* freeData */ NULL,
     /* isDisabled */ is_disabled,
+    /* ensureDepsgraphNodes */ NULL,
     /* updateDepsgraph */ NULL,
     /* dependsOnTime */ NULL,
     /* dependsOnNormals */ NULL,

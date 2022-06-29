@@ -414,6 +414,7 @@ ModifierTypeInfo modifierType_MeshSequenceCache = {
     /* requiredDataMask */ nullptr,
     /* freeData */ freeData,
     /* isDisabled */ isDisabled,
+    /* ensureDepsgraphNodes */ NULL,
     /* updateDepsgraph */ updateDepsgraph,
     /* dependsOnTime */ dependsOnTime,
     /* dependsOnNormals */ nullptr,

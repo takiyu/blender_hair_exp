@@ -438,6 +438,7 @@ ModifierTypeInfo modifierType_MeshCache = {
     /* requiredDataMask */ NULL,
     /* freeData */ NULL,
     /* isDisabled */ isDisabled,
+    /* ensureDepsgraphNodes */ NULL,
     /* updateDepsgraph */ NULL,
     /* dependsOnTime */ dependsOnTime,
     /* dependsOnNormals */ NULL,

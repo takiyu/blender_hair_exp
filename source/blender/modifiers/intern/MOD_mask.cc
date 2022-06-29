@@ -827,6 +827,7 @@ ModifierTypeInfo modifierType_Mask = {
     /* requiredDataMask */ requiredDataMask,
     /* freeData */ nullptr,
     /* isDisabled */ isDisabled,
+    /* ensureDepsgraphNodes */ NULL,
     /* updateDepsgraph */ updateDepsgraph,
     /* dependsOnTime */ nullptr,
     /* dependsOnNormals */ nullptr,

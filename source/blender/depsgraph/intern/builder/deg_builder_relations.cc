@@ -307,6 +307,37 @@ void DepsgraphRelationBuilder::add_modifier_to_transform_relation(const DepsNode
   add_depends_on_transform_relation(id, geometry_key, description);
 }
 
+void DepsgraphRelationBuilder::add_modifier_to_geometry_cache_relation(
+    const DepsNodeHandle *handle, const char *description)
+{
+  IDNode *id_node = handle->node->owner->owner;
+  ID *id = id_node->id_orig;
+  ComponentKey geometry_key(id, NodeType::GEOMETRY);
+  OperationKey write_cache_key(id, NodeType::GEOMETRY, OperationCode::GEOMETRY_WRITE_CACHE);
+  handle->builder->add_relation(geometry_key, write_cache_key, "Object Geometry Write Cache");
+}
+
+void DepsgraphRelationBuilder::add_modifier_to_rigid_body_sim_relation(
+    const DepsNodeHandle *handle, const char *description)
+{
+  IDNode *id_node = handle->node->owner->owner;
+  ID *id = id_node->id_orig;
+  OperationKey geometry_eval_key(id, NodeType::GEOMETRY, OperationCode::GEOMETRY_EVAL);
+  OperationKey geometry_done_key(id, NodeType::GEOMETRY, OperationCode::GEOMETRY_EVAL_DONE);
+  OperationKey write_cache_key(id, NodeType::GEOMETRY, OperationCode::GEOMETRY_WRITE_CACHE);
+  OperationKey rb_simulate_key(&scene_->id, NodeType::TRANSFORM, OperationCode::RIGIDBODY_SIM);
+  OperationKey rb_transform_copy_key(
+      id, NodeType::TRANSFORM, OperationCode::RIGIDBODY_TRANSFORM_COPY);
+  /* Simulation only after evaluating nodes. */
+  add_relation(geometry_eval_key, rb_simulate_key, description);
+  /* Rigid body synchronization depends on the actual simulation. */
+  add_relation(rb_simulate_key, rb_transform_copy_key, "Rigidbody Sim Eval -> RBO Sync");
+  /* Wait for simulation results to be copied before writing to cache. */
+  add_relation(rb_transform_copy_key, write_cache_key, description);
+  /* Consider geometry valid only after copying rigidbody results. */
+  add_relation(rb_transform_copy_key, geometry_done_key, description, RELATION_FLAG_NO_FLUSH);
+}
+
 void DepsgraphRelationBuilder::add_customdata_mask(Object *object,
                                                    const DEGCustomDataMeshMasks &customdata_masks)
 {
@@ -2169,6 +2200,9 @@ void DepsgraphRelationBuilder::build_object_data_geometry(Object *object)
   /* Link components to each other. */
   add_relation(obdata_geom_key, geom_key, "Object Geometry Base Data");
   OperationKey obdata_ubereval_key(&object->id, NodeType::GEOMETRY, OperationCode::GEOMETRY_EVAL);
+  OperationKey obdata_evaldone_key(&object->id, NodeType::GEOMETRY, OperationCode::GEOMETRY_EVAL_DONE);
+  /* Exit dependency */
+  add_relation(obdata_ubereval_key, obdata_evaldone_key, "Object Eval Done");
   /* Special case: modifiers evaluation queries scene for various things like
    * data mask to be used. We add relation here to ensure object is never
    * evaluated prior to Scene's CoW is ready. */

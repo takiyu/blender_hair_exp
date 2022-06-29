@@ -29,6 +29,7 @@
 #include "BKE_displist.h"
 #include "BKE_editmesh.h"
 #include "BKE_effect.h"
+#include "BKE_geometry_cache.h"
 #include "BKE_gpencil.h"
 #include "BKE_gpencil_modifier.h"
 #include "BKE_image.h"
@@ -330,6 +331,17 @@ void BKE_object_eval_uber_data(Depsgraph *depsgraph, Scene *scene, Object *ob)
   BLI_assert(ob->type != OB_ARMATURE);
   BKE_object_handle_data_update(depsgraph, scene, ob);
   BKE_object_batch_cache_dirty_tag(ob);
+}
+
+void BKE_object_write_geometry_cache(Depsgraph *depsgraph, Scene *scene, Object *ob)
+{
+  DEG_debug_print_eval(depsgraph, __func__, ob->id.name, ob);
+  BLI_assert(ob->id.orig_id);
+  Object *orig_ob = (Object *)ob->id.orig_id;
+  if (orig_ob->runtime.geometry_cache && ob->runtime.geometry_set_eval) {
+    BKE_geometry_cache_insert_and_continue_from(
+        orig_ob->runtime.geometry_cache, scene->r.cfra, ob->runtime.geometry_set_eval);
+  }
 }
 
 void BKE_object_eval_ptcache_reset(Depsgraph *depsgraph, Scene *scene, Object *object)

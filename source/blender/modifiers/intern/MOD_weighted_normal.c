@@ -748,6 +748,7 @@ ModifierTypeInfo modifierType_WeightedNormal = {
     /* requiredDataMask */ requiredDataMask,
     /* freeData */ NULL,
     /* isDisabled */ NULL,
+    /* ensureDepsgraphNodes */ NULL,
     /* updateDepsgraph */ NULL,
     /* dependsOnTime */ NULL,
     /* dependsOnNormals */ dependsOnNormals,

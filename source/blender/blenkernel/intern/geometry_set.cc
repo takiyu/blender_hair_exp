@@ -54,6 +54,8 @@ GeometryComponent *GeometryComponent::create(GeometryComponentType component_typ
       return new VolumeComponent();
     case GEO_COMPONENT_TYPE_CURVE:
       return new CurveComponent();
+    case GEO_COMPONENT_TYPE_SIMULATION:
+      return new SimulationComponent();
   }
   BLI_assert_unreachable();
   return nullptr;
@@ -304,6 +306,11 @@ bool GeometrySet::has_realized_data() const
     }
   }
   return false;
+}
+
+bool GeometrySet::has_simulation() const
+{
+  return this->get_component_for_read<SimulationComponent>() != nullptr;
 }
 
 bool GeometrySet::is_empty() const

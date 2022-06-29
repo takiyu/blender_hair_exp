@@ -433,7 +433,10 @@ void BKE_object_eval_uber_transform(struct Depsgraph *depsgraph, struct Object *
 void BKE_object_eval_uber_data(struct Depsgraph *depsgraph,
                                struct Scene *scene,
                                struct Object *ob);
-/**
+void BKE_object_write_geometry_cache(struct Depsgraph *depsgraph,
+                                     struct Scene *scene,
+                                     struct Object *ob);
+    /**
  * Assign #Object.data after modifier stack evaluation.
  */
 void BKE_object_eval_assign_data(struct Object *object, struct ID *data, bool is_owned);
@@ -568,6 +571,8 @@ struct MovieClip *BKE_object_movieclip_get(struct Scene *scene,
                                            struct Object *ob,
                                            bool use_default);
 
+void BKE_object_runtime_ensure_geometry_cache(struct Object *ob, bool enable);
+void BKE_object_runtime_ensure_rigid_body_map(struct RigidBodyWorld *rbw, struct Object *ob, bool enable);
 void BKE_object_runtime_reset(struct Object *object);
 /**
  * Reset all pointers which we don't want to be shared when copying the object.

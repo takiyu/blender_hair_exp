@@ -233,6 +233,7 @@ ModifierTypeInfo modifierType_Surface = {
     /* requiredDataMask */ NULL,
     /* freeData */ freeData,
     /* isDisabled */ NULL,
+    /* ensureDepsgraphNodes */ NULL,
     /* updateDepsgraph */ NULL,
     /* dependsOnTime */ dependsOnTime,
     /* dependsOnNormals */ NULL,

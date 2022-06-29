@@ -166,6 +166,12 @@ typedef struct Object_Runtime {
    */
   struct Mesh *mesh_deform_eval;
 
+  /* Runtime cache for iterative geometry. */
+  struct GeometryCache *geometry_cache;
+
+  /* Maps identifier values to rigid bodies in the simulation world. */
+  struct RigidBodyMap *rigid_body_map;
+
   /* Evaluated mesh cage in edit mode. */
   struct Mesh *editmesh_eval_cage;
 
@@ -206,7 +212,7 @@ typedef struct Object_Runtime {
   float (*crazyspace_deform_cos)[3];
   int crazyspace_verts_num;
 
-  int _pad3[3];
+  int _pad4[3];
 } Object_Runtime;
 
 typedef struct ObjectLineArt {

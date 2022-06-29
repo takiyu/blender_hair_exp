@@ -297,6 +297,7 @@ ModifierTypeInfo modifierType_Cloth = {
     /* requiredDataMask */ requiredDataMask,
     /* freeData */ freeData,
     /* isDisabled */ NULL,
+    /* ensureDepsgraphNodes */ NULL,
     /* updateDepsgraph */ updateDepsgraph,
     /* dependsOnTime */ dependsOnTime,
     /* dependsOnNormals */ NULL,

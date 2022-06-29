@@ -49,6 +49,7 @@ ModifierTypeInfo modifierType_None = {
     /* requiredDataMask */ NULL,
     /* freeData */ NULL,
     /* isDisabled */ isDisabled,
+    /* ensureDepsgraphNodes */ NULL,
     /* updateDepsgraph */ NULL,
     /* dependsOnTime */ NULL,
     /* dependsOnNormals */ NULL,

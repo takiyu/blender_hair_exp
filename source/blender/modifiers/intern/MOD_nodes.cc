@@ -29,13 +29,16 @@
 #include "DNA_node_types.h"
 #include "DNA_object_types.h"
 #include "DNA_pointcloud_types.h"
+#include "DNA_rigidbody_types.h"
 #include "DNA_scene_types.h"
 #include "DNA_screen_types.h"
 #include "DNA_space_types.h"
 #include "DNA_windowmanager_types.h"
 
 #include "BKE_attribute_math.hh"
+#include "BKE_collection.h"
 #include "BKE_customdata.h"
+#include "BKE_geometry_cache.hh"
 #include "BKE_geometry_fields.hh"
 #include "BKE_geometry_set_instances.hh"
 #include "BKE_global.h"
@@ -49,6 +52,7 @@
 #include "BKE_node_tree_update.h"
 #include "BKE_object.h"
 #include "BKE_pointcloud.h"
+#include "BKE_rigidbody.h"
 #include "BKE_screen.h"
 #include "BKE_simulation.h"
 #include "BKE_workspace.h"
@@ -121,6 +125,22 @@ using namespace blender::fn::multi_function_types;
 using namespace blender::nodes::derived_node_tree_types;
 using geo_log::eNamedAttrUsage;
 using geo_log::GeometryAttributeInfo;
+
+static bool nodes_need_cache(const bNodeTree &tree)
+{
+  return tree.type == NTREE_SIMULATION;
+}
+
+static bool nodes_need_rigid_body_sim(const bNodeTree &tree)
+{
+  /* XXX Dummy, should be based on existence of certain nodes */
+  return tree.type == NTREE_SIMULATION;
+}
+
+bool MOD_nodes_needs_rigid_body_sim(Object *object, NodesModifierData *nmd)
+{
+  return nmd->node_group && nodes_need_rigid_body_sim(*nmd->node_group);
+}
 
 static void initData(ModifierData *md)
 {
@@ -195,7 +215,8 @@ static bool node_needs_own_transform_relation(const bNode &node)
 
 static void process_nodes_for_depsgraph(const bNodeTree &tree,
                                         Set<ID *> &ids,
-                                        bool &needs_own_transform_relation)
+                                        bool &needs_own_transform_relation,
+                                        bool &needs_rigid_body_sim)
 {
   Set<const bNodeTree *> handled_groups;
 
@@ -206,11 +227,15 @@ static void process_nodes_for_depsgraph(const bNodeTree &tree,
     if (ELEM(node->type, NODE_GROUP, NODE_CUSTOM_GROUP)) {
       const bNodeTree *group = (bNodeTree *)node->id;
       if (group != nullptr && handled_groups.add(group)) {
-        process_nodes_for_depsgraph(*group, ids, needs_own_transform_relation);
+        process_nodes_for_depsgraph(
+            *group, ids, needs_own_transform_relation, needs_rigid_body_sim);
       }
     }
     needs_own_transform_relation |= node_needs_own_transform_relation(*node);
   }
+
+  /* XXX dummy */
+  needs_rigid_body_sim = nodes_need_rigid_body_sim(tree);
 }
 
 static void find_used_ids_from_settings(const NodesModifierSettings &settings, Set<ID *> &ids)
@@ -256,6 +281,19 @@ static void add_object_relation(const ModifierUpdateDepsgraphContext *ctx, Objec
   }
 }
 
+static void ensureDepsgraphNodes(ModifierData *md,
+                                 const ModifierUpdateDepsgraphNodesContext *ctx)
+{
+  NodesModifierData *nmd = reinterpret_cast<NodesModifierData *>(md);
+  if (nmd->node_group == nullptr) {
+    return;
+  }
+
+  if (nodes_need_cache(*nmd->node_group)) {
+    DEG_ensure_modifier_to_geometry_cache_nodes(ctx->node);
+  }
+}
+
 static void updateDepsgraph(ModifierData *md, const ModifierUpdateDepsgraphContext *ctx)
 {
   NodesModifierData *nmd = reinterpret_cast<NodesModifierData *>(md);
@@ -266,9 +304,11 @@ static void updateDepsgraph(ModifierData *md, const ModifierUpdateDepsgraphConte
   DEG_add_node_tree_output_relation(ctx->node, nmd->node_group, "Nodes Modifier");
 
   bool needs_own_transform_relation = false;
+  bool needs_rigid_body_sim = false;
   Set<ID *> used_ids;
   find_used_ids_from_settings(nmd->settings, used_ids);
-  process_nodes_for_depsgraph(*nmd->node_group, used_ids, needs_own_transform_relation);
+  process_nodes_for_depsgraph(
+      *nmd->node_group, used_ids, needs_own_transform_relation, needs_rigid_body_sim);
   for (ID *id : used_ids) {
     switch ((ID_Type)GS(id->name)) {
       case ID_OB: {
@@ -295,6 +335,14 @@ static void updateDepsgraph(ModifierData *md, const ModifierUpdateDepsgraphConte
 
   if (needs_own_transform_relation) {
     DEG_add_modifier_to_transform_relation(ctx->node, "Nodes Modifier");
+  }
+
+  if (nodes_need_cache(*nmd->node_group)) {
+    DEG_add_modifier_to_rigid_body_sim_relation(ctx->node, "Nodes Modifier");
+  }
+
+  if (needs_rigid_body_sim) {
+    DEG_add_modifier_to_rigid_body_sim_relation(ctx->node, "Nodes Modifier");
   }
 }
 
@@ -325,8 +373,13 @@ static bool dependsOnTime(struct Scene *UNUSED(scene), ModifierData *md)
   if (tree == nullptr) {
     return false;
   }
-  Set<const bNodeTree *> checked_trees;
-  return check_tree_for_time_node(*tree, checked_trees);
+  if (tree->type == NTREE_SIMULATION) {
+    return true;
+  }
+  else {
+    Set<const bNodeTree *> checked_trees;
+    return check_tree_for_time_node(*tree, checked_trees);
+  }
 }
 
 static void foreachIDLink(ModifierData *md, Object *ob, IDWalkFunc walk, void *userData)
@@ -747,6 +800,16 @@ void MOD_nodes_update_interface(Object *object, NodesModifierData *nmd)
   }
 
   DEG_id_tag_update(&object->id, ID_RECALC_GEOMETRY);
+}
+
+void MOD_nodes_update_world(Main *bmain, Scene *scene, Object *object, NodesModifierData *nmd)
+{
+  if (nmd->node_group && nodes_need_rigid_body_sim(*nmd->node_group)) {
+    BKE_rigidbody_add_nodes(bmain, scene, object, nullptr);
+  }
+  else {
+    BKE_rigidbody_remove_nodes(bmain, scene, object, false);
+  }
 }
 
 static void initialize_group_input(NodesModifierData &nmd,
@@ -1295,6 +1358,29 @@ static void modifyGeometrySet(ModifierData *md,
                               const ModifierEvalContext *ctx,
                               GeometrySet *geometry_set)
 {
+  const Scene *scene = DEG_get_input_scene(ctx->depsgraph);
+  GeometryCache::Timestamp timestamp{scene->r.cfra};
+
+  NodesModifierData *nmd = (NodesModifierData *)md;
+  if (nmd->node_group && nodes_need_cache(*nmd->node_group)) {
+    BLI_assert(ctx->object->id.orig_id);
+    Object *orig_ob = (Object *)ctx->object->id.orig_id;
+    if (GeometryCache *cache = orig_ob->runtime.geometry_cache) {
+      GeometrySet *cached_geometry_set = cache->get_before(timestamp);
+      if (cached_geometry_set) {
+        //std::cout << "Modifier input from cache" << std::endl;
+        *geometry_set = *cached_geometry_set;
+      }
+    }
+  }
+  //{
+  //  const InstancesComponent *component =
+  //      geometry_set->get_component_for_read<InstancesComponent>();
+  //  if (component) {
+  //    float3 rot = component->instance_transforms()[0].to_euler();
+  //    std::cout << "Modifier input rotation: " << rot << std::endl;
+  //  }
+  //}
   modifyGeometry(md, ctx, *geometry_set);
 }
 
@@ -1813,10 +1899,10 @@ ModifierTypeInfo modifierType_Nodes = {
     /* srna */ &RNA_NodesModifier,
     /* type */ eModifierTypeType_Constructive,
     /* flags */
-    static_cast<ModifierTypeFlag>(eModifierTypeFlag_AcceptsMesh | eModifierTypeFlag_AcceptsCVs |
-                                  eModifierTypeFlag_SupportsEditmode |
-                                  eModifierTypeFlag_EnableInEditmode |
-                                  eModifierTypeFlag_SupportsMapping),
+    static_cast<ModifierTypeFlag>(
+        eModifierTypeFlag_AcceptsMesh | eModifierTypeFlag_AcceptsCVs |
+        eModifierTypeFlag_SupportsEditmode | eModifierTypeFlag_EnableInEditmode |
+        eModifierTypeFlag_SupportsMapping | eModifierTypeFlag_NeedCaching),
     /* icon */ ICON_GEOMETRY_NODES,
 
     /* copyData */ copyData,
@@ -1832,6 +1918,7 @@ ModifierTypeInfo modifierType_Nodes = {
     /* requiredDataMask */ requiredDataMask,
     /* freeData */ freeData,
     /* isDisabled */ isDisabled,
+    /* ensureDepsgraphNodes */ ensureDepsgraphNodes,
     /* updateDepsgraph */ updateDepsgraph,
     /* dependsOnTime */ dependsOnTime,
     /* dependsOnNormals */ nullptr,

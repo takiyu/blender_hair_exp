@@ -133,6 +133,18 @@ static void join_components(Span<const VolumeComponent *> src_components, Geomet
   UNUSED_VARS(src_components, dst_component);
 }
 
+static void join_components(Span<const SimulationComponent *> src_components, GeometrySet &result)
+{
+  SimulationComponent &dst_component = result.get_component_for_write<SimulationComponent>();
+
+  for (const SimulationComponent *src_component : src_components) {
+    for (const auto &shape : src_component->shapes()) {
+      dst_component.add_shape(shape);
+    }
+  }
+  join_attributes(to_base_components(src_components), dst_component, {"position"});
+}
+
 template<typename Component>
 static void join_component_type(Span<GeometrySet> src_geometry_sets, GeometrySet &result)
 {
@@ -156,7 +168,7 @@ static void join_component_type(Span<GeometrySet> src_geometry_sets, GeometrySet
   InstancesComponent &instances =
       instances_geometry_set.get_component_for_write<InstancesComponent>();
 
-  if constexpr (is_same_any_v<Component, InstancesComponent, VolumeComponent>) {
+  if constexpr (is_same_any_v<Component, InstancesComponent, SimulationComponent, VolumeComponent>) {
     join_components(components, result);
   }
   else {
@@ -185,6 +197,7 @@ static void node_geo_exec(GeoNodeExecParams params)
   join_component_type<InstancesComponent>(geometry_sets, geometry_set_result);
   join_component_type<VolumeComponent>(geometry_sets, geometry_set_result);
   join_component_type<CurveComponent>(geometry_sets, geometry_set_result);
+  join_component_type<SimulationComponent>(geometry_sets, geometry_set_result);
 
   params.set_output("Geometry", std::move(geometry_set_result));
 }

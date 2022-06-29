@@ -50,6 +50,7 @@
 #include "BulletCollision/CollisionShapes/btScaledBvhTriangleMeshShape.h"
 #include "BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h"
 #include "BulletCollision/Gimpact/btGImpactShape.h"
+#include "BulletCollision/CollisionDispatch/btSimulationIslandManager.h"
 
 struct rbDynamicsWorld {
   btDiscreteDynamicsWorld *dynamicsWorld;
@@ -238,6 +239,14 @@ void RB_dworld_add_body(rbDynamicsWorld *world, rbRigidBody *object, int col_gro
   world->dynamicsWorld->addRigidBody(body);
 }
 
+void RB_dworld_add_body_ex(rbDynamicsWorld *world, rbRigidBody *object, int col_groups, int filter_group, int filter_mask)
+{
+  btRigidBody *body = object->body;
+  object->col_groups = col_groups;
+
+  world->dynamicsWorld->addRigidBody(body, filter_group, filter_mask);
+}
+
 void RB_dworld_remove_body(rbDynamicsWorld *world, rbRigidBody *object)
 {
   btRigidBody *body = object->body;
@@ -372,6 +381,24 @@ void RB_body_set_collision_shape(rbRigidBody *object, rbCollisionShape *shape)
   RB_body_set_mass(object, RB_body_get_mass(object));
 }
 
+int RB_body_get_collision_groups(rbRigidBody *body)
+{
+  return body->col_groups;
+}
+
+void RB_body_get_collision_group_ex(rbRigidBody *body, int *r_col_groups, int *r_filter_group, int *r_filter_mask)
+{
+  if (r_col_groups) {
+    *r_col_groups = body->col_groups;
+  }
+  if (r_filter_group) {
+    *r_filter_group = body->body->getBroadphaseHandle()->m_collisionFilterGroup;
+  }
+  if (r_filter_mask) {
+    *r_filter_mask = body->body->getBroadphaseHandle()->m_collisionFilterMask;
+  }
+}
+
 /* ............ */
 
 float RB_body_get_mass(rbRigidBody *object)
@@ -502,7 +529,9 @@ void RB_body_set_linear_velocity(rbRigidBody *object, const float v_in[3])
 {
   btRigidBody *body = object->body;
 
-  body->setLinearVelocity(btVector3(v_in[0], v_in[1], v_in[2]));
+  btVector3 bt_vec{v_in[0], v_in[1], v_in[2]};
+  body->setLinearVelocity(bt_vec);
+  body->setInterpolationLinearVelocity(bt_vec);
 }
 
 void RB_body_get_angular_velocity(rbRigidBody *object, float v_out[3])
@@ -516,7 +545,9 @@ void RB_body_set_angular_velocity(rbRigidBody *object, const float v_in[3])
 {
   btRigidBody *body = object->body;
 
-  body->setAngularVelocity(btVector3(v_in[0], v_in[1], v_in[2]));
+  btVector3 bt_vec{v_in[0], v_in[1], v_in[2]};
+  body->setAngularVelocity(bt_vec);
+  body->setInterpolationAngularVelocity(bt_vec);
 }
 
 void RB_body_set_linear_factor(rbRigidBody *object, float x, float y, float z)
@@ -586,7 +617,9 @@ void RB_body_get_transform_matrix(rbRigidBody *object, float m_out[4][4])
   trans.getOpenGLMatrix((btScalar *)m_out);
 }
 
-void RB_body_set_loc_rot(rbRigidBody *object, const float loc[3], const float rot[4])
+void RB_body_set_loc_rot(rbRigidBody *object,
+                         const float loc[3],
+                         const float rot[4])
 {
   btRigidBody *body = object->body;
   btMotionState *ms = body->getMotionState();
@@ -598,6 +631,27 @@ void RB_body_set_loc_rot(rbRigidBody *object, const float loc[3], const float ro
   trans.setRotation(btQuaternion(rot[1], rot[2], rot[3], rot[0]));
 
   ms->setWorldTransform(trans);
+}
+
+void RB_body_reset_loc_rot(rbDynamicsWorld *world,
+                           rbRigidBody *object,
+                           const float loc[3],
+                           const float rot[4])
+{
+  btRigidBody *body = object->body;
+
+  /* set transform matrix */
+  btTransform trans;
+  trans.setIdentity();
+  trans.setOrigin(btVector3(loc[0], loc[1], loc[2]));
+  trans.setRotation(btQuaternion(rot[1], rot[2], rot[3], rot[0]));
+
+  body->setWorldTransform(trans);
+  body->setInterpolationWorldTransform(trans);
+  /* XXX Should be explicit parameters */
+  body->setLinearVelocity(btVector3(0, 0, 0));
+  body->setAngularVelocity(btVector3(0, 0, 0));
+  world->dynamicsWorld->synchronizeSingleMotionState(object->body);
 }
 
 void RB_body_set_scale(rbRigidBody *object, const float scale[3])
@@ -651,6 +705,21 @@ void RB_body_apply_central_force(rbRigidBody *object, const float v_in[3])
   btRigidBody *body = object->body;
 
   body->applyCentralForce(btVector3(v_in[0], v_in[1], v_in[2]));
+}
+
+void RB_body_clear_forces(rbDynamicsWorld *world, rbRigidBody *object)
+{
+  btRigidBody *body = object->body;
+  body->clearForces();
+  world->dynamicsWorld->getBroadphase()->getOverlappingPairCache()->cleanProxyFromPairs(
+      object->body->getBroadphaseProxy(), world->dynamicsWorld->getDispatcher());
+}
+
+void RB_dworld_rebuild_islands(rbDynamicsWorld *world)
+{
+  //world->dynamicsWorld->computeOverlappingPairs();
+  //world->dynamicsWorld->getSimulationIslandManager()->buildIslands(
+  //    world->dynamicsWorld->getDispatcher(), world->dynamicsWorld);
 }
 
 /* ********************************** */
@@ -1287,3 +1356,8 @@ void RB_constraint_set_target_velocity_motor(rbConstraint *con,
 }
 
 /* ********************************** */
+
+int RB_debug_get_world_index(rbDynamicsWorld *dworld, rbRigidBody *body)
+{
+  return body->body->getWorldArrayIndex();
+}

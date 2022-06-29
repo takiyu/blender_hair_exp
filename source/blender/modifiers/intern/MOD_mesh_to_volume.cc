@@ -216,6 +216,7 @@ ModifierTypeInfo modifierType_MeshToVolume = {
     /* requiredDataMask */ nullptr,
     /* freeData */ nullptr,
     /* isDisabled */ nullptr,
+    /* ensureDepsgraphNodes */ NULL,
     /* updateDepsgraph */ updateDepsgraph,
     /* dependsOnTime */ nullptr,
     /* dependsOnNormals */ nullptr,

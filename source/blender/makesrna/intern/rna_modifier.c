@@ -1662,7 +1662,7 @@ static bool rna_Modifier_show_expanded_get(PointerRNA *ptr)
 static bool rna_NodesModifier_node_group_poll(PointerRNA *UNUSED(ptr), PointerRNA value)
 {
   bNodeTree *ntree = value.data;
-  return ntree->type == NTREE_GEOMETRY;
+  return ELEM(ntree->type, NTREE_GEOMETRY, NTREE_SIMULATION);
 }
 
 static void rna_NodesModifier_node_group_update(Main *bmain, Scene *scene, PointerRNA *ptr)
@@ -1671,6 +1671,7 @@ static void rna_NodesModifier_node_group_update(Main *bmain, Scene *scene, Point
   NodesModifierData *nmd = ptr->data;
   rna_Modifier_dependency_update(bmain, scene, ptr);
   MOD_nodes_update_interface(object, nmd);
+  MOD_nodes_update_world(bmain, scene, object, nmd);
 }
 
 static IDProperty **rna_NodesModifier_properties(PointerRNA *ptr)

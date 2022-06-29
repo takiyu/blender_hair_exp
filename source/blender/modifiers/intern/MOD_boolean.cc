@@ -637,6 +637,7 @@ ModifierTypeInfo modifierType_Boolean = {
     /* requiredDataMask */ requiredDataMask,
     /* freeData */ nullptr,
     /* isDisabled */ isDisabled,
+    /* ensureDepsgraphNodes */ NULL,
     /* updateDepsgraph */ updateDepsgraph,
     /* dependsOnTime */ nullptr,
     /* dependsOnNormals */ nullptr,

@@ -5,6 +5,7 @@
 struct Main;
 struct NodesModifierData;
 struct Object;
+struct RigidBodyMap;
 
 #ifdef __cplusplus
 extern "C" {
@@ -16,6 +17,15 @@ extern "C" {
  * the values.
  */
 void MOD_nodes_update_interface(struct Object *object, struct NodesModifierData *nmd);
+
+/* Update simulation dependencies. */
+void MOD_nodes_update_world(struct Main *bmain,
+                            struct Scene *scene,
+                            struct Object *object,
+                            struct NodesModifierData *nmd);
+
+/* Modifier needs rigid body simulation depsgraph nodes. */
+bool MOD_nodes_needs_rigid_body_sim(struct Object *object, struct NodesModifierData *nmd);
 
 #ifdef __cplusplus
 }

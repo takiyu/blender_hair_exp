@@ -83,6 +83,7 @@
 #include "BKE_effect.h"
 #include "BKE_fcurve.h"
 #include "BKE_fcurve_driver.h"
+#include "BKE_geometry_cache.hh"
 #include "BKE_geometry_set.h"
 #include "BKE_geometry_set.hh"
 #include "BKE_global.h"
@@ -118,6 +119,7 @@
 #include "BKE_pointcache.h"
 #include "BKE_pointcloud.h"
 #include "BKE_rigidbody.h"
+#include "BKE_rigidbody.hh"
 #include "BKE_scene.h"
 #include "BKE_shader_fx.h"
 #include "BKE_softbody.h"
@@ -1823,6 +1825,16 @@ void BKE_object_free_derived_caches(Object *ob)
   if (ob->runtime.geometry_set_eval != nullptr) {
     BKE_geometry_set_free(ob->runtime.geometry_set_eval);
     ob->runtime.geometry_set_eval = nullptr;
+  }
+
+  if (ob->runtime.geometry_cache) {
+    MEM_delete(ob->runtime.geometry_cache);
+    ob->runtime.geometry_cache = nullptr;
+  }
+
+  if (ob->runtime.rigid_body_map) {
+    MEM_delete(ob->runtime.rigid_body_map);
+    ob->runtime.rigid_body_map = nullptr;
   }
 
   MEM_SAFE_FREE(ob->runtime.editmesh_bb_cage);
@@ -5000,6 +5012,39 @@ bool BKE_object_supports_material_slots(struct Object *ob)
 /** \name Object Runtime
  * \{ */
 
+void BKE_object_runtime_ensure_geometry_cache(Object *ob, bool enable)
+{
+  BLI_assert(ob->id.orig_id);
+  Object *orig_ob = (Object *)ob->id.orig_id;
+
+  if (enable) {
+    if (!orig_ob->runtime.geometry_cache) {
+      orig_ob->runtime.geometry_cache = MEM_new<GeometryCache>("geometry cache");
+    }
+  }
+  else {
+    MEM_delete(orig_ob->runtime.geometry_cache);
+    orig_ob->runtime.geometry_cache = nullptr;
+  }
+}
+
+void BKE_object_runtime_ensure_rigid_body_map(RigidBodyWorld *rbw, Object *ob, bool enable)
+{
+  BLI_assert(ob->id.orig_id);
+  Object *orig_ob = (Object *)ob->id.orig_id;
+
+  if (enable) {
+    if (!orig_ob->runtime.rigid_body_map) {
+      orig_ob->runtime.rigid_body_map = MEM_new<RigidBodyMap>("rigid body map");
+    }
+  }
+  else {
+    orig_ob->runtime.rigid_body_map->clear(rbw);
+    MEM_delete(orig_ob->runtime.rigid_body_map);
+    orig_ob->runtime.rigid_body_map = nullptr;
+  }
+}
+
 void BKE_object_runtime_reset(Object *object)
 {
   memset(&object->runtime, 0, sizeof(object->runtime));
@@ -5015,6 +5060,7 @@ void BKE_object_runtime_reset_on_copy(Object *object, const int UNUSED(flag))
   runtime->object_as_temp_mesh = nullptr;
   runtime->object_as_temp_curve = nullptr;
   runtime->geometry_set_eval = nullptr;
+  runtime->geometry_cache = nullptr;
 
   runtime->crazyspace_deform_imats = nullptr;
   runtime->crazyspace_deform_cos = nullptr;

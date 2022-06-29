@@ -326,6 +326,7 @@ ModifierTypeInfo modifierType_ParticleSystem = {
     /* requiredDataMask */ requiredDataMask,
     /* freeData */ freeData,
     /* isDisabled */ nullptr,
+    /* ensureDepsgraphNodes */ NULL,
     /* updateDepsgraph */ nullptr,
     /* dependsOnTime */ nullptr,
     /* dependsOnNormals */ nullptr,

@@ -98,6 +98,8 @@
 #include "DEG_depsgraph.h"
 #include "DEG_depsgraph_build.h"
 
+#include "MOD_nodes.h"
+
 #include "SEQ_iterator.h"
 #include "SEQ_sequencer.h"
 
@@ -324,6 +326,19 @@ ID *DepsgraphNodeBuilder::ensure_cow_id(ID *id_orig)
   }
   IDNode *id_node = add_id_node(id_orig);
   return id_node->id_cow;
+}
+
+void DepsgraphNodeBuilder::ensure_modifier_to_geometry_cache_nodes(const NodeHandle *handle)
+{
+  ID *id = handle->id;
+  Scene *scene_cow = get_cow_datablock(scene_);
+  Object *object_cow = get_cow_datablock((Object *)id);
+  add_operation_node(id,
+                     NodeType::GEOMETRY,
+                     OperationCode::GEOMETRY_WRITE_CACHE,
+                     [scene_cow, object_cow](::Depsgraph *depsgraph) {
+                       BKE_object_write_geometry_cache(depsgraph, scene_cow, object_cow);
+                     });
 }
 
 /* **** Build functions for entity nodes **** */
@@ -756,6 +771,18 @@ void DepsgraphNodeBuilder::build_object(int base_index,
     BuilderWalkUserData data;
     data.builder = this;
     BKE_modifiers_foreach_ID_link(object, modifier_walk, &data);
+
+    ModifierUpdateDepsgraphNodesContext ctx = {};
+    ctx.scene = scene_;
+    ctx.object = object;
+    LISTBASE_FOREACH (ModifierData *, md, &object->modifiers) {
+      const ModifierTypeInfo *mti = BKE_modifier_get_info((ModifierType)md->type);
+      if (mti->ensureDepsgraphNodes) {
+        NodeHandle handle{this, &object->id};
+        ctx.node = reinterpret_cast<::DepsNodeHandle *>(&handle);
+        mti->ensureDepsgraphNodes(md, &ctx);
+      }
+    }
   }
   /* Grease Pencil Modifiers. */
   if (object->greasepencil_modifiers.first != nullptr) {
@@ -1278,27 +1305,34 @@ void DepsgraphNodeBuilder::build_rigidbody(Scene *scene)
   if (rbw->group != nullptr) {
     build_collection(nullptr, rbw->group);
     FOREACH_COLLECTION_OBJECT_RECURSIVE_BEGIN (rbw->group, object) {
-      if (object->type != OB_MESH) {
-        continue;
-      }
-      if (object->rigidbody_object == nullptr) {
-        continue;
-      }
-
-      if (object->rigidbody_object->type == RBO_TYPE_PASSIVE) {
-        continue;
+      bool needs_transform_copy = false;
+      if (object->rigidbody_object && object->type == OB_MESH &&
+          object->rigidbody_object->type != RBO_TYPE_PASSIVE) {
+        needs_transform_copy = true;
       }
 
-      /* Create operation for flushing results. */
-      /* Object's transform component - where the rigidbody operation
-       * lives. */
-      Object *object_cow = get_cow_datablock(object);
-      add_operation_node(&object->id,
-                         NodeType::TRANSFORM,
-                         OperationCode::RIGIDBODY_TRANSFORM_COPY,
-                         [scene_cow, object_cow](::Depsgraph *depsgraph) {
-                           BKE_rigidbody_object_sync_transforms(depsgraph, scene_cow, object_cow);
-                         });
+      LISTBASE_FOREACH (ModifierData *, md, &object->modifiers) {
+        if (md->type == eModifierType_Nodes) {
+          NodesModifierData *nmd = (NodesModifierData *)md;
+          if (MOD_nodes_needs_rigid_body_sim(object, nmd)) {
+            needs_transform_copy = true;
+          }
+        }
+      }
+
+      if (needs_transform_copy) {
+        /* Create operation for flushing results. */
+        /* Object's transform component - where the rigidbody operation
+         * lives. */
+        Object *object_cow = get_cow_datablock(object);
+        add_operation_node(&object->id,
+                           NodeType::TRANSFORM,
+                           OperationCode::RIGIDBODY_TRANSFORM_COPY,
+                           [scene_cow, object_cow](::Depsgraph *depsgraph) {
+                             BKE_rigidbody_object_sync_transforms(
+                                 depsgraph, scene_cow, object_cow);
+                           });
+      }
     }
     FOREACH_COLLECTION_OBJECT_RECURSIVE_END;
   }
@@ -1446,12 +1480,13 @@ void DepsgraphNodeBuilder::build_object_data_geometry(Object *object)
   op_node = add_operation_node(&object->id, NodeType::GEOMETRY, OperationCode::GEOMETRY_EVAL_INIT);
   op_node->set_as_entry();
   /* Geometry evaluation. */
-  op_node = add_operation_node(&object->id,
-                               NodeType::GEOMETRY,
-                               OperationCode::GEOMETRY_EVAL,
-                               [scene_cow, object_cow](::Depsgraph *depsgraph) {
-                                 BKE_object_eval_uber_data(depsgraph, scene_cow, object_cow);
-                               });
+  add_operation_node(&object->id,
+                     NodeType::GEOMETRY,
+                     OperationCode::GEOMETRY_EVAL,
+                     [scene_cow, object_cow](::Depsgraph *depsgraph) {
+                       BKE_object_eval_uber_data(depsgraph, scene_cow, object_cow);
+                     });
+  op_node = add_operation_node(&object->id, NodeType::GEOMETRY, OperationCode::GEOMETRY_EVAL_DONE);
   op_node->set_as_exit();
   /* Materials. */
   build_materials(object->mat, object->totcol);

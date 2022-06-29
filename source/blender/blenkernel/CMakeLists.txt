@@ -137,11 +137,13 @@ set(SRC
   intern/fluid.c
   intern/fmodifier.c
   intern/freestyle.c
+  intern/geometry_cache.cc
   intern/geometry_component_curve.cc
   intern/geometry_component_curves.cc
   intern/geometry_component_instances.cc
   intern/geometry_component_mesh.cc
   intern/geometry_component_pointcloud.cc
+  intern/geometry_component_simulation.cc
   intern/geometry_component_volume.cc
   intern/geometry_set.cc
   intern/geometry_set_instances.cc
@@ -253,6 +255,7 @@ set(SRC
   intern/preferences.c
   intern/report.c
   intern/rigidbody.c
+  intern/rigidbody.cc
   intern/scene.cc
   intern/screen.c
   intern/shader_fx.c
@@ -377,6 +380,8 @@ set(SRC
   BKE_fcurve_driver.h
   BKE_fluid.h
   BKE_freestyle.h
+  BKE_geometry_cache.h
+  BKE_geometry_cache.hh
   BKE_geometry_fields.hh
   BKE_geometry_set.h
   BKE_geometry_set.hh
@@ -449,6 +454,7 @@ set(SRC
   BKE_preferences.h
   BKE_report.h
   BKE_rigidbody.h
+  BKE_rigidbody.hh
   BKE_scene.h
   BKE_screen.h
   BKE_sequencer_offscreen.h

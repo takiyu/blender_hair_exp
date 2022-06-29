@@ -101,6 +101,9 @@ typedef enum {
 
   /** Accepts #BMesh input (without conversion). */
   eModifierTypeFlag_AcceptsBMesh = (1 << 11),
+
+  /** Modifier output needs to be cached. */
+  eModifierTypeFlag_NeedCaching = (1 << 12),
 } ModifierTypeFlag;
 ENUM_OPERATORS(ModifierTypeFlag, eModifierTypeFlag_AcceptsBMesh)
 
@@ -127,6 +130,12 @@ typedef enum ModifierApplyFlag {
    * See `OBJECT_OT_modifier_apply` operator. */
   MOD_APPLY_TO_BASE_MESH = 1 << 4,
 } ModifierApplyFlag;
+
+typedef struct ModifierUpdateDepsgraphNodesContext {
+  struct Scene *scene;
+  struct Object *object;
+  struct DepsNodeHandle *node;
+} ModifierUpdateDepsgraphNodesContext;
 
 typedef struct ModifierUpdateDepsgraphContext {
   struct Scene *scene;
@@ -289,6 +298,11 @@ typedef struct ModifierTypeInfo {
    * This function is optional (assumes never disabled if not present).
    */
   bool (*isDisabled)(const struct Scene *scene, struct ModifierData *md, bool userRenderParams);
+
+  /**
+   * Add specialized nodes needed by the modifier.
+   */
+  void (*ensureDepsgraphNodes)(struct ModifierData *md, const ModifierUpdateDepsgraphNodesContext *ctx);
 
   /**
    * Add the appropriate relations to the dependency graph.

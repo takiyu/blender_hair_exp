@@ -30,6 +30,7 @@
 #include "DEG_depsgraph_build.h"
 #include "DEG_depsgraph_debug.h"
 
+#include "builder/deg_builder_nodes.h"
 #include "builder/deg_builder_relations.h"
 #include "builder/pipeline_all_objects.h"
 #include "builder/pipeline_compositor.h"
@@ -65,6 +66,11 @@ static deg::NodeType deg_build_scene_component_type(eDepsSceneComponentType comp
       return deg::NodeType::SEQUENCER;
   }
   return deg::NodeType::UNDEFINED;
+}
+
+static deg::DepsgraphNodeBuilder::NodeHandle *get_node_builder_handle(DepsNodeHandle *node_handle)
+{
+  return reinterpret_cast<deg::DepsgraphNodeBuilder::NodeHandle *>(node_handle);
 }
 
 static deg::DepsNodeHandle *get_node_handle(DepsNodeHandle *node_handle)
@@ -204,6 +210,26 @@ void DEG_add_modifier_to_transform_relation(struct DepsNodeHandle *node_handle,
 {
   deg::DepsNodeHandle *deg_node_handle = get_node_handle(node_handle);
   deg_node_handle->builder->add_modifier_to_transform_relation(deg_node_handle, description);
+}
+
+void DEG_ensure_modifier_to_geometry_cache_nodes(struct DepsNodeHandle *node_handle)
+{
+  deg::DepsgraphNodeBuilder::NodeHandle *deg_node_handle = get_node_builder_handle(node_handle);
+  deg_node_handle->node_builder->ensure_modifier_to_geometry_cache_nodes(deg_node_handle);
+}
+
+void DEG_add_modifier_to_geometry_cache_relation(struct DepsNodeHandle *node_handle,
+                                                 const char *description)
+{
+  deg::DepsNodeHandle *deg_node_handle = get_node_handle(node_handle);
+  deg_node_handle->builder->add_modifier_to_geometry_cache_relation(deg_node_handle, description);
+}
+
+void DEG_add_modifier_to_rigid_body_sim_relation(struct DepsNodeHandle *node_handle,
+                                                 const char *description)
+{
+  deg::DepsNodeHandle *deg_node_handle = get_node_handle(node_handle);
+  deg_node_handle->builder->add_modifier_to_rigid_body_sim_relation(deg_node_handle, description);
 }
 
 void DEG_add_special_eval_flag(struct DepsNodeHandle *node_handle, ID *id, uint32_t flag)

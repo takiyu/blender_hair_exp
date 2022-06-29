@@ -5,6 +5,7 @@ add_subdirectory(composite)
 add_subdirectory(function)
 add_subdirectory(geometry)
 add_subdirectory(shader)
+add_subdirectory(simulation)
 add_subdirectory(texture)
 
 set(INC
@@ -14,6 +15,7 @@ set(INC
   geometry
   intern
   shader
+  simulation
   texture
   ../editors/include
   ../blenkernel
@@ -65,6 +67,8 @@ set(SRC
   NOD_multi_function.hh
   NOD_node_declaration.hh
   NOD_node_tree_ref.hh
+  NOD_simulation.h
+  NOD_simulation_exec.hh
   NOD_shader.h
   NOD_socket.h
   NOD_socket_declarations.hh
@@ -83,6 +87,7 @@ set(LIB
   bf_nodes_composite
   bf_nodes_function
   bf_nodes_geometry
+  bf_nodes_simulation
   bf_nodes_shader
   bf_nodes_texture
 )

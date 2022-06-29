@@ -74,6 +74,7 @@
 #include "NOD_node_declaration.hh"
 #include "NOD_node_tree_ref.hh"
 #include "NOD_shader.h"
+#include "NOD_simulation.h"
 #include "NOD_socket.h"
 #include "NOD_texture.h"
 
@@ -538,7 +539,7 @@ void ntreeBlendWrite(BlendWriter *writer, bNodeTree *ntree)
     }
 
     if (node->storage) {
-      if (ELEM(ntree->type, NTREE_SHADER, NTREE_GEOMETRY) &&
+      if (ELEM(ntree->type, NTREE_SHADER, NTREE_GEOMETRY, NTREE_SIMULATION) &&
           ELEM(node->type, SH_NODE_CURVE_VEC, SH_NODE_CURVE_RGB, SH_NODE_CURVE_FLOAT)) {
         BKE_curvemapping_blend_write(writer, (const CurveMapping *)node->storage);
       }
@@ -4845,6 +4846,24 @@ static void registerGeometryNodes()
   register_node_type_geo_uv_unwrap();
 }
 
+static void registerSimulationNodes()
+{
+  register_node_type_simulation_add_collision_shapes();
+  register_node_type_simulation_add_rigid_bodies();
+  register_node_type_simulation_add_rigid_body_impulse();
+  register_node_type_simulation_apply_rigid_body_force();
+  register_node_type_simulation_apply_rigid_body_torque();
+  register_node_type_simulation_remove_rigid_bodies();
+  register_node_type_simulation_rigid_body_mass();
+  register_node_type_simulation_rigid_body_velocity();
+  register_node_type_simulation_set_rigid_body_collision_response();
+  register_node_type_simulation_set_rigid_body_dynamics();
+  register_node_type_simulation_set_rigid_body_effector_weights();
+  register_node_type_simulation_set_rigid_body_shape();
+  register_node_type_simulation_set_rigid_body_velocity();
+  register_node_type_simulation_set_rigid_body_angular_velocity();
+}
+
 static void registerFunctionNodes()
 {
   register_node_type_fn_align_euler_to_vector();
@@ -4881,6 +4900,7 @@ void BKE_node_system_init()
   register_node_tree_type_sh();
   register_node_tree_type_tex();
   register_node_tree_type_geo();
+  register_node_tree_type_simulation();
 
   register_node_type_frame();
   register_node_type_reroute();
@@ -4891,6 +4911,7 @@ void BKE_node_system_init()
   registerShaderNodes();
   registerTextureNodes();
   registerGeometryNodes();
+  registerSimulationNodes();
   registerFunctionNodes();
 }
 

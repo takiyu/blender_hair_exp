@@ -29,6 +29,7 @@
 #include "BKE_image.h"
 #include "BKE_node.h"
 #include "BKE_node_tree_update.h"
+#include "BKE_rigidbody.h"
 #include "BKE_texture.h"
 
 #include "RNA_access.h"
@@ -2306,6 +2307,28 @@ static StructRNA *rna_FunctionNode_register(Main *bmain,
 {
   bNodeType *nt = rna_Node_register_base(
       bmain, reports, &RNA_FunctionNode, data, identifier, validate, call, free);
+  if (!nt) {
+    return NULL;
+  }
+
+  nodeRegisterType(nt);
+
+  /* update while blender is running */
+  WM_main_add_notifier(NC_NODE | NA_EDITED, NULL);
+
+  return nt->rna_ext.srna;
+}
+
+static StructRNA *rna_SimulationNode_register(Main *bmain,
+                                              ReportList *reports,
+                                              void *data,
+                                              const char *identifier,
+                                              StructValidateFunc validate,
+                                              StructCallbackFunc call,
+                                              StructFreeFunc free)
+{
+  bNodeType *nt = rna_Node_register_base(
+      bmain, reports, &RNA_SimulationNode, data, identifier, validate, call, free);
   if (!nt) {
     return NULL;
   }
@@ -10821,6 +10844,48 @@ static void def_geo_scale_elements(StructRNA *srna)
   RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_GeometryNode_socket_update");
 }
 
+static void def_simulation_add_collision_shapes(StructRNA *srna)
+{
+  PropertyRNA *prop;
+
+  static const EnumPropertyItem shape_type_items[] = {
+      {COLLISION_SHAPE_BOX,
+       "BOX",
+       ICON_MESH_CUBE,
+       "Box",
+       "Box-like shapes (i.e. cubes), including planes (i.e. ground planes)"},
+      {COLLISION_SHAPE_SPHERE, "SPHERE", ICON_MESH_UVSPHERE, "Sphere", ""},
+      {COLLISION_SHAPE_CAPSULE, "CAPSULE", ICON_MESH_CAPSULE, "Capsule", ""},
+      {COLLISION_SHAPE_CYLINDER, "CYLINDER", ICON_MESH_CYLINDER, "Cylinder", ""},
+      {COLLISION_SHAPE_CONE, "CONE", ICON_MESH_CONE, "Cone", ""},
+      {COLLISION_SHAPE_CONVEX_HULL,
+       "CONVEX_HULL",
+       ICON_MESH_ICOSPHERE,
+       "Convex Hull",
+       "A mesh-like surface encompassing (i.e. shrinkwrap over) all vertices (best results with "
+       "fewer vertices)"},
+      {COLLISION_SHAPE_TRIMESH,
+       "MESH",
+       ICON_MESH_MONKEY,
+       "Mesh",
+       "Mesh consisting of triangles only, allowing for more detailed interactions than convex "
+       "hulls"},
+      {COLLISION_SHAPE_COMPOUND,
+       "COMPOUND",
+       ICON_MESH_DATA,
+       "Compound Parent",
+       "Combines all of its direct rigid body children into one rigid object"},
+      {0, NULL, 0, NULL, NULL},
+  };
+
+  prop = RNA_def_property(srna, "shape_type", PROP_ENUM, PROP_NONE);
+  RNA_def_property_enum_sdna(prop, NULL, "custom1");
+  RNA_def_property_enum_items(prop, shape_type_items);
+  RNA_def_property_enum_default(prop, COLLISION_SHAPE_SPHERE);
+  RNA_def_property_ui_text(prop, "Shape Type", "");
+  RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_GeometryNode_socket_update");
+}
+
 /* -------------------------------------------------------------------------- */
 
 static void rna_def_shader_node(BlenderRNA *brna)
@@ -10878,6 +10943,16 @@ static void rna_def_function_node(BlenderRNA *brna)
   RNA_def_struct_ui_text(srna, "Function Node", "");
   RNA_def_struct_sdna(srna, "bNode");
   RNA_def_struct_register_funcs(srna, "rna_FunctionNode_register", "rna_Node_unregister", NULL);
+}
+
+static void rna_def_simulation_node(BlenderRNA *brna)
+{
+  StructRNA *srna;
+
+  srna = RNA_def_struct(brna, "SimulationNode", "GeometryNode");
+  RNA_def_struct_ui_text(srna, "Simulation Node", "");
+  RNA_def_struct_sdna(srna, "bNode");
+  RNA_def_struct_register_funcs(srna, "rna_SimulationNode_register", "rna_Node_unregister", NULL);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -12500,6 +12575,7 @@ static void rna_def_nodetree(BlenderRNA *brna)
       {NTREE_TEXTURE, "TEXTURE", ICON_TEXTURE, "Texture", "Texture nodes"},
       {NTREE_COMPOSIT, "COMPOSITING", ICON_RENDERLAYERS, "Compositing", "Compositing nodes"},
       {NTREE_GEOMETRY, "GEOMETRY", ICON_GEOMETRY_NODES, "Geometry", "Geometry nodes"},
+      {NTREE_SIMULATION, "SIMULATION", ICON_PARTICLE_DATA, "Simulation", "Simulation nodes"},
       {0, NULL, 0, NULL, NULL},
   };
 
@@ -12753,6 +12829,17 @@ static void rna_def_geometry_nodetree(BlenderRNA *brna)
   RNA_def_struct_ui_icon(srna, ICON_NODETREE);
 }
 
+static void rna_def_simulation_nodetree(BlenderRNA *brna)
+{
+  StructRNA *srna;
+
+  srna = RNA_def_struct(brna, "SimulationNodeTree", "NodeTree");
+  RNA_def_struct_ui_text(
+      srna, "Simulation Node Tree", "Node tree consisting of linked nodes used for physics simulations");
+  RNA_def_struct_sdna(srna, "bNodeTree");
+  RNA_def_struct_ui_icon(srna, ICON_NODETREE);
+}
+
 static StructRNA *define_specific_node(BlenderRNA *brna,
                                        const char *struct_name,
                                        const char *base_name,
@@ -12841,6 +12928,7 @@ void RNA_def_nodetree(BlenderRNA *brna)
   rna_def_texture_node(brna);
   rna_def_geometry_node(brna);
   rna_def_function_node(brna);
+  rna_def_simulation_node(brna);
 
   rna_def_nodetree(brna);
 
@@ -12850,6 +12938,7 @@ void RNA_def_nodetree(BlenderRNA *brna)
   rna_def_shader_nodetree(brna);
   rna_def_texture_nodetree(brna);
   rna_def_geometry_nodetree(brna);
+  rna_def_simulation_nodetree(brna);
 
 #  define DefNode(Category, ID, DefFunc, EnumName, StructName, UIName, UIDesc) \
     { \

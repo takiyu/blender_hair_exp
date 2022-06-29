@@ -246,7 +246,7 @@ def point_node_items(context):
 
 
 # Generic node group items generator for shader, compositor, geometry and texture node groups.
-def node_group_items(context):
+def node_group_items(context, tree_types=None):
     if context is None:
         return
     space = context.space_data
@@ -261,6 +261,8 @@ def node_group_items(context):
     ntree = space.edit_tree
     if not ntree:
         return
+    if not tree_types:
+        tree_types = {ntree.bl_idname,}
 
     yield NodeItemCustom(draw=lambda self, layout, context: layout.separator())
 
@@ -275,7 +277,7 @@ def node_group_items(context):
         return False
 
     for group in context.blend_data.node_groups:
-        if group.bl_idname != ntree.bl_idname:
+        if group.bl_idname not in tree_types:
             continue
         # filter out recursive groups
         if contains_group(group, ntree):
@@ -732,7 +734,23 @@ geometry_node_categories = [
         NodeItem("GeometryNodeVolumeCube"),
         NodeItem("GeometryNodeVolumeToMesh"),
     ]),
-    GeometryNodeCategory("GEO_GROUP", "Group", items=node_group_items),
+    GeometryNodeCategory("GEO_SIMULATION", "Simulation", items=[
+        NodeItem("SimulationNodeAddCollisionShapes"),
+        NodeItem("SimulationNodeAddRigidBodies"),
+        NodeItem("SimulationNodeRemoveRigidBodies"),
+        NodeItem("SimulationNodeSetRigidBodyCollisionResponse"),
+        NodeItem("SimulationNodeSetRigidBodyDynamics"),
+        NodeItem("SimulationNodeSetRigidBodyEffectorWeights"),
+        NodeItem("SimulationNodeSetRigidBodyShape"),
+        NodeItem("SimulationNodeRigidBodyMass"),
+        NodeItem("SimulationNodeRigidBodyVelocity"),
+        NodeItem("SimulationNodeSetRigidBodyVelocity"),
+        NodeItem("SimulationNodeSetRigidBodyAngularVelocity"),
+        NodeItem("SimulationNodeAddRigidBodyImpulse"),
+        NodeItem("SimulationNodeApplyRigidBodyForce"),
+        NodeItem("SimulationNodeApplyRigidBodyTorque"),
+    ]),
+    GeometryNodeCategory("GEO_GROUP", "Group", items=lambda context: node_group_items(context, {'GeometryNodeTree', 'SimulationNodeTree'})),
     GeometryNodeCategory("GEO_LAYOUT", "Layout", items=[
         NodeItem("NodeFrame"),
         NodeItem("NodeReroute"),

@@ -18,6 +18,7 @@
 struct CacheFile;
 struct Camera;
 struct Collection;
+struct DepsNodeHandle;
 struct FCurve;
 struct FreestyleLineSet;
 struct FreestyleLineStyle;
@@ -62,6 +63,16 @@ struct TimeSourceNode;
 
 class DepsgraphNodeBuilder : public DepsgraphBuilder {
  public:
+  struct NodeHandle {
+    NodeHandle(DepsgraphNodeBuilder *node_builder, ID *id) : node_builder(node_builder), id(id)
+    {
+      BLI_assert(id != nullptr);
+    }
+
+    DepsgraphNodeBuilder *node_builder;
+    ID *id;
+  };
+
   DepsgraphNodeBuilder(Main *bmain, Depsgraph *graph, DepsgraphBuilderCache *cache);
   ~DepsgraphNodeBuilder();
 
@@ -70,6 +81,8 @@ class DepsgraphNodeBuilder : public DepsgraphBuilder {
   /* Similar to above, but for the cases when there is no ID node we create
    * one. */
   ID *ensure_cow_id(ID *id_orig);
+
+  void ensure_modifier_to_geometry_cache_nodes(const NodeHandle *handle);
 
   /* Helper wrapper function which wraps get_cow_id with a needed type cast. */
   template<typename T> T *get_cow_datablock(const T *orig) const

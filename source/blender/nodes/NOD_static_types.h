@@ -405,6 +405,21 @@ DefNode(GeometryNode, GEO_NODE_VOLUME_TO_MESH, def_geo_volume_to_mesh, "VOLUME_T
 DefNode(GeometryNode, GEO_NODE_UV_PACK_ISLANDS, 0, "UV_PACK_ISLANDS", UVPackIslands, "Pack UV Islands", "")
 DefNode(GeometryNode, GEO_NODE_UV_UNWRAP, def_geo_uv_unwrap, "UV_UNWRAP", UVUnwrap, "UV Unwrap", "")
 
+DefNode(SimulationNode, SIMULATION_NODE_ADD_COLLISION_SHAPES, def_simulation_add_collision_shapes, "ADD_COLLISION_SHAPES", AddCollisionShapes, "Add Collision Shapes", "")
+DefNode(SimulationNode, SIMULATION_NODE_ADD_RIGID_BODIES, 0, "ADD_RIGID_BODIES", AddRigidBodies, "Add Rigid Bodies", "")
+DefNode(SimulationNode, SIMULATION_NODE_REMOVE_RIGID_BODIES, 0, "REMOVE_RIGID_BODIES", RemoveRigidBodies, "Remove Rigid Bodies", "")
+DefNode(SimulationNode, SIMULATION_NODE_RIGID_BODY_MASS, 0, "RIGID_BODY_MASS", RigidBodyMass, "Rigid Body Mass", "")
+DefNode(SimulationNode, SIMULATION_NODE_RIGID_BODY_VELOCITY, 0, "RIGID_BODY_VELOCITY", RigidBodyVelocity, "Rigid Body Velocity", "")
+DefNode(SimulationNode, SIMULATION_NODE_SET_RIGID_BODY_SHAPE, 0, "SET_RIGID_BODY_SHAPE", SetRigidBodyShape, "Set RigidBody Shape", "")
+DefNode(SimulationNode, SIMULATION_NODE_SET_RIGID_BODY_DYNAMICS, 0, "SET_RIGID_BODY_DYNAMICS", SetRigidBodyDynamics, "Set Rigid Body Dynamics", "")
+DefNode(SimulationNode, SIMULATION_NODE_SET_RIGID_BODY_COLLISION_RESPONSE, 0, "SET_RIGID_BODY_COLLISION_RESPONSE", SetRigidBodyCollisionResponse, "Set Rigid Body Collision Response", "")
+DefNode(SimulationNode, SIMULATION_NODE_SET_RIGID_BODY_VELOCITY, 0, "SET_RIGID_BODY_VELOCITY", SetRigidBodyVelocity, "Set Rigid Body Velocity", "")
+DefNode(SimulationNode, SIMULATION_NODE_SET_RIGID_BODY_ANGULAR_VELOCITY, 0, "SET_RIGID_BODY_ANGULAR_VELOCITY", SetRigidBodyAngularVelocity, "Set Rigid Body Angular Velocity", "")
+DefNode(SimulationNode, SIMULATION_NODE_ADD_RIGID_BODY_IMPULSE, 0, "ADD_RIGID_BODY_IMPULSE", AddRigidBodyImpulse, "Add Rigid Body Impulse", "")
+DefNode(SimulationNode, SIMULATION_NODE_APPLY_RIGID_BODY_FORCE, 0, "APPLY_RIGID_BODY_FORCE", ApplyRigidBodyForce, "Apply Rigid Body Force", "")
+DefNode(SimulationNode, SIMULATION_NODE_APPLY_RIGID_BODY_TORQUE, 0, "APPLY_RIGID_BODY_TORQUE", ApplyRigidBodyTorque, "Apply Rigid Body Torque", "")
+DefNode(SimulationNode, SIMULATION_NODE_SET_RIGID_BODY_EFFECTOR_WEIGHTS, 0, "SET_RIGID_BODY_EFFECTOR_WEIGHTS", SetRigidBodyEffectorWeights, "Set Rigid Body Effector Weights",  "")
+
 /* undefine macros */
 #undef DefNode
 

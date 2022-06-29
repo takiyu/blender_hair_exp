@@ -22,6 +22,17 @@ struct Object;
 struct ReportList;
 struct Scene;
 
+typedef enum eCollisionShapeType {
+  COLLISION_SHAPE_BOX,
+  COLLISION_SHAPE_SPHERE,
+  COLLISION_SHAPE_CAPSULE,
+  COLLISION_SHAPE_CYLINDER,
+  COLLISION_SHAPE_CONE,
+  COLLISION_SHAPE_CONVEX_HULL,
+  COLLISION_SHAPE_TRIMESH,
+  COLLISION_SHAPE_COMPOUND,
+} eCollisionShapeType;
+
 /* -------------------------------------------------------------------- */
 /** \name Memory Management
  * \{ */
@@ -157,6 +168,15 @@ void BKE_rigidbody_remove_constraint(struct Main *bmain,
                                      struct Object *ob,
                                      bool free_us);
 
+bool BKE_rigidbody_add_nodes(struct Main *bmain,
+                             struct Scene *scene,
+                             struct Object *ob,
+                             struct ReportList *reports);
+void BKE_rigidbody_remove_nodes(struct Main *bmain,
+                                struct Scene *scene,
+                                struct Object *ob,
+                                const bool free_us);
+
 /** \} */
 
 /* -------------------------------------------------------------------- */
@@ -227,6 +247,20 @@ void BKE_rigidbody_eval_simulation(struct Depsgraph *depsgraph, struct Scene *sc
 void BKE_rigidbody_object_sync_transforms(struct Depsgraph *depsgraph,
                                           struct Scene *scene,
                                           struct Object *ob);
+
+/** \} */
+
+/* -------------------------------------------------------------------- */
+/** \name Internal
+ * \{ */
+
+void BKE_rigidbody_update_simulation_nodes(struct RigidBodyWorld *rbw,
+                                           struct Object *object,
+                                           struct NodesModifierData *nmd);
+
+void BKE_rigidbody_update_simulation_nodes_post_step(struct RigidBodyWorld *rbw,
+                                                     struct Object *object,
+                                                     struct NodesModifierData *nmd);
 
 /** \} */
 
