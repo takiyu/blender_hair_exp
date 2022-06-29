@@ -40,7 +40,7 @@ struct ccl_try_align(16) float3
 ccl_device_inline float3 make_float3(float f);
 ccl_device_inline float3 make_float3(float x, float y, float z);
 ccl_device_inline void print_float3(const char *label, const float3 &a);
-#endif /* !defined(__KERNEL_GPU__) || defined(__KERNEL_ONEAPI__) */
+#endif /* !defined(__KERNEL_GPU__) */
 
 /* Smaller float3 for storage. For math operations this must be converted to float3, so that on the
  * CPU SIMD instructions can be used. */
