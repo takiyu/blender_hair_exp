@@ -801,6 +801,9 @@ ccl_device_inline uint popcount(uint x)
 #  endif
 #elif defined(__KERNEL_ONEAPI__)
 #  define popcount(x) sycl::popcount(x)
+#elif defined(__KERNEL_HIP__)
+/* Use popcll to support 64-bit wave for pre-RDNA AMD GPUs */
+#  define popcount(x) __popcll(x)
 #elif !defined(__KERNEL_METAL__)
 #  define popcount(x) __popc(x)
 #endif
