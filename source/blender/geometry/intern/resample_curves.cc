@@ -77,8 +77,8 @@ static bool interpolate_attribute_to_poly_curve(const bke::AttributeIDRef &attri
   static const Set<StringRef> no_interpolation{{
       "handle_type_left",
       "handle_type_right",
-      "handle_position_right",
-      "handle_position_left",
+      "handle_right",
+      "handle_left",
       "nurbs_weight",
   }};
   return !(attribute_id.is_named() && no_interpolation.contains(attribute_id.name()));
@@ -165,38 +165,6 @@ static void gather_point_attributes_to_interpolate(const CurveComponent &src_com
   dst_curves.update_customdata_pointers();
 }
 
-/**
- * Copy the provided point attribute values between all curves in the #curve_ranges index
- * ranges, assuming that all curves are the same size in #src_curves and #dst_curves.
- */
-template<typename T>
-static void copy_between_curves(const bke::CurvesGeometry &src_curves,
-                                const bke::CurvesGeometry &dst_curves,
-                                const Span<IndexRange> curve_ranges,
-                                const Span<T> src,
-                                const MutableSpan<T> dst)
-{
-  threading::parallel_for(curve_ranges.index_range(), 512, [&](IndexRange range) {
-    for (const IndexRange range : curve_ranges.slice(range)) {
-      const IndexRange src_points = src_curves.points_for_curves(range);
-      const IndexRange dst_points = dst_curves.points_for_curves(range);
-      /* The arrays might be large, so a threaded copy might make sense here too. */
-      dst.slice(dst_points).copy_from(src.slice(src_points));
-    }
-  });
-}
-static void copy_between_curves(const bke::CurvesGeometry &src_curves,
-                                const bke::CurvesGeometry &dst_curves,
-                                const Span<IndexRange> unselected_ranges,
-                                const GSpan src,
-                                const GMutableSpan dst)
-{
-  attribute_math::convert_to_static_type(src.type(), [&](auto dummy) {
-    using T = decltype(dummy);
-    copy_between_curves(src_curves, dst_curves, unselected_ranges, src.typed<T>(), dst.typed<T>());
-  });
-}
-
 static Curves *resample_to_uniform(const CurveComponent &src_component,
                                    const fn::Field<bool> &selection_field,
                                    const fn::Field<int> &count_field)
@@ -266,11 +234,10 @@ static Curves *resample_to_uniform(const CurveComponent &src_component,
     for (const int i_curve : sliced_selection) {
       const bool cyclic = curves_cyclic[i_curve];
       const IndexRange dst_points = dst_curves.points_for_curve(i_curve);
-      length_parameterize::create_uniform_samples(
-          src_curves.evaluated_lengths_for_curve(i_curve, cyclic),
-          curves_cyclic[i_curve],
-          sample_indices.as_mutable_span().slice(dst_points),
-          sample_factors.as_mutable_span().slice(dst_points));
+      length_parameterize::sample_uniform(src_curves.evaluated_lengths_for_curve(i_curve, cyclic),
+                                          !curves_cyclic[i_curve],
+                                          sample_indices.as_mutable_span().slice(dst_points),
+                                          sample_factors.as_mutable_span().slice(dst_points));
     }
 
     /* For every attribute, evaluate attributes from every curve in the range in the original
@@ -328,20 +295,21 @@ static Curves *resample_to_uniform(const CurveComponent &src_component,
 
   /* Any attribute data from unselected curve points can be directly copied. */
   for (const int i : attributes.src.index_range()) {
-    copy_between_curves(
+    bke::curves::copy_point_data(
         src_curves, dst_curves, unselected_ranges, attributes.src[i], attributes.dst[i]);
   }
   for (const int i : attributes.src_no_interpolation.index_range()) {
-    copy_between_curves(src_curves,
-                        dst_curves,
-                        unselected_ranges,
-                        attributes.src_no_interpolation[i],
-                        attributes.dst_no_interpolation[i]);
+    bke::curves::copy_point_data(src_curves,
+                                 dst_curves,
+                                 unselected_ranges,
+                                 attributes.src_no_interpolation[i],
+                                 attributes.dst_no_interpolation[i]);
   }
 
   /* Copy positions for unselected curves. */
   Span<float3> src_positions = src_curves.positions();
-  copy_between_curves(src_curves, dst_curves, unselected_ranges, src_positions, dst_positions);
+  bke::curves::copy_point_data(
+      src_curves, dst_curves, unselected_ranges, src_positions, dst_positions);
 
   for (bke::OutputAttribute &attribute : attributes.dst_attributes) {
     attribute.save();
@@ -449,20 +417,21 @@ Curves *resample_to_evaluated(const CurveComponent &src_component,
 
   /* Any attribute data from unselected curve points can be directly copied. */
   for (const int i : attributes.src.index_range()) {
-    copy_between_curves(
+    bke::curves::copy_point_data(
         src_curves, dst_curves, unselected_ranges, attributes.src[i], attributes.dst[i]);
   }
   for (const int i : attributes.src_no_interpolation.index_range()) {
-    copy_between_curves(src_curves,
-                        dst_curves,
-                        unselected_ranges,
-                        attributes.src_no_interpolation[i],
-                        attributes.dst_no_interpolation[i]);
+    bke::curves::copy_point_data(src_curves,
+                                 dst_curves,
+                                 unselected_ranges,
+                                 attributes.src_no_interpolation[i],
+                                 attributes.dst_no_interpolation[i]);
   }
 
   /* Copy positions for unselected curves. */
   Span<float3> src_positions = src_curves.positions();
-  copy_between_curves(src_curves, dst_curves, unselected_ranges, src_positions, dst_positions);
+  bke::curves::copy_point_data(
+      src_curves, dst_curves, unselected_ranges, src_positions, dst_positions);
 
   for (bke::OutputAttribute &attribute : attributes.dst_attributes) {
     attribute.save();

@@ -12,7 +12,7 @@
 #include "MEM_guardedalloc.h"
 
 #include "draw_subdivision.h"
-#include "extract_mesh.h"
+#include "extract_mesh.hh"
 
 namespace blender::draw {
 /* ---------------------------------------------------------------------- */
@@ -26,7 +26,7 @@ struct MeshExtract_LinePaintMask_Data {
 };
 
 static void extract_lines_paint_mask_init(const MeshRenderData *mr,
-                                          struct MeshBatchCache *UNUSED(cache),
+                                          MeshBatchCache *UNUSED(cache),
                                           void *UNUSED(ibo),
                                           void *tls_data)
 {
@@ -77,7 +77,7 @@ static void extract_lines_paint_mask_iter_poly_mesh(const MeshRenderData *mr,
 }
 
 static void extract_lines_paint_mask_finish(const MeshRenderData *UNUSED(mr),
-                                            struct MeshBatchCache *UNUSED(cache),
+                                            MeshBatchCache *UNUSED(cache),
                                             void *buf,
                                             void *_data)
 {
@@ -124,7 +124,8 @@ static void extract_lines_paint_mask_iter_subdiv_mesh(const DRWSubdivCache *subd
       if (!((mr->use_hide && mr->edge_hide && mr->edge_hide[coarse_edge_index]) ||
             ((mr->extract_type == MR_EXTRACT_MAPPED) && (mr->e_origindex) &&
              (mr->e_origindex[coarse_edge_index] == ORIGINDEX_NONE)))) {
-        const uint ml_index_other = (loop_idx == end_loop_idx) ? start_loop_idx : loop_idx + 1;
+        const uint ml_index_other = (loop_idx == (end_loop_idx - 1)) ? start_loop_idx :
+                                                                       loop_idx + 1;
         if (coarse_quad->flag & ME_FACE_SEL) {
           if (BLI_BITMAP_TEST_AND_SET_ATOMIC(data->select_map, coarse_edge_index)) {
             /* Hide edge as it has more than 2 selected loop. */
@@ -152,7 +153,7 @@ static void extract_lines_paint_mask_iter_subdiv_mesh(const DRWSubdivCache *subd
 static void extract_lines_paint_mask_finish_subdiv(
     const struct DRWSubdivCache *UNUSED(subdiv_cache),
     const MeshRenderData *mr,
-    struct MeshBatchCache *cache,
+    MeshBatchCache *cache,
     void *buf,
     void *_data)
 {
@@ -179,6 +180,4 @@ constexpr MeshExtract create_extractor_lines_paint_mask()
 
 }  // namespace blender::draw
 
-extern "C" {
 const MeshExtract extract_lines_paint_mask = blender::draw::create_extractor_lines_paint_mask();
-}

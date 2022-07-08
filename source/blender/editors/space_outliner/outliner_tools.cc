@@ -222,13 +222,33 @@ static void unlink_action_fn(bContext *C,
 }
 
 static void unlink_material_fn(bContext *UNUSED(C),
-                               ReportList *UNUSED(reports),
+                               ReportList *reports,
                                Scene *UNUSED(scene),
                                TreeElement *te,
                                TreeStoreElem *tsep,
-                               TreeStoreElem *UNUSED(tselem),
+                               TreeStoreElem *tselem,
                                void *UNUSED(user_data))
 {
+  const bool te_is_material = TSE_IS_REAL_ID(tselem) && (GS(tselem->id->name) == ID_MA);
+
+  if (!te_is_material) {
+    /* Just fail silently. Another element may be selected that is a material, we don't want to
+     * confuse users with an error in that case. */
+    return;
+  }
+
+  if (!tsep || !TSE_IS_REAL_ID(tsep)) {
+    /* Valid case, no parent element of the material or it is not an ID (could be a #TSE_ID_BASE
+     * for example) so there's no data to unlink from. */
+    BKE_reportf(reports,
+                RPT_WARNING,
+                "Cannot unlink material '%s'. It's not clear which object or object-data it "
+                "should be unlinked from, there's no object or object-data as parent in the "
+                "Outliner tree",
+                tselem->id->name + 2);
+    return;
+  }
+
   Material **matar = nullptr;
   int a, totcol = 0;
 
@@ -1954,7 +1974,7 @@ void OUTLINER_OT_delete(wmOperatorType *ot)
   ot->poll = ED_operator_outliner_active;
 
   /* flags */
-  ot->flag |= OPTYPE_REGISTER | OPTYPE_UNDO;
+  ot->flag = OPTYPE_REGISTER | OPTYPE_UNDO;
 
   /* properties */
   PropertyRNA *prop = RNA_def_boolean(
@@ -1975,7 +1995,6 @@ enum eOutlinerIdOpTypes {
   OUTLINER_IDOP_LOCAL,
   OUTLINER_IDOP_OVERRIDE_LIBRARY_CREATE,
   OUTLINER_IDOP_OVERRIDE_LIBRARY_CREATE_HIERARCHY,
-  OUTLINER_IDOP_OVERRIDE_LIBRARY_CREATE_HIERARCHY_FULLY_EDITABLE,
   OUTLINER_IDOP_OVERRIDE_LIBRARY_MAKE_EDITABLE,
   OUTLINER_IDOP_OVERRIDE_LIBRARY_RESET,
   OUTLINER_IDOP_OVERRIDE_LIBRARY_RESET_HIERARCHY,
@@ -2021,12 +2040,6 @@ static const EnumPropertyItem prop_id_op_types[] = {
      "Make Library Override Hierarchy",
      "Make a local override of this linked data-block, and its hierarchy of dependencies - only "
      "applies to active Outliner item"},
-    {OUTLINER_IDOP_OVERRIDE_LIBRARY_CREATE_HIERARCHY_FULLY_EDITABLE,
-     "OVERRIDE_LIBRARY_CREATE_HIERARCHY_FULLY_EDITABLE",
-     0,
-     "Make Library Override Hierarchy Fully Editable",
-     "Make a local override of this linked data-block, and its hierarchy of dependencies, making "
-     "them all fully user-editable - only applies to active Outliner item"},
     {OUTLINER_IDOP_OVERRIDE_LIBRARY_MAKE_EDITABLE,
      "OVERRIDE_LIBRARY_MAKE_EDITABLE",
      0,
@@ -2106,7 +2119,6 @@ static bool outliner_id_operation_item_poll(bContext *C,
       }
       return false;
     case OUTLINER_IDOP_OVERRIDE_LIBRARY_CREATE_HIERARCHY:
-    case OUTLINER_IDOP_OVERRIDE_LIBRARY_CREATE_HIERARCHY_FULLY_EDITABLE:
       if (ID_IS_OVERRIDABLE_LIBRARY(tselem->id) || (ID_IS_LINKED(tselem->id))) {
         return true;
       }
@@ -2165,6 +2177,7 @@ static const EnumPropertyItem *outliner_id_operation_itemf(bContext *C,
 
 static int outliner_id_operation_exec(bContext *C, wmOperator *op)
 {
+  Main *bmain = CTX_data_main(C);
   wmWindowManager *wm = CTX_wm_manager(C);
   Scene *scene = CTX_data_scene(C);
   SpaceOutliner *space_outliner = CTX_wm_space_outliner(C);
@@ -2249,6 +2262,7 @@ static int outliner_id_operation_exec(bContext *C, wmOperator *op)
     case OUTLINER_IDOP_OVERRIDE_LIBRARY_CREATE_HIERARCHY: {
       OutlinerLibOverrideData override_data{};
       override_data.do_hierarchy = true;
+      override_data.do_fully_editable = U.experimental.use_override_new_fully_editable;
       outliner_do_libdata_operation(C,
                                     op->reports,
                                     scene,
@@ -2260,23 +2274,6 @@ static int outliner_id_operation_exec(bContext *C, wmOperator *op)
       id_override_library_create_hierarchy_post_process(C, &override_data);
 
       ED_undo_push(C, "Overridden Data Hierarchy");
-      break;
-    }
-    case OUTLINER_IDOP_OVERRIDE_LIBRARY_CREATE_HIERARCHY_FULLY_EDITABLE: {
-      OutlinerLibOverrideData override_data{};
-      override_data.do_hierarchy = true;
-      override_data.do_fully_editable = true;
-      outliner_do_libdata_operation(C,
-                                    op->reports,
-                                    scene,
-                                    space_outliner,
-                                    id_override_library_create_hierarchy_pre_process_fn,
-                                    &override_data);
-      outliner_do_libdata_operation(
-          C, op->reports, scene, space_outliner, id_override_library_create_fn, &override_data);
-      id_override_library_create_hierarchy_post_process(C, &override_data);
-
-      ED_undo_push(C, "Overridden Data Hierarchy Fully Editable");
       break;
     }
     case OUTLINER_IDOP_OVERRIDE_LIBRARY_MAKE_EDITABLE: {
@@ -2361,8 +2358,10 @@ static int outliner_id_operation_exec(bContext *C, wmOperator *op)
     }
     case OUTLINER_IDOP_DELETE: {
       if (idlevel > 0) {
+        BKE_main_id_tag_all(bmain, LIB_TAG_DOIT, false);
         outliner_do_libdata_operation(
-            C, op->reports, scene, space_outliner, id_delete_fn, nullptr);
+            C, op->reports, scene, space_outliner, id_delete_tag_fn, nullptr);
+        BKE_id_multi_tagged_delete(bmain);
         ED_undo_push(C, "Delete");
       }
       break;
@@ -2487,6 +2486,7 @@ static const EnumPropertyItem outliner_lib_op_type_items[] = {
 
 static int outliner_lib_operation_exec(bContext *C, wmOperator *op)
 {
+  Main *bmain = CTX_data_main(C);
   Scene *scene = CTX_data_scene(C);
   SpaceOutliner *space_outliner = CTX_wm_space_outliner(C);
   int scenelevel = 0, objectlevel = 0, idlevel = 0, datalevel = 0;
@@ -2502,7 +2502,10 @@ static int outliner_lib_operation_exec(bContext *C, wmOperator *op)
   eOutlinerLibOpTypes event = (eOutlinerLibOpTypes)RNA_enum_get(op->ptr, "type");
   switch (event) {
     case OL_LIB_DELETE: {
-      outliner_do_libdata_operation(C, op->reports, scene, space_outliner, id_delete_fn, nullptr);
+      BKE_main_id_tag_all(bmain, LIB_TAG_DOIT, false);
+      outliner_do_libdata_operation(
+          C, op->reports, scene, space_outliner, id_delete_tag_fn, nullptr);
+      BKE_id_multi_tagged_delete(bmain);
       ED_undo_push(C, "Delete Library");
       break;
     }

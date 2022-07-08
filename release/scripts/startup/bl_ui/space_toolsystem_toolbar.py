@@ -261,9 +261,15 @@ class _defs_annotate:
 
 class _defs_transform:
 
+    def draw_transform_sculpt_tool_settings(context, layout):
+        if context.mode != 'SCULPT':
+            return
+        layout.prop(context.tool_settings.sculpt, "transform_mode")
+
     @ToolDef.from_fn
     def translate():
         def draw_settings(context, layout, _tool):
+            _defs_transform.draw_transform_sculpt_tool_settings(context, layout)
             _template_widget.VIEW3D_GGT_xform_gizmo.draw_settings_with_index(context, layout, 1)
         return dict(
             idname="builtin.move",
@@ -279,6 +285,7 @@ class _defs_transform:
     @ToolDef.from_fn
     def rotate():
         def draw_settings(context, layout, _tool):
+            _defs_transform.draw_transform_sculpt_tool_settings(context, layout)
             _template_widget.VIEW3D_GGT_xform_gizmo.draw_settings_with_index(context, layout, 2)
         return dict(
             idname="builtin.rotate",
@@ -294,6 +301,7 @@ class _defs_transform:
     @ToolDef.from_fn
     def scale():
         def draw_settings(context, layout, _tool):
+            _defs_transform.draw_transform_sculpt_tool_settings(context, layout)
             _template_widget.VIEW3D_GGT_xform_gizmo.draw_settings_with_index(context, layout, 3)
         return dict(
             idname="builtin.scale",
@@ -349,6 +357,7 @@ class _defs_transform:
                 props = tool.gizmo_group_properties("VIEW3D_GGT_xform_gizmo")
                 layout.prop(props, "drag_action")
 
+            _defs_transform.draw_transform_sculpt_tool_settings(context, layout)
             _template_widget.VIEW3D_GGT_xform_gizmo.draw_settings_with_index(context, layout, 1)
 
         return dict(
@@ -2368,6 +2377,51 @@ class _defs_curves_sculpt:
             data_block='GROW_SHRINK'
         )
 
+    @ToolDef.from_fn
+    def pinch():
+        return dict(
+            idname="builtin_brush.pinch",
+            label="Pinch",
+            icon="ops.curves.sculpt_pinch",
+            data_block='PINCH'
+        )
+
+    @ToolDef.from_fn
+    def smooth():
+        return dict(
+            idname="builtin_brush.smooth",
+            label="Smooth",
+            icon="ops.curves.sculpt_smooth",
+            data_block='SMOOTH'
+        )
+
+    @ToolDef.from_fn
+    def puff():
+        return dict(
+            idname="builtin_brush.puff",
+            label="Puff",
+            icon="ops.curves.sculpt_puff",
+            data_block='PUFF'
+        )
+
+    @ToolDef.from_fn
+    def density():
+        return dict(
+            idname="builtin_brush.density",
+            label="Density",
+            icon="ops.curves.sculpt_density",
+            data_block="DENSITY"
+        )
+
+    @ToolDef.from_fn
+    def slide():
+        return dict(
+            idname="builtin_brush.slide",
+            label="Slide",
+            icon="ops.curves.sculpt_slide",
+            data_block="SLIDE"
+        )
+
 
 class _defs_gpencil_vertex:
 
@@ -3118,19 +3172,18 @@ class VIEW3D_PT_tools_active(ToolSelectPanelHelper, Panel):
             ),
         ],
         'SCULPT_CURVES': [
-            lambda context: (
-                (
-                    _defs_curves_sculpt.selection_paint,
-                    None,
-                )
-                if context is None or context.preferences.experimental.use_new_curves_tools
-                else ()
-            ),
+            _defs_curves_sculpt.selection_paint,
+            None,
             _defs_curves_sculpt.comb,
             _defs_curves_sculpt.add,
             _defs_curves_sculpt.delete,
             _defs_curves_sculpt.snake_hook,
             _defs_curves_sculpt.grow_shrink,
+            _defs_curves_sculpt.pinch,
+            _defs_curves_sculpt.smooth,
+            _defs_curves_sculpt.puff,
+            _defs_curves_sculpt.density,
+            _defs_curves_sculpt.slide,
             None,
             *_tools_annotate,
         ],

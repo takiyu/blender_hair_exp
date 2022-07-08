@@ -422,7 +422,7 @@ static void updateDuplicateActionConstraintSettings(
   float mat[4][4];
 
   bConstraintOb cob = {.depsgraph = NULL, .scene = NULL, .ob = ob, .pchan = pchan};
-  BKE_constraint_custom_object_space_get(cob.space_obj_world_matrix, curcon);
+  BKE_constraint_custom_object_space_init(&cob, curcon);
 
   unit_m4(mat);
   bPoseChannel *target_pchan = BKE_pose_channel_find_name(ob->pose, act_con->subtarget);
@@ -576,7 +576,7 @@ static void updateDuplicateLocRotConstraintSettings(Object *ob,
   unit_m4(local_mat);
 
   bConstraintOb cob = {.depsgraph = NULL, .scene = NULL, .ob = ob, .pchan = pchan};
-  BKE_constraint_custom_object_space_get(cob.space_obj_world_matrix, curcon);
+  BKE_constraint_custom_object_space_init(&cob, curcon);
 
   BKE_constraint_mat_convertspace(
       ob, pchan, &cob, local_mat, curcon->ownspace, CONSTRAINT_SPACE_LOCAL, false);
@@ -631,7 +631,7 @@ static void updateDuplicateTransformConstraintSettings(Object *ob,
   float target_mat[4][4], own_mat[4][4], imat[4][4];
 
   bConstraintOb cob = {.depsgraph = NULL, .scene = NULL, .ob = ob, .pchan = pchan};
-  BKE_constraint_custom_object_space_get(cob.space_obj_world_matrix, curcon);
+  BKE_constraint_custom_object_space_init(&cob, curcon);
 
   unit_m4(own_mat);
   BKE_constraint_mat_convertspace(
@@ -1147,7 +1147,7 @@ static int armature_symmetrize_exec(bContext *C, wmOperator *op)
               }
 
               if (axis_delta == 0.0f) {
-                /* both mirrored bones exist and point to eachother and overlap exactly.
+                /* Both mirrored bones exist and point to each other and overlap exactly.
                  *
                  * in this case there's no well defined solution, so de-select both and skip.
                  */

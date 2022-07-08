@@ -41,7 +41,6 @@
 #include "BKE_mesh_runtime.h"
 #include "BKE_mesh_wrapper.h"
 #include "BKE_modifier.h"
-#include "BKE_spline.hh"
 /* these 2 are only used by conversion functions */
 #include "BKE_curve.h"
 /* -- */
@@ -1029,7 +1028,7 @@ static Mesh *mesh_new_from_mesh(Object *object, Mesh *mesh)
     BKE_mesh_wrapper_ensure_mdata(mesh);
   }
   else {
-    mesh = BKE_mesh_wrapper_ensure_subdivision(object, mesh);
+    mesh = BKE_mesh_wrapper_ensure_subdivision(mesh);
   }
 
   Mesh *mesh_result = (Mesh *)BKE_id_copy_ex(
@@ -1066,7 +1065,7 @@ static Mesh *mesh_new_from_mesh_object_with_layers(Depsgraph *depsgraph,
     mask.pmask |= CD_MASK_ORIGINDEX;
   }
   Mesh *result = mesh_create_eval_final(depsgraph, scene, &object_for_eval, &mask);
-  return BKE_mesh_wrapper_ensure_subdivision(object, result);
+  return BKE_mesh_wrapper_ensure_subdivision(result);
 }
 
 static Mesh *mesh_new_from_mesh_object(Depsgraph *depsgraph,

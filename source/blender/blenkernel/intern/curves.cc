@@ -273,9 +273,9 @@ BoundBox *BKE_curves_boundbox_get(Object *ob)
   return ob->runtime.bb;
 }
 
-bool BKE_curves_customdata_required(Curves *UNUSED(curves), CustomDataLayer *layer)
+bool BKE_curves_customdata_required(const Curves *UNUSED(curves), const char *name)
 {
-  return layer->type == CD_PROP_FLOAT3 && STREQ(layer->name, ATTR_POSITION);
+  return STREQ(name, ATTR_POSITION);
 }
 
 Curves *BKE_curves_copy_for_eval(Curves *curves_src, bool reference)
@@ -386,6 +386,20 @@ Curves *curves_new_nomain(CurvesGeometry curves)
   Curves *curves_id = static_cast<Curves *>(BKE_id_new_nomain(ID_CV, nullptr));
   bke::CurvesGeometry::wrap(curves_id->geometry) = std::move(curves);
   return curves_id;
+}
+
+CurvesSurfaceTransforms::CurvesSurfaceTransforms(const Object &curves_ob, const Object *surface_ob)
+{
+  this->curves_to_world = curves_ob.obmat;
+  this->world_to_curves = this->curves_to_world.inverted();
+
+  if (surface_ob != nullptr) {
+    this->surface_to_world = surface_ob->obmat;
+    this->world_to_surface = this->surface_to_world.inverted();
+    this->surface_to_curves = this->world_to_curves * this->surface_to_world;
+    this->curves_to_surface = this->world_to_surface * this->curves_to_world;
+    this->surface_to_curves_normal = this->surface_to_curves.inverted().transposed();
+  }
 }
 
 }  // namespace blender::bke
