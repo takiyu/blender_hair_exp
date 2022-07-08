@@ -335,28 +335,26 @@ static bool edbm_backbuf_check_and_select_verts_obmode(Mesh *me,
                                                        const eSelectOp sel_op)
 {
   MVert *mv = me->mvert;
-  if (!mv) {
-    return false;
-  }
   bool changed = false;
 
   const BLI_bitmap *select_bitmap = esel->select_bitmap;
 
-  const bool *hide_vert = (const bool *)CustomData_get_layer_named(
-      &me->vdata, CD_PROP_BOOL, ".hide_vert");
+  if (mv) {
+    const bool *hide_vert = (const bool *)CustomData_get_layer_named(
+        &me->vdata, CD_PROP_BOOL, ".hide_vert");
 
-  for (int index = 0; index < me->totvert; index++, mv++) {
-    if (!(hide_vert && hide_vert[index])) {
-      const bool is_select = mv->flag & SELECT;
-      const bool is_inside = BLI_BITMAP_TEST_BOOL(select_bitmap, index);
-      const int sel_op_result = ED_select_op_action_deselected(sel_op, is_select, is_inside);
-      if (sel_op_result != -1) {
-        SET_FLAG_FROM_TEST(mv->flag, sel_op_result, SELECT);
-        changed = true;
+    for (int index = 0; index < me->totvert; index++, mv++) {
+      if (!(hide_vert && hide_vert[index])) {
+        const bool is_select = mv->flag & SELECT;
+        const bool is_inside = BLI_BITMAP_TEST_BOOL(select_bitmap, index);
+        const int sel_op_result = ED_select_op_action_deselected(sel_op, is_select, is_inside);
+        if (sel_op_result != -1) {
+          SET_FLAG_FROM_TEST(mv->flag, sel_op_result, SELECT);
+          changed = true;
+        }
       }
     }
   }
-
   return changed;
 }
 
@@ -366,28 +364,27 @@ static bool edbm_backbuf_check_and_select_faces_obmode(Mesh *me,
                                                        const eSelectOp sel_op)
 {
   MPoly *mpoly = me->mpoly;
-  if (!mpoly) {
-    return false;
-  }
+  uint index;
   bool changed = false;
 
   const BLI_bitmap *select_bitmap = esel->select_bitmap;
 
-  const bool *hide_face = (const bool *)CustomData_get_layer_named(
-      &me->vdata, CD_PROP_BOOL, ".hide_face");
+  if (mpoly) {
+    const bool *hide_face = (const bool *)CustomData_get_layer_named(
+        &me->vdata, CD_PROP_BOOL, ".hide_face");
 
-  for (int index = 0; index < me->totpoly; index++, mpoly++) {
-    if (!(hide_face && hide_face[index])) {
-      const bool is_select = mpoly->flag & ME_FACE_SEL;
-      const bool is_inside = BLI_BITMAP_TEST_BOOL(select_bitmap, index);
-      const int sel_op_result = ED_select_op_action_deselected(sel_op, is_select, is_inside);
-      if (sel_op_result != -1) {
-        SET_FLAG_FROM_TEST(mpoly->flag, sel_op_result, ME_FACE_SEL);
-        changed = true;
+    for (int index = 0; index < me->totpoly; index++, mpoly++) {
+      if (!(hide_face && hide_face[index])) {
+        const bool is_select = mpoly->flag & ME_FACE_SEL;
+        const bool is_inside = BLI_BITMAP_TEST_BOOL(select_bitmap, index);
+        const int sel_op_result = ED_select_op_action_deselected(sel_op, is_select, is_inside);
+        if (sel_op_result != -1) {
+          SET_FLAG_FROM_TEST(mpoly->flag, sel_op_result, ME_FACE_SEL);
+          changed = true;
+        }
       }
     }
   }
-
   return changed;
 }
 
