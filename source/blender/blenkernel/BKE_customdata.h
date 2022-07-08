@@ -245,7 +245,6 @@ void *CustomData_add_layer_anonymous(struct CustomData *data,
 bool CustomData_free_layer(struct CustomData *data, int type, int totelem, int index);
 bool CustomData_free_layer_named(struct CustomData *data, const char *name, const int totelem);
 
-bool CustomData_free_layer_named(struct CustomData *data, const char *name, const int totelem);
 
 /**
  * Frees the layer index with the give type.

@@ -315,7 +315,7 @@ void GPU_pbvh_mesh_buffers_update(PBVHGPUFormat *vbo_id,
           for (uint i = 0; i < buffers->face_indices_len; i++) {
             const MLoopTri *lt = &buffers->looptri[buffers->face_indices[i]];
 
-            if (!gpu_pbvh_is_looptri_visible(lt, mvert, buffers->mloop, sculpt_face_sets)) {
+            if (!gpu_pbvh_is_looptri_visible(lt, vert_hide, buffers->mloop, sculpt_face_sets)) {
               continue;
             }
 
@@ -355,7 +355,7 @@ void GPU_pbvh_mesh_buffers_update(PBVHGPUFormat *vbo_id,
               buffers->mloop[lt->tri[2]].v,
           };
 
-          if (!gpu_pbvh_is_looptri_visible(lt, mvert, buffers->mloop, sculpt_face_sets)) {
+          if (!gpu_pbvh_is_looptri_visible(lt, vert_hide, buffers->mloop, sculpt_face_sets)) {
             continue;
           }
 

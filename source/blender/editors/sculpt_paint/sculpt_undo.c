@@ -1191,7 +1191,7 @@ static void sculpt_undo_store_hidden(Object *ob, SculptUndoNode *unode)
   PBVHNode *node = unode->node;
 
   const bool *vert_hide = BKE_pbvh_get_vert_hide(pbvh);
-  if (!vert_hide) {
+  if (vert_hide == NULL) {
     return;
   }
 

@@ -183,9 +183,14 @@ static void extract_lines_loose_geom_subdiv(const DRWSubdivCache *subdiv_cache,
 
   switch (mr->extract_type) {
     case MR_EXTRACT_MESH: {
-      const MEdge *medge = mr->medge;
-      for (DRWSubdivLooseEdge edge : loose_edges) {
-        *flags_data++ = (medge[edge.coarse_edge_index].flag & ME_HIDE) != 0;
+      const bool *vert_hide = mr->vert_hide;
+      if (vert_hide) {
+        for (DRWSubdivLooseEdge edge : loose_edges) {
+          *flags_data++ = vert_hide[edge.coarse_edge_index];
+        }
+      }
+      else {
+        MutableSpan<uint>(flags_data, loose_edges.size()).fill(0);
       }
       break;
     }
@@ -197,18 +202,23 @@ static void extract_lines_loose_geom_subdiv(const DRWSubdivCache *subdiv_cache,
         }
       }
       else {
-        for (DRWSubdivLooseEdge edge : loose_edges) {
-          int e = edge.coarse_edge_index;
+        const bool *vert_hide = mr->vert_hide;
+        if (vert_hide) {
+          for (DRWSubdivLooseEdge edge : loose_edges) {
+            int e = edge.coarse_edge_index;
 
-          if (mr->e_origindex && mr->e_origindex[e] != ORIGINDEX_NONE) {
-            *flags_data++ = (mr->medge[mr->e_origindex[e]].flag & ME_HIDE) != 0;
-          }
-          else {
-            *flags_data++ = false;
+            if (mr->e_origindex && mr->e_origindex[e] != ORIGINDEX_NONE) {
+              *flags_data++ = vert_hide[edge.coarse_edge_index];
+            }
+            else {
+              *flags_data++ = false;
+            }
           }
         }
+        else {
+          MutableSpan<uint>(flags_data, loose_edges.size()).fill(0);
+        }
       }
-
       break;
     }
     case MR_EXTRACT_BMESH: {
