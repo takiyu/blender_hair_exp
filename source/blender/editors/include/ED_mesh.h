@@ -392,8 +392,8 @@ void ED_keymap_mesh(struct wmKeyConfig *keyconf);
  */
 void paintface_flush_flags(struct bContext *C,
                            struct Object *ob,
-                           short flag,
-                           const bool flush_hidden);
+                           bool flush_selection,
+                           bool flush_hidden);
 /**
  * \return True when pick finds an element or the selection changed.
  */

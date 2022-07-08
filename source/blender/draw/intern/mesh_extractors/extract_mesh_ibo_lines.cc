@@ -63,7 +63,7 @@ static void extract_lines_iter_poly_mesh(const MeshRenderData *mr,
     int ml_index = ml_index_last, ml_index_next = mp->loopstart;
     do {
       const MLoop *ml = &mloop[ml_index];
-      if (!((mr->use_hide && mr->edge_hide && mr->edge_hide[ml->e]) ||
+      if (!((mr->use_hide && mr->hide_edge && mr->hide_edge[ml->e]) ||
             ((mr->extract_type == MR_EXTRACT_MAPPED) && (mr->e_origindex) &&
              (mr->e_origindex[ml->e] == ORIGINDEX_NONE)))) {
         GPU_indexbuf_set_line_verts(elb, ml->e, ml_index, ml_index_next);
@@ -109,7 +109,7 @@ static void extract_lines_iter_ledge_mesh(const MeshRenderData *mr,
   GPUIndexBufBuilder *elb = static_cast<GPUIndexBufBuilder *>(data);
   const int l_index_offset = mr->edge_len + ledge_index;
   const int e_index = mr->ledges[ledge_index];
-  if (!((mr->use_hide && mr->edge_hide && mr->edge_hide[med - mr->medge]) ||
+  if (!((mr->use_hide && mr->hide_edge && mr->hide_edge[med - mr->medge]) ||
         ((mr->extract_type == MR_EXTRACT_MAPPED) && (mr->e_origindex) &&
          (mr->e_origindex[e_index] == ORIGINDEX_NONE)))) {
     const int l_index = mr->loop_len + ledge_index * 2;
@@ -183,10 +183,10 @@ static void extract_lines_loose_geom_subdiv(const DRWSubdivCache *subdiv_cache,
 
   switch (mr->extract_type) {
     case MR_EXTRACT_MESH: {
-      const bool *vert_hide = mr->vert_hide;
-      if (vert_hide) {
+      const bool *hide_vert = mr->hide_vert;
+      if (hide_vert) {
         for (DRWSubdivLooseEdge edge : loose_edges) {
-          *flags_data++ = vert_hide[edge.coarse_edge_index];
+          *flags_data++ = hide_vert[edge.coarse_edge_index];
         }
       }
       else {
@@ -202,13 +202,13 @@ static void extract_lines_loose_geom_subdiv(const DRWSubdivCache *subdiv_cache,
         }
       }
       else {
-        const bool *vert_hide = mr->vert_hide;
-        if (vert_hide) {
+        const bool *hide_vert = mr->hide_vert;
+        if (hide_vert) {
           for (DRWSubdivLooseEdge edge : loose_edges) {
             int e = edge.coarse_edge_index;
 
             if (mr->e_origindex && mr->e_origindex[e] != ORIGINDEX_NONE) {
-              *flags_data++ = vert_hide[edge.coarse_edge_index];
+              *flags_data++ = hide_vert[edge.coarse_edge_index];
             }
             else {
               *flags_data++ = false;

@@ -7,7 +7,7 @@
  * Functions to convert mesh data to and from legacy formats like #MFace.
  */
 
-// #include <climits>
+#define DNA_DEPRECATED_ALLOW
 
 #include "MEM_guardedalloc.h"
 
@@ -20,6 +20,7 @@
 #include "BLI_polyfill_2d.h"
 #include "BLI_utildefines.h"
 
+#include "BKE_attribute.hh"
 #include "BKE_customdata.h"
 #include "BKE_mesh.h"
 #include "BKE_mesh_legacy_convert.h"
@@ -871,6 +872,40 @@ void BKE_mesh_add_mface_layers(CustomData *fdata, CustomData *ldata, int total)
   }
 
   CustomData_bmesh_update_active_layers(fdata, ldata);
+}
+
+/** \} */
+
+/* -------------------------------------------------------------------- */
+/** \name Conversion to Legacy Hidden Flags
+ * \{ */
+
+void BKE_mesh_legacy_convert_hide_layers_to_flags(Mesh *mesh)
+{
+  using namespace blender;
+  using namespace blender::bke;
+  const AttributeAccessor attributes = mesh_attributes(*mesh);
+
+  MutableSpan<MVert> verts(mesh->mvert, mesh->totvert);
+  const VArray<bool> hide_vert = attributes.lookup_or_default<bool>(
+      ".hide_vert", ATTR_DOMAIN_POINT, false);
+  for (const int i : verts.index_range()) {
+    SET_FLAG_FROM_TEST(verts[i].flag, hide_vert[i], ME_HIDE);
+  }
+
+  MutableSpan<MEdge> edges(mesh->medge, mesh->totedge);
+  const VArray<bool> hide_edge = attributes.lookup_or_default<bool>(
+      ".hide_edge", ATTR_DOMAIN_EDGE, false);
+  for (const int i : edges.index_range()) {
+    SET_FLAG_FROM_TEST(edges[i].flag, hide_edge[i], ME_HIDE);
+  }
+
+  MutableSpan<MPoly> polys(mesh->mpoly, mesh->totpoly);
+  const VArray<bool> hide_face = attributes.lookup_or_default<bool>(
+      ".hide_face", ATTR_DOMAIN_FACE, false);
+  for (const int i : polys.index_range()) {
+    SET_FLAG_FROM_TEST(polys[i].flag, hide_face[i], ME_HIDE);
+  }
 }
 
 /** \} */

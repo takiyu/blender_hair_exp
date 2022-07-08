@@ -413,7 +413,7 @@ typedef struct PBVHVertexIter {
   /* mesh */
   struct MVert *mverts;
   float (*vert_normals)[3];
-  const bool *vert_hide;
+  const bool *hide_vert;
   int totvert;
   const int *vert_indices;
   float *vmask;
@@ -473,7 +473,7 @@ void pbvh_vertex_iter_init(PBVH *pbvh, PBVHNode *node, PBVHVertexIter *vi, int m
         else if (vi.mverts) { \
           vi.mvert = &vi.mverts[vi.vert_indices[vi.gx]]; \
           if (vi.respect_hide) { \
-            vi.visible = !(vi.vert_hide && vi.vert_hide[vi.vert_indices[vi.gx]]); \
+            vi.visible = !(vi.hide_vert && vi.hide_vert[vi.vert_indices[vi.gx]]); \
             if (mode == PBVH_ITER_UNIQUE && !vi.visible) { \
               continue; \
             } \

@@ -1329,7 +1329,7 @@ bool ED_mesh_pick_face_vert(
  */
 struct VertPickData {
   const MVert *mvert;
-  const bool *vert_hide;
+  const bool *hide_vert;
   const float *mval_f; /* [2] */
   ARegion *region;
 
@@ -1344,7 +1344,7 @@ static void ed_mesh_pick_vert__mapFunc(void *userData,
                                        const float UNUSED(no[3]))
 {
   VertPickData *data = static_cast<VertPickData *>(userData);
-  if (data->vert_hide && data->vert_hide[index]) {
+  if (data->hide_vert && data->hide_vert[index]) {
     return;
   }
   float sco[2];
@@ -1417,7 +1417,7 @@ bool ED_mesh_pick_vert(
     data.mval_f = mval_f;
     data.len_best = FLT_MAX;
     data.v_idx_best = -1;
-    data.vert_hide = (const bool *)CustomData_get_layer_named(
+    data.hide_vert = (const bool *)CustomData_get_layer_named(
         &me_eval->vdata, CD_PROP_BOOL, ".hide_vert");
 
     BKE_mesh_foreach_mapped_vert(me_eval, ed_mesh_pick_vert__mapFunc, &data, MESH_FOREACH_NOP);

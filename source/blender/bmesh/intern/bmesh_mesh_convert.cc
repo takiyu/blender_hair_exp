@@ -85,8 +85,8 @@
 #include "BLI_span.hh"
 #include "BLI_string_ref.hh"
 
+#include "BKE_attribute.hh"
 #include "BKE_customdata.h"
-#include "BKE_geometry_set.hh"
 #include "BKE_mesh.h"
 #include "BKE_mesh_runtime.h"
 #include "BKE_multires.h"
@@ -356,11 +356,11 @@ void BM_mesh_bm_from_me(BMesh *bm, const Mesh *me, const struct BMeshFromMeshPar
                                            CustomData_get_offset(&bm->vdata, CD_SHAPE_KEYINDEX) :
                                            -1;
 
-  const bool *vert_hide = (const bool *)CustomData_get_layer_named(
+  const bool *hide_vert = (const bool *)CustomData_get_layer_named(
       &me->vdata, CD_PROP_BOOL, ".hide_vert");
-  const bool *edge_hide = (const bool *)CustomData_get_layer_named(
+  const bool *hide_edge = (const bool *)CustomData_get_layer_named(
       &me->edata, CD_PROP_BOOL, ".hide_edge");
-  const bool *face_hide = (const bool *)CustomData_get_layer_named(
+  const bool *hide_face = (const bool *)CustomData_get_layer_named(
       &me->pdata, CD_PROP_BOOL, ".hide_face");
 
   Span<MVert> mvert{me->mvert, me->totvert};
@@ -372,7 +372,7 @@ void BM_mesh_bm_from_me(BMesh *bm, const Mesh *me, const struct BMeshFromMeshPar
 
     /* Transfer flag. */
     v->head.hflag = BM_vert_flag_from_mflag(mvert[i].flag & ~SELECT);
-    if (vert_hide && vert_hide[i]) {
+    if (hide_vert && hide_vert[i]) {
       BM_elem_flag_enable(v, BM_ELEM_HIDDEN);
     }
 
@@ -418,7 +418,7 @@ void BM_mesh_bm_from_me(BMesh *bm, const Mesh *me, const struct BMeshFromMeshPar
 
     /* Transfer flags. */
     e->head.hflag = BM_edge_flag_from_mflag(medge[i].flag & ~SELECT);
-    if (edge_hide && edge_hide[i]) {
+    if (hide_edge && hide_edge[i]) {
       BM_elem_flag_enable(e, BM_ELEM_HIDDEN);
     }
 
@@ -474,7 +474,7 @@ void BM_mesh_bm_from_me(BMesh *bm, const Mesh *me, const struct BMeshFromMeshPar
 
     /* Transfer flag. */
     f->head.hflag = BM_face_flag_from_mflag(mpoly[i].flag & ~ME_FACE_SEL);
-    if (face_hide && face_hide[i]) {
+    if (hide_face && hide_face[i]) {
       BM_elem_flag_enable(f, BM_ELEM_HIDDEN);
     }
 
@@ -923,23 +923,24 @@ BLI_INLINE void bmesh_quick_edgedraw_flag(MEdge *med, BMEdge *e)
 }
 
 template<typename GetFn>
-static void write_elem_flag_to_attribute(MeshComponent &mesh,
+static void write_elem_flag_to_attribute(blender::bke::MutableAttributeAccessor &attributes,
                                          const StringRef attribute_name,
                                          const eAttrDomain domain,
                                          const bool do_write,
                                          const GetFn &get_fn)
 {
-  if (!do_write) {
-    mesh.attribute_try_delete(attribute_name);
+  using namespace blender;
+  if (do_write) {
+    bke::SpanAttributeWriter<bool> attribute = attributes.lookup_or_add_for_write_only_span<bool>(
+        attribute_name, domain);
+    for (const int i : attribute.span.index_range()) {
+      attribute.span[i] = get_fn(i);
+    }
+    attribute.finish();
   }
   else {
-    blender::bke::OutputAttribute_Typed<bool> attribute =
-        mesh.attribute_try_get_for_output_only<bool>(attribute_name, domain);
-    MutableSpan<bool> hide = attribute.as_span();
-    for (const int i : hide.index_range()) {
-      hide[i] = get_fn(i);
-    }
-    attribute.save();
+    /* To avoid overhead, remove the hide attribute if possible. */
+    attributes.remove(attribute_name);
   }
 }
 
@@ -949,26 +950,25 @@ static void convert_bmesh_hide_flags_to_mesh_attributes(BMesh &bm,
                                                         const bool need_hide_face,
                                                         Mesh &mesh)
 {
+  using namespace blender;
   /* The "hide" attributes are stored as flags on #BMesh. */
   BLI_assert(CustomData_get_layer_named(&bm.vdata, CD_PROP_BOOL, ".hide_vert") == nullptr);
   BLI_assert(CustomData_get_layer_named(&bm.edata, CD_PROP_BOOL, ".edge_vert") == nullptr);
   BLI_assert(CustomData_get_layer_named(&bm.pdata, CD_PROP_BOOL, ".face_vert") == nullptr);
 
-  MeshComponent component;
-  component.replace(&mesh, GeometryOwnershipType::Editable);
-
+  bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(mesh);
   BM_mesh_elem_table_ensure(&bm, BM_VERT | BM_EDGE | BM_FACE);
 
   write_elem_flag_to_attribute(
-      component, ".hide_vert", ATTR_DOMAIN_POINT, need_hide_vert, [&](const int i) {
+      attributes, ".hide_vert", ATTR_DOMAIN_POINT, need_hide_vert, [&](const int i) {
         return BM_elem_flag_test(BM_vert_at_index(&bm, i), BM_ELEM_HIDDEN);
       });
   write_elem_flag_to_attribute(
-      component, ".hide_edge", ATTR_DOMAIN_EDGE, need_hide_edge, [&](const int i) {
+      attributes, ".hide_edge", ATTR_DOMAIN_EDGE, need_hide_edge, [&](const int i) {
         return BM_elem_flag_test(BM_edge_at_index(&bm, i), BM_ELEM_HIDDEN);
       });
   write_elem_flag_to_attribute(
-      component, ".hide_face", ATTR_DOMAIN_FACE, need_hide_face, [&](const int i) {
+      attributes, ".hide_face", ATTR_DOMAIN_FACE, need_hide_face, [&](const int i) {
         return BM_elem_flag_test(BM_face_at_index(&bm, i), BM_ELEM_HIDDEN);
       });
 }

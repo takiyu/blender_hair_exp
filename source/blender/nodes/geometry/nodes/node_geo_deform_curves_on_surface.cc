@@ -274,8 +274,7 @@ static void node_geo_exec(GeoNodeExecParams params)
   }
   if (!mesh_attributes_orig.contains(uv_map_name)) {
     pass_through_input();
-    char *message = BLI_sprintfN(TIP_("Original surface missing UV map: %s."),
-                                 uv_map_name.c_str());
+    char *message = BLI_sprintfN(TIP_("Original surface missing UV map: %s"), uv_map_name.c_str());
     params.error_message_add(NodeWarningType::Error, message);
     MEM_freeN(message);
     return;
@@ -283,13 +282,13 @@ static void node_geo_exec(GeoNodeExecParams params)
   if (!mesh_attributes_eval.contains(rest_position_name)) {
     pass_through_input();
     params.error_message_add(NodeWarningType::Error,
-                             TIP_("Evaluated surface missing attribute: rest_position."));
+                             TIP_("Evaluated surface missing attribute: \"rest_position\""));
     return;
   }
   if (curves.surface_uv_coords().is_empty()) {
     pass_through_input();
     params.error_message_add(NodeWarningType::Error,
-                             TIP_("Curves are not attached to any UV map."));
+                             TIP_("Curves are not attached to any UV map"));
     return;
   }
   const VArraySpan<float2> uv_map_orig = mesh_attributes_orig.lookup<float2>(uv_map_name,
@@ -337,7 +336,7 @@ static void node_geo_exec(GeoNodeExecParams params)
   curves.tag_positions_changed();
 
   if (invalid_uv_count) {
-    char *message = BLI_sprintfN(TIP_("Invalid surface UVs on %d curves."),
+    char *message = BLI_sprintfN(TIP_("Invalid surface UVs on %d curves"),
                                  invalid_uv_count.load());
     params.error_message_add(NodeWarningType::Warning, message);
     MEM_freeN(message);

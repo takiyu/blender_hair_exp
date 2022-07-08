@@ -119,7 +119,7 @@ static void extract_lines_adjacency_iter_looptri_mesh(const MeshRenderData *mr,
                                                       void *_data)
 {
   MeshExtract_LineAdjacency_Data *data = static_cast<MeshExtract_LineAdjacency_Data *>(_data);
-  const bool hidden = mr->use_hide && mr->face_hide && mr->face_hide[mlt->poly];
+  const bool hidden = mr->use_hide && mr->hide_face && mr->hide_face[mlt->poly];
   if (hidden) {
     return;
   }

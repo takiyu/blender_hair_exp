@@ -62,7 +62,7 @@ static void extract_lnor_iter_poly_mesh(const MeshRenderData *mr,
                                         const int mp_index,
                                         void *data)
 {
-  const bool hidden = mr->face_hide && mr->face_hide[mp_index];
+  const bool hidden = mr->hide_face && mr->hide_face[mp_index];
 
   const MLoop *mloop = mr->mloop;
   const int ml_index_end = mp->loopstart + mp->totloop;
@@ -187,7 +187,7 @@ static void extract_lnor_hq_iter_poly_mesh(const MeshRenderData *mr,
                                            const int mp_index,
                                            void *data)
 {
-  const bool hidden = mr->face_hide && mr->face_hide[mp_index];
+  const bool hidden = mr->hide_face && mr->hide_face[mp_index];
 
   const MLoop *mloop = mr->mloop;
   const int ml_index_end = mp->loopstart + mp->totloop;

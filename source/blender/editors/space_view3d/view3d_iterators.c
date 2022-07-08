@@ -205,7 +205,7 @@ typedef struct foreachScreenObjectVert_userData {
   void (*func)(void *userData, MVert *mv, const float screen_co[2], int index);
   void *userData;
   ViewContext vc;
-  const bool *vert_hide;
+  const bool *hide_vert;
   eV3DProjTest clip_flag;
 } foreachScreenObjectVert_userData;
 
@@ -263,7 +263,7 @@ static void meshobject_foreachScreenVert__mapFunc(void *userData,
                                                   const float UNUSED(no[3]))
 {
   foreachScreenObjectVert_userData *data = userData;
-  if (data->vert_hide && data->vert_hide[index]) {
+  if (data->hide_vert && data->hide_vert[index]) {
     return;
   }
   struct MVert *mv = &((Mesh *)(data->vc.obact->data))->mvert[index];
@@ -299,7 +299,7 @@ void meshobject_foreachScreenVert(
   data.func = func;
   data.userData = userData;
   data.clip_flag = clip_flag;
-  data.vert_hide = (const bool *)CustomData_get_layer_named(
+  data.hide_vert = (const bool *)CustomData_get_layer_named(
       &me->vdata, CD_PROP_BOOL, ".hide_vert");
 
   if (clip_flag & V3D_PROJ_TEST_CLIP_BB) {

@@ -22,18 +22,17 @@
 #include "BLI_math.h"
 #include "BLI_span.hh"
 #include "BLI_utildefines.h"
+#include "BLI_virtual_array.hh"
 
 #include "BKE_customdata.h"
 
-#include "BKE_geometry_set.hh"
+#include "BKE_attribute.hh"
 #include "BKE_mesh.h"
 #include "BKE_multires.h"
 
-using blender::IndexRange;
 using blender::MutableSpan;
 using blender::Span;
 using blender::VArray;
-using blender::bke::OutputAttribute_Typed;
 
 /* -------------------------------------------------------------------- */
 /** \name Polygon Calculations
@@ -737,54 +736,87 @@ void BKE_mesh_polygons_flip(MPoly *mpoly, MLoop *mloop, CustomData *ldata, int t
 
 void BKE_mesh_flush_hidden_from_verts(Mesh *me)
 {
-  MeshComponent component;
-  component.replace(me, GeometryOwnershipType::Editable);
+  using namespace blender;
+  using namespace blender::bke;
+  MutableAttributeAccessor attributes = mesh_attributes_for_write(*me);
 
-  const VArray<bool> vert_hide = component.attribute_get_for_read<bool>(
+  const VArray<bool> hide_vert = attributes.lookup_or_default<bool>(
       ".hide_vert", ATTR_DOMAIN_POINT, false);
-  if (vert_hide.is_single() && !vert_hide.get_internal_single()) {
-    component.attribute_try_delete(".hide_edge");
-    component.attribute_try_delete(".hide_face");
+  if (hide_vert.is_single() && !hide_vert.get_internal_single()) {
+    attributes.remove(".hide_edge");
+    attributes.remove(".hide_face");
     return;
   }
+  const VArraySpan<bool> hide_vert_span{hide_vert};
+  const Span<MEdge> edges(me->medge, me->totedge);
+  const Span<MPoly> polys(me->mpoly, me->totpoly);
+  const Span<MLoop> loops(me->mloop, me->totloop);
 
-  OutputAttribute_Typed<bool> edge_hide = component.attribute_try_get_for_output_only<bool>(
+  /* Hide edges when both of their vertices are hidden. */
+  SpanAttributeWriter<bool> hide_edge = attributes.lookup_or_add_for_write_only_span<bool>(
       ".hide_edge", ATTR_DOMAIN_EDGE);
-  component.attribute_try_adapt_domain(vert_hide, ATTR_DOMAIN_POINT, ATTR_DOMAIN_EDGE)
-      .materialize(edge_hide.as_span());
-  edge_hide.save();
+  for (const int i : edges.index_range()) {
+    const MEdge &edge = edges[i];
+    hide_edge.span[i] = hide_vert_span[edge.v1] && hide_vert_span[edge.v2];
+  }
+  hide_edge.finish();
 
-  OutputAttribute_Typed<bool> face_hide = component.attribute_try_get_for_output_only<bool>(
+  /* Hide faces when any of their vertices are hidden. */
+  SpanAttributeWriter<bool> hide_face = attributes.lookup_or_add_for_write_only_span<bool>(
       ".hide_face", ATTR_DOMAIN_FACE);
-  component.attribute_try_adapt_domain(vert_hide, ATTR_DOMAIN_POINT, ATTR_DOMAIN_FACE)
-      .materialize(face_hide.as_span());
-  face_hide.save();
+  for (const int i : polys.index_range()) {
+    const MPoly &poly = polys[i];
+    const Span<MLoop> loops = loops.slice(poly.loopstart, poly.totloop);
+    hide_face.span[i] = std::any_of(
+        loops.begin(), loops.end(), [&](const MLoop &loop) { return hide_vert_span[loop.v]; });
+  }
+  hide_face.finish();
 }
 
 void BKE_mesh_flush_hidden_from_polys(Mesh *me)
 {
-  MeshComponent component;
-  component.replace(me, GeometryOwnershipType::Editable);
+  using namespace blender;
+  using namespace blender::bke;
+  MutableAttributeAccessor attributes = mesh_attributes_for_write(*me);
 
-  const VArray<bool> face_hide = component.attribute_get_for_read<bool>(
+  const VArray<bool> hide_face = attributes.lookup_or_default<bool>(
       ".hide_face", ATTR_DOMAIN_FACE, false);
-  if (face_hide.is_single() && !face_hide.get_internal_single()) {
-    component.attribute_try_delete(".hide_vert");
-    component.attribute_try_delete(".hide_edge");
+  if (hide_face.is_single() && !hide_face.get_internal_single()) {
+    attributes.remove(".hide_vert");
+    attributes.remove(".hide_edge");
     return;
   }
-
-  OutputAttribute_Typed<bool> edge_hide = component.attribute_try_get_for_output_only<bool>(
-      ".hide_edge", ATTR_DOMAIN_EDGE);
-  component.attribute_try_adapt_domain(face_hide, ATTR_DOMAIN_FACE, ATTR_DOMAIN_EDGE)
-      .materialize(edge_hide.as_span());
-  edge_hide.save();
-
-  OutputAttribute_Typed<bool> vert_hide = component.attribute_try_get_for_output_only<bool>(
+  const VArraySpan<bool> hide_face_span{hide_face};
+  const Span<MPoly> polys(me->mpoly, me->totpoly);
+  const Span<MLoop> loops(me->mloop, me->totloop);
+  SpanAttributeWriter<bool> hide_vert = attributes.lookup_or_add_for_write_only_span<bool>(
       ".hide_vert", ATTR_DOMAIN_POINT);
-  component.attribute_try_adapt_domain(face_hide, ATTR_DOMAIN_FACE, ATTR_DOMAIN_POINT)
-      .materialize(vert_hide.as_span());
-  vert_hide.save();
+  SpanAttributeWriter<bool> hide_edge = attributes.lookup_or_add_for_write_only_span<bool>(
+      ".hide_edge", ATTR_DOMAIN_EDGE);
+
+  /* Hide all edges or vertices connected to hidden faces. */
+  for (const int i : polys.index_range()) {
+    if (hide_face_span[i]) {
+      const MPoly &poly = polys[i];
+      for (const MLoop &loop : loops.slice(poly.loopstart, poly.totloop)) {
+        hide_vert.span[loop.v] = true;
+        hide_edge.span[loop.e] = true;
+      }
+    }
+  }
+  /* Unhide vertices and edges connected to visible faces. */
+  for (const int i : polys.index_range()) {
+    if (!hide_face_span[i]) {
+      const MPoly &poly = polys[i];
+      for (const MLoop &loop : loops.slice(poly.loopstart, poly.totloop)) {
+        hide_vert.span[loop.v] = false;
+        hide_edge.span[loop.e] = false;
+      }
+    }
+  }
+
+  hide_vert.finish();
+  hide_edge.finish();
 }
 
 void BKE_mesh_flush_select_from_polys_ex(MVert *mvert,
@@ -832,13 +864,13 @@ void BKE_mesh_flush_select_from_polys(Mesh *me)
 
 static void mesh_flush_select_from_verts(const Span<MVert> verts,
                                          const Span<MLoop> loops,
-                                         const VArray<bool> &edge_hide,
-                                         const VArray<bool> &poly_hide,
+                                         const VArray<bool> &hide_edge,
+                                         const VArray<bool> &hide_face,
                                          MutableSpan<MEdge> edges,
                                          MutableSpan<MPoly> polys)
 {
   for (const int i : edges.index_range()) {
-    if (!edge_hide[i]) {
+    if (!hide_edge[i]) {
       MEdge &edge = edges[i];
       if ((verts[edge.v1].flag & SELECT) && (verts[edge.v2].flag & SELECT)) {
         edge.flag |= SELECT;
@@ -850,7 +882,7 @@ static void mesh_flush_select_from_verts(const Span<MVert> verts,
   }
 
   for (const int i : polys.index_range()) {
-    if (poly_hide[i]) {
+    if (hide_face[i]) {
       continue;
     }
     MPoly &poly = polys[i];
@@ -871,14 +903,13 @@ static void mesh_flush_select_from_verts(const Span<MVert> verts,
 
 void BKE_mesh_flush_select_from_verts(Mesh *me)
 {
-  MeshComponent component;
-  component.replace(me, GeometryOwnershipType::Editable);
+  blender::bke::AttributeAccessor attributes = blender::bke::mesh_attributes(*me);
 
   mesh_flush_select_from_verts(
       {me->mvert, me->totvert},
       {me->mloop, me->totloop},
-      component.attribute_get_for_read<bool>(".hide_edge", ATTR_DOMAIN_EDGE, false),
-      component.attribute_get_for_read<bool>(".hide_face", ATTR_DOMAIN_FACE, false),
+      attributes.lookup_or_default<bool>(".hide_edge", ATTR_DOMAIN_EDGE, false),
+      attributes.lookup_or_default<bool>(".hide_face", ATTR_DOMAIN_FACE, false),
       {me->medge, me->totedge},
       {me->mpoly, me->totpoly});
 }

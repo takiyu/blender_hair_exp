@@ -61,7 +61,7 @@ static void extract_edituv_tris_iter_looptri_mesh(const MeshRenderData *mr,
   MeshExtract_EditUvElem_Data *data = static_cast<MeshExtract_EditUvElem_Data *>(_data);
   const MPoly *mp = &mr->mpoly[mlt->poly];
   edituv_tri_add(data,
-                 mr->face_hide && mr->face_hide[mlt->poly],
+                 mr->hide_face && mr->hide_face[mlt->poly],
                  (mp->flag & ME_FACE_SEL) != 0,
                  mlt->tri[0],
                  mlt->tri[1],
@@ -125,7 +125,7 @@ static void extract_edituv_tris_iter_subdiv_mesh(const DRWSubdivCache *UNUSED(su
   MeshExtract_EditUvElem_Data *data = static_cast<MeshExtract_EditUvElem_Data *>(_data);
   const uint loop_idx = subdiv_quad_index * 4;
 
-  const bool hidden = mr->face_hide && mr->face_hide[coarse_quad - mr->mpoly];
+  const bool hidden = mr->hide_face && mr->hide_face[coarse_quad - mr->mpoly];
 
   edituv_tri_add(
       data, hidden, (coarse_quad->flag & ME_FACE_SEL) != 0, loop_idx, loop_idx + 1, loop_idx + 2);
@@ -212,7 +212,7 @@ static void extract_edituv_lines_iter_poly_mesh(const MeshRenderData *mr,
                                                 void *_data)
 {
   MeshExtract_EditUvElem_Data *data = static_cast<MeshExtract_EditUvElem_Data *>(_data);
-  const bool hidden = mr->face_hide && mr->face_hide[mp - mr->mpoly];
+  const bool hidden = mr->hide_face && mr->hide_face[mp - mr->mpoly];
 
   const MLoop *mloop = mr->mloop;
   const int ml_index_end = mp->loopstart + mp->totloop;
@@ -281,7 +281,7 @@ static void extract_edituv_lines_iter_subdiv_mesh(const DRWSubdivCache *subdiv_c
                                                   const MPoly *coarse_poly)
 {
   MeshExtract_EditUvElem_Data *data = static_cast<MeshExtract_EditUvElem_Data *>(_data);
-  const bool hidden = mr->face_hide && mr->face_hide[coarse_poly - mr->mpoly];
+  const bool hidden = mr->hide_face && mr->hide_face[coarse_poly - mr->mpoly];
 
   int *subdiv_loop_edge_index = (int *)GPU_vertbuf_get_data(subdiv_cache->edges_orig_index);
 
@@ -377,7 +377,7 @@ static void extract_edituv_points_iter_poly_mesh(const MeshRenderData *mr,
                                                  void *_data)
 {
   MeshExtract_EditUvElem_Data *data = static_cast<MeshExtract_EditUvElem_Data *>(_data);
-  const bool hidden = mr->face_hide && mr->face_hide[mp - mr->mpoly];
+  const bool hidden = mr->hide_face && mr->hide_face[mp - mr->mpoly];
 
   const MLoop *mloop = mr->mloop;
   const int ml_index_end = mp->loopstart + mp->totloop;
@@ -438,7 +438,7 @@ static void extract_edituv_points_iter_subdiv_mesh(const DRWSubdivCache *subdiv_
                                                    const MPoly *coarse_quad)
 {
   MeshExtract_EditUvElem_Data *data = static_cast<MeshExtract_EditUvElem_Data *>(_data);
-  const bool hidden = mr->face_hide && mr->face_hide[coarse_quad - mr->mpoly];
+  const bool hidden = mr->hide_face && mr->hide_face[coarse_quad - mr->mpoly];
   int *subdiv_loop_vert_index = (int *)GPU_vertbuf_get_data(subdiv_cache->verts_orig_index);
 
   uint start_loop_idx = subdiv_quad_index * 4;
@@ -527,7 +527,7 @@ static void extract_edituv_fdots_iter_poly_mesh(const MeshRenderData *mr,
                                                 void *_data)
 {
   MeshExtract_EditUvElem_Data *data = static_cast<MeshExtract_EditUvElem_Data *>(_data);
-  const bool hidden = mr->face_hide && mr->face_hide[mp - mr->mpoly];
+  const bool hidden = mr->hide_face && mr->hide_face[mp - mr->mpoly];
 
   if (mr->use_subsurf_fdots) {
     const BLI_bitmap *facedot_tags = mr->me->runtime.subsurf_face_dot_tags;

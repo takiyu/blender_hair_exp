@@ -596,7 +596,7 @@ static void *undomesh_from_editmesh(UndoMesh *um, BMEditMesh *em, Key *key, Undo
 
   /* Copy the ID name characters to the mesh so code that depends on accessing the ID type can work
    * on it. Necessary to use the attribute API. */
-  strcpy(um->me.id.name, "ME");
+  strcpy(um->me.id.name, "MEundomesh_from_editmesh");
 
   BM_mesh_bm_to_me(
       NULL,

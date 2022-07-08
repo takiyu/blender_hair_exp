@@ -359,22 +359,22 @@ static void rna_MeshVertex_normal_get(PointerRNA *ptr, float *value)
 static bool rna_MeshVertex_hide_get(PointerRNA *ptr)
 {
   const Mesh *mesh = rna_mesh(ptr);
-  const bool *vert_hide = (const bool *)CustomData_get_layer_named(
+  const bool *hide_vert = (const bool *)CustomData_get_layer_named(
       &mesh->vdata, CD_PROP_BOOL, ".hide_vert");
   const int index = (const MVert *)ptr->data - mesh->mvert;
   BLI_assert(index >= 0);
   BLI_assert(index < mesh->totvert);
-  return vert_hide[index];
+  return hide_vert[index];
 }
 
 static void rna_MeshVertex_hide_set(PointerRNA *ptr, bool value)
 {
   Mesh *mesh = rna_mesh(ptr);
-  bool *vert_hide = (bool *)CustomData_get_layer_named(&mesh->vdata, CD_PROP_BOOL, ".hide_vert");
+  bool *hide_vert = (bool *)CustomData_get_layer_named(&mesh->vdata, CD_PROP_BOOL, ".hide_vert");
   const int index = (const MVert *)ptr->data - mesh->mvert;
   BLI_assert(index >= 0);
   BLI_assert(index < mesh->totvert);
-  vert_hide[index] = value;
+  hide_vert[index] = value;
 }
 
 static float rna_MeshVertex_bevel_weight_get(PointerRNA *ptr)
@@ -488,22 +488,22 @@ static void rna_MeshPolygon_normal_get(PointerRNA *ptr, float *values)
 static bool rna_MeshPolygon_hide_get(PointerRNA *ptr)
 {
   const Mesh *mesh = rna_mesh(ptr);
-  const bool *poly_hide = (const bool *)CustomData_get_layer_named(
+  const bool *hide_face = (const bool *)CustomData_get_layer_named(
       &mesh->pdata, CD_PROP_BOOL, ".hide_face");
   const int index = (const MPoly *)ptr->data - mesh->mpoly;
   BLI_assert(index >= 0);
   BLI_assert(index < mesh->totpoly);
-  return poly_hide[index];
+  return hide_face[index];
 }
 
 static void rna_MeshPolygon_hide_set(PointerRNA *ptr, bool value)
 {
   Mesh *mesh = rna_mesh(ptr);
-  bool *poly_hide = (bool *)CustomData_get_layer_named(&mesh->pdata, CD_PROP_BOOL, ".hide_face");
+  bool *hide_face = (bool *)CustomData_get_layer_named(&mesh->pdata, CD_PROP_BOOL, ".hide_face");
   const int index = (const MPoly *)ptr->data - mesh->mpoly;
   BLI_assert(index >= 0);
   BLI_assert(index < mesh->totpoly);
-  poly_hide[index] = value;
+  hide_face[index] = value;
 }
 
 static void rna_MeshPolygon_center_get(PointerRNA *ptr, float *values)
@@ -1233,22 +1233,22 @@ static int rna_MeshEdge_index_get(PointerRNA *ptr)
 static bool rna_MeshEdge_hide_get(PointerRNA *ptr)
 {
   const Mesh *mesh = rna_mesh(ptr);
-  const bool *edge_hide = (const bool *)CustomData_get_layer_named(
+  const bool *hide_edge = (const bool *)CustomData_get_layer_named(
       &mesh->pdata, CD_PROP_BOOL, ".hide_edge");
   const int index = (const MEdge *)ptr->data - mesh->medge;
   BLI_assert(index >= 0);
   BLI_assert(index < mesh->totedge);
-  return edge_hide[index];
+  return hide_edge[index];
 }
 
 static void rna_MeshEdge_hide_set(PointerRNA *ptr, bool value)
 {
   Mesh *mesh = rna_mesh(ptr);
-  bool *edge_hide = (bool *)CustomData_get_layer_named(&mesh->edata, CD_PROP_BOOL, ".hide_edge");
+  bool *hide_edge = (bool *)CustomData_get_layer_named(&mesh->edata, CD_PROP_BOOL, ".hide_edge");
   const int index = (const MEdge *)ptr->data - mesh->medge;
   BLI_assert(index >= 0);
   BLI_assert(index < mesh->totedge);
-  edge_hide[index] = value;
+  hide_edge[index] = value;
 }
 
 static int rna_MeshLoopTriangle_index_get(PointerRNA *ptr)

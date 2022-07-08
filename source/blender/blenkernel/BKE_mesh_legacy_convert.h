@@ -17,6 +17,8 @@ struct CustomData;
 struct Mesh;
 struct MFace;
 
+void BKE_mesh_legacy_convert_hide_layers_to_flags(struct Mesh *mesh);
+
 /**
  * Recreate #MFace Tessellation.
  *

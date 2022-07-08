@@ -37,10 +37,10 @@
 #include "BLT_translation.h"
 
 #include "BKE_anim_data.h"
+#include "BKE_attribute.hh"
 #include "BKE_bpath.h"
 #include "BKE_deform.h"
 #include "BKE_editmesh.h"
-#include "BKE_geometry_set.hh"
 #include "BKE_global.h"
 #include "BKE_idtype.h"
 #include "BKE_key.h"
@@ -210,33 +210,6 @@ static void mesh_foreach_path(ID *id, BPathForeachPathData *bpath_data)
   }
 }
 
-static void prepare_legacy_hide_data_for_writing(Mesh &mesh)
-{
-  MeshComponent component;
-  component.replace(&mesh, GeometryOwnershipType::ReadOnly);
-
-  MutableSpan<MVert> verts(mesh.mvert, mesh.totvert);
-  const VArray<bool> vert_hide = component.attribute_get_for_read<bool>(
-      ".hide_vert", ATTR_DOMAIN_POINT, false);
-  for (const int i : verts.index_range()) {
-    SET_FLAG_FROM_TEST(verts[i].flag, vert_hide[i], ME_HIDE);
-  }
-
-  MutableSpan<MEdge> edges(mesh.medge, mesh.totedge);
-  const VArray<bool> edge_hide = component.attribute_get_for_read<bool>(
-      ".hide_edge", ATTR_DOMAIN_EDGE, false);
-  for (const int i : edges.index_range()) {
-    SET_FLAG_FROM_TEST(edges[i].flag, edge_hide[i], ME_HIDE);
-  }
-
-  MutableSpan<MPoly> polys(mesh.mpoly, mesh.totpoly);
-  const VArray<bool> poly_hide = component.attribute_get_for_read<bool>(
-      ".hide_face", ATTR_DOMAIN_FACE, false);
-  for (const int i : polys.index_range()) {
-    SET_FLAG_FROM_TEST(polys[i].flag, poly_hide[i], ME_HIDE);
-  }
-}
-
 static void mesh_blend_write(BlendWriter *writer, ID *id, const void *id_address)
 {
   Mesh *mesh = (Mesh *)id;
@@ -279,7 +252,7 @@ static void mesh_blend_write(BlendWriter *writer, ID *id, const void *id_address
   }
 
   if (BLO_write_use_legacy_mesh_format(writer)) {
-    prepare_legacy_hide_data_for_writing(*mesh);
+    BKE_mesh_legacy_convert_hide_layers_to_flags(mesh);
   }
 
   BLO_write_id_struct(writer, Mesh, id_address, &mesh->id);

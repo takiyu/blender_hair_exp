@@ -148,7 +148,7 @@ struct PBVH {
 
   /* NOTE: Normals are not `const` because they can be updated for drawing by sculpt code. */
   float (*vert_normals)[3];
-  bool *vert_hide;
+  bool *hide_vert;
   struct MVert *verts;
   const struct MPoly *mpoly;
   const struct MLoop *mloop;

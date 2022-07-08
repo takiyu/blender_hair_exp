@@ -1237,13 +1237,13 @@ void BKE_paint_blend_read_lib(BlendLibReader *reader, Scene *sce, Paint *p)
   }
 }
 
-bool paint_is_face_hidden(const MLoopTri *lt, const bool *vert_hide, const MLoop *mloop)
+bool paint_is_face_hidden(const MLoopTri *lt, const bool *hide_vert, const MLoop *mloop)
 {
-  if (!vert_hide) {
+  if (!hide_vert) {
     return false;
   }
-  return ((vert_hide[mloop[lt->tri[0]].v]) || (vert_hide[mloop[lt->tri[1]].v]) ||
-          (vert_hide[mloop[lt->tri[2]].v]));
+  return ((hide_vert[mloop[lt->tri[0]].v]) || (hide_vert[mloop[lt->tri[1]].v]) ||
+          (hide_vert[mloop[lt->tri[2]].v]));
 }
 
 bool paint_is_grid_face_hidden(const uint *grid_hidden, int gridsize, int x, int y)
@@ -2064,11 +2064,11 @@ void BKE_sculpt_face_sets_ensure_from_base_mesh_visibility(Mesh *mesh)
   }
 
   int *face_sets = CustomData_get_layer(&mesh->pdata, CD_SCULPT_FACE_SETS);
-  const bool *face_hide = (const bool *)CustomData_get_layer_named(
+  const bool *hide_face = (const bool *)CustomData_get_layer_named(
       &mesh->pdata, CD_PROP_BOOL, ".hide_face");
 
   for (int i = 0; i < mesh->totpoly; i++) {
-    if (!(face_hide && face_hide[i])) {
+    if (!(hide_face && hide_face[i])) {
       continue;
     }
 
@@ -2093,13 +2093,13 @@ void BKE_sculpt_sync_face_sets_visibility_to_base_mesh(Mesh *mesh)
     return;
   }
 
-  bool *face_hide = (bool *)CustomData_get_layer_named(&mesh->pdata, CD_PROP_BOOL, ".hide_face");
-  if (!face_hide) {
+  bool *hide_face = (bool *)CustomData_get_layer_named(&mesh->pdata, CD_PROP_BOOL, ".hide_face");
+  if (!hide_face) {
     return;
   }
 
   for (int i = 0; i < mesh->totpoly; i++) {
-    face_hide[i] = face_sets[i] < 0;
+    hide_face[i] = face_sets[i] < 0;
   }
 
   BKE_mesh_flush_hidden_from_polys(mesh);
