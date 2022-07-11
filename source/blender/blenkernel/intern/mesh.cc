@@ -284,7 +284,6 @@ static void mesh_blend_read_data(BlendDataReader *reader, ID *id)
   BLO_read_data_address(reader, &mesh->mpoly);
   BLO_read_data_address(reader, &mesh->tface);
   BLO_read_data_address(reader, &mesh->mtface);
-  BLO_read_data_address(reader, &mesh->mcol);
   BLO_read_data_address(reader, &mesh->dvert);
   BLO_read_data_address(reader, &mesh->mloopuv);
   BLO_read_data_address(reader, &mesh->mselect);
@@ -876,7 +875,6 @@ void BKE_mesh_update_customdata_pointers(Mesh *me, const bool do_ensure_tess_cd)
   me->medge = (MEdge *)CustomData_get_layer(&me->edata, CD_MEDGE);
 
   me->mface = (MFace *)CustomData_get_layer(&me->fdata, CD_MFACE);
-  me->mcol = (MCol *)CustomData_get_layer(&me->fdata, CD_MCOL);
   me->mtface = (MTFace *)CustomData_get_layer(&me->fdata, CD_MTFACE);
 
   me->mpoly = (MPoly *)CustomData_get_layer(&me->pdata, CD_MPOLY);
@@ -950,7 +948,6 @@ static void mesh_tessface_clear_intern(Mesh *mesh, int free_customdata)
 
   mesh->mface = nullptr;
   mesh->mtface = nullptr;
-  mesh->mcol = nullptr;
   mesh->totface = 0;
 }
 
