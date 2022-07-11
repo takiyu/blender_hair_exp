@@ -221,12 +221,6 @@ typedef struct Mesh {
    * \note This pointer is for convenient access to the #CD_MLOOPUV layer in #ldata.
    */
   struct MLoopUV *mloopuv;
-  /**
-   * The active vertex corner color layer, if it exists. Also called "Vertex Color" in Blender's
-   * UI, even though it is stored per face corner.
-   * \note This pointer is for convenient access to the #CD_PROP_BYTE_COLOR layer in #ldata.
-   */
-  struct MLoopCol *mloopcol;
 
   /**
    * Runtime storage of the edit mode mesh. If it exists, it generally has the most up-to-date
@@ -340,8 +334,6 @@ typedef struct Mesh {
   int face_sets_color_default;
 
   char _pad1[4];
-
-  void *_pad2;
 
   Mesh_Runtime runtime;
 } Mesh;

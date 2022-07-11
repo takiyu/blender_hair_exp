@@ -483,7 +483,7 @@ void MeshImporter::allocate_poly_data(COLLADAFW::Mesh *collada_mesh, Mesh *me)
         CustomData_add_layer_named(
             &me->ldata, CD_PROP_BYTE_COLOR, CD_DEFAULT, nullptr, me->totloop, colname.c_str());
       }
-      me->mloopcol = (MLoopCol *)CustomData_get_layer_n(&me->ldata, CD_PROP_BYTE_COLOR, 0);
+      CustomData_set_layer_active(&mesh->ldata, CD_PROP_BYTE_COLOR, 0);
     }
   }
 }

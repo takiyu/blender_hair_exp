@@ -18,6 +18,7 @@
 #include "BLI_utildefines.h"
 
 #include "BKE_attribute.h"
+#include "BKE_attribute.hh"
 #include "BKE_context.h"
 #include "BKE_customdata.h"
 #include "BKE_editmesh.h"
@@ -403,9 +404,13 @@ int ED_mesh_color_add(
       return -1;
     }
 
-    if (me->mloopcol && do_init) {
-      CustomData_add_layer_named(
-          &me->ldata, CD_PROP_BYTE_COLOR, CD_DUPLICATE, me->mloopcol, me->totloop, name);
+    if (CustomData_get_active_layer(&me->ldata, CD_PROP_BYTE_COLOR) && do_init) {
+      CustomData_add_layer_named(&me->ldata,
+                                 CD_PROP_BYTE_COLOR,
+                                 CD_DUPLICATE,
+                                 CustomData_get_layer(&me->ldata, CD_PROP_BYTE_COLOR),
+                                 me->totloop,
+                                 name);
     }
     else {
       CustomData_add_layer_named(
@@ -570,20 +575,6 @@ int ED_mesh_sculpt_color_add(
   WM_main_add_notifier(NC_GEOM | ND_DATA, me);
 
   return layernum;
-}
-
-bool ED_mesh_sculpt_color_ensure(Mesh *me, const char *name)
-{
-  BLI_assert(me->edit_mesh == nullptr);
-
-  if (me->totvert && !CustomData_has_layer(&me->vdata, CD_PROP_COLOR)) {
-    CustomData_add_layer_named(&me->vdata, CD_PROP_COLOR, CD_DEFAULT, nullptr, me->totvert, name);
-    BKE_mesh_update_customdata_pointers(me, true);
-  }
-
-  DEG_id_tag_update(&me->id, 0);
-
-  return (me->mloopcol != nullptr);
 }
 
 bool ED_mesh_sculpt_color_remove_index(Mesh *me, const int n)

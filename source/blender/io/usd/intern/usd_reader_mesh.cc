@@ -497,8 +497,6 @@ void USDMeshReader::read_colors(Mesh *mesh, const double motionSampleTime)
 
   MLoopCol *colors = static_cast<MLoopCol *>(cd_ptr);
 
-  mesh->mloopcol = colors;
-
   MPoly *poly = mesh->mpoly;
 
   for (int i = 0, e = mesh->totpoly; i < e; ++i, ++poly) {

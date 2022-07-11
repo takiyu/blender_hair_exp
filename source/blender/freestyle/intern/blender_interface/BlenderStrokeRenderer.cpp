@@ -611,7 +611,7 @@ void BlenderStrokeRenderer::GenerateStrokeMesh(StrokeGroup *group, bool hasTex)
       &mesh->ldata, CD_PROP_BYTE_COLOR, CD_CALLOC, nullptr, mesh->totloop, "Color");
   MLoopCol *transp = (MLoopCol *)CustomData_add_layer_named(
       &mesh->ldata, CD_PROP_BYTE_COLOR, CD_CALLOC, nullptr, mesh->totloop, "Alpha");
-  mesh->mloopcol = colors;
+  CustomData_set_layer_active(&mesh->ldata, CD_PROP_BYTE_COLOR, 0);
 
   mesh->mat = (Material **)MEM_mallocN(sizeof(Material *) * mesh->totcol, "MaterialList");
   for (const auto item : group->materials.items()) {

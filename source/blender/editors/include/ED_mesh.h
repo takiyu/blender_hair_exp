@@ -557,7 +557,6 @@ bool ED_mesh_color_remove_index(struct Mesh *me, int n);
 bool ED_mesh_color_remove_active(struct Mesh *me);
 bool ED_mesh_color_remove_named(struct Mesh *me, const char *name);
 
-bool ED_mesh_sculpt_color_ensure(struct Mesh *me, const char *name);
 int ED_mesh_sculpt_color_add(
     struct Mesh *me, const char *name, bool active_set, bool do_init, struct ReportList *reports);
 bool ED_mesh_sculpt_color_remove_index(struct Mesh *me, int n);

@@ -286,7 +286,6 @@ static void mesh_blend_read_data(BlendDataReader *reader, ID *id)
   BLO_read_data_address(reader, &mesh->mtface);
   BLO_read_data_address(reader, &mesh->mcol);
   BLO_read_data_address(reader, &mesh->dvert);
-  BLO_read_data_address(reader, &mesh->mloopcol);
   BLO_read_data_address(reader, &mesh->mloopuv);
   BLO_read_data_address(reader, &mesh->mselect);
 
@@ -883,7 +882,6 @@ void BKE_mesh_update_customdata_pointers(Mesh *me, const bool do_ensure_tess_cd)
   me->mpoly = (MPoly *)CustomData_get_layer(&me->pdata, CD_MPOLY);
   me->mloop = (MLoop *)CustomData_get_layer(&me->ldata, CD_MLOOP);
 
-  me->mloopcol = (MLoopCol *)CustomData_get_layer(&me->ldata, CD_PROP_BYTE_COLOR);
   me->mloopuv = (MLoopUV *)CustomData_get_layer(&me->ldata, CD_MLOOPUV);
 }
 
