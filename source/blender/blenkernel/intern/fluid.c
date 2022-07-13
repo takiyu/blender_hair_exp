@@ -403,7 +403,8 @@ static void manta_set_domain_from_mesh(FluidDomainSettings *fds,
   size_t i;
   float min[3] = {FLT_MAX, FLT_MAX, FLT_MAX}, max[3] = {-FLT_MAX, -FLT_MAX, -FLT_MAX};
   float size[3];
-  MVert *verts = me->mvert;
+
+  MVert *verts = BKE_mesh_vertices_for_write(me);
   float scale = 0.0;
   int res;
 

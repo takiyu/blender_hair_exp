@@ -15,6 +15,7 @@
 
 #include "BLI_linklist.h"
 #include "BLI_math.h"
+#include "BLI_span.hh"
 #include "BLI_task.h"
 #include "BLI_threads.h"
 #include "BLI_utildefines.h"
@@ -25,6 +26,8 @@
 #include "BKE_mesh_runtime.h"
 
 #include "MEM_guardedalloc.h"
+
+using blender::Span;
 
 /* -------------------------------------------------------------------- */
 /** \name BVHCache
@@ -1223,11 +1226,12 @@ BVHTree *BKE_bvhtree_from_mesh_get(struct BVHTreeFromMesh *data,
     looptri = BKE_mesh_runtime_looptri_ensure(mesh);
     looptri_len = BKE_mesh_runtime_looptri_len(mesh);
   }
+  Span<MVert> vertices = blender::bke::mesh_vertices(*mesh);
 
   /* Setup BVHTreeFromMesh */
   bvhtree_from_mesh_setup_data(nullptr,
                                bvh_cache_type,
-                               mesh->mvert,
+                               vertices.data(),
                                mesh->medge,
                                mesh->mface,
                                mesh->mloop,
@@ -1254,25 +1258,31 @@ BVHTree *BKE_bvhtree_from_mesh_get(struct BVHTreeFromMesh *data,
   switch (bvh_cache_type) {
     case BVHTREE_FROM_LOOSEVERTS:
       mask = loose_verts_map_get(
-          mesh->medge, mesh->totedge, mesh->mvert, mesh->totvert, &mask_bits_act_len);
+          mesh->medge, mesh->totedge, vertices.data(), mesh->totvert, &mask_bits_act_len);
       ATTR_FALLTHROUGH;
     case BVHTREE_FROM_VERTS:
       data->tree = bvhtree_from_mesh_verts_create_tree(
-          0.0f, tree_type, 6, mesh->mvert, mesh->totvert, mask, mask_bits_act_len);
+          0.0f, tree_type, 6, vertices.data(), mesh->totvert, mask, mask_bits_act_len);
       break;
 
     case BVHTREE_FROM_LOOSEEDGES:
       mask = loose_edges_map_get(mesh->medge, mesh->totedge, &mask_bits_act_len);
       ATTR_FALLTHROUGH;
     case BVHTREE_FROM_EDGES:
-      data->tree = bvhtree_from_mesh_edges_create_tree(
-          mesh->mvert, mesh->medge, mesh->totedge, mask, mask_bits_act_len, 0.0f, tree_type, 6);
+      data->tree = bvhtree_from_mesh_edges_create_tree(vertices.data(),
+                                                       mesh->medge,
+                                                       mesh->totedge,
+                                                       mask,
+                                                       mask_bits_act_len,
+                                                       0.0f,
+                                                       tree_type,
+                                                       6);
       break;
 
     case BVHTREE_FROM_FACES:
       BLI_assert(!(mesh->totface == 0 && mesh->totpoly != 0));
       data->tree = bvhtree_from_mesh_faces_create_tree(
-          0.0f, tree_type, 6, mesh->mvert, mesh->mface, mesh->totface, nullptr, -1);
+          0.0f, tree_type, 6, vertices.data(), mesh->mface, mesh->totface, nullptr, -1);
       break;
 
     case BVHTREE_FROM_LOOPTRI_NO_HIDDEN:
@@ -1282,7 +1292,7 @@ BVHTree *BKE_bvhtree_from_mesh_get(struct BVHTreeFromMesh *data,
       data->tree = bvhtree_from_mesh_looptri_create_tree(0.0f,
                                                          tree_type,
                                                          6,
-                                                         mesh->mvert,
+                                                         vertices.data(),
                                                          mesh->mloop,
                                                          looptri,
                                                          looptri_len,

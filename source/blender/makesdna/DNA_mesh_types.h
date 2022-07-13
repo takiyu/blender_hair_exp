@@ -165,30 +165,6 @@ typedef struct Mesh {
    */
   struct Material **mat;
 
-  /**
-   * Array of vertices. Edges and faces are defined by indices into this array.
-   * \note This pointer is for convenient access to the #CD_MVERT layer in #vdata.
-   */
-  struct MVert *mvert;
-  /**
-   * Array of edges, containing vertex indices. For simple triangle or quad meshes, edges could be
-   * calculated from the #MPoly and #MLoop arrays, however, edges need to be stored explicitly to
-   * edge domain attributes and to support loose edges that aren't connected to faces.
-   * \note This pointer is for convenient access to the #CD_MEDGE layer in #edata.
-   */
-  struct MEdge *medge;
-  /**
-   * Face topology storage of the size and offset of each face's section of the #mloop face corner
-   * array. Also stores various flags and the `material_index` attribute.
-   * \note This pointer is for convenient access to the #CD_MPOLY layer in #pdata.
-   */
-  struct MPoly *mpoly;
-  /**
-   * The vertex and edge index at each face corner.
-   * \note This pointer is for convenient access to the #CD_MLOOP layer in #ldata.
-   */
-  struct MLoop *mloop;
-
   /** The number of vertices (#MVert) in the mesh, and the size of #vdata. */
   int totvert;
   /** The number of edges (#MEdge) in the mesh, and the size of #edata. */
@@ -200,8 +176,6 @@ typedef struct Mesh {
 
   CustomData vdata, edata, pdata, ldata;
 
-  /** "Vertex group" vertices. */
-  struct MDeformVert *dvert;
   /**
    * List of vertex group (#bDeformGroup) names and flags only. Actual weights are stored in dvert.
    * \note This pointer is for convenient access to the #CD_MDEFORMVERT layer in #vdata.

@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 
+#include "BKE_mesh.h"
 #include "BKE_mesh_sample.hh"
 #include "BKE_spline.hh"
 
@@ -143,6 +144,8 @@ static void interpolate_position_with_interpolation(CurvesGeometry &curves,
 {
   MutableSpan<float3> positions_cu = curves.positions_for_write();
   const int added_curves_num = root_positions_cu.size();
+  const Span<MVert> surface_vertices = bke::mesh_vertices(surface);
+  const Span<MLoop> surface_loops = bke::mesh_loops(surface);
 
   threading::parallel_for(IndexRange(added_curves_num), 256, [&](const IndexRange range) {
     for (const int i : range) {
@@ -182,7 +185,7 @@ static void interpolate_position_with_interpolation(CurvesGeometry &curves,
 
         const float3 neighbor_bary_coord =
             bke::mesh_surface_sample::compute_bary_coord_in_triangle(
-                surface, neighbor_looptri, nearest.co);
+                surface_vertices, surface_loops, neighbor_looptri, nearest.co);
 
         const float3 neighbor_normal_su = compute_surface_point_normal(
             surface_looptris[neighbor_looptri_index], neighbor_bary_coord, corner_normals_su);

@@ -46,6 +46,7 @@ static Mesh *hull_from_bullet(const Mesh *mesh, Span<float3> coords)
   }
 
   /* Copy vertices. */
+  MutableSpan<MVert> dst_vertices = bke::mesh_vertices_for_write(result);
   for (const int i : IndexRange(verts_num)) {
     float co[3];
     int original_index;
@@ -59,7 +60,7 @@ static Mesh *hull_from_bullet(const Mesh *mesh, Span<float3> coords)
       }
 #  endif
       /* Copy the position of the original point. */
-      copy_v3_v3(result->mvert[i].co, co);
+      copy_v3_v3(dst_vertices[i].co, co);
     }
     else {
       BLI_assert_msg(0, "Unexpected new vertex in hull output");

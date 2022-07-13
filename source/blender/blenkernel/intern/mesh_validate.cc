@@ -32,6 +32,9 @@
 
 #include "MEM_guardedalloc.h"
 
+using blender::MutableSpan;
+using blender::Span;
+
 /* loop v/e are unsigned, so using max uint_32 value as invalid marker... */
 #define INVALID_LOOP_EDGE_MARKER 4294967295u
 
@@ -1068,19 +1071,23 @@ bool BKE_mesh_validate(Mesh *me, const bool do_verbose, const bool cddata_check_
                                    do_verbose,
                                    true,
                                    &changed);
+  MutableSpan<MVert> vertices = blender::bke::mesh_vertices_for_write(*me);
+  MutableSpan<MEdge> edges = blender::bke::mesh_edges_for_write(*me);
+  MutableSpan<MPoly> polygons = blender::bke::mesh_polygons_for_write(*me);
+  MutableSpan<MLoop> loops = blender::bke::mesh_loops_for_write(*me);
 
   BKE_mesh_validate_arrays(me,
-                           me->mvert,
-                           me->totvert,
-                           me->medge,
-                           me->totedge,
+                           vertices.data(),
+                           vertices.size(),
+                           edges.data(),
+                           edges.size(),
                            me->mface,
                            me->totface,
-                           me->mloop,
-                           me->totloop,
-                           me->mpoly,
-                           me->totpoly,
-                           me->dvert,
+                           loops.data(),
+                           loops.size(),
+                           polygons.data(),
+                           polygons.size(),
+                           (MDeformVert *)CustomData_get_layer(&me->vdata, CD_MDEFORMVERT),
                            do_verbose,
                            true,
                            &changed);
@@ -1117,21 +1124,27 @@ bool BKE_mesh_is_valid(Mesh *me)
       do_fixes,
       &changed);
 
-  is_valid &= BKE_mesh_validate_arrays(me,
-                                       me->mvert,
-                                       me->totvert,
-                                       me->medge,
-                                       me->totedge,
-                                       me->mface,
-                                       me->totface,
-                                       me->mloop,
-                                       me->totloop,
-                                       me->mpoly,
-                                       me->totpoly,
-                                       me->dvert,
-                                       do_verbose,
-                                       do_fixes,
-                                       &changed);
+  MutableSpan<MVert> vertices = blender::bke::mesh_vertices_for_write(*me);
+  MutableSpan<MEdge> edges = blender::bke::mesh_edges_for_write(*me);
+  MutableSpan<MPoly> polygons = blender::bke::mesh_polygons_for_write(*me);
+  MutableSpan<MLoop> loops = blender::bke::mesh_loops_for_write(*me);
+
+  is_valid &= BKE_mesh_validate_arrays(
+      me,
+      vertices.data(),
+      vertices.size(),
+      edges.data(),
+      edges.size(),
+      me->mface,
+      me->totface,
+      loops.data(),
+      loops.size(),
+      polygons.data(),
+      polygons.size(),
+      (MDeformVert *)CustomData_get_layer(&me->vdata, CD_MDEFORMVERT),
+      do_verbose,
+      do_fixes,
+      &changed);
 
   BLI_assert(changed == false);
 
@@ -1347,10 +1360,10 @@ static int vergedgesort(const void *v1, const void *v2)
 /* Create edges based on known verts and faces,
  * this function is only used when loading very old blend files */
 
-static void mesh_calc_edges_mdata(MVert *UNUSED(allvert),
-                                  MFace *allface,
+static void mesh_calc_edges_mdata(const MVert *UNUSED(allvert),
+                                  const MFace *allface,
                                   MLoop *allloop,
-                                  MPoly *allpoly,
+                                  const MPoly *allpoly,
                                   int UNUSED(totvert),
                                   int totface,
                                   int UNUSED(totloop),
@@ -1359,8 +1372,8 @@ static void mesh_calc_edges_mdata(MVert *UNUSED(allvert),
                                   MEdge **r_medge,
                                   int *r_totedge)
 {
-  MPoly *mpoly;
-  MFace *mface;
+  const MPoly *mpoly;
+  const MFace *mface;
   MEdge *medge, *med;
   EdgeHash *hash;
   struct EdgeSort *edsort, *ed;
@@ -1483,28 +1496,30 @@ void BKE_mesh_calc_edges_legacy(Mesh *me, const bool use_old)
 {
   MEdge *medge;
   int totedge = 0;
+  const Span<MVert> vertices = blender::bke::mesh_vertices(*me);
+  const Span<MEdge> edges = blender::bke::mesh_edges(*me);
+  const Span<MPoly> polygons = blender::bke::mesh_polygons(*me);
+  MutableSpan<MLoop> loops = blender::bke::mesh_loops_for_write(*me);
 
-  mesh_calc_edges_mdata(me->mvert,
+  mesh_calc_edges_mdata(vertices.data(),
                         me->mface,
-                        me->mloop,
-                        me->mpoly,
-                        me->totvert,
+                        loops.data(),
+                        polygons.data(),
+                        vertices.size(),
                         me->totface,
-                        me->totloop,
-                        me->totpoly,
+                        loops.size(),
+                        polygons.size(),
                         use_old,
                         &medge,
                         &totedge);
 
   if (totedge == 0) {
     /* flag that mesh has edges */
-    me->medge = medge;
     me->totedge = 0;
     return;
   }
 
   medge = (MEdge *)CustomData_add_layer(&me->edata, CD_MEDGE, CD_ASSIGN, medge, totedge);
-  me->medge = medge;
   me->totedge = totedge;
 
   BKE_mesh_strip_loose_faces(me);
@@ -1512,18 +1527,18 @@ void BKE_mesh_calc_edges_legacy(Mesh *me, const bool use_old)
 
 void BKE_mesh_calc_edges_loose(Mesh *mesh)
 {
-  MEdge *med = mesh->medge;
-  for (int i = 0; i < mesh->totedge; i++, med++) {
-    med->flag |= ME_LOOSEEDGE;
+  const Span<MLoop> loops = blender::bke::mesh_loops(*mesh);
+  MutableSpan<MEdge> edges = blender::bke::mesh_edges_for_write(*mesh);
+
+  for (const int i : edges.index_range()) {
+    edges[i].flag |= ME_LOOSEEDGE;
   }
-  MLoop *ml = mesh->mloop;
-  for (int i = 0; i < mesh->totloop; i++, ml++) {
-    mesh->medge[ml->e].flag &= ~ME_LOOSEEDGE;
+  for (const int i : loops.index_range()) {
+    edges[loops[i].e].flag &= ~ME_LOOSEEDGE;
   }
-  med = mesh->medge;
-  for (int i = 0; i < mesh->totedge; i++, med++) {
-    if (med->flag & ME_LOOSEEDGE) {
-      med->flag |= ME_EDGEDRAW;
+  for (const int i : edges.index_range()) {
+    if (edges[i].flag & ME_LOOSEEDGE) {
+      edges[i].flag |= ME_EDGEDRAW;
     }
   }
 }
@@ -1572,8 +1587,6 @@ void BKE_mesh_calc_edges_tessface(Mesh *mesh)
   CustomData_free(&mesh->edata, mesh->totedge);
   mesh->edata = edgeData;
   mesh->totedge = numEdges;
-
-  mesh->medge = (MEdge *)CustomData_get_layer(&mesh->edata, CD_MEDGE);
 
   BLI_edgeset_free(eh);
 }

@@ -2137,7 +2137,6 @@ void BKE_keyblock_convert_to_curve(KeyBlock *kb, Curve *UNUSED(cu), ListBase *nu
 
 void BKE_keyblock_update_from_mesh(const Mesh *me, KeyBlock *kb)
 {
-  MVert *mvert;
   float(*fp)[3];
   int a, tot;
 
@@ -2148,7 +2147,7 @@ void BKE_keyblock_update_from_mesh(const Mesh *me, KeyBlock *kb)
     return;
   }
 
-  mvert = me->mvert;
+  const MVert *mvert = BKE_mesh_vertices(me);
   fp = kb->data;
   for (a = 0; a < tot; a++, fp++, mvert++) {
     copy_v3_v3(*fp, mvert->co);
@@ -2195,7 +2194,7 @@ void BKE_keyblock_mesh_calc_normals(const KeyBlock *kb,
     return;
   }
 
-  MVert *mvert = MEM_dupallocN(mesh->mvert);
+  MVert *mvert = MEM_dupallocN(BKE_mesh_vertices(mesh));
   BKE_keyblock_convert_to_mesh(kb, mvert, mesh->totvert);
 
   const bool loop_normals_needed = r_loopnors != NULL;

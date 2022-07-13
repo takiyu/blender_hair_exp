@@ -205,6 +205,8 @@ struct SlideOperationExecutor {
 
   void slide_projected()
   {
+    const Span<MVert> surface_vertices = bke::mesh_vertices(*surface_);
+    const Span<MLoop> surface_loops = bke::mesh_loops(*surface_);
     MutableSpan<float3> positions_cu = curves_->positions_for_write();
 
     MutableSpan<float2> surface_uv_coords;
@@ -280,7 +282,7 @@ struct SlideOperationExecutor {
           if (!surface_uv_map_.is_empty()) {
             const MLoopTri &looptri = surface_looptris_[looptri_index];
             const float3 bary_coord = bke::mesh_surface_sample::compute_bary_coord_in_triangle(
-                *surface_, looptri, attached_pos_su);
+                surface_vertices, surface_loops, looptri, attached_pos_su);
             const float2 &uv0 = surface_uv_map_[looptri.tri[0]];
             const float2 &uv1 = surface_uv_map_[looptri.tri[1]];
             const float2 &uv2 = surface_uv_map_[looptri.tri[2]];

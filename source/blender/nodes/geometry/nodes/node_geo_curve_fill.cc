@@ -79,7 +79,7 @@ static Mesh *cdt_to_mesh(const meshintersect::CDT_result<double> &result)
   }
 
   Mesh *mesh = BKE_mesh_new_nomain(vert_len, edge_len, 0, loop_len, poly_len);
-  MutableSpan<MVert> verts{mesh->mvert, mesh->totvert};
+  MutableSpan<MVert> verts = bke::mesh_vertices_for_write(*mesh);;
   MutableSpan<MEdge> edges{mesh->medge, mesh->totedge};
   MutableSpan<MLoop> loops{mesh->mloop, mesh->totloop};
   MutableSpan<MPoly> polys{mesh->mpoly, mesh->totpoly};

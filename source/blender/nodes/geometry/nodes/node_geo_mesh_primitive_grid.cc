@@ -49,7 +49,7 @@ Mesh *create_grid_mesh(const int verts_x,
                                    0,
                                    edges_x * edges_y * 4,
                                    edges_x * edges_y);
-  MutableSpan<MVert> verts{mesh->mvert, mesh->totvert};
+  MutableSpan<MVert> verts = bke::mesh_vertices_for_write(*mesh);
   MutableSpan<MLoop> loops{mesh->mloop, mesh->totloop};
   MutableSpan<MEdge> edges{mesh->medge, mesh->totedge};
   MutableSpan<MPoly> polys{mesh->mpoly, mesh->totpoly};

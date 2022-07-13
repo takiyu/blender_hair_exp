@@ -496,14 +496,14 @@ static void copy_stable_id_faces(const Mesh &mesh,
   VArraySpan<int> src{src_attribute.varray.typed<int>()};
   MutableSpan<int> dst = dst_attribute.span.typed<int>();
 
-  Span<MPoly> polys(mesh.mpoly, mesh.totpoly);
+  const Span<MPoly> polygons = bke::mesh_polygons(mesh);
   int loop_index = 0;
   for (const int i_poly : selection.index_range()) {
     const IndexRange range = range_for_offsets_index(poly_offsets, i_poly);
     if (range.size() == 0) {
       continue;
     }
-    const MPoly &source = polys[i_poly];
+    const MPoly &source = polygons[i_poly];
     for ([[maybe_unused]] const int i_duplicate : IndexRange(range.size())) {
       for ([[maybe_unused]] const int i_loops : IndexRange(source.totloop)) {
         if (i_duplicate == 0) {
@@ -533,10 +533,10 @@ static void duplicate_faces(GeometrySet &geometry_set,
 
   const MeshComponent &src_component = *geometry_set.get_component_for_read<MeshComponent>();
   const Mesh &mesh = *src_component.get_for_read();
-  Span<MVert> verts(mesh.mvert, mesh.totvert);
-  Span<MEdge> edges(mesh.medge, mesh.totedge);
-  Span<MPoly> polys(mesh.mpoly, mesh.totpoly);
-  Span<MLoop> loops(mesh.mloop, mesh.totloop);
+  const Span<MVert> verts = bke::mesh_vertices(mesh);
+  const Span<MEdge> edges = bke::mesh_edges(mesh);
+  const Span<MPoly> polys = bke::mesh_polygons(mesh);
+  const Span<MLoop> loops = bke::mesh_loops(mesh);
 
   GeometryComponentFieldContext field_context{src_component, ATTR_DOMAIN_FACE};
   FieldEvaluator evaluator(field_context, polys.size());
@@ -558,10 +558,10 @@ static void duplicate_faces(GeometrySet &geometry_set,
   offsets[selection.size()] = total_polys;
 
   Mesh *new_mesh = BKE_mesh_new_nomain(total_loops, total_loops, 0, total_loops, total_polys);
-  MutableSpan<MVert> new_verts(new_mesh->mvert, new_mesh->totvert);
-  MutableSpan<MEdge> new_edges(new_mesh->medge, new_mesh->totedge);
-  MutableSpan<MLoop> new_loops(new_mesh->mloop, new_mesh->totloop);
-  MutableSpan<MPoly> new_poly(new_mesh->mpoly, new_mesh->totpoly);
+  MutableSpan<MVert> new_verts = bke::mesh_vertices_for_write(*new_mesh);
+  MutableSpan<MEdge> new_edges = bke::mesh_edges_for_write(*new_mesh);
+  MutableSpan<MPoly> new_polys = bke::mesh_polygons_for_write(*new_mesh);
+  MutableSpan<MLoop> new_loops = bke::mesh_loops_for_write(*new_mesh);
 
   Array<int> vert_mapping(new_verts.size());
   Array<int> edge_mapping(new_edges.size());
@@ -574,8 +574,8 @@ static void duplicate_faces(GeometrySet &geometry_set,
 
     const MPoly &source = polys[selection[i_selection]];
     for ([[maybe_unused]] const int i_duplicate : IndexRange(poly_range.size())) {
-      new_poly[poly_index] = source;
-      new_poly[poly_index].loopstart = loop_index;
+      new_polys[poly_index] = source;
+      new_polys[poly_index].loopstart = loop_index;
       for (const int i_loops : IndexRange(source.totloop)) {
         const MLoop &current_loop = loops[source.loopstart + i_loops];
         loop_mapping[loop_index] = source.loopstart + i_loops;
@@ -588,7 +588,7 @@ static void duplicate_faces(GeometrySet &geometry_set,
           new_edges[loop_index].v2 = loop_index + 1;
         }
         else {
-          new_edges[loop_index].v2 = new_poly[poly_index].loopstart;
+          new_edges[loop_index].v2 = new_polys[poly_index].loopstart;
         }
         new_loops[loop_index].v = loop_index;
         new_loops[loop_index].e = loop_index;
@@ -697,7 +697,7 @@ static void copy_stable_id_edges(const Mesh &mesh,
     return;
   }
 
-  Span<MEdge> edges(mesh.medge, mesh.totedge);
+  const Span<MEdge> edges = bke::mesh_edges(mesh);
 
   VArraySpan<int> src{src_attribute.varray.typed<int>()};
   MutableSpan<int> dst = dst_attribute.span.typed<int>();
@@ -732,8 +732,8 @@ static void duplicate_edges(GeometrySet &geometry_set,
   };
   const MeshComponent &src_component = *geometry_set.get_component_for_read<MeshComponent>();
   const Mesh &mesh = *src_component.get_for_read();
-  Span<MVert> verts(mesh.mvert, mesh.totvert);
-  Span<MEdge> edges(mesh.medge, mesh.totedge);
+  const Span<MVert> vertices = bke::mesh_vertices(mesh);
+  const Span<MEdge> edges = bke::mesh_edges(mesh);
 
   GeometryComponentFieldContext field_context{src_component, ATTR_DOMAIN_EDGE};
   FieldEvaluator evaluator{field_context, edges.size()};
@@ -746,8 +746,8 @@ static void duplicate_edges(GeometrySet &geometry_set,
   Array<int> edge_offsets = accumulate_counts_to_offsets(selection, counts);
 
   Mesh *new_mesh = BKE_mesh_new_nomain(edge_offsets.last() * 2, edge_offsets.last(), 0, 0, 0);
-  MutableSpan<MVert> new_verts(new_mesh->mvert, new_mesh->totvert);
-  MutableSpan<MEdge> new_edges(new_mesh->medge, new_mesh->totedge);
+  MutableSpan<MVert> new_verts = bke::mesh_vertices_for_write(*new_mesh);
+  MutableSpan<MEdge> new_edges = bke::mesh_edges_for_write(*new_mesh);
 
   Array<int> vert_orig_indices(edge_offsets.last() * 2);
   threading::parallel_for(selection.index_range(), 1024, [&](IndexRange range) {
@@ -908,7 +908,7 @@ static void duplicate_points_mesh(GeometrySet &geometry_set,
 {
   const MeshComponent &src_component = *geometry_set.get_component_for_read<MeshComponent>();
   const Mesh &mesh = *geometry_set.get_mesh_for_read();
-  Span<MVert> src_verts(mesh.mvert, mesh.totvert);
+  const Span<MVert> src_verts = bke::mesh_vertices(mesh);
 
   GeometryComponentFieldContext field_context{src_component, ATTR_DOMAIN_POINT};
   FieldEvaluator evaluator{field_context, src_verts.size()};
@@ -921,7 +921,7 @@ static void duplicate_points_mesh(GeometrySet &geometry_set,
   Array<int> offsets = accumulate_counts_to_offsets(selection, counts);
 
   Mesh *new_mesh = BKE_mesh_new_nomain(offsets.last(), 0, 0, 0, 0);
-  MutableSpan<MVert> dst_verts(new_mesh->mvert, new_mesh->totvert);
+  MutableSpan<MVert> dst_verts = bke::mesh_vertices_for_write(*new_mesh);
 
   threaded_slice_fill(offsets.as_span(), selection, src_verts, dst_verts);
 

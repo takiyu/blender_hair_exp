@@ -60,7 +60,7 @@ static void init_dualcon_mesh(DualConInput *input, Mesh *mesh)
 {
   memset(input, 0, sizeof(DualConInput));
 
-  input->co = (void *)mesh->mvert;
+  input->co = (void *)BKE_mesh_vertices(mesh);
   input->co_stride = sizeof(MVert);
   input->totco = mesh->totvert;
 
@@ -80,6 +80,7 @@ static void init_dualcon_mesh(DualConInput *input, Mesh *mesh)
  * keep track of the current elements */
 typedef struct {
   Mesh *mesh;
+  MVert *vertices;
   int curvert, curface;
 } DualConOutput;
 
@@ -93,6 +94,7 @@ static void *dualcon_alloc_output(int totvert, int totquad)
   }
 
   output->mesh = BKE_mesh_new_nomain(totvert, 0, 0, 4 * totquad, totquad);
+  output->vertices = BKE_Mesh_vertices(output->mesh);
   return output;
 }
 
@@ -103,7 +105,7 @@ static void dualcon_add_vert(void *output_v, const float co[3])
 
   BLI_assert(output->curvert < mesh->totvert);
 
-  copy_v3_v3(mesh->mvert[output->curvert].co, co);
+  copy_v3_v3(output->vertices[output->curvert].co, co);
   output->curvert++;
 }
 

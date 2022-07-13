@@ -1172,10 +1172,10 @@ static bool surfacedeformBind(Object *ob,
                               Mesh *mesh)
 {
   BVHTreeFromMesh treeData = {NULL};
-  const MVert *mvert = target->mvert;
-  const MPoly *mpoly = target->mpoly;
-  const MEdge *medge = target->medge;
-  const MLoop *mloop = target->mloop;
+  const MVert *mvert = BKE_mesh_vertices(target);
+  const MPoly *mpoly = BKE_mesh_polygons(target);
+  const MEdge *medge = BKE_mesh_edges(target);
+  const MLoop *mloop = BKE_Mesh_loops(target);
   uint tedges_num = target->totedge;
   int adj_result;
   SDefAdjacencyArray *vert_edges;

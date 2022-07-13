@@ -181,7 +181,7 @@ void BKE_crazyspace_set_quats_mesh(Mesh *me,
   BLI_bitmap *vert_tag = BLI_BITMAP_NEW(me->totvert, __func__);
 
   /* first store two sets of tangent vectors in vertices, we derive it just from the face-edges */
-  MVert *mvert = me->mvert;
+  const MVert *mvert = BKE_mesh_vertices(me);
   MPoly *mp = me->mpoly;
   MLoop *mloop = me->mloop;
 

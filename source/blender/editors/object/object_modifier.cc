@@ -92,6 +92,8 @@
 
 #include "object_intern.h"
 
+using blender::Span;
+
 static void modifier_skin_customdata_delete(struct Object *ob);
 
 /* ------------------------------------------------------------------- */
@@ -582,12 +584,12 @@ bool ED_object_modifier_convert_psys_to_mesh(ReportList *UNUSED(reports),
   me->totvert = verts_num;
   me->totedge = edges_num;
 
-  me->mvert = (MVert *)CustomData_add_layer(&me->vdata, CD_MVERT, CD_CALLOC, nullptr, verts_num);
-  me->medge = (MEdge *)CustomData_add_layer(&me->edata, CD_MEDGE, CD_CALLOC, nullptr, edges_num);
-  me->mface = (MFace *)CustomData_add_layer(&me->fdata, CD_MFACE, CD_CALLOC, nullptr, 0);
+  CustomData_add_layer(&me->vdata, CD_MVERT, CD_CALLOC, nullptr, verts_num);
+  CustomData_add_layer(&me->edata, CD_MEDGE, CD_CALLOC, nullptr, edges_num);
+  CustomData_add_layer(&me->fdata, CD_MFACE, CD_CALLOC, nullptr, 0);
 
-  MVert *mvert = me->mvert;
-  MEdge *medge = me->medge;
+  MVert *mvert = BKE_mesh_vertices(me);
+  MEdge *medge = BKE_mesh_edges(me);
 
   /* copy coordinates */
   cache = psys_eval->pathcache;
@@ -2585,8 +2587,8 @@ void OBJECT_OT_skin_radii_equalize(wmOperatorType *ot)
 }
 
 static void skin_armature_bone_create(Object *skin_ob,
-                                      MVert *mvert,
-                                      MEdge *medge,
+                                      const MVert *mvert,
+                                      const MEdge *medge,
                                       bArmature *arm,
                                       BLI_bitmap *edges_visited,
                                       const MeshElemMap *emap,
@@ -2631,12 +2633,14 @@ static void skin_armature_bone_create(Object *skin_ob,
 static Object *modifier_skin_armature_create(Depsgraph *depsgraph, Main *bmain, Object *skin_ob)
 {
   Mesh *me = static_cast<Mesh *>(skin_ob->data);
+  const Span<MVert> vertices = blender::bke::mesh_vertices(*me_eval_deform);
 
   Scene *scene_eval = DEG_get_evaluated_scene(depsgraph);
   Object *ob_eval = DEG_get_evaluated_object(depsgraph, skin_ob);
 
-  Mesh *me_eval_deform = mesh_get_eval_deform(depsgraph, scene_eval, ob_eval, &CD_MASK_BAREMESH);
-  MVert *mvert = me_eval_deform->mvert;
+  const Mesh *me_eval_deform = mesh_get_eval_deform(
+      depsgraph, scene_eval, ob_eval, &CD_MASK_BAREMESH);
+  const Span<MVert> vertices_eval = blender::bke::mesh_vertices(*me_eval_deform);
 
   /* add vertex weights to original mesh */
   CustomData_add_layer(&me->vdata, CD_MDEFORMVERT, CD_CALLOC, nullptr, me->totvert);
@@ -2670,15 +2674,16 @@ static Object *modifier_skin_armature_create(Depsgraph *depsgraph, Main *bmain, 
       if (emap[v].count > 1) {
         bone = ED_armature_ebone_add(arm, "Bone");
 
-        copy_v3_v3(bone->head, me->mvert[v].co);
-        copy_v3_v3(bone->tail, me->mvert[v].co);
+        copy_v3_v3(bone->head, vertices[v].co);
+        copy_v3_v3(bone->tail, vertices[v].co);
 
         bone->head[1] = 1.0f;
         bone->rad_head = bone->rad_tail = 0.25;
       }
 
       if (emap[v].count >= 1) {
-        skin_armature_bone_create(skin_ob, mvert, me->medge, arm, edges_visited, emap, bone, v);
+        skin_armature_bone_create(
+            skin_ob, vertices_eval, me->medge, arm, edges_visited, emap, bone, v);
       }
     }
   }

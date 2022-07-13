@@ -258,7 +258,7 @@ static int do_step_cloth(
 
   cloth = clmd->clothObject;
   verts = cloth->verts;
-  mvert = result->mvert;
+  mvert = BKE_mesh_vertices_for_write(result);
   vert_mass_changed = verts->mass != clmd->sim_parms->mass;
 
   /* force any pinned verts to their constrained location. */
@@ -755,7 +755,7 @@ static bool cloth_from_object(
     shapekey_rest = CustomData_get_layer(&mesh->vdata, CD_CLOTH_ORCO);
   }
 
-  mvert = mesh->mvert;
+  mvert = BKE_mesh_vertices_for_write(result);
 
   verts = clmd->clothObject->verts;
 
@@ -1150,7 +1150,7 @@ static void cloth_update_springs(ClothModifierData *clmd)
 static void cloth_update_verts(Object *ob, ClothModifierData *clmd, Mesh *mesh)
 {
   unsigned int i = 0;
-  MVert *mvert = mesh->mvert;
+  const MVert *mvert = BKE_mesh_vertices(mesh);
   ClothVertex *verts = clmd->clothObject->verts;
 
   /* vertex count is already ensured to match */
@@ -1165,7 +1165,7 @@ static Mesh *cloth_make_rest_mesh(ClothModifierData *clmd, Mesh *mesh)
 {
   Mesh *new_mesh = BKE_mesh_copy_for_eval(mesh, false);
   ClothVertex *verts = clmd->clothObject->verts;
-  MVert *mvert = new_mesh->mvert;
+  MVert *mvert = BKE_mesh_vertices_for_write(mesh);
 
   /* vertex count is already ensured to match */
   for (unsigned i = 0; i < mesh->totvert; i++, verts++) {

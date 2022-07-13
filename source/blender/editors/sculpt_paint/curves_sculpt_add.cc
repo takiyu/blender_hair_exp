@@ -87,6 +87,8 @@ struct AddOperationExecutor {
   Object *surface_ob_ = nullptr;
   Mesh *surface_ = nullptr;
   Span<MLoopTri> surface_looptris_;
+  Span<MVert> surface_vertices_;
+  Span<MLoop> surface_loops_;
 
   const CurvesSculpt *curves_sculpt_ = nullptr;
   const Brush *brush_ = nullptr;
@@ -150,6 +152,8 @@ struct AddOperationExecutor {
     BKE_bvhtree_from_mesh_get(&surface_bvh_, surface_, BVHTREE_FROM_LOOPTRI, 2);
     BLI_SCOPED_DEFER([&]() { free_bvhtree_from_mesh(&surface_bvh_); });
 
+    surface_vertices_ = bke::mesh_vertices(*surface_);
+    surface_loops_ = bke::mesh_loops(*surface_);
     surface_looptris_ = {BKE_mesh_runtime_looptri_ensure(surface_),
                          BKE_mesh_runtime_looptri_len(surface_)};
 
@@ -266,7 +270,7 @@ struct AddOperationExecutor {
     const int looptri_index = ray_hit.index;
     const float3 brush_pos_su = ray_hit.co;
     const float3 bary_coords = bke::mesh_surface_sample::compute_bary_coord_in_triangle(
-        *surface_, surface_looptris_[looptri_index], brush_pos_su);
+        surface_vertices_, surface_loops_, surface_looptris_[looptri_index], brush_pos_su);
 
     const float3 brush_pos_cu = transforms_.surface_to_curves * brush_pos_su;
 
@@ -387,9 +391,9 @@ struct AddOperationExecutor {
           brush_radius_su,
           [&](const int index, const float3 &UNUSED(co), const float UNUSED(dist_sq)) {
             const MLoopTri &looptri = surface_looptris_[index];
-            const float3 v0_su = surface_->mvert[surface_->mloop[looptri.tri[0]].v].co;
-            const float3 v1_su = surface_->mvert[surface_->mloop[looptri.tri[1]].v].co;
-            const float3 v2_su = surface_->mvert[surface_->mloop[looptri.tri[2]].v].co;
+            const float3 &v0_su = surface_vertices_[surface_loops_[looptri.tri[0]].v].co;
+            const float3 &v1_su = surface_vertices_[surface_loops_[looptri.tri[1]].v].co;
+            const float3 &v2_su = surface_vertices_[surface_loops_[looptri.tri[2]].v].co;
             float3 normal_su;
             normal_tri_v3(normal_su, v0_su, v1_su, v2_su);
             if (math::dot(normal_su, view_direction_su) >= 0.0f) {

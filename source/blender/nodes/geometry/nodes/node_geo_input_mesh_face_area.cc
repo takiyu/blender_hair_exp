@@ -24,9 +24,13 @@ static VArray<float> construct_face_area_gvarray(const MeshComponent &component,
     return {};
   }
 
-  auto area_fn = [mesh](const int i) -> float {
-    const MPoly *mp = &mesh->mpoly[i];
-    return BKE_mesh_calc_poly_area(mp, &mesh->mloop[mp->loopstart], mesh->mvert);
+  const Span<MVert> vertices = bke::mesh_vertices(*mesh);
+  const Span<MPoly> polygons = bke::mesh_polygons(*mesh);
+  const Span<MLoop> loops = bke::mesh_loops(*mesh);
+
+  auto area_fn = [vertices, polygons, loops](const int i) -> float {
+    const MPoly *mp = &polygons[i];
+    return BKE_mesh_calc_poly_area(mp, &loops[mp->loopstart], vertices.data());
   };
 
   return component.attributes()->adapt_domain<float>(

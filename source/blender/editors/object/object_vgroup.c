@@ -193,9 +193,9 @@ bool ED_vgroup_parray_alloc(ID *id,
 
           return true;
         }
-        if (me->dvert) {
-          MVert *mvert = me->mvert;
-          MDeformVert *dvert = me->dvert;
+        if (CustomData_has_layer(&me->vdata, CD_MDEFORMVERT)) {
+          const MVert *mvert = BKE_mesh_vertices(me);
+          MDeformVert *dvert = (MDeformVert *)CustomData_get_layer(&me->vdata, CD_MDEFORMVERT);
 
           *dvert_tot = me->totvert;
           *dvert_arr = MEM_mallocN(sizeof(void *) * me->totvert, "vgroup parray from me");
@@ -207,7 +207,7 @@ bool ED_vgroup_parray_alloc(ID *id,
           }
           else {
             for (int i = 0; i < me->totvert; i++) {
-              (*dvert_arr)[i] = me->dvert + i;
+              (*dvert_arr)[i] = dvert + i;
             }
           }
 
@@ -539,9 +539,10 @@ static void ED_mesh_defvert_mirror_update_ob(Object *ob, int def_nr, int vidx)
 
   vidx_mirr = mesh_get_x_mirror_vert(ob, NULL, vidx, use_topology);
 
+  MDeformVert *dvert = (MDeformVert *)CustomData_get_layer(&me->vdata, CD_MDEFORMVERT);
   if ((vidx_mirr) >= 0 && (vidx_mirr != vidx)) {
-    MDeformVert *dvert_src = &me->dvert[vidx];
-    MDeformVert *dvert_dst = &me->dvert[vidx_mirr];
+    MDeformVert *dvert_src = &dvert[vidx];
+    MDeformVert *dvert_dst = &dvert[vidx_mirr];
     mesh_defvert_mirror_update_internal(ob, dvert_dst, dvert_src, def_nr);
   }
 }
@@ -649,14 +650,15 @@ static void vgroup_copy_active_to_sel(Object *ob, eVGroupSelect subset_type)
     }
   }
   else {
+    const MVert *vertices = BKE_mesh_vertices(me);
     MDeformVert *dv;
     int v_act;
 
     dvert_act = ED_mesh_active_dvert_get_ob(ob, &v_act);
     if (dvert_act) {
-      dv = me->dvert;
+      dv = (MDeformVert *)CustomData_get_layer(&me->vdata, CD_MDEFORMVERT);
       for (i = 0; i < me->totvert; i++, dv++) {
-        if ((me->mvert[i].flag & SELECT) && dv != dvert_act) {
+        if ((vertices[i].flag & SELECT) && dv != dvert_act) {
           BKE_defvert_copy_subset(dv, dvert_act, vgroup_validmap, vgroup_tot);
           if (me->symmetry & ME_SYMMETRY_X) {
             ED_mesh_defvert_mirror_update_ob(ob, -1, i);
@@ -939,11 +941,12 @@ static float get_vert_def_nr(Object *ob, const int def_nr, const int vertnum)
       }
     }
     else {
-      if (me->dvert) {
+      MDeformVert *dvert = (MDeformVert *)CustomData_get_layer(&me->vdata, CD_MDEFORMVERT);
+      if (dvert) {
         if (vertnum >= me->totvert) {
           return 0.0f;
         }
-        dv = &me->dvert[vertnum];
+        dv = &dvert[vertnum];
       }
     }
   }
@@ -1033,13 +1036,14 @@ static void vgroup_select_verts(Object *ob, int select)
       }
     }
     else {
-      if (me->dvert) {
+      MDeformVert *dvert = (MDeformVert *)CustomData_get_layer(&me->vdata, CD_MDEFORMVERT);
+      if (dvert) {
         MVert *mv;
         MDeformVert *dv;
         int i;
 
-        mv = me->mvert;
-        dv = me->dvert;
+        mv = BKE_mesh_vertices_for_write(me);
+        dv = dvert;
 
         for (i = 0; i < me->totvert; i++, mv++, dv++) {
           if (!(mv->flag & ME_HIDE)) {
@@ -1200,7 +1204,8 @@ static bool vgroup_normalize(Object *ob)
  * count is an int passed by reference so it can be assigned the value of the length here. */
 static int *getSurroundingVerts(Mesh *me, int vert, int *count)
 {
-  MPoly *mp = me->mpoly;
+  const MPoly *mp = BKE_mesh_polygons(me);
+  const MLoop *loops = BKE_mesh_loops(me);
   int i = me->totpoly;
   /* Instead of looping twice on all polys and loops, and use a temp array, let's rather
    * use a BLI_array, with a reasonable starting/reserved size (typically, there are not
@@ -1212,7 +1217,7 @@ static int *getSurroundingVerts(Mesh *me, int vert, int *count)
   while (i--) {
     int j = mp->totloop;
     int first_l = mp->totloop - 1;
-    MLoop *ml = &me->mloop[mp->loopstart];
+    MLoop *ml = &loops[mp->loopstart];
     while (j--) {
       /* XXX This assume a vert can only be once in a poly, even though
        *     it seems logical to me, not totally sure of that. */
@@ -1226,7 +1231,7 @@ static int *getSurroundingVerts(Mesh *me, int vert, int *count)
         else if (!j) {
           /* We are on the last corner. */
           a = (ml - 1)->v;
-          b = me->mloop[mp->loopstart].v;
+          b = loops[mp->loopstart].v;
         }
         else {
           a = (ml - 1)->v;
@@ -1339,8 +1344,10 @@ static void moveCloserToDistanceFromPlane(Depsgraph *depsgraph,
   Mesh *me_deform;
   MDeformWeight *dw, *dw_eval;
   MVert m;
-  MDeformVert *dvert = me->dvert + index;
-  MDeformVert *dvert_eval = mesh_eval->dvert + index;
+  MDeformVert *dvert = (MDeformVert *)CustomData_get_layer(&me->vdata, CD_MDEFORMVERT) + index;
+  MDeformVert *dvert_eval = (MDeformVert *)CustomData_get_layer(&mesh_eval->vdata,
+                                                                CD_MDEFORMVERT) +
+                            index;
   int totweight = dvert->totweight;
   float oldw = 0;
   float oldPos[3] = {0};
@@ -1362,7 +1369,7 @@ static void moveCloserToDistanceFromPlane(Depsgraph *depsgraph,
   do {
     wasChange = false;
     me_deform = mesh_get_eval_deform(depsgraph, scene_eval, object_eval, &CD_MASK_BAREMESH);
-    m = me_deform->mvert[index];
+    m = BKE_mesh_vertices(me_deform)[index];
     copy_v3_v3(oldPos, m.co);
     distToStart = dot_v3v3(norm, oldPos) + d;
 
@@ -1404,7 +1411,7 @@ static void moveCloserToDistanceFromPlane(Depsgraph *depsgraph,
         }
         dw_eval->weight = dw->weight;
         me_deform = mesh_get_eval_deform(depsgraph, scene_eval, object_eval, &CD_MASK_BAREMESH);
-        m = me_deform->mvert[index];
+        m = BKE_mesh_vertices(me_deform)[index];
         getVerticalAndHorizontalChange(
             norm, d, coord, oldPos, distToStart, m.co, changes, dists, i);
         dw->weight = oldw;
@@ -1509,7 +1516,7 @@ static void vgroup_fix(
   int i;
 
   Mesh *me = ob->data;
-  MVert *mvert = me->mvert;
+  const MVert *mvert = BKE_mesh_vertices(me);
   int *verts = NULL;
   if (!(me->editflag & ME_EDIT_PAINT_VERT_SEL)) {
     return;
@@ -1524,9 +1531,10 @@ static void vgroup_fix(
 
         Mesh *me_deform = mesh_get_eval_deform(
             depsgraph, scene_eval, object_eval, &CD_MASK_BAREMESH);
+        const MVert *mvert_deform = BKE_mesh_vertices(me_deform);
         k = count;
         while (k--) {
-          p[k] = me_deform->mvert[verts[k]];
+          p[k] = mvert_deform[verts[k]];
         }
 
         if (count >= 3) {
@@ -1534,7 +1542,7 @@ static void vgroup_fix(
           float coord[3];
           float norm[3];
           getSingleCoordinate(p, count, coord);
-          m = me_deform->mvert[i];
+          m = mvert_deform[i];
           sub_v3_v3v3(norm, m.co, coord);
           mag = normalize_v3(norm);
           if (mag) { /* zeros fix */
@@ -1918,7 +1926,7 @@ static void vgroup_smooth_subset(Object *ob,
     emap_mem = NULL;
   }
   else {
-    BKE_mesh_vert_edge_map_create(&emap, &emap_mem, me->medge, me->totvert, me->totedge);
+    BKE_mesh_vert_edge_map_create(&emap, &emap_mem, BKE_mesh_edges(me), me->totvert, me->totedge);
   }
 
   weight_accum_prev = MEM_mallocN(sizeof(*weight_accum_prev) * dvert_tot, __func__);

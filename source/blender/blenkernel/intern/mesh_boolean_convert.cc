@@ -188,14 +188,14 @@ const MVert *MeshesToIMeshInfo::input_mvert_for_orig_index(int orig_index,
   const Mesh *me = meshes[orig_mesh_index];
   int index_in_mesh = orig_index - mesh_vert_offset[orig_mesh_index];
   BLI_assert(0 <= index_in_mesh && index_in_mesh < me->totvert);
-  const MVert *mv = &me->mvert[index_in_mesh];
+  const Span<MVert> vertices = bke::mesh_vertices(*me);
   if (r_orig_mesh) {
     *r_orig_mesh = me;
   }
   if (r_index_in_orig_mesh) {
     *r_index_in_orig_mesh = index_in_mesh;
   }
-  return mv;
+  return &vertices[index_in_mesh];
 }
 
 /* Similarly for edges. */
@@ -304,7 +304,7 @@ static IMesh meshes_to_imesh(Span<const Mesh *> meshes,
     bool need_face_flip = r_info->has_negative_transform[mi] != r_info->has_negative_transform[0];
 
     Vector<Vert *> verts(me->totvert);
-    Span<MVert> mverts = Span(me->mvert, me->totvert);
+    const Span<MVert> vertices = bke::mesh_vertices(*me);
 
     /* Allocate verts
      * Skip the matrix multiplication for each point when there is no transform for a mesh,
@@ -550,15 +550,15 @@ static void get_poly2d_cos(const Mesh *me,
                            float r_axis_mat[3][3])
 {
   int n = mp->totloop;
+  const Span<MVert> vertices = bke::mesh_vertices(*me);
 
   /* Project coordinates to 2d in cos_2d, using normal as projection axis. */
   float axis_dominant[3];
-  BKE_mesh_calc_poly_normal(mp, &me->mloop[mp->loopstart], me->mvert, axis_dominant);
+  BKE_mesh_calc_poly_normal(mp, &me->mloop[mp->loopstart], vertices.data(), axis_dominant);
   axis_dominant_v3_to_m3(r_axis_mat, axis_dominant);
   MLoop *ml = &me->mloop[mp->loopstart];
-  const MVert *mverts = me->mvert;
   for (int i = 0; i < n; ++i) {
-    float3 co = mverts[ml->v].co;
+    float3 co = vertices[ml->v].co;
     co = trans_mat * co;
     mul_v2_m3v3(cos_2d[i], r_axis_mat, co);
     ++ml;
@@ -596,6 +596,7 @@ static void copy_or_interp_loop_attributes(Mesh *dest_mesh,
     get_poly2d_cos(orig_me, orig_mp, cos_2d, mim.to_target_transform[orig_me_index], axis_mat);
   }
   CustomData *target_cd = &dest_mesh->ldata;
+  const Span<MVert> dst_vertices = bke::mesh_vertices(*dest_mesh);
   for (int i = 0; i < mp->totloop; ++i) {
     int loop_index = mp->loopstart + i;
     int orig_loop_index = norig > 0 ? orig_loops[i] : -1;
@@ -605,7 +606,7 @@ static void copy_or_interp_loop_attributes(Mesh *dest_mesh,
        * The coordinate needs to be projected into 2d,  just like the interpolating polygon's
        * coordinates were. The `dest_mesh` coordinates are already in object 0 local space. */
       float co[2];
-      mul_v2_m3v3(co, axis_mat, dest_mesh->mvert[dest_mesh->mloop[loop_index].v].co);
+      mul_v2_m3v3(co, axis_mat, dst_vertices[dest_mesh->mloop[loop_index].v].co);
       interp_weights_poly_v2(weights.data(), cos_2d, orig_mp->totloop, co);
     }
     for (int source_layer_i = 0; source_layer_i < source_cd->totlayer; ++source_layer_i) {
@@ -708,9 +709,10 @@ static Mesh *imesh_to_mesh(IMesh *im, MeshesToIMeshInfo &mim)
 
   merge_vertex_loop_poly_customdata_layers(result, mim);
   /* Set the vertex coordinate values and other data. */
+  MutableSpan<MVert> vertices = bke::mesh_vertices_for_write(*mesh);
   for (int vi : im->vert_index_range()) {
     const Vert *v = im->vert(vi);
-    MVert *mv = &result->mvert[vi];
+    MVert *mv = &vertices[vi];
     copy_v3fl_v3db(mv->co, v->co);
     if (v->orig != NO_INDEX) {
       const Mesh *orig_me;

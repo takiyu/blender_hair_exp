@@ -8,6 +8,7 @@
 #include "DNA_meshdata_types.h"
 
 #include "BKE_curves.hh"
+#include "BKE_mesh.h"
 
 #include "node_geometry_util.hh"
 
@@ -35,7 +36,7 @@ static void set_computed_position_and_offset(GeometryComponent &component,
   switch (component.type()) {
     case GEO_COMPONENT_TYPE_MESH: {
       Mesh *mesh = static_cast<MeshComponent &>(component).get_for_write();
-      MutableSpan<MVert> mverts{mesh->mvert, mesh->totvert};
+      MutableSpan<MVert> vertices = bke::mesh_vertices_for_write(*mesh);
       if (in_positions.is_same(positions.varray)) {
         devirtualize_varray(in_offsets, [&](const auto in_offsets) {
           threading::parallel_for(

@@ -525,7 +525,7 @@ void BKE_mesh_remap_calc_verts_from_mesh(const int mode,
       }
     }
     else if (ELEM(mode, MREMAP_MODE_VERT_EDGE_NEAREST, MREMAP_MODE_VERT_EDGEINTERP_NEAREST)) {
-      MEdge *edges_src = me_src->medge;
+      MEdge *edges_src = BKE_mesh_edges(me_src);
       float(*vcos_src)[3] = BKE_mesh_vert_coords_alloc(me_src, NULL);
 
       BKE_bvhtree_from_mesh_get(&treedata, me_src, BVHTREE_FROM_EDGES, 2);
@@ -578,8 +578,8 @@ void BKE_mesh_remap_calc_verts_from_mesh(const int mode,
                   MREMAP_MODE_VERT_POLY_NEAREST,
                   MREMAP_MODE_VERT_POLYINTERP_NEAREST,
                   MREMAP_MODE_VERT_POLYINTERP_VNORPROJ)) {
-      MPoly *polys_src = me_src->mpoly;
-      MLoop *loops_src = me_src->mloop;
+      MPoly *polys_src = BKE_mesh_polygons(me_src);
+      MLoop *loops_src = BKE_mesh_loops(me_src);
       float(*vcos_src)[3] = BKE_mesh_vert_coords_alloc(me_src, NULL);
       const float(*vert_normals_dst)[3] = BKE_mesh_vertex_normals_ensure(me_dst);
 
@@ -731,7 +731,7 @@ void BKE_mesh_remap_calc_edges_from_mesh(const int mode,
     if (mode == MREMAP_MODE_EDGE_VERT_NEAREST) {
       const int num_verts_src = me_src->totvert;
       const int num_edges_src = me_src->totedge;
-      MEdge *edges_src = me_src->medge;
+      const MEdge *edges_src = BKE_mesh_edges(me_src);
       float(*vcos_src)[3] = BKE_mesh_vert_coords_alloc(me_src, NULL);
 
       MeshElemMap *vert_to_edge_src_map;
@@ -878,9 +878,9 @@ void BKE_mesh_remap_calc_edges_from_mesh(const int mode,
       }
     }
     else if (mode == MREMAP_MODE_EDGE_POLY_NEAREST) {
-      MEdge *edges_src = me_src->medge;
-      MPoly *polys_src = me_src->mpoly;
-      MLoop *loops_src = me_src->mloop;
+      const MEdge *edges_src = BKE_mesh_edges(me_src);
+      const MPoly *polys_src = BKE_mesh_polygons(me_src);
+      const MLoop *loops_src = BKE_mesh_loops(me_src);
       float(*vcos_src)[3] = BKE_mesh_vert_coords_alloc(me_src, NULL);
 
       BKE_bvhtree_from_mesh_get(&treedata, me_src, BVHTREE_FROM_LOOPTRI, 2);
@@ -896,14 +896,14 @@ void BKE_mesh_remap_calc_edges_from_mesh(const int mode,
         if (mesh_remap_bvhtree_query_nearest(
                 &treedata, &nearest, tmp_co, max_dist_sq, &hit_dist)) {
           const MLoopTri *lt = &treedata.looptri[nearest.index];
-          MPoly *mp_src = &polys_src[lt->poly];
-          MLoop *ml_src = &loops_src[mp_src->loopstart];
+          const MPoly *mp_src = &polys_src[lt->poly];
+          const MLoop *ml_src = &loops_src[mp_src->loopstart];
           int nloops = mp_src->totloop;
           float best_dist_sq = FLT_MAX;
           int best_eidx_src = -1;
 
           for (; nloops--; ml_src++) {
-            MEdge *med_src = &edges_src[ml_src->e];
+            const MEdge *med_src = &edges_src[ml_src->e];
             float *co1_src = vcos_src[med_src->v1];
             float *co2_src = vcos_src[med_src->v2];
             float co_src[3];
@@ -1307,14 +1307,14 @@ void BKE_mesh_remap_calc_loops_from_mesh(const int mode,
     /* Unlike above, those are one-to-one mappings, simpler! */
     int *loop_to_poly_map_src = NULL;
 
-    MVert *verts_src = me_src->mvert;
+    MVert *verts_src = BKE_mesh_vertices(me_src);
     const int num_verts_src = me_src->totvert;
     float(*vcos_src)[3] = NULL;
-    MEdge *edges_src = me_src->medge;
+    MEdge *edges_src = BKE_mesh_edges(me_src);
     const int num_edges_src = me_src->totedge;
-    MLoop *loops_src = me_src->mloop;
+    MLoop *loops_src = BKE_mesh_loops(me_src);
     const int num_loops_src = me_src->totloop;
-    MPoly *polys_src = me_src->mpoly;
+    MPoly *polys_src = BKE_mesh_polygons(me_src);
     const int num_polys_src = me_src->totpoly;
     const MLoopTri *looptri_src = NULL;
     int num_looptri_src = 0;

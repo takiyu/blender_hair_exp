@@ -68,6 +68,8 @@
 
 using blender::float3;
 using blender::IndexRange;
+using blender::Span;
+using blender::VArray;
 
 /* very slow! enable for testing only! */
 //#define USE_MODIFIER_VALIDATE
@@ -822,18 +824,14 @@ static void mesh_calc_modifiers(struct Depsgraph *depsgraph,
       mesh_final = BKE_mesh_copy_for_eval(mesh_input, true);
       ASSERT_IS_VALID_MESH(mesh_final);
     }
-    float3 *rest_positions = static_cast<float3 *>(CustomData_add_layer_named(&mesh_final->vdata,
-                                                                              CD_PROP_FLOAT3,
-                                                                              CD_DEFAULT,
-                                                                              nullptr,
-                                                                              mesh_final->totvert,
-                                                                              "rest_position"));
-    blender::threading::parallel_for(
-        IndexRange(mesh_final->totvert), 1024, [&](const IndexRange range) {
-          for (const int i : range) {
-            rest_positions[i] = mesh_final->mvert[i].co;
-          }
-        });
+    blender::bke::MutableAttributeAccessor attributes = blender::bke::mesh_attributes_for_write(
+        *mesh_final);
+    blender::bke::SpanAttributeWriter rest_positions =
+        attributes.lookup_or_add_for_write_only_span<float3>("rest_position", ATTR_DOMAIN_POINT);
+    VArray<float3> positions = attributes.lookup_or_default<float3>(
+        "position", ATTR_DOMAIN_POINT, float3(0));
+    positions.materialize(rest_positions.span);
+    rest_positions.finish();
   }
 
   /* Apply all leading deform modifiers. */
@@ -1994,9 +1992,9 @@ void mesh_get_mapped_verts_coords(Mesh *me_eval, float (*r_cos)[3], const int to
     MEM_freeN(userData.vertex_visit);
   }
   else {
-    MVert *mv = me_eval->mvert;
-    for (int i = 0; i < totcos; i++, mv++) {
-      copy_v3_v3(r_cos[i], mv->co);
+    const Span<MVert> vertices = blender::bke::mesh_vertices(*me_eval);
+    for (int i = 0; i < totcos; i++) {
+      copy_v3_v3(r_cos[i], vertices[i].co);
     }
   }
 }
@@ -2009,9 +2007,11 @@ static void mesh_init_origspace(Mesh *mesh)
                                                                    CD_ORIGSPACE_MLOOP);
   const int numpoly = mesh->totpoly;
   // const int numloop = mesh->totloop;
-  MVert *mv = mesh->mvert;
-  MLoop *ml = mesh->mloop;
-  MPoly *mp = mesh->mpoly;
+  const Span<MVert> vertices = blender::bke::mesh_vertices(*mesh);
+  const Span<MPoly> polygons = blender::bke::mesh_polygons(*mesh);
+  const Span<MLoop> loops = blender::bke::mesh_loops(*mesh);
+
+  const MPoly *mp = polygons.data();
   int i, j, k;
 
   blender::Vector<blender::float2, 64> vcos_2d;
@@ -2025,19 +2025,19 @@ static void mesh_init_origspace(Mesh *mesh)
       }
     }
     else {
-      MLoop *l = &ml[mp->loopstart];
+      const MLoop *l = &loops[mp->loopstart];
       float p_nor[3], co[3];
       float mat[3][3];
 
       float min[2] = {FLT_MAX, FLT_MAX}, max[2] = {-FLT_MAX, -FLT_MAX};
       float translate[2], scale[2];
 
-      BKE_mesh_calc_poly_normal(mp, l, mv, p_nor);
+      BKE_mesh_calc_poly_normal(mp, l, vertices.data(), p_nor);
       axis_dominant_v3_to_m3(mat, p_nor);
 
       vcos_2d.resize(mp->totloop);
       for (j = 0; j < mp->totloop; j++, l++) {
-        mul_v3_m3v3(co, mat, mv[l->v].co);
+        mul_v3_m3v3(co, mat, vertices[l->v].co);
         copy_v2_v2(vcos_2d[j], co);
 
         for (k = 0; k < 2; k++) {

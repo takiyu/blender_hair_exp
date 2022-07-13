@@ -6,9 +6,15 @@
  * \ingroup bke
  */
 
-#include "BKE_mesh_types.h"
 #include "BLI_compiler_attrs.h"
+#include "BLI_compiler_compat.h"
 #include "BLI_utildefines.h"
+
+#include "DNA_mesh_types.h"
+#include "DNA_meshdata_types.h"
+
+#include "BKE_customdata.h"
+#include "BKE_mesh_types.h"
 
 struct BLI_Stack;
 struct BMesh;
@@ -1024,6 +1030,92 @@ char *BKE_mesh_debug_info(const struct Mesh *me)
 void BKE_mesh_debug_print(const struct Mesh *me) ATTR_NONNULL(1);
 #endif
 
+BLI_INLINE const MVert *BKE_mesh_vertices(const Mesh *mesh)
+{
+  return (const MVert *)CustomData_get_layer(&mesh->vdata, CD_MVERT);
+}
+BLI_INLINE MVert *BKE_mesh_vertices_for_write(Mesh *mesh)
+{
+  CustomData_duplicate_referenced_layer(&mesh->vdata, CD_MVERT, mesh->totvert);
+  return (MVert *)CustomData_get_layer(&mesh->vdata, CD_MVERT);
+}
+
+BLI_INLINE const MEdge *BKE_mesh_edges(const Mesh *mesh)
+{
+  return (const MEdge *)CustomData_get_layer(&mesh->edata, CD_MEDGE);
+}
+BLI_INLINE MEdge *BKE_mesh_edges_for_write(Mesh *mesh)
+{
+  CustomData_duplicate_referenced_layer(&mesh->edata, CD_MEDGE, mesh->totedge);
+  return (MEdge *)CustomData_get_layer(&mesh->edata, CD_MEDGE);
+}
+
+BLI_INLINE const MPoly *BKE_mesh_polygons(const Mesh *mesh)
+{
+  return (const MPoly *)CustomData_get_layer(&mesh->vdata, CD_MPOLY);
+}
+BLI_INLINE MPoly *BKE_mesh_polygons_for_write(Mesh *mesh)
+{
+  CustomData_duplicate_referenced_layer(&mesh->pdata, CD_MPOLY, mesh->totpoly);
+  return (MPoly *)CustomData_get_layer(&mesh->pdata, CD_MPOLY);
+}
+
+BLI_INLINE const MLoop *BKE_mesh_loops(const Mesh *mesh)
+{
+  return (const MLoop *)CustomData_get_layer(&mesh->vdata, CD_MLOOP);
+}
+BLI_INLINE MLoop *BKE_mesh_loops_for_write(Mesh *mesh)
+{
+  CustomData_duplicate_referenced_layer(&mesh->ldata, CD_MLOOP, mesh->totloop);
+  return (MLoop *)CustomData_get_layer(&mesh->ldata, CD_MLOOP);
+}
+
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef __cplusplus
+
+#  include "BLI_span.hh"
+
+namespace blender::bke {
+
+inline Span<MVert> mesh_vertices(const Mesh &mesh)
+{
+  return {BKE_mesh_vertices(&mesh), mesh.totvert};
+}
+inline MutableSpan<MVert> mesh_vertices_for_write(Mesh &mesh)
+{
+  return {BKE_mesh_vertices_for_write(&mesh), mesh.totvert};
+}
+
+inline Span<MEdge> mesh_edges(const Mesh &mesh)
+{
+  return {BKE_mesh_edges(&mesh), mesh.totedge};
+}
+inline MutableSpan<MEdge> mesh_edges_for_write(Mesh &mesh)
+{
+  return {BKE_mesh_edges_for_write(&mesh), mesh.totedge};
+}
+
+inline Span<MPoly> mesh_polygons(const Mesh &mesh)
+{
+  return {BKE_mesh_polygons(&mesh), mesh.totpoly};
+}
+inline MutableSpan<MPoly> mesh_polygons_for_write(Mesh &mesh)
+{
+  return {BKE_mesh_polygons_for_write(&mesh), mesh.totpoly};
+}
+
+inline Span<MLoop> mesh_loops(const Mesh &mesh)
+{
+  return {BKE_mesh_loops(&mesh), mesh.totloop};
+}
+inline MutableSpan<MLoop> mesh_loops_for_write(Mesh &mesh)
+{
+  return {BKE_mesh_loops_for_write(&mesh), mesh.totloop};
+}
+
+}  // namespace blender::bke
+
 #endif

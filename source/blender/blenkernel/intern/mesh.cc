@@ -10,7 +10,7 @@
 /* Allow using deprecated functionality for .blend file I/O. */
 #define DNA_DEPRECATED_ALLOW
 
-#include "DNA_defaults.h"
+// #include "DNA_defaults.h"
 #include "DNA_key_types.h"
 #include "DNA_material_types.h"
 #include "DNA_mesh_types.h"
@@ -59,9 +59,10 @@
 #include "DEG_depsgraph.h"
 #include "DEG_depsgraph_query.h"
 
-#include "BLO_read_write.h"
+// #include "BLO_read_write.h"
 
 using blender::float3;
+using blender::Span;
 using blender::Vector;
 
 static void mesh_clear_geometry(Mesh *mesh);
@@ -224,19 +225,15 @@ static void mesh_blend_write(BlendWriter *writer, ID *id, const void *id_address
 
   /* Do not store actual geometry data in case this is a library override ID. */
   if (ID_IS_OVERRIDE_LIBRARY(mesh) && !is_undo) {
-    mesh->mvert = nullptr;
     mesh->totvert = 0;
     memset(&mesh->vdata, 0, sizeof(mesh->vdata));
 
-    mesh->medge = nullptr;
     mesh->totedge = 0;
     memset(&mesh->edata, 0, sizeof(mesh->edata));
 
-    mesh->mloop = nullptr;
     mesh->totloop = 0;
     memset(&mesh->ldata, 0, sizeof(mesh->ldata));
 
-    mesh->mpoly = nullptr;
     mesh->totpoly = 0;
     memset(&mesh->pdata, 0, sizeof(mesh->pdata));
   }
@@ -277,14 +274,9 @@ static void mesh_blend_read_data(BlendDataReader *reader, ID *id)
   Mesh *mesh = (Mesh *)id;
   BLO_read_pointer_array(reader, (void **)&mesh->mat);
 
-  BLO_read_data_address(reader, &mesh->mvert);
-  BLO_read_data_address(reader, &mesh->medge);
   BLO_read_data_address(reader, &mesh->mface);
-  BLO_read_data_address(reader, &mesh->mloop);
-  BLO_read_data_address(reader, &mesh->mpoly);
   BLO_read_data_address(reader, &mesh->tface);
   BLO_read_data_address(reader, &mesh->mtface);
-  BLO_read_data_address(reader, &mesh->dvert);
   BLO_read_data_address(reader, &mesh->mloopuv);
   BLO_read_data_address(reader, &mesh->mselect);
 
@@ -443,6 +435,8 @@ static int customdata_compare(
                                        CD_MASK_MLOOPUV | CD_MASK_PROP_BYTE_COLOR |
                                        CD_MASK_MDEFORMVERT;
   const uint64_t cd_mask_all_attr = CD_MASK_PROP_ALL | cd_mask_non_generic;
+  const Span<MLoop> loops_1 = blender::bke::mesh_loops(*m1);
+  const Span<MLoop> loops_2 = blender::bke::mesh_loops(*m2);
 
   for (int i = 0; i < c1->totlayer; i++) {
     l1 = &c1->layers[i];
@@ -517,15 +511,14 @@ static int customdata_compare(
           int ptot = m1->totpoly;
 
           for (j = 0; j < ptot; j++, p1++, p2++) {
-            MLoop *lp1, *lp2;
             int k;
 
             if (p1->totloop != p2->totloop) {
               return MESHCMP_POLYMISMATCH;
             }
 
-            lp1 = m1->mloop + p1->loopstart;
-            lp2 = m2->mloop + p2->loopstart;
+            const MLoop *lp1 = &loops_1[p1->loopstart];
+            const MLoop *lp2 = &loops_2[p2->loopstart];
 
             for (k = 0; k < p1->totloop; k++, lp1++, lp2++) {
               if (lp1->v != lp2->v) {
@@ -869,16 +862,8 @@ void BKE_mesh_update_customdata_pointers(Mesh *me, const bool do_ensure_tess_cd)
 {
   mesh_update_linked_customdata(me, do_ensure_tess_cd);
 
-  me->mvert = (MVert *)CustomData_get_layer(&me->vdata, CD_MVERT);
-  me->dvert = (MDeformVert *)CustomData_get_layer(&me->vdata, CD_MDEFORMVERT);
-
-  me->medge = (MEdge *)CustomData_get_layer(&me->edata, CD_MEDGE);
-
   me->mface = (MFace *)CustomData_get_layer(&me->fdata, CD_MFACE);
   me->mtface = (MTFace *)CustomData_get_layer(&me->fdata, CD_MTFACE);
-
-  me->mpoly = (MPoly *)CustomData_get_layer(&me->pdata, CD_MPOLY);
-  me->mloop = (MLoop *)CustomData_get_layer(&me->ldata, CD_MLOOP);
 
   me->mloopuv = (MLoopUV *)CustomData_get_layer(&me->ldata, CD_MLOOPUV);
 }
@@ -1304,11 +1289,12 @@ float (*BKE_mesh_orco_verts_get(Object *ob))[3]
 
   /* Get appropriate vertex coordinates */
   float(*vcos)[3] = (float(*)[3])MEM_calloc_arrayN(me->totvert, sizeof(*vcos), "orco mesh");
-  MVert *mvert = tme->mvert;
+  const Span<MVert> vertices = blender::bke::mesh_vertices(*tme);
+
   int totvert = min_ii(tme->totvert, me->totvert);
 
-  for (int a = 0; a < totvert; a++, mvert++) {
-    copy_v3_v3(vcos[a], mvert->co);
+  for (int a = 0; a < totvert; a++) {
+    copy_v3_v3(vcos[a], vertices[a].co);
   }
 
   return vcos;
