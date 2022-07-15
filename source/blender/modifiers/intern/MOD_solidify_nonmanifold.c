@@ -178,7 +178,7 @@ Mesh *MOD_solidify_nonmanifold_modifyMesh(ModifierData *md,
 
   const float bevel_convex = smd->bevel_convex;
 
-  MDeformVert *dvert;
+  const MDeformVert *dvert;
   const bool defgrp_invert = (smd->flag & MOD_SOLIDIFY_VGROUP_INV) != 0;
   int defgrp_index;
   const int shell_defgrp_index = BKE_id_defgroup_name_index(&mesh->id, smd->shell_defgrp_name);
@@ -188,10 +188,10 @@ Mesh *MOD_solidify_nonmanifold_modifyMesh(ModifierData *md,
 
   const bool do_flat_faces = dvert && (smd->flag & MOD_SOLIDIFY_NONMANIFOLD_FLAT_FACES);
 
-  orig_mvert = mesh->mvert;
-  orig_medge = mesh->medge;
-  orig_mloop = mesh->mloop;
-  orig_mpoly = mesh->mpoly;
+  orig_mvert = BKE_mesh_vertices(mesh);
+  orig_medge = BKE_mesh_edges(mesh);
+  orig_mloop = BKE_mesh_polygons(mesh);
+  orig_mpoly = BKE_mesh_loops(mesh);
 
   uint new_verts_num = 0;
   uint new_edges_num = 0;
@@ -1961,10 +1961,10 @@ Mesh *MOD_solidify_nonmanifold_modifyMesh(ModifierData *md,
                                              (int)(new_loops_num),
                                              (int)(new_polys_num));
 
-  mpoly = result->mpoly;
-  mloop = result->mloop;
-  medge = result->medge;
-  mvert = result->mvert;
+  mpoly = BKE_mesh_vertices_for_write(result);
+  mloop = BKE_mesh_edges_for_write(result);
+  medge = BKE_mesh_polygons_for_write(result);
+  mvert = BKE_mesh_loops_for_write(result);
 
   int *origindex_edge = CustomData_get_layer(&result->edata, CD_ORIGINDEX);
   int *origindex_poly = CustomData_get_layer(&result->pdata, CD_ORIGINDEX);
@@ -1976,14 +1976,7 @@ Mesh *MOD_solidify_nonmanifold_modifyMesh(ModifierData *md,
 
   /* Checks that result has dvert data. */
   if (shell_defgrp_index != -1 || rim_defgrp_index != -1) {
-    dvert = CustomData_duplicate_referenced_layer(&result->vdata, CD_MDEFORMVERT, result->totvert);
-    /* If no vertices were ever added to an object's vgroup, dvert might be NULL. */
-    if (dvert == NULL) {
-      /* Add a valid data layer! */
-      dvert = CustomData_add_layer(
-          &result->vdata, CD_MDEFORMVERT, CD_CALLOC, NULL, result->totvert);
-    }
-    result->dvert = dvert;
+    dvert = BKE_mesh_deform_verts_for_write(result);
   }
 
   /* Get vertex crease layer and ensure edge creases are active if vertex creases are found, since
@@ -2362,8 +2355,8 @@ Mesh *MOD_solidify_nonmanifold_modifyMesh(ModifierData *md,
         uint open_face_edge_index;
         if (!do_flip) {
           if (rim_defgrp_index != -1) {
-            BKE_defvert_ensure_index(&result->dvert[medge[edge1->new_edge].v1], rim_defgrp_index)
-                ->weight = 1.0f;
+            BKE_defvert_ensure_index(&dvert[medge[edge1->new_edge].v1], rim_defgrp_index)->weight =
+                1.0f;
           }
           CustomData_copy_data(&mesh->ldata, &result->ldata, loop1, (int)loop_index, 1);
           mloop[loop_index].v = medge[edge1->new_edge].v1;
@@ -2372,7 +2365,7 @@ Mesh *MOD_solidify_nonmanifold_modifyMesh(ModifierData *md,
           if (!v2_singularity) {
             open_face_edge_index = edge1->link_edge_groups[1]->open_face_edge;
             if (rim_defgrp_index != -1) {
-              BKE_defvert_ensure_index(&result->dvert[medge[edge1->new_edge].v2], rim_defgrp_index)
+              BKE_defvert_ensure_index(&dvert[medge[edge1->new_edge].v2], rim_defgrp_index)
                   ->weight = 1.0f;
             }
             CustomData_copy_data(&mesh->ldata, &result->ldata, loop2, (int)loop_index, 1);
@@ -2387,8 +2380,8 @@ Mesh *MOD_solidify_nonmanifold_modifyMesh(ModifierData *md,
           }
 
           if (rim_defgrp_index != -1) {
-            BKE_defvert_ensure_index(&result->dvert[medge[edge2->new_edge].v2], rim_defgrp_index)
-                ->weight = 1.0f;
+            BKE_defvert_ensure_index(&dvert[medge[edge2->new_edge].v2], rim_defgrp_index)->weight =
+                1.0f;
           }
           CustomData_copy_data(&mesh->ldata, &result->ldata, loop2, (int)loop_index, 1);
           mloop[loop_index].v = medge[edge2->new_edge].v2;
@@ -2397,7 +2390,7 @@ Mesh *MOD_solidify_nonmanifold_modifyMesh(ModifierData *md,
           if (!v1_singularity) {
             open_face_edge_index = edge2->link_edge_groups[0]->open_face_edge;
             if (rim_defgrp_index != -1) {
-              BKE_defvert_ensure_index(&result->dvert[medge[edge2->new_edge].v1], rim_defgrp_index)
+              BKE_defvert_ensure_index(&dvert[medge[edge2->new_edge].v1], rim_defgrp_index)
                   ->weight = 1.0f;
             }
             CustomData_copy_data(&mesh->ldata, &result->ldata, loop1, (int)loop_index, 1);
@@ -2415,7 +2408,7 @@ Mesh *MOD_solidify_nonmanifold_modifyMesh(ModifierData *md,
           if (!v1_singularity) {
             open_face_edge_index = edge1->link_edge_groups[0]->open_face_edge;
             if (rim_defgrp_index != -1) {
-              BKE_defvert_ensure_index(&result->dvert[medge[edge1->new_edge].v1], rim_defgrp_index)
+              BKE_defvert_ensure_index(&dvert[medge[edge1->new_edge].v1], rim_defgrp_index)
                   ->weight = 1.0f;
             }
             CustomData_copy_data(&mesh->ldata, &result->ldata, loop1, (int)loop_index, 1);
@@ -2430,8 +2423,8 @@ Mesh *MOD_solidify_nonmanifold_modifyMesh(ModifierData *md,
           }
 
           if (rim_defgrp_index != -1) {
-            BKE_defvert_ensure_index(&result->dvert[medge[edge2->new_edge].v1], rim_defgrp_index)
-                ->weight = 1.0f;
+            BKE_defvert_ensure_index(&dvert[medge[edge2->new_edge].v1], rim_defgrp_index)->weight =
+                1.0f;
           }
           CustomData_copy_data(&mesh->ldata, &result->ldata, loop1, (int)loop_index, 1);
           mloop[loop_index].v = medge[edge2->new_edge].v1;
@@ -2440,7 +2433,7 @@ Mesh *MOD_solidify_nonmanifold_modifyMesh(ModifierData *md,
           if (!v2_singularity) {
             open_face_edge_index = edge2->link_edge_groups[1]->open_face_edge;
             if (rim_defgrp_index != -1) {
-              BKE_defvert_ensure_index(&result->dvert[medge[edge2->new_edge].v2], rim_defgrp_index)
+              BKE_defvert_ensure_index(&dvert[medge[edge2->new_edge].v2], rim_defgrp_index)
                   ->weight = 1.0f;
             }
             CustomData_copy_data(&mesh->ldata, &result->ldata, loop2, (int)loop_index, 1);
@@ -2455,8 +2448,8 @@ Mesh *MOD_solidify_nonmanifold_modifyMesh(ModifierData *md,
           }
 
           if (rim_defgrp_index != -1) {
-            BKE_defvert_ensure_index(&result->dvert[medge[edge1->new_edge].v2], rim_defgrp_index)
-                ->weight = 1.0f;
+            BKE_defvert_ensure_index(&dvert[medge[edge1->new_edge].v2], rim_defgrp_index)->weight =
+                1.0f;
           }
           CustomData_copy_data(&mesh->ldata, &result->ldata, loop2, (int)loop_index, 1);
           mloop[loop_index].v = medge[edge1->new_edge].v2;
@@ -2536,8 +2529,7 @@ Mesh *MOD_solidify_nonmanifold_modifyMesh(ModifierData *md,
           if (fr->reversed != do_flip) {
             for (int l = (int)k - 1; l >= 0; l--) {
               if (shell_defgrp_index != -1) {
-                BKE_defvert_ensure_index(&result->dvert[face_verts[l]], shell_defgrp_index)
-                    ->weight = 1.0f;
+                BKE_defvert_ensure_index(&dvert[face_verts[l]], shell_defgrp_index)->weight = 1.0f;
               }
               CustomData_copy_data(
                   &mesh->ldata, &result->ldata, (int)face_loops[l], (int)loop_index, 1);

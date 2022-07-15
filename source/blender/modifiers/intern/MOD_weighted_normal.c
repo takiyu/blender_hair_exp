@@ -580,10 +580,10 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
   const int loops_num = result->totloop;
   const int polys_num = result->totpoly;
 
-  MEdge *medge = result->medge;
-  MPoly *mpoly = result->mpoly;
-  MVert *mvert = result->mvert;
-  MLoop *mloop = result->mloop;
+  MVert *mvert = BKE_mesh_vertices(result);
+  MEdge *medge = BKE_mesh_edges(result);
+  MPoly *mpoly = BKE_mesh_polygons(result);
+  MLoop *mloop = BKE_mesh_loops(result);
 
   /* Right now:
    * If weight = 50 then all faces are given equal weight.
@@ -612,7 +612,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
     clnors = CustomData_add_layer(&result->ldata, CD_CUSTOMLOOPNORMAL, CD_CALLOC, NULL, loops_num);
   }
 
-  MDeformVert *dvert;
+  const MDeformVert *dvert;
   int defgrp_index;
   MOD_get_vgroup(ctx->object, mesh, wnmd->defgrp_name, &dvert, &defgrp_index);
 

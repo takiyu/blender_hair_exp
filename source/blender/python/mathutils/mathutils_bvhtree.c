@@ -1153,7 +1153,7 @@ static PyObject *C_BVHTree_FromObject(PyObject *UNUSED(cls), PyObject *args, PyO
       copy_v3_v3(coords[i], vertices[i].co);
     }
 
-    mloop = mesh->mloop;
+    mloop = BKE_mesh_loops(mesh);
   }
 
   {

@@ -41,10 +41,11 @@ class IslandFieldInput final : public GeometryFieldInput {
     if (mesh == nullptr) {
       return {};
     }
+    const Span<MEdge> edges = bke::mesh_edges(*mesh);
 
     DisjointSet islands(mesh->totvert);
     for (const int i : IndexRange(mesh->totedge)) {
-      islands.join(mesh->medge[i].v1, mesh->medge[i].v2);
+      islands.join(edges[i].v1, edges[i].v2);
     }
 
     Array<int> output(mesh->totvert);
@@ -89,10 +90,11 @@ class IslandCountFieldInput final : public GeometryFieldInput {
     if (mesh == nullptr) {
       return {};
     }
+    const Span<MEdge> edges = bke::mesh_edges(*mesh);
 
     DisjointSet islands(mesh->totvert);
     for (const int i : IndexRange(mesh->totedge)) {
-      islands.join(mesh->medge[i].v1, mesh->medge[i].v2);
+      islands.join(edges[i].v1, edges[i].v2);
     }
 
     Set<int> island_list;

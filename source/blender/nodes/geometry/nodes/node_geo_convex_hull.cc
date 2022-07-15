@@ -74,6 +74,8 @@ static Mesh *hull_from_bullet(const Mesh *mesh, Span<float3> coords)
    * to a loop and edges need to be created from that. */
   Array<MLoop> mloop_src(loops_num);
   uint edge_index = 0;
+  MutableSpan<MEdge> edges = bke::mesh_edges_for_write(*mesh);
+
   for (const int i : IndexRange(loops_num)) {
     int v_from;
     int v_to;
@@ -82,7 +84,7 @@ static Mesh *hull_from_bullet(const Mesh *mesh, Span<float3> coords)
     mloop_src[i].v = (uint)v_from;
     /* Add edges for ascending order loops only. */
     if (v_from < v_to) {
-      MEdge &edge = result->medge[edge_index];
+      MEdge &edge = edges[edge_index];
       edge.v1 = v_from;
       edge.v2 = v_to;
       edge.flag = ME_EDGEDRAW | ME_EDGERENDER;
@@ -96,7 +98,7 @@ static Mesh *hull_from_bullet(const Mesh *mesh, Span<float3> coords)
   }
   if (edges_num == 1) {
     /* In this case there are no loops. */
-    MEdge &edge = result->medge[0];
+    MEdge &edge = edges[0];
     edge.v1 = 0;
     edge.v2 = 1;
     edge.flag |= ME_EDGEDRAW | ME_EDGERENDER | ME_LOOSEEDGE;
@@ -107,7 +109,10 @@ static Mesh *hull_from_bullet(const Mesh *mesh, Span<float3> coords)
   /* Copy faces. */
   Array<int> loops;
   int j = 0;
-  MLoop *loop = result->mloop;
+  MutableSpan<MPoly> polygons = bke::mesh_polygons_for_write(*result);
+  MutableSpan<MLoop> loops = bke::mesh_loops_for_write(*result);
+  MLoop *loop = loops.data();
+
   for (const int i : IndexRange(faces_num)) {
     const int len = plConvexHullGetFaceSize(hull, i);
 

@@ -26,17 +26,19 @@ static VArray<int> construct_neighbor_count_gvarray(const MeshComponent &compone
   if (mesh == nullptr) {
     return {};
   }
+  const Span<MPoly> polygons = bke::mesh_polygons(*mesh);
+  const Span<MLoop> loops = bke::mesh_loops(*mesh);
 
   Array<int> edge_count(mesh->totedge, 0);
-  for (const int i : IndexRange(mesh->totloop)) {
-    edge_count[mesh->mloop[i].e]++;
+  for (const MLoop &loop : loops) {
+    edge_count[loop.e]++;
   }
 
-  Array<int> poly_count(mesh->totpoly, 0);
-  for (const int poly_num : IndexRange(mesh->totpoly)) {
-    MPoly &poly = mesh->mpoly[poly_num];
-    for (const int loop_num : IndexRange(poly.loopstart, poly.totloop)) {
-      poly_count[poly_num] += edge_count[mesh->mloop[loop_num].e] - 1;
+  Array<int> poly_count(polygons.size(), 0);
+  for (const int poly_index : polygons.index_range()) {
+    const MPoly &poly = polygons[poly_index];
+    for (const MLoop &loop : loops.slice(poly.loopstart, poly.totloop)) {
+      poly_count[poly_index] += edge_count[loop.e] - 1;
     }
   }
 

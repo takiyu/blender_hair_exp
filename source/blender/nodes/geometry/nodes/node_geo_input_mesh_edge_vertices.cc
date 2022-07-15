@@ -35,13 +35,14 @@ static VArray<int> construct_edge_vertices_gvarray(const MeshComponent &componen
   if (mesh == nullptr) {
     return {};
   }
+  const Span<MEdge> edges = bke::mesh_edges(*mesh);
+
   if (domain == ATTR_DOMAIN_EDGE) {
     if (vertex == VERTEX_ONE) {
-      return VArray<int>::ForFunc(mesh->totedge,
-                                  [mesh](const int i) -> int { return mesh->medge[i].v1; });
+      return VArray<int>::ForFunc(edges.size(),
+                                  [edges](const int i) -> int { return edges[i].v1; });
     }
-    return VArray<int>::ForFunc(mesh->totedge,
-                                [mesh](const int i) -> int { return mesh->medge[i].v2; });
+    return VArray<int>::ForFunc(edges.size(), [edges](const int i) -> int { return edges[i].v2; });
   }
   return {};
 }

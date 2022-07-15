@@ -99,8 +99,7 @@ static Mesh *uvprojectModifier_do(UVProjectModifierData *umd,
   float(*coords)[3], (*co)[3];
   MLoopUV *mloop_uv;
   int i, verts_num, polys_num, loops_num;
-  MPoly *mpoly, *mp;
-  MLoop *mloop;
+  const MPoly *mp;
   Projector projectors[MOD_UVPROJECT_MAXPROJECTORS];
   int projectors_num = 0;
   char uvname[MAX_CUSTOMDATA_LAYER_NAME];
@@ -205,11 +204,11 @@ static Mesh *uvprojectModifier_do(UVProjectModifierData *umd,
     }
   }
 
-  mpoly = mesh->mpoly;
-  mloop = mesh->mloop;
+  const MPoly *polygons = BKE_mesh_polygons(mesh);
+  const MLoop *loops = BKE_mesh_loops(mesh);
 
   /* apply coords as UVs */
-  for (i = 0, mp = mpoly; i < polys_num; i++, mp++) {
+  for (i = 0, mp = polygons; i < polys_num; i++, mp++) {
     if (projectors_num == 1) {
       if (projectors[0].uci) {
         uint fidx = mp->totloop - 1;

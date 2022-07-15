@@ -53,7 +53,7 @@ static void generate_vert_coordinates(Mesh *mesh,
 
   INIT_MINMAX(min_co, max_co);
 
-  MVert *mv = mesh->mvert;
+  MVert *mv = BKE_mesh_vertices(mesh);
   for (int i = 0; i < mesh->totvert; i++, mv++) {
     copy_v3_v3(r_cos[i], mv->co);
     if (r_size != NULL && ob_center == NULL) {
@@ -218,16 +218,16 @@ static void normalEditModifier_do_radial(NormalEditModifierData *enmd,
                                          const short mix_mode,
                                          const float mix_factor,
                                          const float mix_limit,
-                                         MDeformVert *dvert,
+                                         const MDeformVert *dvert,
                                          const int defgrp_index,
                                          const bool use_invert_vgroup,
-                                         MVert *mvert,
+                                         const MVert *mvert,
                                          const int verts_num,
                                          MEdge *medge,
                                          const int edges_num,
-                                         MLoop *mloop,
+                                         const MLoop *mloop,
                                          const int loops_num,
-                                         MPoly *mpoly,
+                                         const MPoly *mpoly,
                                          const int polys_num)
 {
   Object *ob_target = enmd->target;
@@ -355,16 +355,16 @@ static void normalEditModifier_do_directional(NormalEditModifierData *enmd,
                                               const short mix_mode,
                                               const float mix_factor,
                                               const float mix_limit,
-                                              MDeformVert *dvert,
+                                              const MDeformVert *dvert,
                                               const int defgrp_index,
                                               const bool use_invert_vgroup,
-                                              MVert *mvert,
+                                              const MVert *mvert,
                                               const int verts_num,
                                               MEdge *medge,
                                               const int edges_num,
-                                              MLoop *mloop,
+                                              const MLoop *mloop,
                                               const int loops_num,
-                                              MPoly *mpoly,
+                                              const MPoly *mpoly,
                                               const int polys_num)
 {
   Object *ob_target = enmd->target;
@@ -399,7 +399,7 @@ static void normalEditModifier_do_directional(NormalEditModifierData *enmd,
     generate_vert_coordinates(mesh, ob, ob_target, NULL, verts_num, cos, NULL);
 
     BLI_bitmap *done_verts = BLI_BITMAP_NEW((size_t)verts_num, __func__);
-    MLoop *ml;
+    const MLoop *ml;
     float(*no)[3];
 
     /* We reuse cos to now store the 'to target' normal of the verts! */
@@ -508,54 +508,43 @@ static Mesh *normalEditModifier_do(NormalEditModifierData *enmd,
     return mesh;
   }
 
-  Mesh *result;
-  if (mesh->medge == ((Mesh *)ob->data)->medge) {
-    /* We need to duplicate data here, otherwise setting custom normals
-     * (which may also affect sharp edges) could
-     * modify original mesh, see T43671. */
-    result = (Mesh *)BKE_id_copy_ex(NULL, &mesh->id, NULL, LIB_ID_COPY_LOCALIZE);
-  }
-  else {
-    result = mesh;
-  }
-
-  const int verts_num = result->totvert;
-  const int edges_num = result->totedge;
-  const int loops_num = result->totloop;
-  const int polys_num = result->totpoly;
-  MVert *mvert = result->mvert;
-  MEdge *medge = result->medge;
-  MLoop *mloop = result->mloop;
-  MPoly *mpoly = result->mpoly;
+  const int verts_num = mesh->totvert;
+  const int edges_num = mesh->totedge;
+  const int loops_num = mesh->totloop;
+  const int polys_num = mesh->totpoly;
+  const MVert *vertices = BKE_mesh_vertices(mesh);
+  MEdge *edges = BKE_mesh_edges_for_write(mesh);
+  const MPoly *polygons = BKE_mesh_polygons(mesh);
+  const MLoop *loops = BKE_mesh_loops(mesh);
 
   int defgrp_index;
-  MDeformVert *dvert;
+  const MDeformVert *dvert;
 
   float(*loopnors)[3] = NULL;
 
-  CustomData *ldata = &result->ldata;
+  CustomData *ldata = &mesh->ldata;
 
-  const float(*vert_normals)[3] = BKE_mesh_vertex_normals_ensure(result);
-  const float(*poly_normals)[3] = BKE_mesh_poly_normals_ensure(result);
+  const float(*vert_normals)[3] = BKE_mesh_vertex_normals_ensure(mesh);
+  const float(*poly_normals)[3] = BKE_mesh_poly_normals_ensure(mesh);
 
   short(*clnors)[2] = CustomData_get_layer(ldata, CD_CUSTOMLOOPNORMAL);
   if (use_current_clnors) {
     clnors = CustomData_duplicate_referenced_layer(ldata, CD_CUSTOMLOOPNORMAL, loops_num);
     loopnors = MEM_malloc_arrayN((size_t)loops_num, sizeof(*loopnors), __func__);
 
-    BKE_mesh_normals_loop_split(mvert,
+    BKE_mesh_normals_loop_split(vertices,
                                 vert_normals,
                                 verts_num,
-                                medge,
+                                edges,
                                 edges_num,
-                                mloop,
+                                loops,
                                 loopnors,
                                 loops_num,
-                                mpoly,
+                                polygons,
                                 poly_normals,
                                 polys_num,
                                 true,
-                                result->smoothresh,
+                                mesh->smoothresh,
                                 NULL,
                                 clnors,
                                 NULL);
@@ -565,13 +554,13 @@ static Mesh *normalEditModifier_do(NormalEditModifierData *enmd,
     clnors = CustomData_add_layer(ldata, CD_CUSTOMLOOPNORMAL, CD_CALLOC, NULL, loops_num);
   }
 
-  MOD_get_vgroup(ob, result, enmd->defgrp_name, &dvert, &defgrp_index);
+  MOD_get_vgroup(ob, mesh, enmd->defgrp_name, &dvert, &defgrp_index);
 
   if (enmd->mode == MOD_NORMALEDIT_MODE_RADIAL) {
     normalEditModifier_do_radial(enmd,
                                  ctx,
                                  ob,
-                                 result,
+                                 mesh,
                                  clnors,
                                  loopnors,
                                  poly_normals,
@@ -581,20 +570,20 @@ static Mesh *normalEditModifier_do(NormalEditModifierData *enmd,
                                  dvert,
                                  defgrp_index,
                                  use_invert_vgroup,
-                                 mvert,
+                                 vertices,
                                  verts_num,
-                                 medge,
+                                 edges,
                                  edges_num,
-                                 mloop,
+                                 loops,
                                  loops_num,
-                                 mpoly,
+                                 polygons,
                                  polys_num);
   }
   else if (enmd->mode == MOD_NORMALEDIT_MODE_DIRECTIONAL) {
     normalEditModifier_do_directional(enmd,
                                       ctx,
                                       ob,
-                                      result,
+                                      mesh,
                                       clnors,
                                       loopnors,
                                       poly_normals,
@@ -604,21 +593,21 @@ static Mesh *normalEditModifier_do(NormalEditModifierData *enmd,
                                       dvert,
                                       defgrp_index,
                                       use_invert_vgroup,
-                                      mvert,
+                                      vertices,
                                       verts_num,
-                                      medge,
+                                      edges,
                                       edges_num,
-                                      mloop,
+                                      loops,
                                       loops_num,
-                                      mpoly,
+                                      polygons,
                                       polys_num);
   }
 
   MEM_SAFE_FREE(loopnors);
 
-  result->runtime.is_original = false;
+  mesh->runtime.is_original = false;
 
-  return result;
+  return mesh;
 }
 
 static void initData(ModifierData *md)

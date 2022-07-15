@@ -513,9 +513,9 @@ void BKE_edges_sharp_from_angle_set(const struct MVert *mverts,
                                     int numVerts,
                                     struct MEdge *medges,
                                     int numEdges,
-                                    struct MLoop *mloops,
+                                    const struct MLoop *mloops,
                                     int numLoops,
-                                    struct MPoly *mpolys,
+                                    const struct MPoly *mpolys,
                                     const float (*polynors)[3],
                                     int numPolys,
                                     float split_angle);
@@ -633,12 +633,12 @@ void BKE_lnor_space_custom_normal_to_data(MLoopNorSpace *lnor_space,
 void BKE_mesh_normals_loop_split(const struct MVert *mverts,
                                  const float (*vert_normals)[3],
                                  int numVerts,
-                                 struct MEdge *medges,
+                                 const struct MEdge *medges,
                                  int numEdges,
-                                 struct MLoop *mloops,
+                                 const struct MLoop *mloops,
                                  float (*r_loopnors)[3],
                                  int numLoops,
-                                 struct MPoly *mpolys,
+                                 const struct MPoly *mpolys,
                                  const float (*polynors)[3],
                                  int numPolys,
                                  bool use_split_normals,
@@ -652,10 +652,10 @@ void BKE_mesh_normals_loop_custom_set(const struct MVert *mverts,
                                       int numVerts,
                                       struct MEdge *medges,
                                       int numEdges,
-                                      struct MLoop *mloops,
+                                      const struct MLoop *mloops,
                                       float (*r_custom_loopnors)[3],
                                       int numLoops,
-                                      struct MPoly *mpolys,
+                                      const struct MPoly *mpolys,
                                       const float (*polynors)[3],
                                       int numPolys,
                                       short (*r_clnors_data)[2]);
@@ -1068,6 +1068,20 @@ BLI_INLINE MLoop *BKE_mesh_loops_for_write(Mesh *mesh)
 {
   CustomData_duplicate_referenced_layer(&mesh->ldata, CD_MLOOP, mesh->totloop);
   return (MLoop *)CustomData_get_layer(&mesh->ldata, CD_MLOOP);
+}
+
+BLI_INLINE const MDeformVert *BKE_mesh_deform_verts(const Mesh *mesh)
+{
+  return (const MDeformVert *)CustomData_get_layer(&mesh->vdata, CD_MDEFORMVERT);
+}
+BLI_INLINE MDeformVert *BKE_mesh_deform_verts_for_write(Mesh *mesh)
+{
+  MDeformVert *dvert = (MDeformVert *)CustomData_duplicate_referenced_layer(
+      &mesh->ldata, CD_MDEFORMVERT, mesh->totvert);
+  if (dvert) {
+    return dvert;
+  }
+  return CustomData_add_layer(&meshs->vdata, CD_MDEFORMVERT, CD_CALLOC, NULL, mesh->totvert);
 }
 
 #ifdef __cplusplus

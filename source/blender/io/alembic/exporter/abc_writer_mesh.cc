@@ -484,14 +484,14 @@ static void get_edge_creases(struct Mesh *mesh,
   lengths.clear();
   sharpnesses.clear();
 
-  MEdge *edge = mesh->medge;
+  const Span<MEdge> edges = bke::mesh_edges(*mesh);
 
-  for (int i = 0, e = mesh->totedge; i < e; i++) {
-    const float sharpness = static_cast<float>(edge[i].crease) * factor;
+  for (const int i : edges.index_range()) {
+    const float sharpness = static_cast<float>(edges[i].crease) * factor;
 
     if (sharpness != 0.0f) {
-      indices.push_back(edge[i].v1);
-      indices.push_back(edge[i].v2);
+      indices.push_back(edges[i].v1);
+      indices.push_back(edges[i].v2);
       sharpnesses.push_back(sharpness);
     }
   }

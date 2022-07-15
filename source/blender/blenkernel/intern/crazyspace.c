@@ -181,16 +181,17 @@ void BKE_crazyspace_set_quats_mesh(Mesh *me,
   BLI_bitmap *vert_tag = BLI_BITMAP_NEW(me->totvert, __func__);
 
   /* first store two sets of tangent vectors in vertices, we derive it just from the face-edges */
-  const MVert *mvert = BKE_mesh_vertices(me);
-  MPoly *mp = me->mpoly;
-  MLoop *mloop = me->mloop;
+  const MVert *vertices = BKE_mesh_vertices(me);
+  const MPoly *polygons = BKE_mesh_polygons(me);
+  const MLoop *loops = BKE_mesh_loops(me);
 
-  for (int i = 0; i < me->totpoly; i++, mp++) {
-    MLoop *ml_next = &mloop[mp->loopstart];
-    MLoop *ml_curr = &ml_next[mp->totloop - 1];
-    MLoop *ml_prev = &ml_next[mp->totloop - 2];
+  for (int i = 0; i < me->totpoly; i++) {
+    const MPoly *poly = &polygons[i];
+    const MLoop *ml_next = &loops[poly->loopstart];
+    const MLoop *ml_curr = &ml_next[poly->totloop - 1];
+    const MLoop *ml_prev = &ml_next[poly->totloop - 2];
 
-    for (int j = 0; j < mp->totloop; j++) {
+    for (int j = 0; j < poly->totloop; j++) {
       if (!BLI_BITMAP_TEST(vert_tag, ml_curr->v)) {
         const float *co_prev, *co_curr, *co_next; /* orig */
         const float *vd_prev, *vd_curr, *vd_next; /* deform */
@@ -206,9 +207,9 @@ void BKE_crazyspace_set_quats_mesh(Mesh *me,
           co_next = origcos[ml_next->v];
         }
         else {
-          co_prev = mvert[ml_prev->v].co;
-          co_curr = mvert[ml_curr->v].co;
-          co_next = mvert[ml_next->v].co;
+          co_prev = vertices[ml_prev->v].co;
+          co_curr = vertices[ml_curr->v].co;
+          co_next = vertices[ml_next->v].co;
         }
 
         set_crazy_vertex_quat(

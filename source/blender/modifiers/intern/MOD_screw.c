@@ -16,7 +16,7 @@
 
 #include "BLT_translation.h"
 
-#include "DNA_defaults.h"
+// #include "DNA_defaults.h"
 #include "DNA_mesh_types.h"
 #include "DNA_meshdata_types.h"
 #include "DNA_object_types.h"
@@ -31,7 +31,7 @@
 #include "UI_resources.h"
 
 #include "RNA_access.h"
-#include "RNA_prototypes.h"
+// #include "RNA_prototypes.h"
 
 #include "DEG_depsgraph_build.h"
 #include "DEG_depsgraph_query.h"
@@ -177,7 +177,7 @@ static Mesh *mesh_remove_doubles_on_axis(Mesh *result,
 
 static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *meshData)
 {
-  Mesh *mesh = meshData;
+  const Mesh *mesh = meshData;
   Mesh *result;
   ScrewModifierData *ltmd = (ScrewModifierData *)md;
   const bool use_render_params = (ctx->flag & MOD_APPLY_RENDER) != 0;
@@ -383,14 +383,15 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
   result = BKE_mesh_new_nomain_from_template(
       mesh, (int)maxVerts, (int)maxEdges, 0, (int)maxPolys * 4, (int)maxPolys);
 
-  /* copy verts from mesh */
-  mvert_orig = mesh->mvert;
-  medge_orig = mesh->medge;
+  mvert_orig = BKE_mesh_vertices(mesh);
+  medge_orig = BKE_mesh_edges(mesh);
+  mpoly_orig = BKE_mesh_polygons(mesh);
+  mloop_orig = BKE_mesh_loops(mesh);
 
-  mvert_new = result->mvert;
-  mpoly_new = result->mpoly;
-  mloop_new = result->mloop;
-  medge_new = result->medge;
+  mvert_new = BKE_mesh_vertices_for_write(result);
+  medge_new = BKE_mesh_edges_for_write(result);
+  mpoly_new = BKE_mesh_polygons_for_write(result);
+  mloop_new = BKE_mesh_loops_for_write(result);
 
   if (!CustomData_has_layer(&result->pdata, CD_ORIGINDEX)) {
     CustomData_add_layer(&result->pdata, CD_ORIGINDEX, CD_CALLOC, NULL, (int)maxPolys);
@@ -450,8 +451,6 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
   if (totpoly) {
     MPoly *mp_orig;
 
-    mpoly_orig = mesh->mpoly;
-    mloop_orig = mesh->mloop;
     edge_poly_map = MEM_malloc_arrayN(totedge, sizeof(*edge_poly_map), __func__);
     memset(edge_poly_map, 0xff, sizeof(*edge_poly_map) * totedge);
 

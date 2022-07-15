@@ -33,6 +33,8 @@
 #include "MeshImporter.h"
 #include "collada_utils.h"
 
+using blender::MutableSpan;
+
 /* get node name, or fall back to original id if not present (name is optional) */
 template<class T> static std::string bc_get_dae_name(T *node)
 {
@@ -555,10 +557,11 @@ void MeshImporter::mesh_add_edges(Mesh *mesh, int len)
 
   CustomData_free(&mesh->edata, mesh->totedge);
   mesh->edata = edata;
-  BKE_mesh_update_customdata_pointers(mesh, false); /* new edges don't change tessellation */
+
+  MutableSpan<MEdge> edges = blender::bke::mesh_edges_for_write(*mesh);
 
   /* set default flags */
-  medge = &mesh->medge[mesh->totedge];
+  medge = &edges[mesh->totedge];
   for (int i = 0; i < len; i++, medge++) {
     medge->flag = ME_EDGEDRAW | ME_EDGERENDER | SELECT;
   }
@@ -575,7 +578,8 @@ void MeshImporter::read_lines(COLLADAFW::Mesh *mesh, Mesh *me)
     /* unsigned int total_edge_count = loose_edge_count + face_edge_count; */ /* UNUSED */
 
     mesh_add_edges(me, loose_edge_count);
-    MEdge *med = me->medge + face_edge_count;
+    MutableSpan<MEdge> edges = blender::bke::mesh_edges_for_write(*mesh);
+    MEdge *med = edges.data() + face_edge_count;
 
     COLLADAFW::MeshPrimitiveArray &prim_arr = mesh->getMeshPrimitives();
 

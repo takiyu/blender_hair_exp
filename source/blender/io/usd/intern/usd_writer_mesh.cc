@@ -279,22 +279,23 @@ static void get_edge_creases(const Mesh *mesh, USDMeshData &usd_mesh_data)
 {
   const float factor = 1.0f / 255.0f;
 
-  MEdge *edge = mesh->medge;
+  const Span<MEdge> edges = bke::mesh_edges(*mesh);
   float sharpness;
-  for (int edge_idx = 0, totedge = mesh->totedge; edge_idx < totedge; ++edge_idx, ++edge) {
-    if (edge->crease == 0) {
+  for (const int i : edges.index_range()) {
+    const MEdge &edge = edges[i];
+    if (edge.crease == 0) {
       continue;
     }
 
-    if (edge->crease == 255) {
+    if (edge.crease == 255) {
       sharpness = pxr::UsdGeomMesh::SHARPNESS_INFINITE;
     }
     else {
-      sharpness = static_cast<float>(edge->crease) * factor;
+      sharpness = static_cast<float>(edge.crease) * factor;
     }
 
-    usd_mesh_data.crease_vertex_indices.push_back(edge->v1);
-    usd_mesh_data.crease_vertex_indices.push_back(edge->v2);
+    usd_mesh_data.crease_vertex_indices.push_back(edge.v1);
+    usd_mesh_data.crease_vertex_indices.push_back(edge.v2);
     usd_mesh_data.crease_lengths.push_back(2);
     usd_mesh_data.crease_sharpnesses.push_back(sharpness);
   }

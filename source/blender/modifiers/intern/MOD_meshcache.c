@@ -79,7 +79,7 @@ static void meshcache_do(MeshCacheModifierData *mcmd,
 {
   const bool use_factor = mcmd->factor < 1.0f;
   int influence_group_index;
-  MDeformVert *dvert;
+  const MDeformVert *dvert;
   MOD_get_vgroup(ob, mesh, mcmd->defgrp_name, &dvert, &influence_group_index);
 
   float(*vertexCos_Store)[3] = (use_factor || influence_group_index != -1 ||
@@ -189,9 +189,9 @@ static void meshcache_do(MeshCacheModifierData *mcmd,
       }
 
       BKE_mesh_calc_relative_deform(
-          me->mpoly,
+          BKE_mesh_polygons(me),
           me->totpoly,
-          me->mloop,
+          BKE_mesh_loops(me),
           me->totvert,
 
           (const float(*)[3])vertexCos_Source, /* From the original Mesh. */

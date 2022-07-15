@@ -63,17 +63,9 @@ static void mesh_calc_hq_normal(Mesh *mesh, const float (*poly_nors)[3], float (
   verts_num = mesh->totvert;
   edges_num = mesh->totedge;
   polys_num = mesh->totpoly;
-  mpoly = mesh->mpoly;
-  medge = mesh->medge;
-  mloop = mesh->mloop;
-
-  /* we don't want to overwrite any referenced layers */
-
-  /* Doesn't work here! */
-#if 0
-  mv = CustomData_duplicate_referenced_layer(&dm->vertData, CD_MVERT, verts_num);
-  cddm->mvert = mv;
-#endif
+  mpoly = BKE_mesh_polygons(mesh);
+  medge = BKE_mesh_edges(mesh);
+  mloop = BKE_mesh_loops(mesh);
 
   mp = mpoly;
 
@@ -210,7 +202,7 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
   const bool do_shell = !(do_rim && (smd->flag & MOD_SOLIDIFY_NOSHELL) != 0);
 
   /* weights */
-  MDeformVert *dvert;
+  const MDeformVert *dvert;
   const bool defgrp_invert = (smd->flag & MOD_SOLIDIFY_VGROUP_INV) != 0;
   int defgrp_index;
   const int shell_defgrp_index = BKE_id_defgroup_name_index(&mesh->id, smd->shell_defgrp_name);
@@ -223,10 +215,10 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
 
   MOD_get_vgroup(ctx->object, mesh, smd->defgrp_name, &dvert, &defgrp_index);
 
-  orig_mvert = mesh->mvert;
-  orig_medge = mesh->medge;
-  orig_mloop = mesh->mloop;
-  orig_mpoly = mesh->mpoly;
+  orig_mvert = BKE_mesh_vertices(mesh);
+  orig_medge = BKE_mesh_edges(mesh);
+  orig_mloop = BKE_mesh_polygons(mesh);
+  orig_mpoly = BKE_mesh_loops(mesh);
 
   if (need_poly_normals) {
     /* calculate only face normals */
@@ -331,10 +323,10 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
                                              (int)((loops_num * stride) + newLoops),
                                              (int)((polys_num * stride) + newPolys));
 
-  mpoly = result->mpoly;
-  mloop = result->mloop;
-  medge = result->medge;
-  mvert = result->mvert;
+  mvert = BKE_mesh_vertices_for_write(result);
+  medge = BKE_mesh_edges_for_write(result);
+  mloop = BKE_mesh_polygons_for_write(result);
+  mpoly = BKE_mesh_loops_for_write(result);
 
   if (do_bevel_convex) {
     /* Make sure bweight is enabled. */
@@ -968,22 +960,15 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
 
   /* Add vertex weights for rim and shell vgroups. */
   if (shell_defgrp_index != -1 || rim_defgrp_index != -1) {
-    dvert = CustomData_duplicate_referenced_layer(&result->vdata, CD_MDEFORMVERT, result->totvert);
-    /* If no vertices were ever added to an object's vgroup, dvert might be NULL. */
-    if (dvert == NULL) {
-      /* Add a valid data layer! */
-      dvert = CustomData_add_layer(
-          &result->vdata, CD_MDEFORMVERT, CD_CALLOC, NULL, result->totvert);
-    }
+    dvert = BKE_mesh_deform_verts_for_write(result);
+
     /* Ultimate security check. */
     if (dvert != NULL) {
-      result->dvert = dvert;
 
       if (rim_defgrp_index != -1) {
         for (uint i = 0; i < rimVerts; i++) {
-          BKE_defvert_ensure_index(&result->dvert[new_vert_arr[i]], rim_defgrp_index)->weight =
-              1.0f;
-          BKE_defvert_ensure_index(&result->dvert[(do_shell ? new_vert_arr[i] : i) + verts_num],
+          BKE_defvert_ensure_index(&dvert[new_vert_arr[i]], rim_defgrp_index)->weight = 1.0f;
+          BKE_defvert_ensure_index(&dvert[(do_shell ? new_vert_arr[i] : i) + verts_num],
                                    rim_defgrp_index)
               ->weight = 1.0f;
         }
@@ -991,7 +976,7 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
 
       if (shell_defgrp_index != -1) {
         for (uint i = verts_num; i < result->totvert; i++) {
-          BKE_defvert_ensure_index(&result->dvert[i], shell_defgrp_index)->weight = 1.0f;
+          BKE_defvert_ensure_index(&dvert[i], shell_defgrp_index)->weight = 1.0f;
         }
       }
     }

@@ -390,11 +390,9 @@ static rbCollisionShape *rigidbody_get_shape_trimesh_from_mesh(Object *ob)
 
   if (ob->type == OB_MESH) {
     Mesh *mesh = NULL;
-    MVert *mvert;
     const MLoopTri *looptri;
     int totvert;
     int tottri;
-    const MLoop *mloop;
 
     mesh = rigidbody_get_mesh(ob);
 
@@ -403,11 +401,11 @@ static rbCollisionShape *rigidbody_get_shape_trimesh_from_mesh(Object *ob)
       return NULL;
     }
 
-    mvert = mesh->mvert;
+    const MVert *mvert = BKE_mesh_vertices(mesh);
     totvert = mesh->totvert;
     looptri = BKE_mesh_runtime_looptri_ensure(mesh);
     tottri = mesh->runtime.looptris.len;
-    mloop = mesh->mloop;
+    const MLoop *mloop = BKE_mesh_loops(mesh);
 
     /* sanity checking - potential case when no data will be present */
     if ((totvert == 0) || (tottri == 0)) {
@@ -670,21 +668,19 @@ void BKE_rigidbody_calc_volume(Object *ob, float *r_vol)
     case RB_SHAPE_TRIMESH: {
       if (ob->type == OB_MESH) {
         Mesh *mesh = rigidbody_get_mesh(ob);
-        MVert *mvert;
         const MLoopTri *lt = NULL;
         int totvert, tottri = 0;
-        const MLoop *mloop = NULL;
 
         /* ensure mesh validity, then grab data */
         if (mesh == NULL) {
           return;
         }
 
-        mvert = mesh->mvert;
+        const MVert *mvert = BKE_mesh_vertices(mesh);
         totvert = mesh->totvert;
         lt = BKE_mesh_runtime_looptri_ensure(mesh);
         tottri = mesh->runtime.looptris.len;
-        mloop = mesh->mloop;
+        const MLoop *mloop = BKE_mesh_loops(mesh);
 
         if (totvert > 0 && tottri > 0) {
           BKE_mesh_calc_volume(mvert, totvert, lt, tottri, mloop, &volume, NULL);
@@ -746,21 +742,19 @@ void BKE_rigidbody_calc_center_of_mass(Object *ob, float r_center[3])
     case RB_SHAPE_TRIMESH: {
       if (ob->type == OB_MESH) {
         Mesh *mesh = rigidbody_get_mesh(ob);
-        MVert *mvert;
         const MLoopTri *looptri;
         int totvert, tottri;
-        const MLoop *mloop;
 
         /* ensure mesh validity, then grab data */
         if (mesh == NULL) {
           return;
         }
 
-        mvert = mesh->mvert;
+        const MVert *mvert = BKE_mesh_vertices(mesh);
         totvert = mesh->totvert;
         looptri = BKE_mesh_runtime_looptri_ensure(mesh);
         tottri = mesh->runtime.looptris.len;
-        mloop = mesh->mloop;
+        const MLoop *mloop = BKE_mesh_loops(mesh);
 
         if (totvert > 0 && tottri > 0) {
           BKE_mesh_calc_volume(mvert, totvert, looptri, tottri, mloop, NULL, r_center);

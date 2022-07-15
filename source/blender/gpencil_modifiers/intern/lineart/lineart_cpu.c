@@ -1637,12 +1637,14 @@ static void lineart_identify_mlooptri_feature_edges(void *__restrict userdata,
   }
 
   if (!only_contour) {
+    const MPoly *polygons = BKE_mesh_polygons(me);
 
     if (ld->conf.use_crease) {
+
       bool do_crease = true;
       if (!ld->conf.force_crease && !e_feat_data->use_auto_smooth &&
-          (me->mpoly[mlooptri[f1].poly].flag & ME_SMOOTH) &&
-          (me->mpoly[mlooptri[f2].poly].flag & ME_SMOOTH)) {
+          (polygons[mlooptri[f1].poly].flag & ME_SMOOTH) &&
+          (polygons[mlooptri[f2].poly].flag & ME_SMOOTH)) {
         do_crease = false;
       }
       if (do_crease && (dot_v3v3_db(tri1->gn, tri2->gn) < e_feat_data->crease_threshold)) {
@@ -1650,8 +1652,8 @@ static void lineart_identify_mlooptri_feature_edges(void *__restrict userdata,
       }
     }
 
-    int mat1 = me->mpoly[mlooptri[f1].poly].mat_nr;
-    int mat2 = me->mpoly[mlooptri[f2].poly].mat_nr;
+    int mat1 = polygons[mlooptri[f1].poly].mat_nr;
+    int mat2 = polygons[mlooptri[f2].poly].mat_nr;
 
     if (mat1 != mat2) {
       Material *m1 = BKE_object_material_get(ob, mat1 + 1);
@@ -1674,11 +1676,13 @@ static void lineart_identify_mlooptri_feature_edges(void *__restrict userdata,
     }
   }
 
+  const MEdge *edges = BKE_mesh_edges(me);
+
   int real_edges[3];
   BKE_mesh_looptri_get_real_edges(me, &mlooptri[i / 3], real_edges);
 
   if (real_edges[i % 3] >= 0) {
-    MEdge *medge = &me->medge[real_edges[i % 3]];
+    const MEdge *medge = &edges[real_edges[i % 3]];
 
     if (ld->conf.use_crease && ld->conf.sharp_as_crease && (medge->flag & ME_SHARP)) {
       edge_flag_result |= LRT_EDGE_FLAG_CREASE;
@@ -1757,9 +1761,10 @@ static void lineart_identify_loose_edges(void *__restrict UNUSED(userdata),
 {
   LooseEdgeData *loose_data = (LooseEdgeData *)tls->userdata_chunk;
   Mesh *me = loose_data->me;
+  const MEdge *edges = BKE_mesh_edges(me);
 
-  if (me->medge[i].flag & ME_LOOSEEDGE) {
-    lineart_add_loose_edge(loose_data, &me->medge[i]);
+  if (edges[i].flag & ME_LOOSEEDGE) {
+    lineart_add_loose_edge(loose_data, &edges[i]);
   }
 }
 
@@ -1858,20 +1863,22 @@ static void lineart_load_tri_task(void *__restrict userdata,
   const MLoopTri *mlooptri = &tri_task_data->mlooptri[i];
   LineartVert *vert_arr = tri_task_data->vert_arr;
   LineartTriangle *tri = tri_task_data->tri_arr;
+  const MLoop *loops = BKE_mesh_loops(me);
 
   tri = (LineartTriangle *)(((uchar *)tri) + tri_task_data->lineart_triangle_size * i);
 
-  int v1 = me->mloop[mlooptri->tri[0]].v;
-  int v2 = me->mloop[mlooptri->tri[1]].v;
-  int v3 = me->mloop[mlooptri->tri[2]].v;
+  int v1 = loops[mlooptri->tri[0]].v;
+  int v2 = loops[mlooptri->tri[1]].v;
+  int v3 = loops[mlooptri->tri[2]].v;
 
   tri->v[0] = &vert_arr[v1];
   tri->v[1] = &vert_arr[v2];
   tri->v[2] = &vert_arr[v3];
 
   /* Material mask bits and occlusion effectiveness assignment. */
+  const MPoly *polygons = BKE_mesh_polygons(me);
   Material *mat = BKE_object_material_get(ob_info->original_ob,
-                                          me->mpoly[mlooptri->poly].mat_nr + 1);
+                                          polygons[mlooptri->poly].mat_nr + 1);
   tri->material_mask_bits |= ((mat && (mat->lineart.flags & LRT_MATERIAL_MASK_ENABLED)) ?
                                   mat->lineart.material_mask_bits :
                                   0);
@@ -1890,7 +1897,8 @@ static void lineart_load_tri_task(void *__restrict userdata,
 
   double gn[3];
   float no[3];
-  normal_tri_v3(no, me->mvert[v1].co, me->mvert[v2].co, me->mvert[v3].co);
+  const MVert *vertices = BKE_mesh_vertices(me);
+  normal_tri_v3(no, vertices[v1].co, vertices[v2].co, vertices[v3].co);
   copy_v3db_v3fl(gn, no);
   mul_v3_mat3_m4v3_db(tri->gn, ob_info->normal, gn);
   normalize_v3_db(tri->gn);
@@ -1955,7 +1963,7 @@ static LineartEdgeNeighbor *lineart_build_edge_neighbor(Mesh *me, int total_edge
   en_data.adj_e = adj_e;
   en_data.edge_nabr = edge_nabr;
   en_data.mlooptri = mlooptri;
-  en_data.mloop = me->mloop;
+  en_data.mloop = BKE_mesh_loops(me);
 
   BLI_task_parallel_range(0, total_edges, &en_data, lineart_edge_neighbor_init_task, &en_settings);
 
@@ -2078,7 +2086,7 @@ static void lineart_geometry_object_load(LineartObjectInfo *ob_info,
   vert_settings.min_iter_per_thread = 4000;
 
   VertData vert_data;
-  vert_data.mvert = me->mvert;
+  vert_data.mvert = BKE_mesh_vertices(me);
   vert_data.v_arr = la_v_arr;
   vert_data.model_view = ob_info->model_view;
   vert_data.model_view_proj = ob_info->model_view_proj;
@@ -5294,7 +5302,8 @@ static void lineart_gpencil_generate(LineartCache *cache,
         if (eval_ob && eval_ob->type == OB_MESH) {
           int dindex = 0;
           Mesh *me = BKE_object_get_evaluated_mesh(eval_ob);
-          if (me->dvert) {
+          const MDeformVert *dvert = BKE_mesh_deform_verts(me);
+          if (dvert) {
             LISTBASE_FOREACH (bDeformGroup *, db, &me->vertex_group_names) {
               if ((!source_vgname) || strstr(db->name, source_vgname) == db->name) {
                 if (match_output) {
@@ -5309,7 +5318,7 @@ static void lineart_gpencil_generate(LineartCache *cache,
                   if (vindex >= me->totvert) {
                     break;
                   }
-                  MDeformWeight *mdw = BKE_defvert_ensure_index(&me->dvert[vindex], dindex);
+                  MDeformWeight *mdw = BKE_defvert_ensure_index(&dvert[vindex], dindex);
                   MDeformWeight *gdw = BKE_defvert_ensure_index(&gps->dvert[sindex], gpdg);
 
                   float use_weight = mdw->weight;

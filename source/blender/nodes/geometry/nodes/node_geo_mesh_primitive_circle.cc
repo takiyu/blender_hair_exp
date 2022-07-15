@@ -109,19 +109,19 @@ static Mesh *create_circle_mesh(const float radius,
                                    circle_corner_total(fill_type, verts_num),
                                    circle_face_total(fill_type, verts_num));
   BKE_id_material_eval_ensure_default_slot(&mesh->id);
-  MutableSpan<MVert> verts = bke::mesh_vertices_for_write(*mesh);
-  MutableSpan<MLoop> loops{mesh->mloop, mesh->totloop};
-  MutableSpan<MEdge> edges{mesh->medge, mesh->totedge};
-  MutableSpan<MPoly> polys{mesh->mpoly, mesh->totpoly};
+  MutableSpan<MVert> vertices = bke::mesh_vertices_for_write(*mesh);
+  MutableSpan<MEdge> edges = bke::mesh_edges_for_write(*mesh);
+  MutableSpan<MPoly> polygons = bke::mesh_polygons_for_write(*mesh);
+  MutableSpan<MLoop> loops = bke::mesh_loops_for_write(*mesh);
 
   /* Assign vertex coordinates. */
   const float angle_delta = 2.0f * (M_PI / static_cast<float>(verts_num));
   for (const int i : IndexRange(verts_num)) {
     const float angle = i * angle_delta;
-    copy_v3_v3(verts[i].co, float3(std::cos(angle) * radius, std::sin(angle) * radius, 0.0f));
+    copy_v3_v3(vertices[i].co, float3(std::cos(angle) * radius, std::sin(angle) * radius, 0.0f));
   }
   if (fill_type == GEO_NODE_MESH_CIRCLE_FILL_TRIANGLE_FAN) {
-    copy_v3_v3(verts.last().co, float3(0));
+    copy_v3_v3(vertices.last().co, float3(0));
   }
 
   /* Create outer edges. */
@@ -147,7 +147,7 @@ static Mesh *create_circle_mesh(const float radius,
 
   /* Create corners and faces. */
   if (fill_type == GEO_NODE_MESH_CIRCLE_FILL_NGON) {
-    MPoly &poly = polys[0];
+    MPoly &poly = polygons[0];
     poly.loopstart = 0;
     poly.totloop = loops.size();
 
@@ -159,7 +159,7 @@ static Mesh *create_circle_mesh(const float radius,
   }
   else if (fill_type == GEO_NODE_MESH_CIRCLE_FILL_TRIANGLE_FAN) {
     for (const int i : IndexRange(verts_num)) {
-      MPoly &poly = polys[i];
+      MPoly &poly = polygons[i];
       poly.loopstart = 3 * i;
       poly.totloop = 3;
 

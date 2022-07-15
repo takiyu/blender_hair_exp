@@ -131,10 +131,8 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
 {
   UVWarpModifierData *umd = (UVWarpModifierData *)md;
   int polys_num, loops_num;
-  MPoly *mpoly;
-  MLoop *mloop;
   MLoopUV *mloopuv;
-  MDeformVert *dvert;
+  const MDeformVert *dvert;
   int defgrp_index;
   char uvname[MAX_CUSTOMDATA_LAYER_NAME];
   float warp_mat[4][4];
@@ -196,19 +194,19 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
   /* make sure we're using an existing layer */
   CustomData_validate_layer_name(&mesh->ldata, CD_MLOOPUV, umd->uvlayer_name, uvname);
 
+  const MPoly *polygons = BKE_mesh_polygons(mesh);
+  const MLoop *loops = BKE_mesh_loops(mesh);
   polys_num = mesh->totpoly;
   loops_num = mesh->totloop;
 
-  mpoly = mesh->mpoly;
-  mloop = mesh->mloop;
   /* make sure we are not modifying the original UV map */
   mloopuv = CustomData_duplicate_referenced_layer_named(
       &mesh->ldata, CD_MLOOPUV, uvname, loops_num);
   MOD_get_vgroup(ctx->object, mesh, umd->vgroup_name, &dvert, &defgrp_index);
 
   UVWarpData data = {
-      .mpoly = mpoly,
-      .mloop = mloop,
+      .mpoly = polygons,
+      .mloop = loops,
       .mloopuv = mloopuv,
       .dvert = dvert,
       .defgrp_index = defgrp_index,

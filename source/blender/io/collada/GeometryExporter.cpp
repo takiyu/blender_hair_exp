@@ -26,6 +26,8 @@
 #include "collada_internal.h"
 #include "collada_utils.h"
 
+using blender::Span;
+
 void GeometryExporter::exportGeom()
 {
   Scene *sce = blender_context.get_scene();
@@ -196,8 +198,7 @@ void GeometryExporter::export_key_mesh(Object *ob, Mesh *me, KeyBlock *kb)
 
 void GeometryExporter::createLooseEdgeList(Object *ob, Mesh *me, std::string &geom_id)
 {
-
-  MEdge *medges = me->medge;
+  const Span<MEdge> edges = bke::mesh_edges(*mesh);
   int totedges = me->totedge;
   int edges_in_linelist = 0;
   std::vector<unsigned int> edge_list;
@@ -206,7 +207,7 @@ void GeometryExporter::createLooseEdgeList(Object *ob, Mesh *me, std::string &ge
   /* Find all loose edges in Mesh
    * and save vertex indices in edge_list */
   for (index = 0; index < totedges; index++) {
-    MEdge *edge = &medges[index];
+    const MEdge *edge = &edges[index];
 
     if (edge->flag & ME_LOOSEEDGE) {
       edges_in_linelist += 1;

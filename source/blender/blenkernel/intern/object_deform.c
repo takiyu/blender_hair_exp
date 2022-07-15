@@ -114,9 +114,7 @@ bDeformGroup *BKE_object_defgroup_add(Object *ob)
 MDeformVert *BKE_object_defgroup_data_create(ID *id)
 {
   if (GS(id->name) == ID_ME) {
-    Mesh *me = (Mesh *)id;
-    me->dvert = CustomData_add_layer(&me->vdata, CD_MDEFORMVERT, CD_CALLOC, NULL, me->totvert);
-    return me->dvert;
+    return BKE_mesh_deform_verts_for_write((Mesh *)id);
   }
   if (GS(id->name) == ID_LT) {
     Lattice *lt = (Lattice *)id;

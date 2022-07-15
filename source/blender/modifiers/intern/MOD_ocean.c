@@ -273,9 +273,9 @@ static Mesh *generate_ocean_geometry(OceanModifierData *omd, Mesh *mesh_orig, co
   result = BKE_mesh_new_nomain(verts_num, 0, 0, polys_num * 4, polys_num);
   BKE_mesh_copy_parameters_for_eval(result, mesh_orig);
 
-  gogd.mverts = result->mvert;
-  gogd.mpolys = result->mpoly;
-  gogd.mloops = result->mloop;
+  gogd.mverts = BKE_mesh_vertices_for_write(result);
+  gogd.mpolys = BKE_mesh_polygons_for_write(result);
+  gogd.mloops = BKE_mesh_loops_for_write(result);
 
   TaskParallelSettings settings;
   BLI_parallel_range_settings_defaults(&settings);
@@ -376,7 +376,7 @@ static Mesh *doOcean(ModifierData *md, const ModifierEvalContext *ctx, Mesh *mes
     if (CustomData_number_of_layers(&result->ldata, CD_PROP_BYTE_COLOR) < MAX_MCOL) {
       const int polys_num = result->totpoly;
       const int loops_num = result->totloop;
-      MLoop *mloops = result->mloop;
+      MLoop *mloops = BKE_mesh_loops_for_write(result);
       MLoopCol *mloopcols = CustomData_add_layer_named(
           &result->ldata, CD_PROP_BYTE_COLOR, CD_CALLOC, NULL, loops_num, omd->foamlayername);
 

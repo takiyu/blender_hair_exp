@@ -36,6 +36,7 @@
 #include "BLT_translation.h"
 
 #include "BKE_anim_data.h"
+#include "BKE_attribute.hh"
 #include "BKE_bpath.h"
 #include "BKE_deform.h"
 #include "BKE_editmesh.h"
@@ -59,10 +60,12 @@
 #include "DEG_depsgraph.h"
 #include "DEG_depsgraph_query.h"
 
-// #include "BLO_read_write.h"
+#include "BLO_read_write.h"
 
 using blender::float3;
+using blender::MutableSpan;
 using blender::Span;
+using blender::VArray;
 using blender::Vector;
 
 static void mesh_clear_geometry(Mesh *mesh);
@@ -137,8 +140,6 @@ static void mesh_copy_data(Main *bmain, ID *id_dst, const ID *id_src, const int 
   else {
     mesh_tessface_clear_intern(mesh_dst, false);
   }
-
-  BKE_mesh_update_customdata_pointers(mesh_dst, do_tessface);
 
   mesh_dst->cd_flag = mesh_src->cd_flag;
 
@@ -862,9 +863,6 @@ void BKE_mesh_update_customdata_pointers(Mesh *me, const bool do_ensure_tess_cd)
 {
   mesh_update_linked_customdata(me, do_ensure_tess_cd);
 
-  me->mface = (MFace *)CustomData_get_layer(&me->fdata, CD_MFACE);
-  me->mtface = (MTFace *)CustomData_get_layer(&me->fdata, CD_MTFACE);
-
   me->mloopuv = (MLoopUV *)CustomData_get_layer(&me->ldata, CD_MLOOPUV);
 }
 
@@ -911,8 +909,6 @@ static void mesh_clear_geometry(Mesh *mesh)
   mesh->totpoly = 0;
   mesh->act_face = -1;
   mesh->totselect = 0;
-
-  BKE_mesh_update_customdata_pointers(mesh, false);
 }
 
 void BKE_mesh_clear_geometry(Mesh *mesh)
@@ -985,7 +981,6 @@ Mesh *BKE_mesh_new_nomain(
   mesh->totpoly = polys_len;
 
   mesh_ensure_cdlayers_primary(mesh, true);
-  BKE_mesh_update_customdata_pointers(mesh, false);
 
   return mesh;
 }
@@ -1071,7 +1066,6 @@ Mesh *BKE_mesh_new_nomain_from_template_ex(const Mesh *me_src,
   /* The destination mesh should at least have valid primary CD layers,
    * even in cases where the source mesh does not. */
   mesh_ensure_cdlayers_primary(me_dst, do_tessface);
-  BKE_mesh_update_customdata_pointers(me_dst, false);
 
   /* Expect that normals aren't copied at all, since the destination mesh is new. */
   BLI_assert(BKE_mesh_vertex_normals_are_dirty(me_dst));
@@ -1372,16 +1366,15 @@ void BKE_mesh_assign_object(Main *bmain, Object *ob, Mesh *me)
 
 void BKE_mesh_material_index_remove(Mesh *me, short index)
 {
-  MPoly *mp;
-  MFace *mf;
-  int i;
-
-  for (mp = me->mpoly, i = 0; i < me->totpoly; i++, mp++) {
-    if (mp->mat_nr && mp->mat_nr >= index) {
-      mp->mat_nr--;
+  MutableSpan<MPoly> polygons = blender::bke::mesh_polygons_for_write(*me);
+  for (MPoly &poly : polygons) {
+    if (poly.mat_nr && poly.mat_nr >= index) {
+      poly.mat_nr--;
     }
   }
 
+  MFace *mf;
+  int i;
   for (mf = me->mface, i = 0; i < me->totface; i++, mf++) {
     if (mf->mat_nr && mf->mat_nr >= index) {
       mf->mat_nr--;
@@ -1391,16 +1384,15 @@ void BKE_mesh_material_index_remove(Mesh *me, short index)
 
 bool BKE_mesh_material_index_used(Mesh *me, short index)
 {
-  MPoly *mp;
-  MFace *mf;
-  int i;
-
-  for (mp = me->mpoly, i = 0; i < me->totpoly; i++, mp++) {
-    if (mp->mat_nr == index) {
+  const Span<MPoly> polygons = blender::bke::mesh_polygons(*me);
+  for (const MPoly &poly : polygons) {
+    if (poly.mat_nr == index) {
       return true;
     }
   }
 
+  MFace *mf;
+  int i;
   for (mf = me->mface, i = 0; i < me->totface; i++, mf++) {
     if (mf->mat_nr == index) {
       return true;
@@ -1412,14 +1404,13 @@ bool BKE_mesh_material_index_used(Mesh *me, short index)
 
 void BKE_mesh_material_index_clear(Mesh *me)
 {
-  MPoly *mp;
-  MFace *mf;
-  int i;
-
-  for (mp = me->mpoly, i = 0; i < me->totpoly; i++, mp++) {
-    mp->mat_nr = 0;
+  MutableSpan<MPoly> polygons = blender::bke::mesh_polygons_for_write(*me);
+  for (MPoly &poly : polygons) {
+    poly.mat_nr = 0;
   }
 
+  MFace *mf;
+  int i;
   for (mf = me->mface, i = 0; i < me->totface; i++, mf++) {
     mf->mat_nr = 0;
   }
@@ -1446,9 +1437,9 @@ void BKE_mesh_material_remap(Mesh *me, const uint *remap, uint remap_len)
     }
   }
   else {
-    int i;
-    for (i = 0; i < me->totpoly; i++) {
-      MAT_NR_REMAP(me->mpoly[i].mat_nr);
+    MutableSpan<MPoly> polygons = blender::bke::mesh_polygons_for_write(*me);
+    for (MPoly &poly : polygons) {
+      MAT_NR_REMAP(poly.mat_nr);
     }
   }
 
@@ -1457,14 +1448,15 @@ void BKE_mesh_material_remap(Mesh *me, const uint *remap, uint remap_len)
 
 void BKE_mesh_smooth_flag_set(Mesh *me, const bool use_smooth)
 {
+  MutableSpan<MPoly> polygons = blender::bke::mesh_polygons_for_write(*me);
   if (use_smooth) {
-    for (int i = 0; i < me->totpoly; i++) {
-      me->mpoly[i].flag |= ME_SMOOTH;
+    for (MPoly &poly : polygons) {
+      poly.flag |= ME_SMOOTH;
     }
   }
   else {
-    for (int i = 0; i < me->totpoly; i++) {
-      me->mpoly[i].flag &= ~ME_SMOOTH;
+    for (MPoly &poly : polygons) {
+      poly.flag &= ~ME_SMOOTH;
     }
   }
 }
@@ -1520,9 +1512,12 @@ int BKE_mesh_edge_other_vert(const MEdge *e, int v)
 
 void BKE_mesh_looptri_get_real_edges(const Mesh *mesh, const MLoopTri *looptri, int r_edges[3])
 {
+  const Span<MEdge> edges = blender::bke::mesh_edges(*mesh);
+  const Span<MLoop> loops = blender::bke::mesh_loops(*mesh);
+
   for (int i = 2, i_next = 0; i_next < 3; i = i_next++) {
-    const MLoop *l1 = &mesh->mloop[looptri->tri[i]], *l2 = &mesh->mloop[looptri->tri[i_next]];
-    const MEdge *e = &mesh->medge[l1->e];
+    const MLoop *l1 = &loops[looptri->tri[i]], *l2 = &loops[looptri->tri[i_next]];
+    const MEdge *e = &edges[l1->e];
 
     bool is_real = (l1->v == e->v1 && l2->v == e->v2) || (l1->v == e->v2 && l2->v == e->v1);
 
@@ -1541,15 +1536,16 @@ bool BKE_mesh_minmax(const Mesh *me, float r_min[3], float r_max[3])
     float3 min;
     float3 max;
   };
+  const Span<MVert> vertices = blender::bke::mesh_vertices(*me);
 
   const Result minmax = threading::parallel_reduce(
-      IndexRange(me->totvert),
+      vertices.index_range(),
       1024,
       Result{float3(FLT_MAX), float3(-FLT_MAX)},
-      [&](IndexRange range, const Result &init) {
+      [vertices](IndexRange range, const Result &init) {
         Result result = init;
         for (const int i : range) {
-          math::min_max(float3(me->mvert[i].co), result.min, result.max);
+          math::min_max(float3(vertices[i].co), result.min, result.max);
         }
         return result;
       },
@@ -1565,18 +1561,13 @@ bool BKE_mesh_minmax(const Mesh *me, float r_min[3], float r_max[3])
 
 void BKE_mesh_transform(Mesh *me, const float mat[4][4], bool do_keys)
 {
-  int i;
-  MVert *mvert = (MVert *)CustomData_duplicate_referenced_layer(&me->vdata, CD_MVERT, me->totvert);
-  float(*lnors)[3] = (float(*)[3])CustomData_duplicate_referenced_layer(
-      &me->ldata, CD_NORMAL, me->totloop);
+  MutableSpan<MVert> vertices = blender::bke::mesh_vertices_for_write(*me);
 
-  /* If the referenced layer has been re-allocated need to update pointers stored in the mesh. */
-  BKE_mesh_update_customdata_pointers(me, false);
-
-  for (i = 0; i < me->totvert; i++, mvert++) {
-    mul_m4_v3(mat, mvert->co);
+  for (MVert &vert : vertices) {
+    mul_m4_v3(mat, vert.co);
   }
 
+  int i;
   if (do_keys && me->key) {
     LISTBASE_FOREACH (KeyBlock *, kb, &me->key->block) {
       float *fp = (float *)kb->data;
@@ -1589,6 +1580,8 @@ void BKE_mesh_transform(Mesh *me, const float mat[4][4], bool do_keys)
   /* don't update normals, caller can do this explicitly.
    * We do update loop normals though, those may not be auto-generated
    * (see e.g. STL import script)! */
+  float(*lnors)[3] = (float(*)[3])CustomData_duplicate_referenced_layer(
+      &me->ldata, CD_NORMAL, me->totloop);
   if (lnors) {
     float m3[3][3];
 
@@ -1603,15 +1596,12 @@ void BKE_mesh_transform(Mesh *me, const float mat[4][4], bool do_keys)
 
 void BKE_mesh_translate(Mesh *me, const float offset[3], const bool do_keys)
 {
-  CustomData_duplicate_referenced_layer(&me->vdata, CD_MVERT, me->totvert);
-  /* If the referenced layer has been re-allocated need to update pointers stored in the mesh. */
-  BKE_mesh_update_customdata_pointers(me, false);
-
-  int i = me->totvert;
-  for (MVert *mvert = me->mvert; i--; mvert++) {
-    add_v3_v3(mvert->co, offset);
+  MutableSpan<MVert> vertices = blender::bke::mesh_vertices_for_write(*me);
+  for (MVert &vert : vertices) {
+    add_v3_v3(vert.co, offset);
   }
 
+  int i;
   if (do_keys && me->key) {
     LISTBASE_FOREACH (KeyBlock *, kb, &me->key->block) {
       float *fp = (float *)kb->data;
@@ -1678,6 +1668,9 @@ void BKE_mesh_mselect_validate(Mesh *me)
   if (me->totselect == 0) {
     return;
   }
+  const Span<MVert> vertices = blender::bke::mesh_vertices(*me);
+  const Span<MEdge> edges = blender::bke::mesh_edges(*me);
+  const Span<MPoly> polygons = blender::bke::mesh_polygons(*me);
 
   mselect_src = me->mselect;
   mselect_dst = (MSelect *)MEM_malloc_arrayN(
@@ -1687,21 +1680,21 @@ void BKE_mesh_mselect_validate(Mesh *me)
     int index = mselect_src[i_src].index;
     switch (mselect_src[i_src].type) {
       case ME_VSEL: {
-        if (me->mvert[index].flag & SELECT) {
+        if (vertices[index].flag & SELECT) {
           mselect_dst[i_dst] = mselect_src[i_src];
           i_dst++;
         }
         break;
       }
       case ME_ESEL: {
-        if (me->medge[index].flag & SELECT) {
+        if (edges[index].flag & SELECT) {
           mselect_dst[i_dst] = mselect_src[i_src];
           i_dst++;
         }
         break;
       }
       case ME_FSEL: {
-        if (me->mpoly[index].flag & SELECT) {
+        if (polygons[index].flag & SELECT) {
           mselect_dst[i_dst] = mselect_src[i_src];
           i_dst++;
         }
@@ -1787,10 +1780,10 @@ void BKE_mesh_count_selected_items(const Mesh *mesh, int r_count[3])
 
 void BKE_mesh_vert_coords_get(const Mesh *mesh, float (*vert_coords)[3])
 {
-  const MVert *mv = mesh->mvert;
-  for (int i = 0; i < mesh->totvert; i++, mv++) {
-    copy_v3_v3(vert_coords[i], mv->co);
-  }
+  blender::bke::AttributeAccessor attributes = blender::bke::mesh_attributes(*mesh);
+  VArray<float3> positions = attributes.lookup_or_default(
+      "position", ATTR_DOMAIN_POINT, float3(0));
+  positions.materialize({(float3 *)vert_coords, mesh->totvert});
 }
 
 float (*BKE_mesh_vert_coords_alloc(const Mesh *mesh, int *r_vert_len))[3]
@@ -1805,12 +1798,9 @@ float (*BKE_mesh_vert_coords_alloc(const Mesh *mesh, int *r_vert_len))[3]
 
 void BKE_mesh_vert_coords_apply(Mesh *mesh, const float (*vert_coords)[3])
 {
-  /* This will just return the pointer if it wasn't a referenced layer. */
-  MVert *mv = (MVert *)CustomData_duplicate_referenced_layer(
-      &mesh->vdata, CD_MVERT, mesh->totvert);
-  mesh->mvert = mv;
-  for (int i = 0; i < mesh->totvert; i++, mv++) {
-    copy_v3_v3(mv->co, vert_coords[i]);
+  MutableSpan<MVert> vertices = blender::bke::mesh_vertices_for_write(*mesh);
+  for (const int i : vertices.index_range()) {
+    copy_v3_v3(vertices[i].co, vert_coords[i]);
   }
   BKE_mesh_tag_coords_changed(mesh);
 }
@@ -1819,12 +1809,9 @@ void BKE_mesh_vert_coords_apply_with_mat4(Mesh *mesh,
                                           const float (*vert_coords)[3],
                                           const float mat[4][4])
 {
-  /* This will just return the pointer if it wasn't a referenced layer. */
-  MVert *mv = (MVert *)CustomData_duplicate_referenced_layer(
-      &mesh->vdata, CD_MVERT, mesh->totvert);
-  mesh->mvert = mv;
-  for (int i = 0; i < mesh->totvert; i++, mv++) {
-    mul_v3_m4v3(mv->co, mat, vert_coords[i]);
+  MutableSpan<MVert> vertices = blender::bke::mesh_vertices_for_write(*mesh);
+  for (const int i : vertices.index_range()) {
+    mul_v3_m4v3(vertices[i].co, mat, vert_coords[i]);
   }
   BKE_mesh_tag_coords_changed(mesh);
 }
@@ -1860,17 +1847,22 @@ void BKE_mesh_calc_normals_split_ex(Mesh *mesh,
   /* may be nullptr */
   clnors = (short(*)[2])CustomData_get_layer(&mesh->ldata, CD_CUSTOMLOOPNORMAL);
 
-  BKE_mesh_normals_loop_split(mesh->mvert,
+  const Span<MVert> vertices = blender::bke::mesh_vertices(*mesh);
+  const Span<MEdge> edges = blender::bke::mesh_edges(*mesh);
+  const Span<MPoly> polygons = blender::bke::mesh_polygons(*mesh);
+  const Span<MLoop> loops = blender::bke::mesh_loops(*mesh);
+
+  BKE_mesh_normals_loop_split(vertices.data(),
                               BKE_mesh_vertex_normals_ensure(mesh),
-                              mesh->totvert,
-                              mesh->medge,
-                              mesh->totedge,
-                              mesh->mloop,
+                              vertices.size(),
+                              edges.data(),
+                              edges.size(),
+                              loops.data(),
                               r_corner_normals,
-                              mesh->totloop,
-                              mesh->mpoly,
+                              loops.size(),
+                              polygons.data(),
                               BKE_mesh_poly_normals_ensure(mesh),
-                              mesh->totpoly,
+                              polygons.size(),
                               use_split_normals,
                               split_angle,
                               r_lnors_spacearr,
@@ -1916,14 +1908,14 @@ static int split_faces_prepare_new_verts(Mesh *mesh,
 
   const int loops_len = mesh->totloop;
   int verts_len = mesh->totvert;
-  MLoop *mloop = mesh->mloop;
+  MutableSpan<MLoop> loops = blender::bke::mesh_loops_for_write(*mesh);
   BKE_mesh_vertex_normals_ensure(mesh);
   float(*vert_normals)[3] = BKE_mesh_vertex_normals_for_write(mesh);
 
   BLI_bitmap *verts_used = BLI_BITMAP_NEW(verts_len, __func__);
   BLI_bitmap *done_loops = BLI_BITMAP_NEW(loops_len, __func__);
 
-  MLoop *ml = mloop;
+  MLoop *ml = loops.data();
   MLoopNorSpace **lnor_space = lnors_spacearr->lspacearr;
 
   BLI_assert(lnors_spacearr->data_type == MLNOR_SPACEARR_LOOP_INDEX);
@@ -1950,7 +1942,7 @@ static int split_faces_prepare_new_verts(Mesh *mesh,
           const int ml_fan_idx = POINTER_AS_INT(lnode->link);
           BLI_BITMAP_ENABLE(done_loops, ml_fan_idx);
           if (vert_used) {
-            mloop[ml_fan_idx].v = new_vert_idx;
+            loops[ml_fan_idx].v = new_vert_idx;
           }
         }
       }
@@ -1985,23 +1977,23 @@ static int split_faces_prepare_new_verts(Mesh *mesh,
 
 /* Detect needed new edges, and update accordingly loops' edge indices.
  * WARNING! Leaves mesh in invalid state. */
-static int split_faces_prepare_new_edges(const Mesh *mesh,
+static int split_faces_prepare_new_edges(Mesh *mesh,
                                          SplitFaceNewEdge **new_edges,
                                          MemArena *memarena)
 {
   const int num_polys = mesh->totpoly;
   int num_edges = mesh->totedge;
-  MEdge *medge = mesh->medge;
-  MLoop *mloop = mesh->mloop;
-  const MPoly *mpoly = mesh->mpoly;
+  MutableSpan<MEdge> edges = blender::bke::mesh_edges_for_write(*mesh);
+  MutableSpan<MLoop> loops = blender::bke::mesh_loops_for_write(*mesh);
+  const Span<MPoly> polygons = blender::bke::mesh_polygons(*mesh);
 
   BLI_bitmap *edges_used = BLI_BITMAP_NEW(num_edges, __func__);
   EdgeHash *edges_hash = BLI_edgehash_new_ex(__func__, num_edges);
 
-  const MPoly *mp = mpoly;
+  const MPoly *mp = polygons.data();
   for (int poly_idx = 0; poly_idx < num_polys; poly_idx++, mp++) {
-    MLoop *ml_prev = &mloop[mp->loopstart + mp->totloop - 1];
-    MLoop *ml = &mloop[mp->loopstart];
+    MLoop *ml_prev = &loops[mp->loopstart + mp->totloop - 1];
+    MLoop *ml = &loops[mp->loopstart];
     for (int loop_idx = 0; loop_idx < mp->totloop; loop_idx++, ml++) {
       void **eval;
       if (!BLI_edgehash_ensure_p(edges_hash, ml_prev->v, ml->v, &eval)) {
@@ -2025,8 +2017,8 @@ static int split_faces_prepare_new_edges(const Mesh *mesh,
         }
         else {
           /* We can re-use original edge. */
-          medge[edge_idx].v1 = ml_prev->v;
-          medge[edge_idx].v2 = ml->v;
+          edges[edge_idx].v1 = ml_prev->v;
+          edges[edge_idx].v2 = ml->v;
           *eval = POINTER_FROM_INT(edge_idx);
           BLI_BITMAP_ENABLE(edges_used, edge_idx);
         }
@@ -2052,7 +2044,6 @@ static void split_faces_split_new_verts(Mesh *mesh,
                                         const int num_new_verts)
 {
   const int verts_len = mesh->totvert - num_new_verts;
-  MVert *mvert = mesh->mvert;
   float(*vert_normals)[3] = BKE_mesh_vertex_normals_for_write(mesh);
 
   /* Normals were already calculated at the beginning of this operation, we rely on that to update
@@ -2060,8 +2051,7 @@ static void split_faces_split_new_verts(Mesh *mesh,
   BLI_assert(!BKE_mesh_vertex_normals_are_dirty(mesh));
 
   /* Remember new_verts is a single linklist, so its items are in reversed order... */
-  MVert *new_mv = &mvert[mesh->totvert - 1];
-  for (int i = mesh->totvert - 1; i >= verts_len; i--, new_mv--, new_verts = new_verts->next) {
+  for (int i = mesh->totvert - 1; i >= verts_len; i--, new_verts = new_verts->next) {
     BLI_assert(new_verts->new_index == i);
     BLI_assert(new_verts->new_index != new_verts->orig_index);
     CustomData_copy_data(&mesh->vdata, &mesh->vdata, new_verts->orig_index, i, 1);
@@ -2077,10 +2067,10 @@ static void split_faces_split_new_edges(Mesh *mesh,
                                         const int num_new_edges)
 {
   const int num_edges = mesh->totedge - num_new_edges;
-  MEdge *medge = mesh->medge;
+  MutableSpan<MEdge> edges = blender::bke::mesh_edges_for_write(*mesh);
 
   /* Remember new_edges is a single linklist, so its items are in reversed order... */
-  MEdge *new_med = &medge[mesh->totedge - 1];
+  MEdge *new_med = &edges[mesh->totedge - 1];
   for (int i = mesh->totedge - 1; i >= num_edges; i--, new_med--, new_edges = new_edges->next) {
     BLI_assert(new_edges->new_index == i);
     BLI_assert(new_edges->new_index != new_edges->orig_index);
@@ -2108,14 +2098,6 @@ void BKE_mesh_split_faces(Mesh *mesh, bool free_loop_normals)
   SplitFaceNewVert *new_verts = nullptr;
   SplitFaceNewEdge *new_edges = nullptr;
 
-  /* Ensure we own the layers, we need to do this before split_faces_prepare_new_verts as it will
-   * directly assign new indices to existing edges and loops. */
-  CustomData_duplicate_referenced_layers(&mesh->vdata, mesh->totvert);
-  CustomData_duplicate_referenced_layers(&mesh->edata, mesh->totedge);
-  CustomData_duplicate_referenced_layers(&mesh->ldata, mesh->totloop);
-  /* Update pointers in case we duplicated referenced layers. */
-  BKE_mesh_update_customdata_pointers(mesh, false);
-
   /* Detect loop normal spaces (a.k.a. smooth fans) that will need a new vert. */
   const int num_new_verts = split_faces_prepare_new_verts(
       mesh, &lnors_spacearr, &new_verts, memarena);
@@ -2136,8 +2118,6 @@ void BKE_mesh_split_faces(Mesh *mesh, bool free_loop_normals)
       mesh->totedge += num_new_edges;
       CustomData_realloc(&mesh->edata, mesh->totedge);
     }
-    /* Update pointers to a newly allocated memory. */
-    BKE_mesh_update_customdata_pointers(mesh, false);
 
     /* Update normals manually to avoid recalculation after this operation. */
     mesh->runtime.vert_normals = (float(*)[3])MEM_reallocN(mesh->runtime.vert_normals,

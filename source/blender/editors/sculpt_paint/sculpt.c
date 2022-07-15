@@ -65,7 +65,7 @@
 #include "IMB_colormanagement.h"
 
 #include "WM_api.h"
-#include "WM_message.h"
+// #include "WM_message.h"
 #include "WM_toolsystem.h"
 #include "WM_types.h"
 
@@ -3114,10 +3114,10 @@ void SCULPT_vertcos_to_key(Object *ob, KeyBlock *kb, const float (*vertCos)[3])
 
   /* Modifying of basis key should update mesh. */
   if (kb == me->key->refkey) {
-    MVert *mvert = me->mvert;
+    MVert *vertices = BKE_mesh_vertices_for_write(me);
 
-    for (a = 0; a < me->totvert; a++, mvert++) {
-      copy_v3_v3(mvert->co, vertCos[a]);
+    for (a = 0; a < me->totvert; a++) {
+      copy_v3_v3(vertices[a].co, vertCos[a]);
     }
     BKE_mesh_tag_coords_changed(me);
   }
@@ -3541,8 +3541,9 @@ static void sculpt_flush_pbvhvert_deform(Object *ob, PBVHVertexIter *vd)
   copy_v3_v3(ss->deform_cos[index], vd->co);
   copy_v3_v3(ss->orig_cos[index], newco);
 
+  MVert *vertices = BKE_mesh_vertices_for_write(me);
   if (!ss->shapekey_active) {
-    copy_v3_v3(me->mvert[index].co, newco);
+    copy_v3_v3(vertices[index].co, newco);
   }
 }
 
@@ -5835,21 +5836,25 @@ void SCULPT_boundary_info_ensure(Object *object)
   }
 
   Mesh *base_mesh = BKE_mesh_from_object(object);
+  const MEdge *edges = BKE_mesh_edges(base_mesh);
+  const MPoly *polygons = BKE_mesh_polygons(base_mesh);
+  const MLoop *loops = BKE_mesh_loops(base_mesh);
+
   ss->vertex_info.boundary = BLI_BITMAP_NEW(base_mesh->totvert, "Boundary info");
   int *adjacent_faces_edge_count = MEM_calloc_arrayN(
       base_mesh->totedge, sizeof(int), "Adjacent face edge count");
 
   for (int p = 0; p < base_mesh->totpoly; p++) {
-    MPoly *poly = &base_mesh->mpoly[p];
+    const MPoly *poly = &polygons[p];
     for (int l = 0; l < poly->totloop; l++) {
-      MLoop *loop = &base_mesh->mloop[l + poly->loopstart];
+      const MLoop *loop = &loops[l + poly->loopstart];
       adjacent_faces_edge_count[loop->e]++;
     }
   }
 
   for (int e = 0; e < base_mesh->totedge; e++) {
     if (adjacent_faces_edge_count[e] < 2) {
-      MEdge *edge = &base_mesh->medge[e];
+      const MEdge *edge = &edges[e];
       BLI_BITMAP_SET(ss->vertex_info.boundary, edge->v1, true);
       BLI_BITMAP_SET(ss->vertex_info.boundary, edge->v2, true);
     }

@@ -79,13 +79,13 @@ static Mesh *cdt_to_mesh(const meshintersect::CDT_result<double> &result)
   }
 
   Mesh *mesh = BKE_mesh_new_nomain(vert_len, edge_len, 0, loop_len, poly_len);
-  MutableSpan<MVert> verts = bke::mesh_vertices_for_write(*mesh);;
-  MutableSpan<MEdge> edges{mesh->medge, mesh->totedge};
-  MutableSpan<MLoop> loops{mesh->mloop, mesh->totloop};
-  MutableSpan<MPoly> polys{mesh->mpoly, mesh->totpoly};
+  MutableSpan<MVert> vertices = bke::mesh_vertices_for_write(*mesh);
+  MutableSpan<MEdge> edges = bke::mesh_edges_for_write(*mesh);
+  MutableSpan<MPoly> polygons = bke::mesh_polygons_for_write(*mesh);
+  MutableSpan<MLoop> loops = bke::mesh_loops_for_write(*mesh);
 
   for (const int i : IndexRange(result.vert.size())) {
-    copy_v3_v3(verts[i].co, float3((float)result.vert[i].x, (float)result.vert[i].y, 0.0f));
+    copy_v3_v3(vertices[i].co, float3((float)result.vert[i].x, (float)result.vert[i].y, 0.0f));
   }
   for (const int i : IndexRange(result.edge.size())) {
     edges[i].v1 = result.edge[i].first;
@@ -94,8 +94,8 @@ static Mesh *cdt_to_mesh(const meshintersect::CDT_result<double> &result)
   }
   int i_loop = 0;
   for (const int i : IndexRange(result.face.size())) {
-    polys[i].loopstart = i_loop;
-    polys[i].totloop = result.face[i].size();
+    polygons[i].loopstart = i_loop;
+    polygons[i].totloop = result.face[i].size();
     for (const int j : result.face[i].index_range()) {
       loops[i_loop].v = result.face[i][j];
       i_loop++;

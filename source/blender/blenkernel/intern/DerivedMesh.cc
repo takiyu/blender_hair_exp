@@ -585,7 +585,6 @@ static void add_orco_mesh(Object *ob, BMEditMesh *em, Mesh *mesh, Mesh *mesh_orc
 
     if (!(layerorco = (float(*)[3])CustomData_get_layer(&mesh->vdata, layer))) {
       CustomData_add_layer(&mesh->vdata, layer, CD_CALLOC, nullptr, mesh->totvert);
-      BKE_mesh_update_customdata_pointers(mesh, false);
 
       layerorco = (float(*)[3])CustomData_get_layer(&mesh->vdata, layer);
     }

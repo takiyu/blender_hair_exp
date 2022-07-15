@@ -134,7 +134,7 @@ static void waveModifier_do(WaveModifierData *md,
                             int verts_num)
 {
   WaveModifierData *wmd = (WaveModifierData *)md;
-  MDeformVert *dvert;
+  const MDeformVert *dvert;
   int defgrp_index;
   float ctime = DEG_get_ctime(ctx->depsgraph);
   float minfac = (float)(1.0 / exp(wmd->width * wmd->narrow * wmd->width * wmd->narrow));

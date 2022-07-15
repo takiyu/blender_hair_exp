@@ -124,8 +124,8 @@ static Mesh *create_mesh_from_volume_grids(Span<openvdb::GridBase::ConstPtr> gri
   Mesh *mesh = BKE_mesh_new_nomain(vert_offset, 0, 0, loop_offset, poly_offset);
   BKE_id_material_eval_ensure_default_slot(&mesh->id);
   MutableSpan<MVert> verts = bke::mesh_vertices_for_write(*mesh);
-  MutableSpan<MLoop> loops{mesh->mloop, mesh->totloop};
-  MutableSpan<MPoly> polys{mesh->mpoly, mesh->totpoly};
+  MutableSpan<MPoly> polygons = bke::mesh_polygons_for_write(*mesh);
+  MutableSpan<MLoop> loops = bke::mesh_loops_for_write(*mesh);
 
   for (const int i : grids.index_range()) {
     const bke::OpenVDBMeshData &data = mesh_data[i];

@@ -31,15 +31,13 @@ static void mesh_flip_faces(MeshComponent &component, const Field<bool> &selecti
   evaluator.evaluate();
   const IndexMask selection = evaluator.get_evaluated_as_mask(0);
 
-  Mesh *mesh = component.get_for_write();
+  Mesh &mesh = *component.get_for_write();
 
-  mesh->mloop = (MLoop *)CustomData_duplicate_referenced_layer(
-      &mesh->ldata, CD_MLOOP, mesh->totloop);
-  Span<MPoly> polys{mesh->mpoly, mesh->totpoly};
-  MutableSpan<MLoop> loops{mesh->mloop, mesh->totloop};
+  const Span<MPoly> polygons = bke::mesh_polygons(mesh);
+  MutableSpan<MLoop> loops = bke::mesh_loops_for_write(mesh);
 
   for (const int i : selection.index_range()) {
-    const MPoly &poly = polys[selection[i]];
+    const MPoly &poly = polygons[selection[i]];
     int start = poly.loopstart;
     for (const int j : IndexRange(poly.totloop / 2)) {
       const int index1 = start + j + 1;

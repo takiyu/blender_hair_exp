@@ -1797,7 +1797,6 @@ void blo_do_versions_280(FileData *fd, Library *UNUSED(lib), Main *bmain)
         if (me->mloopuv != NULL) {
           CustomData_update_typemap(&me->pdata);
           CustomData_free_layers(&me->pdata, CD_MTEXPOLY, me->totpoly);
-          BKE_mesh_update_customdata_pointers(me, false);
         }
       }
     }

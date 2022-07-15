@@ -271,24 +271,9 @@ typedef struct Mesh {
   char subdivr DNA_DEPRECATED;
   char subsurftype DNA_DEPRECATED;
 
-  /**
-   * Deprecated. Store of runtime data for tessellation face UVs and texture.
-   *
-   * \note This would be marked deprecated, however the particles still use this at run-time
-   * for placing particles on the mesh (something which should be eventually upgraded).
-   */
-  struct MTFace *mtface;
   /** Deprecated, use mtface. */
   struct TFace *tface DNA_DEPRECATED;
 
-  /**
-   * Deprecated face storage (quads & triangles only);
-   * faces are now pointed to by #Mesh.mpoly and #Mesh.mloop.
-   *
-   * \note This would be marked deprecated, however the particles still use this at run-time
-   * for placing particles on the mesh (something which should be eventually upgraded).
-   */
-  struct MFace *mface;
   /* Deprecated storage of old faces (only triangles or quads). */
   CustomData fdata;
   /* Deprecated size of #fdata. */

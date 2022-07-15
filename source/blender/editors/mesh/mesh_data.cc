@@ -45,6 +45,8 @@
 #include "mesh_intern.h" /* own include */
 
 using blender::Array;
+using blender::MutableSpan;
+using blender::Span;
 
 static CustomData *mesh_customdata_get_type(Mesh *me, const char htype, int *r_tot)
 {
@@ -129,7 +131,6 @@ static void delete_customdata_layer(Mesh *me, CustomDataLayer *layer)
   }
   else {
     CustomData_free_layer(data, type, tot, layer_index + n);
-    BKE_mesh_update_customdata_pointers(me, true);
   }
 }
 
@@ -293,8 +294,6 @@ int ED_mesh_uv_add(
     if (active_set || layernum_dst == 0) {
       CustomData_set_layer_active(&me->ldata, CD_MLOOPUV, layernum_dst);
     }
-
-    BKE_mesh_update_customdata_pointers(me, true);
   }
 
   /* don't overwrite our copied coords */
@@ -1006,15 +1005,20 @@ static int mesh_customdata_custom_splitnormals_add_exec(bContext *C, wmOperator 
       /* Tag edges as sharp according to smooth threshold if needed,
        * to preserve autosmooth shading. */
       if (me->flag & ME_AUTOSMOOTH) {
-        BKE_edges_sharp_from_angle_set(me->mvert,
-                                       me->totvert,
-                                       me->medge,
-                                       me->totedge,
-                                       me->mloop,
-                                       me->totloop,
-                                       me->mpoly,
+        const Span<MVert> vertices = blender::bke::mesh_vertices(*me);
+        MutableSpan<MEdge> edges = blender::bke::mesh_edges_for_write(*me);
+        const Span<MPoly> polygons = blender::bke::mesh_polygons(*me);
+        const Span<MLoop> loops = blender::bke::mesh_loops(*me);
+
+        BKE_edges_sharp_from_angle_set(vertices.data(),
+                                       vertices.size(),
+                                       edges.data(),
+                                       edges.size(),
+                                       loops.data(),
+                                       loops.size(),
+                                       polygons.data(),
                                        BKE_mesh_poly_normals_ensure(me),
-                                       me->totpoly,
+                                       polygons.size(),
                                        me->smoothresh);
       }
 
@@ -1112,20 +1116,16 @@ static void mesh_add_verts(Mesh *mesh, int len)
 
   CustomData_free(&mesh->vdata, mesh->totvert);
   mesh->vdata = vdata;
-  BKE_mesh_update_customdata_pointers(mesh, false);
 
   BKE_mesh_runtime_clear_cache(mesh);
 
-  /* scan the input list and insert the new vertices */
-
-  /* set default flags */
-  MVert *mvert = &mesh->mvert[mesh->totvert];
-  for (int i = 0; i < len; i++, mvert++) {
-    mvert->flag |= SELECT;
-  }
-
-  /* set final vertex list size */
+  const int old_vertex_num = mesh->totvert;
   mesh->totvert = totvert;
+
+  MutableSpan<MVert> vertices = blender::bke::mesh_vertices_for_write(*mesh);
+  for (MVert &vert : vertices.drop_front(old_vertex_num)) {
+    vert.flag = SELECT;
+  }
 }
 
 static void mesh_add_edges(Mesh *mesh, int len)
@@ -1150,17 +1150,16 @@ static void mesh_add_edges(Mesh *mesh, int len)
 
   CustomData_free(&mesh->edata, mesh->totedge);
   mesh->edata = edata;
-  BKE_mesh_update_customdata_pointers(mesh, false); /* new edges don't change tessellation */
 
   BKE_mesh_runtime_clear_cache(mesh);
 
-  /* set default flags */
-  medge = &mesh->medge[mesh->totedge];
-  for (i = 0; i < len; i++, medge++) {
-    medge->flag = ME_EDGEDRAW | ME_EDGERENDER | SELECT;
-  }
-
+  const int old_edges_num = mesh->totedge;
   mesh->totedge = totedge;
+
+  MutableSpan<MEdge> edges = blender::bke::mesh_edges_for_write(*mesh);
+  for (MEdge &edge : edges.drop_front(old_edges_num)) {
+    edge.flag = ME_EDGEDRAW | ME_EDGERENDER | SELECT;
+  }
 }
 
 static void mesh_add_loops(Mesh *mesh, int len)
@@ -1186,7 +1185,6 @@ static void mesh_add_loops(Mesh *mesh, int len)
 
   CustomData_free(&mesh->ldata, mesh->totloop);
   mesh->ldata = ldata;
-  BKE_mesh_update_customdata_pointers(mesh, true);
 
   mesh->totloop = totloop;
 }
@@ -1213,17 +1211,16 @@ static void mesh_add_polys(Mesh *mesh, int len)
 
   CustomData_free(&mesh->pdata, mesh->totpoly);
   mesh->pdata = pdata;
-  BKE_mesh_update_customdata_pointers(mesh, true);
 
   BKE_mesh_runtime_clear_cache(mesh);
 
-  /* set default flags */
-  mpoly = &mesh->mpoly[mesh->totpoly];
-  for (i = 0; i < len; i++, mpoly++) {
-    mpoly->flag = ME_FACE_SEL;
-  }
-
+  const int old_polys_num = mesh->totpoly;
   mesh->totpoly = totpoly;
+
+  MutableSpan<MPoly> polygons = blender::bke::mesh_polygons_for_write(*mesh);
+  for (MPoly &poly : polygons.drop_front(old_polys_num)) {
+    poly.flag = ME_FACE_SEL;
+  }
 }
 
 /* -------------------------------------------------------------------- */

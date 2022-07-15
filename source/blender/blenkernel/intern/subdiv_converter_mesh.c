@@ -33,6 +33,11 @@
 typedef struct ConverterStorage {
   SubdivSettings settings;
   const Mesh *mesh;
+  const MVert *vertices;
+  const MEdge *edges;
+  const MPoly *polygons;
+  const MLoop *loops;
+
   /* CustomData layer for vertex sharpnesses. */
   const float *cd_vertex_crease;
   /* Indexed by loop index, value denotes index of face-varying vertex
@@ -116,7 +121,7 @@ static int get_num_vertices(const OpenSubdiv_Converter *converter)
 static int get_num_face_vertices(const OpenSubdiv_Converter *converter, int manifold_face_index)
 {
   ConverterStorage *storage = converter->user_data;
-  return storage->mesh->mpoly[manifold_face_index].totloop;
+  return storage->polygons[manifold_face_index].totloop;
 }
 
 static void get_face_vertices(const OpenSubdiv_Converter *converter,
@@ -124,8 +129,8 @@ static void get_face_vertices(const OpenSubdiv_Converter *converter,
                               int *manifold_face_vertices)
 {
   ConverterStorage *storage = converter->user_data;
-  const MPoly *poly = &storage->mesh->mpoly[manifold_face_index];
-  const MLoop *mloop = storage->mesh->mloop;
+  const MPoly *poly = &storage->polygons[manifold_face_index];
+  const MLoop *mloop = storage->loops;
   for (int corner = 0; corner < poly->totloop; corner++) {
     manifold_face_vertices[corner] =
         storage->manifold_vertex_index[mloop[poly->loopstart + corner].v];
@@ -138,7 +143,7 @@ static void get_edge_vertices(const OpenSubdiv_Converter *converter,
 {
   ConverterStorage *storage = converter->user_data;
   const int edge_index = storage->manifold_edge_index_reverse[manifold_edge_index];
-  const MEdge *edge = &storage->mesh->medge[edge_index];
+  const MEdge *edge = &storage->edges[edge_index];
   manifold_edge_vertices[0] = storage->manifold_vertex_index[edge->v1];
   manifold_edge_vertices[1] = storage->manifold_vertex_index[edge->v2];
 }
@@ -155,7 +160,7 @@ static float get_edge_sharpness(const OpenSubdiv_Converter *converter, int manif
     return 0.0f;
   }
   const int edge_index = storage->manifold_edge_index_reverse[manifold_edge_index];
-  const MEdge *medge = storage->mesh->medge;
+  const MEdge *medge = storage->edges;
   return BKE_subdiv_crease_to_sharpness_char(medge[edge_index].crease);
 }
 
@@ -193,8 +198,6 @@ static void precalc_uv_layer(const OpenSubdiv_Converter *converter, const int la
 {
   ConverterStorage *storage = converter->user_data;
   const Mesh *mesh = storage->mesh;
-  const MPoly *mpoly = mesh->mpoly;
-  const MLoop *mloop = mesh->mloop;
   const MLoopUV *mloopuv = CustomData_get_layer_n(&mesh->ldata, CD_MLOOPUV, layer_index);
   const int num_poly = mesh->totpoly;
   const int num_vert = mesh->totvert;
@@ -205,7 +208,7 @@ static void precalc_uv_layer(const OpenSubdiv_Converter *converter, const int la
         mesh->totloop, sizeof(int), "loop uv vertex index");
   }
   UvVertMap *uv_vert_map = BKE_mesh_uv_vert_map_create(
-      mpoly, mloop, mloopuv, num_poly, num_vert, limit, false, true);
+      storage->polygons, storage->loops, mloopuv, num_poly, num_vert, limit, false, true);
   /* NOTE: First UV vertex is supposed to be always marked as separate. */
   storage->num_uv_coordinates = -1;
   for (int vertex_index = 0; vertex_index < num_vert; vertex_index++) {
@@ -214,7 +217,7 @@ static void precalc_uv_layer(const OpenSubdiv_Converter *converter, const int la
       if (uv_vert->separate) {
         storage->num_uv_coordinates++;
       }
-      const MPoly *mp = &mpoly[uv_vert->poly_index];
+      const MPoly *mp = &storage->polygons[uv_vert->poly_index];
       const int global_loop_index = mp->loopstart + uv_vert->loop_of_poly_index;
       storage->loop_uv_indices[global_loop_index] = storage->num_uv_coordinates;
       uv_vert = uv_vert->next;
@@ -242,7 +245,7 @@ static int get_face_corner_uv_index(const OpenSubdiv_Converter *converter,
                                     const int corner)
 {
   ConverterStorage *storage = converter->user_data;
-  const MPoly *mp = &storage->mesh->mpoly[face_index];
+  const MPoly *mp = &storage->polygons[face_index];
   return storage->loop_uv_indices[mp->loopstart + corner];
 }
 
@@ -336,9 +339,9 @@ static void initialize_manifold_index_array(const BLI_bitmap *used_map,
 static void initialize_manifold_indices(ConverterStorage *storage)
 {
   const Mesh *mesh = storage->mesh;
-  const MEdge *medge = mesh->medge;
-  const MLoop *mloop = mesh->mloop;
-  const MPoly *mpoly = mesh->mpoly;
+  const MEdge *medge = storage->edges;
+  const MLoop *mloop = storage->loops;
+  const MPoly *mpoly = storage->polygons;
   /* Set bits of elements which are not loose. */
   BLI_bitmap *vert_used_map = BLI_BITMAP_NEW(mesh->totvert, "vert used map");
   BLI_bitmap *edge_used_map = BLI_BITMAP_NEW(mesh->totedge, "edge used map");
@@ -381,6 +384,10 @@ static void init_user_data(OpenSubdiv_Converter *converter,
   ConverterStorage *user_data = MEM_mallocN(sizeof(ConverterStorage), __func__);
   user_data->settings = *settings;
   user_data->mesh = mesh;
+  user_data->vertices = BKE_mesh_vertices(mesh);
+  user_data->edges = BKE_mesh_edges(mesh);
+  user_data->polygons = BKE_mesh_polygons(mesh);
+  user_data->loops = BKE_mesh_loops(mesh);
   user_data->cd_vertex_crease = CustomData_get_layer(&mesh->vdata, CD_CREASE);
   user_data->loop_uv_indices = NULL;
   initialize_manifold_indices(user_data);

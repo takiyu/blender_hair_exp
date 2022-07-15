@@ -572,6 +572,7 @@ static void bvhtree_from_mesh_setup_data(BVHTree *tree,
                                          const BVHCacheType bvh_cache_type,
                                          const MVert *vert,
                                          const MEdge *edge,
+                                         const MPoly *polygons,
                                          const MFace *face,
                                          const MLoop *loop,
                                          const MLoopTri *looptri,
@@ -775,8 +776,16 @@ BVHTree *bvhtree_from_mesh_verts_ex(BVHTreeFromMesh *data,
 
   if (data) {
     /* Setup BVHTreeFromMesh */
-    bvhtree_from_mesh_setup_data(
-        tree, BVHTREE_FROM_VERTS, vert, nullptr, nullptr, nullptr, nullptr, nullptr, data);
+    bvhtree_from_mesh_setup_data(tree,
+                                 BVHTREE_FROM_VERTS,
+                                 vert,
+                                 nullptr,
+                                 nullptr,
+                                 nullptr,
+                                 nullptr,
+                                 nullptr,
+                                 nullptr,
+                                 data);
   }
 
   return tree;
@@ -911,7 +920,7 @@ BVHTree *bvhtree_from_mesh_edges_ex(BVHTreeFromMesh *data,
   if (data) {
     /* Setup BVHTreeFromMesh */
     bvhtree_from_mesh_setup_data(
-        tree, BVHTREE_FROM_EDGES, vert, edge, nullptr, nullptr, nullptr, nullptr, data);
+        tree, BVHTREE_FROM_EDGES, vert, edge, nullptr, nullptr, nullptr, nullptr, nullptr, data);
   }
 
   return tree;
@@ -1125,8 +1134,16 @@ BVHTree *bvhtree_from_mesh_looptri_ex(BVHTreeFromMesh *data,
 
   if (data) {
     /* Setup BVHTreeFromMesh */
-    bvhtree_from_mesh_setup_data(
-        tree, BVHTREE_FROM_LOOPTRI, vert, nullptr, nullptr, mloop, looptri, nullptr, data);
+    bvhtree_from_mesh_setup_data(tree,
+                                 BVHTREE_FROM_LOOPTRI,
+                                 vert,
+                                 nullptr,
+                                 nullptr,
+                                 nullptr,
+                                 mloop,
+                                 looptri,
+                                 nullptr,
+                                 data);
   }
 
   return tree;
@@ -1226,15 +1243,19 @@ BVHTree *BKE_bvhtree_from_mesh_get(struct BVHTreeFromMesh *data,
     looptri = BKE_mesh_runtime_looptri_ensure(mesh);
     looptri_len = BKE_mesh_runtime_looptri_len(mesh);
   }
-  Span<MVert> vertices = blender::bke::mesh_vertices(*mesh);
+  const Span<MVert> vertices = blender::bke::mesh_vertices(*mesh);
+  const Span<MEdge> edges = blender::bke::mesh_edges(*mesh);
+  const Span<MPoly> polygons = blender::bke::mesh_polygons(*mesh);
+  const Span<MLoop> loops = blender::bke::mesh_loops(*mesh);
 
   /* Setup BVHTreeFromMesh */
   bvhtree_from_mesh_setup_data(nullptr,
                                bvh_cache_type,
                                vertices.data(),
-                               mesh->medge,
+                               edges.data(),
+                               polygons.data(),
                                mesh->mface,
-                               mesh->mloop,
+                               loops.data(),
                                looptri,
                                BKE_mesh_vertex_normals_ensure(mesh),
                                data);
@@ -1258,7 +1279,7 @@ BVHTree *BKE_bvhtree_from_mesh_get(struct BVHTreeFromMesh *data,
   switch (bvh_cache_type) {
     case BVHTREE_FROM_LOOSEVERTS:
       mask = loose_verts_map_get(
-          mesh->medge, mesh->totedge, vertices.data(), mesh->totvert, &mask_bits_act_len);
+          edges.data(), mesh->totedge, vertices.data(), mesh->totvert, &mask_bits_act_len);
       ATTR_FALLTHROUGH;
     case BVHTREE_FROM_VERTS:
       data->tree = bvhtree_from_mesh_verts_create_tree(
@@ -1266,11 +1287,11 @@ BVHTree *BKE_bvhtree_from_mesh_get(struct BVHTreeFromMesh *data,
       break;
 
     case BVHTREE_FROM_LOOSEEDGES:
-      mask = loose_edges_map_get(mesh->medge, mesh->totedge, &mask_bits_act_len);
+      mask = loose_edges_map_get(edges.data(), mesh->totedge, &mask_bits_act_len);
       ATTR_FALLTHROUGH;
     case BVHTREE_FROM_EDGES:
       data->tree = bvhtree_from_mesh_edges_create_tree(vertices.data(),
-                                                       mesh->medge,
+                                                       edges.data(),
                                                        mesh->totedge,
                                                        mask,
                                                        mask_bits_act_len,
@@ -1286,14 +1307,14 @@ BVHTree *BKE_bvhtree_from_mesh_get(struct BVHTreeFromMesh *data,
       break;
 
     case BVHTREE_FROM_LOOPTRI_NO_HIDDEN:
-      mask = looptri_no_hidden_map_get(mesh->mpoly, looptri_len, &mask_bits_act_len);
+      mask = looptri_no_hidden_map_get(polygons.data(), looptri_len, &mask_bits_act_len);
       ATTR_FALLTHROUGH;
     case BVHTREE_FROM_LOOPTRI:
       data->tree = bvhtree_from_mesh_looptri_create_tree(0.0f,
                                                          tree_type,
                                                          6,
                                                          vertices.data(),
-                                                         mesh->mloop,
+                                                         loops.data(),
                                                          looptri,
                                                          looptri_len,
                                                          mask,

@@ -12,6 +12,7 @@
 #include "DNA_volume_types.h"
 
 #include "BKE_material.h"
+#include "BKE_mesh.h"
 
 namespace blender::nodes::node_geo_set_material_cc {
 
@@ -49,9 +50,9 @@ static void assign_material_to_faces(Mesh &mesh, const IndexMask selection, Mate
     BKE_id_material_eval_assign(&mesh.id, new_material_index + 1, material);
   }
 
-  mesh.mpoly = (MPoly *)CustomData_duplicate_referenced_layer(&mesh.pdata, CD_MPOLY, mesh.totpoly);
+  MutableSpan<MPoly> polygons = bke::mesh_polygons_for_write(mesh);
   for (const int i : selection) {
-    MPoly &poly = mesh.mpoly[i];
+    MPoly &poly = polygons[i];
     poly.mat_nr = new_material_index;
   }
 }

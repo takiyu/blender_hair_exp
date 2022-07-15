@@ -1237,7 +1237,7 @@ static bool surfacedeformBind(Object *ob,
   smd_orig->target_polys_num = target_polys_num;
 
   int defgrp_index;
-  MDeformVert *dvert;
+  const MDeformVert *dvert;
   MOD_get_vgroup(ob, mesh, smd_orig->defgrp_name, &dvert, &defgrp_index);
   const bool invert_vgroup = (smd_orig->flags & MOD_SDEF_INVERT_VGROUP) != 0;
   const bool sparse_bind = (smd_orig->flags & MOD_SDEF_SPARSE_BIND) != 0;
@@ -1539,7 +1539,7 @@ static void surfacedeformModifier_do(ModifierData *md,
   }
 
   int defgrp_index;
-  MDeformVert *dvert;
+  const MDeformVert *dvert;
   MOD_get_vgroup(ob, mesh, smd->defgrp_name, &dvert, &defgrp_index);
   const bool invert_vgroup = (smd->flags & MOD_SDEF_INVERT_VGROUP) != 0;
 

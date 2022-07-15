@@ -621,7 +621,7 @@ static void make_duplis_verts(const DupliContext *ctx)
     VertexDupliData_Mesh vdd{};
     vdd.params = vdd_params;
     vdd.totvert = me_eval->totvert;
-    vdd.mvert = me_eval->mvert;
+    vdd.mvert = blender::bke::mesh_vertices(*me_eval).data();
     vdd.vert_normals = BKE_mesh_vertex_normals_ensure(me_eval);
     vdd.orco = (const float(*)[3])CustomData_get_layer(&me_eval->vdata, CD_ORCO);
 
@@ -1175,9 +1175,9 @@ static void make_duplis_faces(const DupliContext *ctx)
     FaceDupliData_Mesh fdd{};
     fdd.params = fdd_params;
     fdd.totface = me_eval->totpoly;
-    fdd.mpoly = me_eval->mpoly;
-    fdd.mloop = me_eval->mloop;
-    fdd.mvert = me_eval->mvert;
+    fdd.mpoly = blender::bke::mesh_polygons(*me_eval).data();
+    fdd.mloop = blender::bke::mesh_loops(*me_eval).data();
+    fdd.mvert = blender::bke::mesh_vertices(*me_eval).data();
     fdd.mloopuv = (uv_idx != -1) ? (const MLoopUV *)CustomData_get_layer_n(
                                        &me_eval->ldata, CD_MLOOPUV, uv_idx) :
                                    nullptr;

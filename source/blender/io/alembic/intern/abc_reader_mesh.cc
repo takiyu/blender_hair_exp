@@ -926,7 +926,7 @@ static void read_edge_creases(Mesh *mesh,
     return;
   }
 
-  MEdge *edges = mesh->medge;
+  MutableSpan<MEdge> edges = blender::bke::mesh_edges_for_write(*mesh);
   int totedge = mesh->totedge;
 
   for (int i = 0, s = 0, e = indices->size(); i < e; i += 2, s++) {

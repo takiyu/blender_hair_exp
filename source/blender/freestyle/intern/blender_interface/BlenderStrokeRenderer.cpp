@@ -575,19 +575,15 @@ void BlenderStrokeRenderer::GenerateStrokeMesh(StrokeGroup *group, bool hasTex)
   mesh->totloop = group->totloop;
   mesh->totcol = group->materials.size();
 
-  mesh->mvert = (MVert *)CustomData_add_layer(
+  MVert *vertices = (MVert *)CustomData_add_layer(
       &mesh->vdata, CD_MVERT, CD_CALLOC, nullptr, mesh->totvert);
-  mesh->medge = (MEdge *)CustomData_add_layer(
+  MEdge *edges = (MEdge *)CustomData_add_layer(
       &mesh->edata, CD_MEDGE, CD_CALLOC, nullptr, mesh->totedge);
-  mesh->mpoly = (MPoly *)CustomData_add_layer(
+  MPoly *polys = (MPoly *)CustomData_add_layer(
       &mesh->pdata, CD_MPOLY, CD_CALLOC, nullptr, mesh->totpoly);
-  mesh->mloop = (MLoop *)CustomData_add_layer(
+  MLoop *loops = (MLoop *)CustomData_add_layer(
       &mesh->ldata, CD_MLOOP, CD_CALLOC, nullptr, mesh->totloop);
 
-  MVert *vertices = mesh->mvert;
-  MEdge *edges = mesh->medge;
-  MPoly *polys = mesh->mpoly;
-  MLoop *loops = mesh->mloop;
   MLoopUV *loopsuv[2] = {nullptr};
 
   if (hasTex) {

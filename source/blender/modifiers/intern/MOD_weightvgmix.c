@@ -206,7 +206,6 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
 
   WeightVGMixModifierData *wmd = (WeightVGMixModifierData *)md;
 
-  MDeformVert *dvert = NULL;
   MDeformWeight **dw1, **tdw1, **dw2, **tdw2;
   float *org_w;
   float *new_w;
@@ -263,18 +262,12 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
     }
   }
 
-  if (has_mdef) {
-    dvert = CustomData_duplicate_referenced_layer(&mesh->vdata, CD_MDEFORMVERT, verts_num);
-  }
-  else {
-    /* Add a valid data layer! */
-    dvert = CustomData_add_layer(&mesh->vdata, CD_MDEFORMVERT, CD_CALLOC, NULL, verts_num);
-  }
+  MDeformVert *dvert = BKE_mesh_deform_verts_for_write(mesh);
+
   /* Ultimate security check. */
   if (!dvert) {
     return mesh;
   }
-  mesh->dvert = dvert;
 
   /* Find out which vertices to work on. */
   tidx = MEM_malloc_arrayN(verts_num, sizeof(int), "WeightVGMix Modifier, tidx");

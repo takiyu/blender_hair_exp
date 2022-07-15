@@ -135,7 +135,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
 
   if (dmd->mode == MOD_DECIM_MODE_COLLAPSE) {
     if (dmd->defgrp_name[0] && (dmd->defgrp_factor > 0.0f)) {
-      MDeformVert *dvert;
+      const MDeformVert *dvert;
       int defgrp_index;
 
       MOD_get_vgroup(ctx->object, mesh, dmd->defgrp_name, &dvert, &defgrp_index);

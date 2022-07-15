@@ -672,9 +672,11 @@ static bool mesh_is_manifold_consistent(Mesh *mesh)
    * check that the direction of the faces are consistent and doesn't suddenly
    * flip
    */
+  const Span<MVert> vertices = bke::mesh_vertices(*mesh);
+  const Span<MEdge> edges = bke::mesh_edges(*mesh);
+  const Span<MLoop> loops = blender::bke::mesh_loops(*mesh);
 
   bool is_manifold_consistent = true;
-  const MLoop *mloop = mesh->mloop;
   char *edge_faces = (char *)MEM_callocN(mesh->totedge * sizeof(char), "remesh_manifold_check");
   int *edge_vert = (int *)MEM_malloc_arrayN(
       mesh->totedge, sizeof(uint), "remesh_consistent_check");
@@ -683,26 +685,23 @@ static bool mesh_is_manifold_consistent(Mesh *mesh)
     edge_vert[i] = -1;
   }
 
-  for (uint loop_idx = 0; loop_idx < mesh->totloop; loop_idx++) {
-    const MLoop *loop = &mloop[loop_idx];
-    edge_faces[loop->e] += 1;
-    if (edge_faces[loop->e] > 2) {
+  for (const MLoop &loop : loops) {
+    edge_faces[loop.e] += 1;
+    if (edge_faces[loop.e] > 2) {
       is_manifold_consistent = false;
       break;
     }
 
-    if (edge_vert[loop->e] == -1) {
-      edge_vert[loop->e] = loop->v;
+    if (edge_vert[loop.e] == -1) {
+      edge_vert[loop.e] = loop.v;
     }
-    else if (edge_vert[loop->e] == loop->v) {
+    else if (edge_vert[loop.e] == loop.v) {
       /* Mesh has flips in the surface so it is non consistent */
       is_manifold_consistent = false;
       break;
     }
   }
 
-  const Span<MVert> vertices = bke::mesh_vertices(*mesh);
-  const Span<MEdge> edges = bke::mesh_edges(*mesh);
   if (is_manifold_consistent) {
     for (edges.index_range()) {
       /* Check for wire edges. */
@@ -711,9 +710,9 @@ static bool mesh_is_manifold_consistent(Mesh *mesh)
         break;
       }
       /* Check for zero length edges */
-      MVert *v1 = &vertices[edges[i].v1];
-      MVert *v2 = &vertices[edges[i].v2];
-      if (compare_v3v3(v1->co, v2->co, 1e-4f)) {
+      const MVert &v1 = vertices[edges[i].v1];
+      const MVert &v2 = vertices[edges[i].v2];
+      if (compare_v3v3(v1.co, v2.co, 1e-4f)) {
         is_manifold_consistent = false;
         break;
       }

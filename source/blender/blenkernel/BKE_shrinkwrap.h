@@ -29,6 +29,7 @@ extern "C" {
 struct BVHTree;
 struct MDeformVert;
 struct Mesh;
+struct MEdge;
 struct ModifierEvalContext;
 struct Object;
 struct ShrinkwrapGpencilModifierData;

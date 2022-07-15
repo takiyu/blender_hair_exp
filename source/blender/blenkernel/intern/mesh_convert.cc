@@ -119,7 +119,6 @@ void BKE_mesh_from_metaball(ListBase *lb, Mesh *me)
       index += 4;
     }
 
-    BKE_mesh_update_customdata_pointers(me, true);
     BKE_mesh_calc_edges(me, true, false);
   }
 }
@@ -1539,9 +1538,6 @@ void BKE_mesh_nomain_to_mesh(Mesh *mesh_src,
       }
     }
   }
-
-  /* yes, must be before _and_ after tessellate */
-  BKE_mesh_update_customdata_pointers(&tmp, false);
 
   CustomData_free(&mesh_dst->vdata, mesh_dst->totvert);
   CustomData_free(&mesh_dst->edata, mesh_dst->totedge);

@@ -27,12 +27,13 @@ static VArray<int> construct_vertex_count_gvarray(const MeshComponent &component
   if (mesh == nullptr) {
     return {};
   }
+  const Span<MEdge> edges = bke::mesh_edges(*mesh);
 
   if (domain == ATTR_DOMAIN_POINT) {
     Array<int> vertices(mesh->totvert, 0);
     for (const int i : IndexRange(mesh->totedge)) {
-      vertices[mesh->medge[i].v1]++;
-      vertices[mesh->medge[i].v2]++;
+      vertices[edges[i].v1]++;
+      vertices[edges[i].v2]++;
     }
     return VArray<int>::ForContainer(std::move(vertices));
   }
@@ -76,12 +77,12 @@ static VArray<int> construct_face_count_gvarray(const MeshComponent &component,
   if (mesh == nullptr) {
     return {};
   }
+  const Span<MLoop> loops = bke::mesh_loops(*mesh);
 
   if (domain == ATTR_DOMAIN_POINT) {
     Array<int> vertices(mesh->totvert, 0);
-    for (const int i : IndexRange(mesh->totloop)) {
-      int vertex = mesh->mloop[i].v;
-      vertices[vertex]++;
+    for (const int i : loops.index_range()) {
+      vertices[loops[i].v]++;
     }
     return VArray<int>::ForContainer(std::move(vertices));
   }

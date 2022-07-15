@@ -179,14 +179,14 @@ Mesh *create_line_mesh(const float3 start, const float3 delta, const int count)
 
   Mesh *mesh = BKE_mesh_new_nomain(count, count - 1, 0, 0, 0);
   BKE_id_material_eval_ensure_default_slot(&mesh->id);
-  MutableSpan<MVert> verts = ble::mesh_vertices(*mesh);;
-  MutableSpan<MEdge> edges{mesh->medge, mesh->totedge};
+  MutableSpan<MVert> vertices = bke::mesh_vertices_for_write(*mesh);
+  MutableSpan<MEdge> edges = bke::mesh_edges_for_write(*mesh);
 
   threading::parallel_invoke(
       [&]() {
-        threading::parallel_for(verts.index_range(), 4096, [&](IndexRange range) {
+        threading::parallel_for(vertices.index_range(), 4096, [&](IndexRange range) {
           for (const int i : range) {
-            copy_v3_v3(verts[i].co, start + delta * i);
+            copy_v3_v3(vertices[i].co, start + delta * i);
           }
         });
       },

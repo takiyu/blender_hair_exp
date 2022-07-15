@@ -1661,17 +1661,17 @@ static void sculpt_update_object(Depsgraph *depsgraph,
 
     /* These are assigned to the base mesh in Multires. This is needed because Face Sets operators
      * and tools use the Face Sets data from the base mesh when Multires is active. */
-    ss->mvert = me->mvert;
-    ss->mpoly = me->mpoly;
-    ss->mloop = me->mloop;
+    ss->mvert = BKE_mesh_vertices(me);
+    ss->mpoly = BKE_mesh_polygons(me);
+    ss->mloop = BKE_mesh_loops(me);
   }
   else {
     ss->totvert = me->totvert;
     ss->totpoly = me->totpoly;
     ss->totfaces = me->totpoly;
-    ss->mvert = me->mvert;
-    ss->mpoly = me->mpoly;
-    ss->mloop = me->mloop;
+    ss->mvert = BKE_mesh_vertices(me);
+    ss->mpoly = BKE_mesh_polygons(me);
+    ss->mloop = BKE_mesh_loops(me);
     ss->multires.active = false;
     ss->multires.modifier = NULL;
     ss->multires.level = 0;
@@ -1721,8 +1721,13 @@ static void sculpt_update_object(Depsgraph *depsgraph,
   BKE_pbvh_face_sets_color_set(ss->pbvh, me->face_sets_color_seed, me->face_sets_color_default);
 
   if (need_pmap && ob->type == OB_MESH && !ss->pmap) {
-    BKE_mesh_vert_poly_map_create(
-        &ss->pmap, &ss->pmap_mem, me->mpoly, me->mloop, me->totvert, me->totpoly, me->totloop);
+    BKE_mesh_vert_poly_map_create(&ss->pmap,
+                                  &ss->pmap_mem,
+                                  BKE_mesh_polygons(me),
+                                  BKE_mesh_loops(me),
+                                  me->totvert,
+                                  me->totpoly,
+                                  me->totloop);
 
     if (ss->pbvh) {
       BKE_pbvh_pmap_set(ss->pbvh, ss->pmap);
@@ -1927,6 +1932,9 @@ int BKE_sculpt_mask_layers_ensure(Object *ob, MultiresModifierData *mmd)
 {
   const float *paint_mask;
   Mesh *me = ob->data;
+  const MPoly *polygons = BKE_mesh_polygons(me);
+  const MLoop *loops = BKE_mesh_loops(me);
+
   int ret = 0;
 
   paint_mask = CustomData_get_layer(&me->vdata, CD_PAINT_MASK);
@@ -1952,12 +1960,12 @@ int BKE_sculpt_mask_layers_ensure(Object *ob, MultiresModifierData *mmd)
     /* if vertices already have mask, copy into multires data */
     if (paint_mask) {
       for (i = 0; i < me->totpoly; i++) {
-        const MPoly *p = &me->mpoly[i];
+        const MPoly *p = &polygons[i];
         float avg = 0;
 
         /* mask center */
         for (j = 0; j < p->totloop; j++) {
-          const MLoop *l = &me->mloop[p->loopstart + j];
+          const MLoop *l = &loops[p->loopstart + j];
           avg += paint_mask[l->v];
         }
         avg /= (float)p->totloop;
@@ -1965,9 +1973,9 @@ int BKE_sculpt_mask_layers_ensure(Object *ob, MultiresModifierData *mmd)
         /* fill in multires mask corner */
         for (j = 0; j < p->totloop; j++) {
           GridPaintMask *gpm = &gmask[p->loopstart + j];
-          const MLoop *l = &me->mloop[p->loopstart + j];
-          const MLoop *prev = ME_POLY_LOOP_PREV(me->mloop, p, j);
-          const MLoop *next = ME_POLY_LOOP_NEXT(me->mloop, p, j);
+          const MLoop *l = &loops[p->loopstart + j];
+          const MLoop *prev = ME_POLY_LOOP_PREV(loops, p, j);
+          const MLoop *next = ME_POLY_LOOP_NEXT(loops, p, j);
 
           gpm->data[0] = avg;
           gpm->data[1] = (paint_mask[l->v] + paint_mask[next->v]) * 0.5f;
@@ -2202,16 +2210,19 @@ static PBVH *build_pbvh_from_regular_mesh(Object *ob, Mesh *me_eval_deform, bool
   BKE_pbvh_respect_hide_set(pbvh, respect_hide);
 
   MLoopTri *looptri = MEM_malloc_arrayN(looptris_num, sizeof(*looptri), __func__);
+  const MVert *vertices = BKE_mesh_vertices(me);
+  const MPoly *polygons = BKE_mesh_polygons(me);
+  const MLoop *loops = BKE_mesh_loops(me);
 
-  BKE_mesh_recalc_looptri(me->mloop, me->mpoly, me->mvert, me->totloop, me->totpoly, looptri);
+  BKE_mesh_recalc_looptri(loops, polygons, vertices, me->totloop, me->totpoly, looptri);
 
   BKE_sculpt_sync_face_set_visibility(me, NULL);
 
   BKE_pbvh_build_mesh(pbvh,
                       me,
-                      me->mpoly,
-                      me->mloop,
-                      me->mvert,
+                      polygons,
+                      loops,
+                      vertices,
                       me->totvert,
                       &me->vdata,
                       &me->ldata,

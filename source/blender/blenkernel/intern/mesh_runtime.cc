@@ -23,6 +23,9 @@
 #include "BKE_shrinkwrap.h"
 #include "BKE_subdiv_ccg.h"
 
+using blender::MutableSpan;
+using blender::Span;
+
 /* -------------------------------------------------------------------- */
 /** \name Mesh Runtime Struct Utils
  * \{ */
@@ -147,10 +150,13 @@ void BKE_mesh_runtime_looptri_recalc(Mesh *mesh)
 {
   mesh_ensure_looptri_data(mesh);
   BLI_assert(mesh->totpoly == 0 || mesh->runtime.looptris.array_wip != nullptr);
+  const Span<MVert> vertices = blender::bke::mesh_vertices(*mesh);
+  const Span<MPoly> polygons = blender::bke::mesh_polygons(*mesh);
+  const Span<MLoop> loops = blender::bke::mesh_loops(*mesh);
 
-  BKE_mesh_recalc_looptri(mesh->mloop,
-                          mesh->mpoly,
-                          mesh->mvert,
+  BKE_mesh_recalc_looptri(loops.data(),
+                          polygons.data(),
+                          vertices.data(),
                           mesh->totloop,
                           mesh->totpoly,
                           mesh->runtime.looptris.array_wip);
@@ -324,6 +330,11 @@ bool BKE_mesh_runtime_is_valid(Mesh *me_eval)
     printf("MESH: %s\n", me_eval->id.name + 2);
   }
 
+  MutableSpan<MVert> vertices = blender::bke::mesh_vertices_for_write(*me_eval);
+  MutableSpan<MEdge> edges = blender::bke::mesh_edges_for_write(*me_eval);
+  MutableSpan<MPoly> polygons = blender::bke::mesh_polygons_for_write(*me_eval);
+  MutableSpan<MLoop> loops = blender::bke::mesh_loops_for_write(*me_eval);
+
   is_valid &= BKE_mesh_validate_all_customdata(
       &me_eval->vdata,
       me_eval->totvert,
@@ -338,21 +349,22 @@ bool BKE_mesh_runtime_is_valid(Mesh *me_eval)
       do_fixes,
       &changed);
 
-  is_valid &= BKE_mesh_validate_arrays(me_eval,
-                                       me_eval->mvert,
-                                       me_eval->totvert,
-                                       me_eval->medge,
-                                       me_eval->totedge,
-                                       me_eval->mface,
-                                       me_eval->totface,
-                                       me_eval->mloop,
-                                       me_eval->totloop,
-                                       me_eval->mpoly,
-                                       me_eval->totpoly,
-                                       me_eval->dvert,
-                                       do_verbose,
-                                       do_fixes,
-                                       &changed);
+  is_valid &= BKE_mesh_validate_arrays(
+      me_eval,
+      vertices.data(),
+      vertices.size(),
+      edges.data(),
+      edges.size(),
+      me_eval->mface,
+      me_eval->totface,
+      loops.data(),
+      loops.size(),
+      polygons.data(),
+      polygons.size(),
+      (MDeformVert *)CustomData_get_layer(&me_eval->vdata, CD_MDEFORMVERT),
+      do_verbose,
+      do_fixes,
+      &changed);
 
   BLI_assert(changed == false);
 

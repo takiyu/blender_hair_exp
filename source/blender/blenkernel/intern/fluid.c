@@ -996,9 +996,7 @@ static void obstacles_from_mesh(Object *coll_ob,
 {
   if (fes->mesh) {
     Mesh *me = NULL;
-    MVert *mvert = NULL;
     const MLoopTri *looptri;
-    const MLoop *mloop;
     BVHTreeFromMesh tree_data = {NULL};
     int numverts, i;
 
@@ -1015,8 +1013,8 @@ static void obstacles_from_mesh(Object *coll_ob,
       CustomData_set_layer(&me->vdata, CD_MVERT, me->mvert);
     }
 
-    mvert = me->mvert;
-    mloop = me->mloop;
+    const MVert *mvert = BKE_mesh_vertices(me);
+    const MLoop *mloop = BKE_mesh_loops(me);
     looptri = BKE_mesh_runtime_looptri_ensure(me);
     numverts = me->totvert;
 
@@ -2095,7 +2093,7 @@ static void emit_from_mesh(
     }
 
     MVert *mvert = me->mvert;
-    const MLoop *mloop = me->mloop;
+    const MLoop *mloop = BKE_mesh_loops(me);
     const MLoopTri *mlooptri = BKE_mesh_runtime_looptri_ensure(me);
     const int numverts = me->totvert;
     const MDeformVert *dvert = CustomData_get_layer(&me->vdata, CD_MDEFORMVERT);
@@ -3281,9 +3279,9 @@ static Mesh *create_liquid_geometry(FluidDomainSettings *fds,
   if (!me) {
     return NULL;
   }
-  mverts = me->mvert;
-  mpolys = me->mpoly;
-  mloops = me->mloop;
+  mverts = BKE_mesh_vertices_for_write(me);
+  mpolys = BKE_mesh_polygons_for_write(me);
+  mloops = BKE_mesh_loops_for_write(me);
 
   /* Get size (dimension) but considering scaling. */
   copy_v3_v3(cell_size_scaled, fds->cell_size);
@@ -3415,9 +3413,9 @@ static Mesh *create_smoke_geometry(FluidDomainSettings *fds, Mesh *orgmesh, Obje
   }
 
   result = BKE_mesh_new_nomain(num_verts, 0, 0, num_faces * 4, num_faces);
-  mverts = result->mvert;
-  mpolys = result->mpoly;
-  mloops = result->mloop;
+  mverts = BKE_mesh_vertices_for_write(result);
+  mpolys = BKE_mesh_polygons_for_write(result);
+  mloops = BKE_mesh_loops_for_write(result);
 
   if (num_verts) {
     /* Volume bounds. */

@@ -1155,14 +1155,11 @@ bool BKE_mesh_validate_material_indices(Mesh *me)
 {
   /* Cast to unsigned to catch negative indices too. */
   const uint16_t mat_nr_max = max_ii(0, me->totcol - 1);
-  MPoly *mp;
-  const int totpoly = me->totpoly;
-  int i;
   bool is_valid = true;
-
-  for (mp = me->mpoly, i = 0; i < totpoly; i++, mp++) {
-    if ((uint16_t)mp->mat_nr > mat_nr_max) {
-      mp->mat_nr = 0;
+  MutableSpan<MPoly> polygons = blender::bke::mesh_polygons_for_write(*me);
+  for (MPoly &poly : polygons) {
+    if ((uint16_t)poly.mat_nr > mat_nr_max) {
+      poly.mat_nr = 0;
       is_valid = false;
     }
   }
@@ -1204,13 +1201,16 @@ void BKE_mesh_strip_loose_faces(Mesh *me)
 
 void BKE_mesh_strip_loose_polysloops(Mesh *me)
 {
+  MutableSpan<MPoly> polygons = blender::bke::mesh_polygons_for_write(*me);
+  MutableSpan<MLoop> loops = blender::bke::mesh_loops_for_write(*me);
+
   MPoly *p;
   MLoop *l;
   int a, b;
   /* New loops idx! */
   int *new_idx = (int *)MEM_mallocN(sizeof(int) * me->totloop, __func__);
 
-  for (a = b = 0, p = me->mpoly; a < me->totpoly; a++, p++) {
+  for (a = b = 0, p = polygons.data(); a < me->totpoly; a++, p++) {
     bool invalid = false;
     int i = p->loopstart;
     int stop = i + p->totloop;
@@ -1219,7 +1219,7 @@ void BKE_mesh_strip_loose_polysloops(Mesh *me)
       invalid = true;
     }
     else {
-      l = &me->mloop[i];
+      l = &loops[i];
       i = stop - i;
       /* If one of the poly's loops is invalid, the whole poly is invalid! */
       for (; i--; l++) {
@@ -1232,7 +1232,7 @@ void BKE_mesh_strip_loose_polysloops(Mesh *me)
 
     if (p->totloop >= 3 && !invalid) {
       if (a != b) {
-        memcpy(&me->mpoly[b], p, sizeof(me->mpoly[b]));
+        memcpy(&polygons[b], p, sizeof(polygons[b]));
         CustomData_copy_data(&me->pdata, &me->pdata, a, b, 1);
       }
       b++;
@@ -1244,10 +1244,10 @@ void BKE_mesh_strip_loose_polysloops(Mesh *me)
   }
 
   /* And now, get rid of invalid loops. */
-  for (a = b = 0, l = me->mloop; a < me->totloop; a++, l++) {
+  for (a = b = 0, l = loops.data(); a < me->totloop; a++, l++) {
     if (l->e != INVALID_LOOP_EDGE_MARKER) {
       if (a != b) {
-        memcpy(&me->mloop[b], l, sizeof(me->mloop[b]));
+        memcpy(&loops[b], l, sizeof(loops[b]));
         CustomData_copy_data(&me->ldata, &me->ldata, a, b, 1);
       }
       new_idx[a] = b;
@@ -1266,8 +1266,8 @@ void BKE_mesh_strip_loose_polysloops(Mesh *me)
 
   /* And now, update polys' start loop index. */
   /* NOTE: At this point, there should never be any poly using a striped loop! */
-  for (a = 0, p = me->mpoly; a < me->totpoly; a++, p++) {
-    p->loopstart = new_idx[p->loopstart];
+  for (const int i : polygons.index_range()) {
+    polygons[i].loopstart = new_idx[polygons[i].loopstart];
   }
 
   MEM_freeN(new_idx);
@@ -1279,11 +1279,12 @@ void BKE_mesh_strip_loose_edges(Mesh *me)
   MLoop *l;
   int a, b;
   uint *new_idx = (uint *)MEM_mallocN(sizeof(int) * me->totedge, __func__);
+  MutableSpan<MEdge> edges = blender::bke::mesh_edges_for_write(*me);
 
-  for (a = b = 0, e = me->medge; a < me->totedge; a++, e++) {
+  for (a = b = 0, e = edges.data(); a < me->totedge; a++, e++) {
     if (e->v1 != e->v2) {
       if (a != b) {
-        memcpy(&me->medge[b], e, sizeof(me->medge[b]));
+        memcpy(&edges[b], e, sizeof(edges[b]));
         CustomData_copy_data(&me->edata, &me->edata, a, b, 1);
       }
       new_idx[a] = b;
@@ -1301,8 +1302,9 @@ void BKE_mesh_strip_loose_edges(Mesh *me)
   /* And now, update loops' edge indices. */
   /* XXX We hope no loop was pointing to a striped edge!
    *     Else, its e will be set to INVALID_LOOP_EDGE_MARKER :/ */
-  for (a = 0, l = me->mloop; a < me->totloop; a++, l++) {
-    l->e = new_idx[l->e];
+  MutableSpan<MLoop> loops = blender::bke::mesh_loops_for_write(*me);
+  for (MLoop &loop : loops) {
+    loop.e = new_idx[loop.e];
   }
 
   MEM_freeN(new_idx);
