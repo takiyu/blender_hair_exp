@@ -680,9 +680,6 @@ int ED_mesh_join_objects_exec(bContext *C, wmOperator *op)
   me->ldata = ldata;
   me->pdata = pdata;
 
-  /* tessface data removed above, no need to update */
-  BKE_mesh_update_customdata_pointers(me, false);
-
   /* Tag normals dirty because vertex positions could be changed from the original. */
   BKE_mesh_normals_tag_dirty(me);
 
