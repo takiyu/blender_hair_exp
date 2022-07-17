@@ -1959,12 +1959,14 @@ static void vgroup_smooth_subset(Object *ob,
     }
   }
   else {
+    const MVert *vertices = BKE_mesh_vertices(me);
+    const MEdge *edges = BKE_mesh_edges(me);
     for (int i = 0; i < dvert_tot; i++) {
-      const MVert *v = &me->mvert[i];
+      const MVert *v = &vertices[i];
       if (IS_ME_VERT_WRITE(v)) {
         for (int j = 0; j < emap[i].count; j++) {
-          const MEdge *e = &me->medge[emap[i].indices[j]];
-          const MVert *v_other = &me->mvert[(e->v1 == i) ? e->v2 : e->v1];
+          const MEdge *e = &edges[emap[i].indices[j]];
+          const MVert *v_other = &vertices[(e->v1 == i) ? e->v2 : e->v1];
           if (IS_ME_VERT_READ(v_other)) {
             STACK_PUSH(verts_used, i);
             break;
@@ -2032,14 +2034,16 @@ static void vgroup_smooth_subset(Object *ob,
         }
         else {
           int j;
+          const MVert *vertices = BKE_mesh_vertices(me);
+          const MEdge *edges = BKE_mesh_edges(me);
 
           /* checked already */
-          BLI_assert(IS_ME_VERT_WRITE(&me->mvert[i]));
+          BLI_assert(IS_ME_VERT_WRITE(&vertices[i]));
 
           for (j = 0; j < emap[i].count; j++) {
-            MEdge *e = &me->medge[emap[i].indices[j]];
+            MEdge *e = &edges[emap[i].indices[j]];
             const int i_other = (e->v1 == i ? e->v2 : e->v1);
-            MVert *v_other = &me->mvert[i_other];
+            MVert *v_other = &vertices[i_other];
 
             if (IS_ME_VERT_READ(v_other)) {
               WEIGHT_ACCUMULATE;
@@ -2436,11 +2440,11 @@ void ED_vgroup_mirror(Object *ob,
     }
     else {
       /* object mode / weight paint */
-      MVert *mv, *mv_mirr;
+      const MVert *mv, *mv_mirr;
       int vidx, vidx_mirr;
       const bool use_vert_sel = (me->editflag & ME_EDIT_PAINT_VERT_SEL) != 0;
-
-      if (me->dvert == NULL) {
+      MDeformVert *dvert = BKE_mesh_deform_verts_for_write(me);
+      if (dvert == NULL) {
         goto cleanup;
       }
 
@@ -2449,12 +2453,13 @@ void ED_vgroup_mirror(Object *ob,
       }
 
       BLI_bitmap *vert_tag = BLI_BITMAP_NEW(me->totvert, __func__);
+      const MVert *vertices = BKE_mesh_vertices(me);
 
-      for (vidx = 0, mv = me->mvert; vidx < me->totvert; vidx++, mv++) {
+      for (vidx = 0, mv = me; vidx < me->totvert; vidx++, mv++) {
         if (!BLI_BITMAP_TEST(vert_tag, vidx)) {
           if ((vidx_mirr = mesh_get_x_mirror_vert(ob, NULL, vidx, use_topology)) != -1) {
             if (vidx != vidx_mirr) {
-              mv_mirr = &me->mvert[vidx_mirr];
+              mv_mirr = &me[vidx_mirr];
               if (!BLI_BITMAP_TEST(vert_tag, vidx_mirr)) {
 
                 if (use_vert_sel) {
@@ -2463,8 +2468,8 @@ void ED_vgroup_mirror(Object *ob,
                 }
 
                 if (sel || sel_mirr) {
-                  dvert = &me->dvert[vidx];
-                  dvert_mirr = &me->dvert[vidx_mirr];
+                  dvert = &dvert[vidx];
+                  dvert_mirr = &dvert[vidx_mirr];
 
                   VGROUP_MIRR_OP;
                   totmirr++;
@@ -2599,12 +2604,10 @@ static void vgroup_assign_verts(Object *ob, const float weight)
       }
     }
     else {
-      if (!me->dvert) {
-        BKE_object_defgroup_data_create(&me->id);
-      }
+      MDeformVert *dvert = BKE_mesh_deform_verts_for_write(me);
 
-      MVert *mv = me->mvert;
-      MDeformVert *dv = me->dvert;
+      const MVert *mv = BKE_mesh_vertices(me);
+      MDeformVert *dv = dvert;
 
       for (int i = 0; i < me->totvert; i++, mv++, dv++) {
         if (mv->flag & SELECT) {
@@ -2720,7 +2723,7 @@ static bool vertex_group_mesh_with_dvert_poll(bContext *C)
   }
 
   Mesh *me = ob->data;
-  if (me->dvert == NULL) {
+  if (!CustomData_has_layer(&me->vdata, CD_MDEFORMVERT)) {
     CTX_wm_operator_poll_msg_set(C, "The active mesh object has no vertex group data");
     return false;
   }
@@ -4317,9 +4320,12 @@ static void vgroup_copy_active_to_sel_single(Object *ob, const int def_nr)
       return;
     }
 
-    dv = me->dvert;
+    const MVert *vertices = BKE_mesh_vertices(me);
+    MDeformVert *dvert = BKE_mesh_deform_verts_for_write(me);
+
+    dv = dvert;
     for (i = 0; i < me->totvert; i++, dv++) {
-      if ((me->mvert[i].flag & SELECT) && (dv != dvert_act)) {
+      if ((vertices[i].flag & SELECT) && (dv != dvert_act)) {
 
         BKE_defvert_copy_index(dv, def_nr, dvert_act, def_nr);
 

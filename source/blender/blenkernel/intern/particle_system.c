@@ -3325,9 +3325,9 @@ static void hair_create_input_mesh(ParticleSimulationData *sim,
     CustomData_add_layer(&mesh->vdata, CD_MDEFORMVERT, CD_CALLOC, NULL, mesh->totvert);
     BKE_mesh_update_customdata_pointers(mesh, false);
   }
-  mvert = mesh->mvert;
-  medge = mesh->medge;
-  dvert = mesh->dvert;
+  mvert = BKE_mesh_vertices_for_write(mesh);
+  medge = BKE_mesh_edges_for_write(mesh);
+  dvert = BKE_mesh_deform_verts_for_write(mesh);
 
   if (psys->clmd->hairdata == NULL) {
     psys->clmd->hairdata = MEM_mallocN(sizeof(ClothHairData) * totpoint, "hair data");

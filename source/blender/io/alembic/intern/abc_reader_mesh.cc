@@ -268,7 +268,8 @@ static void process_loop_normals(CDStreamConfig &config, const N3fArraySamplePtr
   float(*lnors)[3] = static_cast<float(*)[3]>(
       MEM_malloc_arrayN(loop_count, sizeof(float[3]), "ABC::FaceNormals"));
 
-  MPoly *mpoly = mesh->mpoly;
+  MutableSpan<MPoly> polygons = bke::mesh_polygons_for_write(*mesh);
+  MPoly *mpoly = polygons.data();
   const N3fArraySample &loop_normals = *loop_normals_ptr;
   int abc_index = 0;
   for (int i = 0, e = mesh->totpoly; i < e; i++, mpoly++) {
@@ -514,12 +515,12 @@ CDStreamConfig get_config(Mesh *mesh, const bool use_vertex_interpolation)
 {
   CDStreamConfig config;
 
-  BLI_assert(mesh->mvert || mesh->totvert == 0);
+  BLI_assert(bke::mesh_vertices(*mesh) != nullptr || mesh->totvert == 0);
 
   config.mesh = mesh;
-  config.mvert = mesh->mvert;
-  config.mloop = mesh->mloop;
-  config.mpoly = mesh->mpoly;
+  config.mvert = bke::mesh_vertices_for_write(*mesh).data();
+  config.mloop = bke::mesh_loops_for_write(*mesh).data();
+  config.mpoly = bke::mesh_polygons_for_write(*mesh).data();
   config.totvert = mesh->totvert;
   config.totloop = mesh->totloop;
   config.totpoly = mesh->totpoly;

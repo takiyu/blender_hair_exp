@@ -1293,7 +1293,9 @@ static char *rna_VertexGroupElement_path(const PointerRNA *ptr)
 
 static char *rna_MeshPolygon_path(const PointerRNA *ptr)
 {
-  return BLI_sprintfN("polygons[%d]", (int)((MPoly *)ptr->data - rna_mesh(ptr)->mpoly));
+  const Mesh *mesh = rna_mesh(ptr);
+  const MPoly *polygons = BKE_mesh_polygons(mesh);
+  return BLI_sprintfN("polygons[%d]", (int)((MPoly *)ptr->data - polygons));
 }
 
 static char *rna_MeshLoopTriangle_path(const PointerRNA *ptr)
@@ -1316,7 +1318,10 @@ static char *rna_MeshLoop_path(const PointerRNA *ptr)
 
 static char *rna_MeshVertex_path(const PointerRNA *ptr)
 {
-  return BLI_sprintfN("vertices[%d]", (int)((MVert *)ptr->data - rna_mesh(ptr)->mvert));
+  const Mesh *mesh = rna_mesh(ptr);
+  const MVert *vertices = BKE_mesh_vertices(mesh);
+
+  return BLI_sprintfN("vertices[%d]", (int)((MVert *)ptr->data - vertices));
 }
 
 static char *rna_VertCustomData_data_path(const PointerRNA *ptr, const char *collection, int type)

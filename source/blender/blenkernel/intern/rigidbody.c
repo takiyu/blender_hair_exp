@@ -364,7 +364,7 @@ static rbCollisionShape *rigidbody_get_shape_convexhull_from_mesh(Object *ob,
 
   if (ob->type == OB_MESH && ob->data) {
     mesh = rigidbody_get_mesh(ob);
-    mvert = (mesh) ? mesh->mvert : NULL;
+    mvert = (mesh) ? BKE_mesh_vertices_for_write(mesh) : NULL;
     totvert = (mesh) ? mesh->totvert : 0;
   }
   else {
@@ -1668,7 +1668,7 @@ static void rigidbody_update_sim_ob(Depsgraph *depsgraph, Object *ob, RigidBodyO
   if (rbo->shape == RB_SHAPE_TRIMESH && rbo->flag & RBO_FLAG_USE_DEFORM) {
     Mesh *mesh = ob->runtime.mesh_deform_eval;
     if (mesh) {
-      MVert *mvert = mesh->mvert;
+      MVert *mvert = BKE_mesh_vertices_for_write(mesh);
       int totvert = mesh->totvert;
       const BoundBox *bb = BKE_object_boundbox_get(ob);
 

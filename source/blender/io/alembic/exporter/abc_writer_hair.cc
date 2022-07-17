@@ -120,9 +120,9 @@ void ABCHairWriter::write_hair_sample(const HierarchyContext &context,
   float inv_mat[4][4];
   invert_m4_m4_safe(inv_mat, context.object->obmat);
 
-  MTFace *mtface = mesh->mtface;
-  MFace *mface = mesh->mface;
-  MVert *mverts = mesh->mvert;
+  MTFace *mtface = (MTFace *)CustomData_get_layer(&mesh->fdata, CD_MTFACE);
+  MFace *mface = (MFace *)CustomData_get_layer(&mesh->fdata, CD_MFACE);
+  MVert *mverts = BKE_mesh_vertices_for_write(mesh);
   const float(*vert_normals)[3] = BKE_mesh_vertex_normals_ensure(mesh);
 
   if ((!mtface || !mface) && !uv_warning_shown_) {
@@ -243,8 +243,8 @@ void ABCHairWriter::write_hair_child_sample(const HierarchyContext &context,
   float inv_mat[4][4];
   invert_m4_m4_safe(inv_mat, context.object->obmat);
 
-  MTFace *mtface = mesh->mtface;
-  MVert *mverts = mesh->mvert;
+  MTFace *mtface = (MTFace *)CustomData_get_layer(&mesh->fdata, CD_MTFACE);
+  MVert *mverts = BKE_mesh_vertices_for_write(mesh);
   const float(*vert_normals)[3] = BKE_mesh_vertex_normals_ensure(mesh);
 
   ParticleSystem *psys = context.particle_system;

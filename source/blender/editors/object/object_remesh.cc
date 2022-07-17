@@ -131,7 +131,8 @@ static int voxel_remesh_exec(bContext *C, wmOperator *op)
   }
 
   /* Output mesh will be all smooth or all flat shading. */
-  const bool smooth_normals = mesh->mpoly[0].flag & ME_SMOOTH;
+  const Span<MPoly> polygons = blender::bke::mesh_polygons(*mesh);
+  const bool smooth_normals = polygons.first().flag & ME_SMOOTH;
 
   float isovalue = 0.0f;
   if (mesh->flag & ME_REMESH_REPROJECT_VOLUME) {

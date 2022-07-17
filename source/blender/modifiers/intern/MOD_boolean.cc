@@ -145,10 +145,9 @@ static Mesh *get_quick_mesh(
           mul_m4_m4m4(omat, imat, ob_operand_ob->obmat);
 
           const int mverts_len = result->totvert;
-          MVert *mv = result->mvert;
-
-          for (int i = 0; i < mverts_len; i++, mv++) {
-            mul_m4_v3(omat, mv->co);
+          MutableSpan<MVert> vertices = blender::bke::mesh_vertices_for_write(*result);
+          for (const int i : vertices.index_range()) {
+            mul_m4_v3(omat, vertices[i].co);
           }
 
           BKE_mesh_tag_coords_changed(result);

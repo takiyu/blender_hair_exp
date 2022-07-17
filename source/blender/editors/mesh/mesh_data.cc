@@ -225,8 +225,9 @@ void ED_mesh_uv_loop_reset_ex(Mesh *me, const int layernum)
     BLI_assert(CustomData_has_layer(&me->ldata, CD_MLOOPUV));
     MLoopUV *mloopuv = (MLoopUV *)CustomData_get_layer_n(&me->ldata, CD_MLOOPUV, layernum);
 
+    const MPoly *polygons = BKE_mesh_polygons(me);
     for (int i = 0; i < me->totpoly; i++) {
-      mesh_uv_reset_mface(&me->mpoly[i], mloopuv);
+      mesh_uv_reset_mface(&polygons[i], mloopuv);
     }
   }
 

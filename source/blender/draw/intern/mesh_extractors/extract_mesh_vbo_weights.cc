@@ -8,6 +8,7 @@
 #include "MEM_guardedalloc.h"
 
 #include "BKE_deform.h"
+#include "BKE_mesh.h"
 
 #include "draw_subdivision.h"
 #include "extract_mesh.hh"
@@ -171,8 +172,9 @@ static void extract_weights_init_subdiv(const DRWSubdivCache *subdiv_cache,
   extract_weights_init(mr, cache, coarse_weights, _data);
 
   if (mr->extract_type != MR_EXTRACT_BMESH) {
-    for (int i = 0; i < coarse_mesh->totpoly; i++) {
-      const MPoly *mpoly = &coarse_mesh->mpoly[i];
+    const Span<MPoly> coarse_polygons = bke::mesh_polygons(*coarse_mesh);
+    for (const int i : coarse_polygons.index_range()) {
+      const MPoly *mpoly = &coarse_polygons[i];
       extract_weights_iter_poly_mesh(mr, mpoly, i, _data);
     }
   }

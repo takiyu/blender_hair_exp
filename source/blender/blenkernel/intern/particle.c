@@ -14,7 +14,7 @@
 
 #include "MEM_guardedalloc.h"
 
-#include "DNA_defaults.h"
+// #include "DNA_defaults.h"
 
 #include "DNA_cloth_types.h"
 #include "DNA_collection_types.h"
@@ -72,7 +72,7 @@
 
 #include "RE_texture.h"
 
-#include "BLO_read_write.h"
+// #include "BLO_read_write.h"
 
 #include "particle_private.h"
 
@@ -1399,7 +1399,8 @@ static void init_particle_interpolation(Object *ob,
     pind->dietime = (key + pa->totkey - 1)->time;
 
     if (pind->mesh) {
-      pind->mvert[0] = &pind->mesh->mvert[pa->hair_index];
+      MVert *vertices = BKE_mesh_vertices_for_write(pind->mesh);
+      pind->mvert[0] = &vertices[pa->hair_index];
       pind->mvert[1] = pind->mvert[0] + 1;
     }
   }
@@ -1852,7 +1853,7 @@ static float psys_interpolate_value_from_verts(
       return values[index];
     case PART_FROM_FACE:
     case PART_FROM_VOLUME: {
-      MFace *mf = &mesh->mface[index];
+      MFace *mf = &CustomData_get_layer(&mesh->fdata, CD_MFACE)[index];
       return interpolate_particle_value(
           values[mf->v1], values[mf->v2], values[mf->v3], values[mf->v4], fw, mf->v4);
     }
@@ -1941,7 +1942,7 @@ int psys_particle_dm_face_lookup(Mesh *mesh_final,
 
   index_mf_to_mpoly_deformed = NULL;
 
-  mtessface_final = mesh_final->mface;
+  mtessface_final = CustomData_get_layer(&mesh_final->fdata, CD_MFACE);
   osface_final = CustomData_get_layer(&mesh_final->fdata, CD_ORIGSPACE);
 
   if (osface_final == NULL) {
@@ -2061,7 +2062,7 @@ static int psys_map_index_on_dm(Mesh *mesh,
       /* modify the original weights to become
        * weights for the derived mesh face */
       OrigSpaceFace *osface = CustomData_get_layer(&mesh->fdata, CD_ORIGSPACE);
-      const MFace *mface = &mesh->mface[i];
+      const MFace *mface = &CustomData_get_layer(&mesh->fdata, CD_MFACE)[i];
 
       if (osface == NULL) {
         mapfw[0] = mapfw[1] = mapfw[2] = mapfw[3] = 0.0f;
@@ -2117,7 +2118,8 @@ void psys_particle_on_dm(Mesh *mesh_final,
   const float(*vert_normals)[3] = BKE_mesh_vertex_normals_ensure(mesh_final);
 
   if (from == PART_FROM_VERT) {
-    copy_v3_v3(vec, mesh_final->mvert[mapindex].co);
+    const MVert *vertices = BKE_mesh_vertices(mesh_final);
+    copy_v3_v3(vec, vertices[mapindex].co);
 
     if (nor) {
       copy_v3_v3(nor, vert_normals[mapindex]);
@@ -2143,9 +2145,9 @@ void psys_particle_on_dm(Mesh *mesh_final,
     MTFace *mtface;
     MVert *mvert;
 
-    mface = &mesh_final->mface[mapindex];
-    mvert = mesh_final->mvert;
-    mtface = mesh_final->mtface;
+    mface = &CustomData_get_layer(&mesh_final->fdata, CD_MFACE)[mapindex];
+    mvert = BKE_mesh_vertices_for_write(mesh_final);
+    mtface = CustomData_get_layer(&mesh_final->fdata, CD_MTFACE);
 
     if (mtface) {
       mtface += mapindex;
@@ -3848,7 +3850,7 @@ static void psys_face_mat(Object *ob, Mesh *mesh, ParticleData *pa, float mat[4]
     return;
   }
 
-  mface = &mesh->mface[i];
+  mface = &CustomData_get_layer(&mesh->fdata, CD_MFACE)[i];
   const OrigSpaceFace *osface = CustomData_get(&mesh->fdata, i, CD_ORIGSPACE);
 
   if (orco && (orcodata = CustomData_get_layer(&mesh->vdata, CD_ORCO))) {
@@ -3863,9 +3865,10 @@ static void psys_face_mat(Object *ob, Mesh *mesh, ParticleData *pa, float mat[4]
     }
   }
   else {
-    copy_v3_v3(v[0], mesh->mvert[mface->v1].co);
-    copy_v3_v3(v[1], mesh->mvert[mface->v2].co);
-    copy_v3_v3(v[2], mesh->mvert[mface->v3].co);
+    const MVert *vertices = BKE_mesh_vertices(mesh);
+    copy_v3_v3(v[0], vertices[mface->v1].co);
+    copy_v3_v3(v[1], vertices[mface->v2].co);
+    copy_v3_v3(v[2], vertices[mface->v3].co);
   }
 
   triatomat(v[0], v[1], v[2], (osface) ? osface->uv : NULL, mat);

@@ -162,12 +162,12 @@ bool BKE_object_defgroup_clear(Object *ob, bDeformGroup *dg, const bool use_sele
       }
     }
     else {
-      if (me->dvert) {
+      if (CustomData_has_layer(&me->vdata, CD_MDEFORMVERT)) {
         MVert *mv;
         int i;
 
-        mv = me->mvert;
-        dv = me->dvert;
+        mv = BKE_mesh_vertices(me);
+        dv = BKE_mesh_deform_verts_for_write(me);
 
         for (i = 0; i < me->totvert; i++, mv++, dv++) {
           if (dv->dw && (!use_selection || (mv->flag & SELECT))) {

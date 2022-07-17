@@ -343,13 +343,11 @@ void MeshImporter::read_vertices(COLLADAFW::Mesh *mesh, Mesh *me)
   }
 
   me->totvert = pos.getFloatValues()->getCount() / stride;
-  me->mvert = (MVert *)CustomData_add_layer(&me->vdata, CD_MVERT, CD_CALLOC, nullptr, me->totvert);
+  CustomData_add_layer(&me->vdata, CD_MVERT, CD_CALLOC, nullptr, me->totvert);
 
-  MVert *mvert;
-  int i;
-
-  for (i = 0, mvert = me->mvert; i < me->totvert; i++, mvert++) {
-    get_vector(mvert->co, pos, i, stride);
+  MutableSpan<MVert> vertices = bke::mesh_vertices_for_write(*me);
+  for (const int i : vertices.index_range()) {
+    get_vector(vertices[i].co, pos, i, stride);
   }
 }
 
@@ -450,10 +448,8 @@ void MeshImporter::allocate_poly_data(COLLADAFW::Mesh *collada_mesh, Mesh *me)
   if (total_poly_count > 0) {
     me->totpoly = total_poly_count;
     me->totloop = total_loop_count;
-    me->mpoly = (MPoly *)CustomData_add_layer(
-        &me->pdata, CD_MPOLY, CD_CALLOC, nullptr, me->totpoly);
-    me->mloop = (MLoop *)CustomData_add_layer(
-        &me->ldata, CD_MLOOP, CD_CALLOC, nullptr, me->totloop);
+    CustomData_add_layer(&me->pdata, CD_MPOLY, CD_CALLOC, nullptr, me->totpoly);
+    CustomData_add_layer(&me->ldata, CD_MLOOP, CD_CALLOC, nullptr, me->totloop);
 
     unsigned int totuvset = collada_mesh->getUVCoords().getInputInfosArray().getCount();
     for (int i = 0; i < totuvset; i++) {
@@ -612,8 +608,10 @@ void MeshImporter::read_polys(COLLADAFW::Mesh *collada_mesh, Mesh *me)
   UVDataWrapper uvs(collada_mesh->getUVCoords());
   VCOLDataWrapper vcol(collada_mesh->getColors());
 
-  MPoly *mpoly = me->mpoly;
-  MLoop *mloop = me->mloop;
+  MutableSpan<MPoly> polygons = bke::mesh_polygons_for_write(*mesh);
+  MutableSpan<MLoop> loops = bke::mesh_loops_for_write(*mesh);
+  MPoly *mpoly = polygons.data();
+  MLoop *mloop = loops.data();
   int loop_index = 0;
 
   MaterialIdPrimitiveArrayMap mat_prim_map;

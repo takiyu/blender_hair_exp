@@ -1450,26 +1450,27 @@ void recalc_emitter_field(Depsgraph *UNUSED(depsgraph), Object *UNUSED(ob), Part
   vec = edit->emitter_cosnos;
   nor = vec + 3;
 
+  const MVert *vertices = BKE_mesh_vertices(mesh);
   const float(*vert_normals)[3] = BKE_mesh_vertex_normals_ensure(mesh);
-
+  MFace *mface = (MFace *)CustomData_get_layer(&mesh->fdata, CD_MFACE);
   for (i = 0; i < totface; i++, vec += 6, nor += 6) {
-    MFace *mface = &mesh->mface[i];
-    MVert *mvert;
+    MFace *mface = &mface[i];
+    const MVert *mvert;
 
-    mvert = &mesh->mvert[mface->v1];
+    mvert = &vertices[mface->v1];
     copy_v3_v3(vec, mvert->co);
     copy_v3_v3(nor, vert_normals[mface->v1]);
 
-    mvert = &mesh->mvert[mface->v2];
+    mvert = &vertices[mface->v2];
     add_v3_v3v3(vec, vec, mvert->co);
     add_v3_v3(nor, vert_normals[mface->v2]);
 
-    mvert = &mesh->mvert[mface->v3];
+    mvert = &vertices[mface->v3];
     add_v3_v3v3(vec, vec, mvert->co);
     add_v3_v3(nor, vert_normals[mface->v3]);
 
     if (mface->v4) {
-      mvert = &mesh->mvert[mface->v4];
+      mvert = &vertices[mface->v4];
       add_v3_v3v3(vec, vec, mvert->co);
       add_v3_v3(nor, vert_normals[mface->v4]);
 
@@ -3567,7 +3568,9 @@ static void PE_mirror_x(Depsgraph *depsgraph, Scene *scene, Object *ob, int tagg
   }
 
   if (newtotpart != psys->totpart) {
-    MFace *mtessface = use_dm_final_indices ? psmd_eval->mesh_final->mface : me->mface;
+    MFace *mtessface = use_dm_final_indices ?
+                           (MFace *)CustomData_get_layer(&psmd_eval->mesh_final->fdata, CD_MFACE) :
+                           (MFace *)CustomData_get_layer(&me->fdata, CD_MFACE);
 
     /* allocate new arrays and copy existing */
     new_pars = MEM_callocN(newtotpart * sizeof(ParticleData), "ParticleData new");
@@ -4175,8 +4178,8 @@ static int particle_intersect_mesh(Depsgraph *depsgraph,
   }
 
   totface = mesh->totface;
-  mface = mesh->mface;
-  mvert = mesh->mvert;
+  mface = (MFace *)CustomData_get_layer(&mesh->fdata, CD_MFACE);
+  mvert = BKE_mesh_vertices_for_write(mesh);
 
   /* lets intersect the faces */
   for (i = 0; i < totface; i++, mface++) {

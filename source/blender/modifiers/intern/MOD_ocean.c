@@ -322,8 +322,6 @@ static Mesh *doOcean(ModifierData *md, const ModifierEvalContext *ctx, Mesh *mes
   const int resolution = (ctx->flag & MOD_APPLY_RENDER) ? omd->resolution :
                                                           omd->viewport_resolution;
 
-  MVert *mverts;
-
   int cfra_for_cache;
   int i, j;
 
@@ -368,7 +366,7 @@ static Mesh *doOcean(ModifierData *md, const ModifierEvalContext *ctx, Mesh *mes
   CLAMP(cfra_for_cache, omd->bakestart, omd->bakeend);
   cfra_for_cache -= omd->bakestart; /* shift to 0 based */
 
-  mverts = result->mvert;
+  MVert *vertices = BKE_mesh_vertices_for_write(result);
 
   /* add vcols before displacement - allows lookup based on position */
 
@@ -400,7 +398,7 @@ static Mesh *doOcean(ModifierData *md, const ModifierEvalContext *ctx, Mesh *mes
           }
 
           for (j = mp->totloop; j--; ml++, mlcol++) {
-            const float *vco = mverts[ml->v].co;
+            const float *vco = vertices[ml->v].co;
             const float u = OCEAN_CO(size_co_inv, vco[0]);
             const float v = OCEAN_CO(size_co_inv, vco[1]);
             float foam;
@@ -449,7 +447,7 @@ static Mesh *doOcean(ModifierData *md, const ModifierEvalContext *ctx, Mesh *mes
     const int verts_num = result->totvert;
 
     for (i = 0; i < verts_num; i++) {
-      float *vco = mverts[i].co;
+      float *vco = vertices[i].co;
       const float u = OCEAN_CO(size_co_inv, vco[0]);
       const float v = OCEAN_CO(size_co_inv, vco[1]);
 

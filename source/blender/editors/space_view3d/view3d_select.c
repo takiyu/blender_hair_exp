@@ -334,7 +334,8 @@ static bool edbm_backbuf_check_and_select_verts_obmode(Mesh *me,
                                                        struct EditSelectBuf_Cache *esel,
                                                        const eSelectOp sel_op)
 {
-  MVert *mv = me->mvert;
+  MVert *vertices = BKE_mesh_vertices_for_write(me);
+  MVert *mv = vertices;
   uint index;
   bool changed = false;
 
@@ -361,7 +362,7 @@ static bool edbm_backbuf_check_and_select_faces_obmode(Mesh *me,
                                                        struct EditSelectBuf_Cache *esel,
                                                        const eSelectOp sel_op)
 {
-  MPoly *mpoly = me->mpoly;
+  MPoly *mpoly = BKE_mesh_polygons_for_write(me);
   uint index;
   bool changed = false;
 
@@ -2806,13 +2807,15 @@ static bool ed_wpaint_vertex_select_pick(bContext *C,
 
   Mesh *me = obact->data; /* already checked for NULL */
   uint index = 0;
+  MVert *vertices = BKE_mesh_vertices_for_write(me);
+
   MVert *mv;
   bool changed = false;
 
   bool found = ED_mesh_pick_vert(C, obact, mval, ED_MESH_PICK_DEFAULT_VERT_DIST, use_zbuf, &index);
 
   if (params->sel_op == SEL_OP_SET) {
-    if ((found && params->select_passthrough) && (me->mvert[index].flag & SELECT)) {
+    if ((found && params->select_passthrough) && (vertices[index].flag & SELECT)) {
       found = false;
     }
     else if (found || params->deselect_all) {
@@ -2822,7 +2825,7 @@ static bool ed_wpaint_vertex_select_pick(bContext *C,
   }
 
   if (found) {
-    mv = &me->mvert[index];
+    mv = &vertices[index];
     switch (params->sel_op) {
       case SEL_OP_ADD: {
         mv->flag |= SELECT;

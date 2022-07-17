@@ -3248,7 +3248,7 @@ static Mesh *create_liquid_geometry(FluidDomainSettings *fds,
    * If there are no faces in original mesh, keep materials and flags unchanged. */
   MPoly *mpoly;
   MPoly mp_example = {0};
-  mpoly = orgmesh->mpoly;
+  mpoly = BKE_mesh_polygons_for_write(orgmesh);
   if (mpoly) {
     mp_example = *mpoly;
   }

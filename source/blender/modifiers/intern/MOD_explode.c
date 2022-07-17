@@ -100,8 +100,8 @@ static void createFacepa(ExplodeModifierData *emd, ParticleSystemModifierData *p
   int i, p, v1, v2, v3, v4 = 0;
   const bool invert_vgroup = (emd->flag & eExplodeFlag_INVERT_VGROUP) != 0;
 
-  mvert = mesh->mvert;
-  mface = mesh->mface;
+  mvert = BKE_mesh_vertices_for_write(mesh);
+  mface = (MFace *)CustomData_get_layer(&mesh->fdata, CD_MFACE);
   totvert = mesh->totvert;
   totface = mesh->totface;
   totpart = psmd->psys->totpart;
@@ -729,12 +729,15 @@ static Mesh *cutEdges(ExplodeModifierData *emd, Mesh *mesh)
 
   layers_num = CustomData_number_of_layers(&split_m->fdata, CD_MTFACE);
 
+  const MVert *mesh_vertices = BKE_mesh_vertices(mesh);
+  MVert *split_m_vertices = BKE_mesh_vertices_for_write(split_m);
+
   /* copy new faces & verts (is it really this painful with custom data??) */
   for (i = 0; i < totvert; i++) {
     MVert source;
     MVert *dest;
-    source = mesh->mvert[i];
-    dest = &split_m->mvert[i];
+    source = mesh_vertices[i];
+    dest = &split_m_vertices[i];
 
     CustomData_copy_data(&mesh->vdata, &split_m->vdata, i, i, 1);
     *dest = source;
@@ -755,14 +758,14 @@ static Mesh *cutEdges(ExplodeModifierData *emd, Mesh *mesh)
   for (; !BLI_edgehashIterator_isDone(ehi); BLI_edgehashIterator_step(ehi)) {
     BLI_edgehashIterator_getKey(ehi, &ed_v1, &ed_v2);
     esplit = POINTER_AS_INT(BLI_edgehashIterator_getValue(ehi));
-    mv = &split_m->mvert[ed_v2];
-    dupve = &split_m->mvert[esplit];
+    mv = &split_m_vertices[ed_v2];
+    dupve = &split_m_vertices[esplit];
 
     CustomData_copy_data(&split_m->vdata, &split_m->vdata, ed_v2, esplit, 1);
 
     *dupve = *mv;
 
-    mv = &split_m->mvert[ed_v1];
+    mv = &split_m_vertices[ed_v1];
 
     mid_v3_v3v3(dupve->co, dupve->co, mv->co);
   }
@@ -984,6 +987,8 @@ static Mesh *explodeMesh(ExplodeModifierData *emd,
 
   psmd->psys->lattice_deform_data = psys_create_lattice_deform_data(&sim);
 
+  MVert *explode_vertices = BKE_mesh_vertices_for_write(explode);
+
   /* duplicate & displace vertices */
   ehi = BLI_edgehashIterator_new(vertpahash);
   for (; !BLI_edgehashIterator_isDone(ehi); BLI_edgehashIterator_step(ehi)) {
@@ -995,8 +1000,8 @@ static Mesh *explodeMesh(ExplodeModifierData *emd,
     ed_v2 -= totvert;
     v = POINTER_AS_INT(BLI_edgehashIterator_getValue(ehi));
 
-    source = mesh->mvert[ed_v1];
-    dest = &explode->mvert[v];
+    source = mesh_vertices[ed_v1];
+    dest = &explode_vertices[v];
 
     CustomData_copy_data(&mesh->vdata, &explode->vdata, ed_v1, v, 1);
 
@@ -1011,7 +1016,7 @@ static Mesh *explodeMesh(ExplodeModifierData *emd,
       state.time = ctime;
       psys_get_particle_state(&sim, ed_v2, &state, 1);
 
-      vertco = explode->mvert[v].co;
+      vertco = explode_vertices[v].co;
       mul_m4_v3(ctx->object->obmat, vertco);
 
       sub_v3_v3(vertco, birth.co);

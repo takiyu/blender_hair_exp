@@ -55,11 +55,9 @@ void ED_mesh_mirror_spatial_table_begin(Object *ob, BMEditMesh *em, Mesh *me_eva
     }
   }
   else {
-    MVert *mvert = me_eval ? me_eval->mvert : me->mvert;
-    int i;
-
-    for (i = 0; i < totvert; i++, mvert++) {
-      BLI_kdtree_3d_insert(MirrKdStore.tree, i, mvert->co);
+    const MVert *vertices = BKE_mesh_vertices(me_eval ? me_eval : me);
+    for (int i = 0; i < totvert; i++) {
+      BLI_kdtree_3d_insert(MirrKdStore.tree, i, vertices[i].co);
     }
   }
 

@@ -286,9 +286,9 @@ static void imapaint_pick_uv(
   const MLoopTri *lt = BKE_mesh_runtime_looptri_ensure(me_eval);
   const int tottri = me_eval->runtime.looptris.len;
 
-  const MVert *mvert = me_eval->mvert;
-  const MPoly *mpoly = me_eval->mpoly;
-  const MLoop *mloop = me_eval->mloop;
+  const MVert *mvert = BKE_mesh_vertices(me_eval);
+  const MPoly *mpoly = BKE_mesh_polygons(me_eval);
+  const MLoop *mloop = BKE_mesh_loops(me_eval);
   const int *index_mp_to_orig = CustomData_get_layer(&me_eval->pdata, CD_ORIGINDEX);
 
   /* get the needed opengl matrices */
@@ -410,6 +410,7 @@ void paint_sample_color(
       cddata_masks.pmask |= CD_MASK_ORIGINDEX;
       Mesh *me = (Mesh *)ob->data;
       Mesh *me_eval = mesh_get_eval_final(depsgraph, scene, ob_eval, &cddata_masks);
+      const MPoly *polygons_eval = BKE_mesh_polygons(mesh);
 
       ViewContext vc;
       const int mval[2] = {x, y};
@@ -427,7 +428,7 @@ void paint_sample_color(
 
           if (use_material) {
             /* Image and texture interpolation from material. */
-            MPoly *mp = me_eval->mpoly + faceindex;
+            const MPoly *mp = polygons_eval + faceindex;
             Material *ma = BKE_object_material_get(ob_eval, mp->mat_nr + 1);
 
             /* Force refresh since paint slots are not updated when changing interpolation. */

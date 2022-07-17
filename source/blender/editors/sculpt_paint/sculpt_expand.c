@@ -666,13 +666,14 @@ static float *sculpt_expand_diagonals_falloff_create(Object *ob, const int v)
 
   /* Propagate the falloff increasing the value by 1 each time a new vertex is visited. */
   Mesh *mesh = ob->data;
+  const MLoop *loops = BKE_mesh_loops(mesh);
   while (!BLI_gsqueue_is_empty(queue)) {
     int v_next;
     BLI_gsqueue_pop(queue, &v_next);
     for (int j = 0; j < ss->pmap[v_next].count; j++) {
       MPoly *p = &ss->mpoly[ss->pmap[v_next].indices[j]];
       for (int l = 0; l < p->totloop; l++) {
-        const int neighbor_v = mesh->mloop[p->loopstart + l].v;
+        const int neighbor_v = loops[p->loopstart + l].v;
         if (BLI_BITMAP_TEST(visited_vertices, neighbor_v)) {
           continue;
         }
@@ -747,11 +748,11 @@ static void sculpt_expand_grids_to_faces_falloff(SculptSession *ss,
                                                  Mesh *mesh,
                                                  ExpandCache *expand_cache)
 {
-
+  const MPoly *polygons = BKE_mesh_polygons(mesh);
   const CCGKey *key = BKE_pbvh_get_grid_key(ss->pbvh);
 
   for (int p = 0; p < mesh->totpoly; p++) {
-    MPoly *poly = &mesh->mpoly[p];
+    const MPoly *poly = &polygons[p];
     float accum = 0.0f;
     for (int l = 0; l < poly->totloop; l++) {
       const int grid_loop_index = (poly->loopstart + l) * key->grid_area;
@@ -765,11 +766,14 @@ static void sculpt_expand_grids_to_faces_falloff(SculptSession *ss,
 
 static void sculpt_expand_vertex_to_faces_falloff(Mesh *mesh, ExpandCache *expand_cache)
 {
+  const MPoly *polygons = BKE_mesh_polygons(mesh);
+  const MLoop *loops = BKE_mesh_loops(mesh);
+
   for (int p = 0; p < mesh->totpoly; p++) {
-    MPoly *poly = &mesh->mpoly[p];
+    const MPoly *poly = &polygons[p];
     float accum = 0.0f;
     for (int l = 0; l < poly->totloop; l++) {
-      MLoop *loop = &mesh->mloop[l + poly->loopstart];
+      const MLoop *loop = &loops[l + poly->loopstart];
       accum += expand_cache->vert_falloff[loop->v];
     }
     expand_cache->face_falloff[p] = accum / poly->totloop;
@@ -1888,6 +1892,8 @@ static void sculpt_expand_delete_face_set_id(int *r_face_sets,
 {
   const int totface = ss->totfaces;
   MeshElemMap *pmap = ss->pmap;
+  const MPoly *polygons = BKE_mesh_polygons(mesh);
+  const MLoop *loops = BKE_mesh_loops(mesh);
 
   /* Check that all the face sets IDs in the mesh are not equal to `delete_id`
    * before attempting to delete it. */
@@ -1922,9 +1928,9 @@ static void sculpt_expand_delete_face_set_id(int *r_face_sets,
     while (BLI_LINKSTACK_SIZE(queue)) {
       const int f_index = POINTER_AS_INT(BLI_LINKSTACK_POP(queue));
       int other_id = delete_id;
-      const MPoly *c_poly = &mesh->mpoly[f_index];
+      const MPoly *c_poly = &polygons[f_index];
       for (int l = 0; l < c_poly->totloop; l++) {
-        const MLoop *c_loop = &mesh->mloop[c_poly->loopstart + l];
+        const MLoop *c_loop = &loops[c_poly->loopstart + l];
         const MeshElemMap *vert_map = &pmap[c_loop->v];
         for (int i = 0; i < vert_map->count; i++) {
 

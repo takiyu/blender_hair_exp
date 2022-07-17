@@ -160,9 +160,10 @@ const MPoly *MeshesToIMeshInfo::input_mpoly_for_orig_index(int orig_index,
   int orig_mesh_index = input_mesh_for_imesh_face(orig_index);
   BLI_assert(0 <= orig_mesh_index && orig_mesh_index < meshes.size());
   const Mesh *me = meshes[orig_mesh_index];
+  MutableSpan<MPoly> polygons = bke::mesh_polygons_for_write(*me);
   int index_in_mesh = orig_index - mesh_poly_offset[orig_mesh_index];
   BLI_assert(0 <= index_in_mesh && index_in_mesh < me->totpoly);
-  const MPoly *mp = &me->mpoly[index_in_mesh];
+  const MPoly *mp = &polygons[index_in_mesh];
   if (r_orig_mesh) {
     *r_orig_mesh = me;
   }

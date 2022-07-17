@@ -175,8 +175,8 @@ void ABCGenericMeshWriter::do_write(HierarchyContext &context)
 
   m_custom_data_config.pack_uvs = args_.export_params->packuv;
   m_custom_data_config.mesh = mesh;
-  m_custom_data_config.mpoly = mesh->mpoly;
-  m_custom_data_config.mloop = mesh->mloop;
+  m_custom_data_config.mpoly = bke::mesh_polygons(*mesh).data();
+  m_custom_data_config.mloop = bke::mesh_loops(*mesh).data();
   m_custom_data_config.totpoly = mesh->totpoly;
   m_custom_data_config.totloop = mesh->totloop;
   m_custom_data_config.totvert = mesh->totvert;
@@ -390,11 +390,10 @@ void ABCGenericMeshWriter::get_geo_groups(Object *object,
                                           struct Mesh *mesh,
                                           std::map<std::string, std::vector<int32_t>> &geo_groups)
 {
-  const int num_poly = mesh->totpoly;
-  MPoly *polygons = mesh->mpoly;
+  const Span<MPoly> polygons = bke::mesh_polygons(*mesh);
 
-  for (int i = 0; i < num_poly; i++) {
-    MPoly &current_poly = polygons[i];
+  for (const int i : polygons.index_range()) {
+    const MPoly &current_poly = polygons[i];
     short mnr = current_poly.mat_nr;
 
     Material *mat = BKE_object_material_get(object, mnr + 1);
@@ -435,8 +434,7 @@ static void get_vertices(struct Mesh *mesh, std::vector<Imath::V3f> &points)
   points.clear();
   points.resize(mesh->totvert);
 
-  MVert *verts = mesh->mvert;
-
+  const Span<MVert> vertices = bke::mesh_vertices(*mesh);
   for (int i = 0, e = mesh->totvert; i < e; i++) {
     copy_yup_from_zup(points[i].getValue(), verts[i].co);
   }
@@ -447,25 +445,23 @@ static void get_topology(struct Mesh *mesh,
                          std::vector<int32_t> &loop_counts,
                          bool &r_has_flat_shaded_poly)
 {
-  const int num_poly = mesh->totpoly;
-  const int num_loops = mesh->totloop;
-  MLoop *mloop = mesh->mloop;
-  MPoly *mpoly = mesh->mpoly;
+  const Span<MPoly> polygons = bke::mesh_polygons(*mesh);
+  const Span<MLoop> loops = bke::mesh_loops(*mesh);
   r_has_flat_shaded_poly = false;
 
   poly_verts.clear();
   loop_counts.clear();
-  poly_verts.reserve(num_loops);
-  loop_counts.reserve(num_poly);
+  poly_verts.reserve(loops.size());
+  loop_counts.reserve(polygons.size());
 
   /* NOTE: data needs to be written in the reverse order. */
-  for (int i = 0; i < num_poly; i++) {
-    MPoly &poly = mpoly[i];
+  for (const int i : polygons.index_range()) {
+    const MPoly &poly = polygons[i];
     loop_counts.push_back(poly.totloop);
 
     r_has_flat_shaded_poly |= (poly.flag & ME_SMOOTH) == 0;
 
-    MLoop *loop = mloop + poly.loopstart + (poly.totloop - 1);
+    const MLoop *loop = &loops[poly.loopstart + (poly.totloop - 1)];
 
     for (int j = 0; j < poly.totloop; j++, loop--) {
       poly_verts.push_back(loop->v);
@@ -543,8 +539,10 @@ static void get_loop_normals(struct Mesh *mesh,
 
   /* NOTE: data needs to be written in the reverse order. */
   int abc_index = 0;
-  MPoly *mp = mesh->mpoly;
-  for (int i = 0, e = mesh->totpoly; i < e; i++, mp++) {
+  const Span<MPoly> polygons = bke::mesh_polygons(*mesh);
+
+  for (const int i : polygons.index_range()) {
+    const MPoly *mp = &polygons[i];
     for (int j = mp->totloop - 1; j >= 0; j--, abc_index++) {
       int blender_index = mp->loopstart + j;
       copy_yup_from_zup(normals[abc_index].getValue(), lnors[blender_index]);

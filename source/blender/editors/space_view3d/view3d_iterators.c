@@ -205,6 +205,7 @@ typedef struct foreachScreenObjectVert_userData {
   void (*func)(void *userData, MVert *mv, const float screen_co[2], int index);
   void *userData;
   ViewContext vc;
+  MVert *vertices;
   eV3DProjTest clip_flag;
 } foreachScreenObjectVert_userData;
 
@@ -262,7 +263,7 @@ static void meshobject_foreachScreenVert__mapFunc(void *userData,
                                                   const float UNUSED(no[3]))
 {
   foreachScreenObjectVert_userData *data = userData;
-  struct MVert *mv = &((Mesh *)(data->vc.obact->data))->mvert[index];
+  MVert *mv = &data->vertices[index];
 
   if (!(mv->flag & ME_HIDE)) {
     float screen_co[2];
@@ -297,6 +298,7 @@ void meshobject_foreachScreenVert(
   data.func = func;
   data.userData = userData;
   data.clip_flag = clip_flag;
+  data.vertices = BKE_mesh_vertices_for_write((Mesh *)vc->obact->data);
 
   if (clip_flag & V3D_PROJ_TEST_CLIP_BB) {
     ED_view3d_clipping_local(vc->rv3d, vc->obact->obmat);
