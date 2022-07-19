@@ -745,7 +745,7 @@ static void panelRegister(ARegionType *region_type)
 }
 
 ModifierTypeInfo modifierType_NormalEdit = {
-    /* name */ "NormalEdit",
+    /* name */ N_("NormalEdit"),
     /* structName */ "NormalEditModifierData",
     /* structSize */ sizeof(NormalEditModifierData),
     /* srna */ &RNA_NormalEditModifier,

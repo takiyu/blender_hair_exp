@@ -1009,7 +1009,7 @@ static void panelRegister(ARegionType *region_type)
 }
 
 ModifierTypeInfo modifierType_Array = {
-    /* name */ "Array",
+    /* name */ N_("Array"),
     /* structName */ "ArrayModifierData",
     /* structSize */ sizeof(ArrayModifierData),
     /* srna */ &RNA_ArrayModifier,
