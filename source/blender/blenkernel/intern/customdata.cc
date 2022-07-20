@@ -2327,7 +2327,7 @@ bool CustomData_merge(const CustomData *source,
   return changed;
 }
 
-static bool layer_stored_in_bmesh(const StringRef name)
+static bool attribute_stored_in_bmesh_flag(const StringRef name)
 {
   return ELEM(name, ".hide_vert", ".hide_edge", ".hide_face");
 }
@@ -2336,7 +2336,7 @@ static CustomData shallow_copy_remove_non_bmesh_attributes(const CustomData &src
 {
   Vector<CustomDataLayer> dst_layers;
   for (const CustomDataLayer &layer : Span<CustomDataLayer>{src.layers, src.totlayer}) {
-    if (layer_stored_in_bmesh(layer.name)) {
+    if (attribute_stored_in_bmesh_flag(layer.name)) {
       dst_layers.append(layer);
     }
   }
