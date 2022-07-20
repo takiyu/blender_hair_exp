@@ -624,23 +624,27 @@ void paintvert_select_ungrouped(Object *ob, bool extend, bool flush_flags)
 
 void paintvert_hide(bContext *C, Object *ob, const bool unselected)
 {
-  Mesh *const me = BKE_mesh_from_object(ob);
-
+  using namespace blender;
+  Mesh *me = BKE_mesh_from_object(ob);
   if (me == NULL || me->totvert == 0) {
     return;
   }
 
-  for (int i = 0; i < me->totvert; i++) {
-    MVert *const mvert = &me->mvert[i];
+  bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*me);
+  bke::SpanAttributeWriter<bool> hide_vert = attributes.lookup_or_add_for_write_span<bool>(
+      ".hide_vert", ATTR_DOMAIN_POINT);
+  MutableSpan<MVert> vertices(me->mvert, me->totvert);
 
-    if ((mvert->flag & ME_HIDE) == 0) {
-      if (((mvert->flag & SELECT) == 0) == unselected) {
-        mvert->flag |= ME_HIDE;
+  for (const int i : vertices.index_range()) {
+    MVert &vert = vertices[i];
+    if (!hide_vert.span[i]) {
+      if (((vert.flag & SELECT) == 0) == unselected) {
+        hide_vert.span[i] = true;
       }
     }
 
-    if (mvert->flag & ME_HIDE) {
-      mvert->flag &= ~SELECT;
+    if (hide_vert.span[i]) {
+      vert.flag &= ~SELECT;
     }
   }
 
@@ -652,20 +656,26 @@ void paintvert_hide(bContext *C, Object *ob, const bool unselected)
 
 void paintvert_reveal(bContext *C, Object *ob, const bool select)
 {
-  Mesh *const me = BKE_mesh_from_object(ob);
-
+  using namespace blender;
+  Mesh *me = BKE_mesh_from_object(ob);
   if (me == NULL || me->totvert == 0) {
     return;
   }
 
-  for (int i = 0; i < me->totvert; i++) {
-    MVert *const mvert = &me->mvert[i];
+  bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*me);
+  const VArray<bool> hide_vert = attributes.lookup_or_default<bool>(
+      ".hide_vert", ATTR_DOMAIN_POINT, false);
+  MutableSpan<MVert> vertices(me->mvert, me->totvert);
 
-    if (mvert->flag & ME_HIDE) {
-      SET_FLAG_FROM_TEST(mvert->flag, select, SELECT);
-      mvert->flag &= ~ME_HIDE;
+  for (const int i : vertices.index_range()) {
+    MVert &vert = vertices[i];
+    if (hide_vert[i]) {
+      SET_FLAG_FROM_TEST(vert.flag, select, SELECT);
     }
   }
+
+  /* Remove the hide attribute to reveal all vertices. */
+  attributes.remove(".hide_vert");
 
   BKE_mesh_flush_hidden_from_verts(me);
 

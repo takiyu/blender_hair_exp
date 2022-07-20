@@ -903,8 +903,7 @@ static void mesh_flush_select_from_verts(const Span<MVert> verts,
 
 void BKE_mesh_flush_select_from_verts(Mesh *me)
 {
-  blender::bke::AttributeAccessor attributes = blender::bke::mesh_attributes(*me);
-
+  const blender::bke::AttributeAccessor attributes = blender::bke::mesh_attributes(*me);
   mesh_flush_select_from_verts(
       {me->mvert, me->totvert},
       {me->mloop, me->totloop},

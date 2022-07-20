@@ -877,7 +877,7 @@ void BKE_mesh_add_mface_layers(CustomData *fdata, CustomData *ldata, int total)
 /** \} */
 
 /* -------------------------------------------------------------------- */
-/** \name Conversion to Legacy Hidden Flags
+/** \name Hide Attribute and Legacy Flag Conversion
  * \{ */
 
 void BKE_mesh_legacy_convert_hide_layers_to_flags(Mesh *mesh)
@@ -905,6 +905,43 @@ void BKE_mesh_legacy_convert_hide_layers_to_flags(Mesh *mesh)
       ".hide_face", ATTR_DOMAIN_FACE, false);
   for (const int i : polys.index_range()) {
     SET_FLAG_FROM_TEST(polys[i].flag, hide_face[i], ME_HIDE);
+  }
+}
+
+void BKE_mesh_legacy_convert_flags_to_hide_layers(Mesh *mesh)
+{
+  using namespace blender;
+  using namespace blender::bke;
+  MutableAttributeAccessor attributes = mesh_attributes_for_write(*mesh);
+
+  const Span<MVert> verts(mesh->mvert, mesh->totvert);
+  if (std::any_of(
+          verts.begin(), verts.end(), [](const MVert &vert) { return vert.flag & ME_HIDE; })) {
+    SpanAttributeWriter<bool> hide_vert = attributes.lookup_or_add_for_write_only_span<bool>(
+        ".hide_vert", ATTR_DOMAIN_POINT);
+    for (const int i : verts.index_range()) {
+      hide_vert.span[i] = verts[i].flag & ME_HIDE;
+    }
+  }
+
+  const Span<MEdge> edges(mesh->medge, mesh->totedge);
+  if (std::any_of(
+          edges.begin(), edges.end(), [](const MEdge &edge) { return edge.flag & ME_HIDE; })) {
+    SpanAttributeWriter<bool> hide_edge = attributes.lookup_or_add_for_write_only_span<bool>(
+        ".hide_edge", ATTR_DOMAIN_EDGE);
+    for (const int i : edges.index_range()) {
+      hide_edge.span[i] = edges[i].flag & ME_HIDE;
+    }
+  }
+
+  const Span<MPoly> polys(mesh->mpoly, mesh->totpoly);
+  if (std::any_of(
+          polys.begin(), polys.end(), [](const MPoly &poly) { return poly.flag & ME_HIDE; })) {
+    SpanAttributeWriter<bool> hide_face = attributes.lookup_or_add_for_write_only_span<bool>(
+        ".hide_face", ATTR_DOMAIN_FACE);
+    for (const int i : polys.index_range()) {
+      hide_face.span[i] = polys[i].flag & ME_HIDE;
+    }
   }
 }
 

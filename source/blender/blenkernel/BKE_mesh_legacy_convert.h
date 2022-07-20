@@ -17,7 +17,15 @@ struct CustomData;
 struct Mesh;
 struct MFace;
 
+/**
+ * Convert the new hidden element attributes to the old flag format for writing.
+ */
 void BKE_mesh_legacy_convert_hide_layers_to_flags(struct Mesh *mesh);
+/**
+ * Convert the old hide flags (#ME_HIDE) to the new hidden element attribute for reading.
+ * Only add the attributes when there are any elements in each domain hidden.
+ */
+void BKE_mesh_legacy_convert_flags_to_hide_layers(struct Mesh *mesh);
 
 /**
  * Recreate #MFace Tessellation.
