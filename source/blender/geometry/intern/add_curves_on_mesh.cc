@@ -3,6 +3,7 @@
 #include "BLI_length_parameterize.hh"
 
 #include "BKE_attribute_math.hh"
+#include "BKE_mesh.h"
 #include "BKE_mesh_sample.hh"
 
 #include "GEO_add_curves_on_mesh.hh"

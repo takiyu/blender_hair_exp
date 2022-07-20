@@ -461,7 +461,7 @@ static TriTessFace *mesh_calc_tri_tessface(Mesh *me, bool tangent, Mesh *me_eval
   float no[3];
 
   const MVert *vertices = BKE_mesh_vertices(me);
-  const MVert *polygons = BKE_mesh_polygons(me);
+  const MPoly *polygons = BKE_mesh_polygons(me);
   const MLoop *loops = BKE_mesh_loops(me);
 
   looptri = MEM_mallocN(sizeof(*looptri) * tottri, __func__);
@@ -743,7 +743,7 @@ void RE_bake_pixels_populate(Mesh *me,
   MLoopTri *looptri = MEM_mallocN(sizeof(*looptri) * tottri, __func__);
 
   const MVert *vertices = BKE_mesh_vertices(me);
-  const MVert *polygons = BKE_mesh_polygons(me);
+  const MPoly *polygons = BKE_mesh_polygons(me);
   const MLoop *loops = BKE_mesh_loops(me);
   BKE_mesh_recalc_looptri(loops, polygons, vertices, me->totloop, me->totpoly, looptri);
 

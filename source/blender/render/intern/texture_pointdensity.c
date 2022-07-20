@@ -364,7 +364,7 @@ static void pointdensity_cache_object(PointDensity *pd, Object *ob)
 {
   float *data_color;
   int i;
-  MVert *mvert = NULL, *mv;
+  const MVert *mvert = NULL, *mv;
   Mesh *mesh = ob->data;
 
 #if 0 /* UNUSED */

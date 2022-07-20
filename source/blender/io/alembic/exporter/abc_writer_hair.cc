@@ -243,6 +243,7 @@ void ABCHairWriter::write_hair_child_sample(const HierarchyContext &context,
   float inv_mat[4][4];
   invert_m4_m4_safe(inv_mat, context.object->obmat);
 
+  MFace *mface = (MFace *)CustomData_get_layer(&mesh->fdata, CD_MFACE);
   MTFace *mtface = (MTFace *)CustomData_get_layer(&mesh->fdata, CD_MTFACE);
   MVert *mverts = BKE_mesh_vertices_for_write(mesh);
   const float(*vert_normals)[3] = BKE_mesh_vertex_normals_ensure(mesh);
@@ -269,7 +270,7 @@ void ABCHairWriter::write_hair_child_sample(const HierarchyContext &context,
         continue;
       }
 
-      MFace *face = &mesh->mface[num];
+      MFace *face = &mface[num];
       MTFace *tface = mtface + num;
 
       float r_uv[2], tmpnor[3], mapfw[4], vec[3];

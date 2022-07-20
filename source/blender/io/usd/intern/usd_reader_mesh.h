@@ -3,12 +3,14 @@
  * Modifications Copyright 2021 Tangent Animation and. NVIDIA Corporation. All rights reserved. */
 #pragma once
 
+#include "BLI_span.hh"
+
 #include "usd.h"
 #include "usd_reader_geom.h"
 
 #include "pxr/usd/usdGeom/mesh.h"
 
-struct MPoly;
+#include "DNA_meshdata_types.h"
 
 namespace blender::io::usd {
 
@@ -62,8 +64,7 @@ class USDMeshReader : public USDGeomReader {
   void process_normals_uniform(Mesh *mesh);
   void readFaceSetsSample(Main *bmain, Mesh *mesh, double motionSampleTime);
   void assign_facesets_to_mpoly(double motionSampleTime,
-                                struct MPoly *mpoly,
-                                int totpoly,
+                                MutableSpan<MPoly> polygons,
                                 std::map<pxr::SdfPath, int> *r_mat_map);
 
   void read_mpolys(Mesh *mesh);

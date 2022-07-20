@@ -6,6 +6,8 @@
  * \ingroup balembic
  */
 
+#include "BLI_span.hh"
+
 #include <Alembic/Abc/All.h>
 #include <Alembic/AbcGeom/All.h>
 
@@ -28,14 +30,9 @@ struct UVSample {
 };
 
 struct CDStreamConfig {
-  MLoop *mloop;
-  int totloop;
-
-  MPoly *mpoly;
-  int totpoly;
-
-  MVert *mvert;
-  int totvert;
+  MutableSpan<MVert> vertices;
+  MutableSpan<MPoly> polygons;
+  MutableSpan<MLoop> loops;
 
   MLoopUV *mloopuv;
 
@@ -71,12 +68,7 @@ struct CDStreamConfig {
   std::map<std::string, Alembic::AbcGeom::OC4fGeomParam> abc_vertex_colors;
 
   CDStreamConfig()
-      : mloop(NULL),
-        totloop(0),
-        mpoly(NULL),
-        totpoly(0),
-        totvert(0),
-        pack_uvs(false),
+      : pack_uvs(false),
         mesh(NULL),
         add_customdata_cb(NULL),
         weight(0.0),

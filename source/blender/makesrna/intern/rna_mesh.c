@@ -3218,28 +3218,24 @@ static void rna_def_mesh(BlenderRNA *brna)
   RNA_def_struct_ui_icon(srna, ICON_MESH_DATA);
 
   prop = RNA_def_property(srna, "vertices", PROP_COLLECTION, PROP_NONE);
-  RNA_def_property_collection_sdna(prop, NULL, "mvert", "totvert");
   RNA_def_property_struct_type(prop, "MeshVertex");
   RNA_def_property_override_flag(prop, PROPOVERRIDE_IGNORE);
   RNA_def_property_ui_text(prop, "Vertices", "Vertices of the mesh");
   rna_def_mesh_vertices(brna, prop);
 
   prop = RNA_def_property(srna, "edges", PROP_COLLECTION, PROP_NONE);
-  RNA_def_property_collection_sdna(prop, NULL, "medge", "totedge");
   RNA_def_property_struct_type(prop, "MeshEdge");
   RNA_def_property_override_flag(prop, PROPOVERRIDE_IGNORE);
   RNA_def_property_ui_text(prop, "Edges", "Edges of the mesh");
   rna_def_mesh_edges(brna, prop);
 
   prop = RNA_def_property(srna, "loops", PROP_COLLECTION, PROP_NONE);
-  RNA_def_property_collection_sdna(prop, NULL, "mloop", "totloop");
   RNA_def_property_struct_type(prop, "MeshLoop");
   RNA_def_property_override_flag(prop, PROPOVERRIDE_IGNORE);
   RNA_def_property_ui_text(prop, "Loops", "Loops of the mesh (polygon corners)");
   rna_def_mesh_loops(brna, prop);
 
   prop = RNA_def_property(srna, "polygons", PROP_COLLECTION, PROP_NONE);
-  RNA_def_property_collection_sdna(prop, NULL, "mpoly", "totpoly");
   RNA_def_property_struct_type(prop, "MeshPolygon");
   RNA_def_property_override_flag(prop, PROPOVERRIDE_IGNORE);
   RNA_def_property_ui_text(prop, "Polygons", "Polygons of the mesh");

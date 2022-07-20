@@ -1089,7 +1089,8 @@ BLI_INLINE MDeformVert *BKE_mesh_deform_verts_for_write(Mesh *mesh)
   if (dvert) {
     return dvert;
   }
-  return CustomData_add_layer(&meshs->vdata, CD_MDEFORMVERT, CD_CALLOC, NULL, mesh->totvert);
+  return (MDeformVert *)CustomData_add_layer(
+      &mesh->vdata, CD_MDEFORMVERT, CD_CALLOC, NULL, mesh->totvert);
 }
 
 #ifdef __cplusplus

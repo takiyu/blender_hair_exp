@@ -502,8 +502,8 @@ void USDMeshReader::read_colors(Mesh *mesh, const double motionSampleTime)
   const Span<MLoop> loops = bke::mesh_loops(*mesh);
   for (const int i : polygons.index_range()) {
     const MPoly &poly = polygons[i];
-    for (int j = 0; j < poly->totloop; ++j) {
-      int loop_index = poly->loopstart + j;
+    for (int j = 0; j < poly.totloop; ++j) {
+      int loop_index = poly.loopstart + j;
 
       /* Default for constant varying interpolation. */
       int usd_index = 0;
@@ -512,9 +512,9 @@ void USDMeshReader::read_colors(Mesh *mesh, const double motionSampleTime)
         usd_index = loops[loop_index].v;
       }
       else if (interp == pxr::UsdGeomTokens->faceVarying) {
-        usd_index = poly->loopstart;
+        usd_index = poly.loopstart;
         if (is_left_handed_) {
-          usd_index += poly->totloop - 1 - j;
+          usd_index += poly.totloop - 1 - j;
         }
         else {
           usd_index += j;
@@ -789,8 +789,7 @@ void USDMeshReader::readFaceSetsSample(Main *bmain, Mesh *mesh, const double mot
   }
 
   std::map<pxr::SdfPath, int> mat_map;
-  MutableSpan<MPoly> polygons = bke::mesh_polygons_for_write(*mesh);
-  assign_facesets_to_mpoly(motionSampleTime, polygons, &mat_map);
+  assign_facesets_to_mpoly(motionSampleTime, bke::mesh_polygons_for_write(*mesh), &mat_map);
   /* Build material name map if it's not built yet. */
   if (this->settings_->mat_name_to_mat.empty()) {
     utils::build_mat_map(bmain, &this->settings_->mat_name_to_mat);
@@ -894,7 +893,7 @@ Mesh *USDMeshReader::read_mesh(Mesh *existing_mesh,
      * the material slots that were created when the object was loaded from
      * USD are still valid now. */
     MutableSpan<MPoly> polygons = bke::mesh_polygons_for_write(*active_mesh);
-    if (num_polys > 0 && import_params_.import_materials) {
+    if (!polygons.is_empty() > 0 && import_params_.import_materials) {
       std::map<pxr::SdfPath, int> mat_map;
       assign_facesets_to_mpoly(motionSampleTime, polygons, &mat_map);
     }

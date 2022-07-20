@@ -293,7 +293,6 @@ void OBJMesh::store_uv_coords_and_indices()
 {
   const Span<MPoly> polygons = bke::mesh_polygons(*export_mesh_eval_);
   const Span<MLoop> loops = bke::mesh_loops(*export_mesh_eval_);
-  const int totpoly = export_mesh_eval_->totpoly;
   const int totvert = export_mesh_eval_->totvert;
   const MLoopUV *mloopuv = static_cast<const MLoopUV *>(
       CustomData_get_layer(&export_mesh_eval_->ldata, CD_MLOOPUV));

@@ -345,7 +345,7 @@ void MeshImporter::read_vertices(COLLADAFW::Mesh *mesh, Mesh *me)
   me->totvert = pos.getFloatValues()->getCount() / stride;
   CustomData_add_layer(&me->vdata, CD_MVERT, CD_CALLOC, nullptr, me->totvert);
 
-  MutableSpan<MVert> vertices = bke::mesh_vertices_for_write(*me);
+  MutableSpan<MVert> vertices = blender::bke::mesh_vertices_for_write(*me);
   for (const int i : vertices.index_range()) {
     get_vector(vertices[i].co, pos, i, stride);
   }
@@ -481,7 +481,7 @@ void MeshImporter::allocate_poly_data(COLLADAFW::Mesh *collada_mesh, Mesh *me)
         CustomData_add_layer_named(
             &me->ldata, CD_PROP_BYTE_COLOR, CD_DEFAULT, nullptr, me->totloop, colname.c_str());
       }
-      CustomData_set_layer_active(&mesh->ldata, CD_PROP_BYTE_COLOR, 0);
+      CustomData_set_layer_active(&me->ldata, CD_PROP_BYTE_COLOR, 0);
     }
   }
 }
@@ -574,7 +574,7 @@ void MeshImporter::read_lines(COLLADAFW::Mesh *mesh, Mesh *me)
     /* unsigned int total_edge_count = loose_edge_count + face_edge_count; */ /* UNUSED */
 
     mesh_add_edges(me, loose_edge_count);
-    MutableSpan<MEdge> edges = blender::bke::mesh_edges_for_write(*mesh);
+    MutableSpan<MEdge> edges = blender::bke::mesh_edges_for_write(*me);
     MEdge *med = edges.data() + face_edge_count;
 
     COLLADAFW::MeshPrimitiveArray &prim_arr = mesh->getMeshPrimitives();
@@ -608,8 +608,8 @@ void MeshImporter::read_polys(COLLADAFW::Mesh *collada_mesh, Mesh *me)
   UVDataWrapper uvs(collada_mesh->getUVCoords());
   VCOLDataWrapper vcol(collada_mesh->getColors());
 
-  MutableSpan<MPoly> polygons = bke::mesh_polygons_for_write(*mesh);
-  MutableSpan<MLoop> loops = bke::mesh_loops_for_write(*mesh);
+  MutableSpan<MPoly> polygons = blender::bke::mesh_polygons_for_write(*me);
+  MutableSpan<MLoop> loops = blender::bke::mesh_loops_for_write(*me);
   MPoly *mpoly = polygons.data();
   MLoop *mloop = loops.data();
   int loop_index = 0;

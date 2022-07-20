@@ -57,8 +57,8 @@ static void get_uvs(const CDStreamConfig &config,
   }
 
   const int num_poly = config.totpoly;
-  MPoly *polygons = config.mpoly;
-  MLoop *mloop = config.mloop;
+  const MPoly *polygons = config.mpoly;
+  const MLoop *mloop = config.mloop;
 
   if (!config.pack_uvs) {
     int count = 0;
@@ -67,7 +67,7 @@ static void get_uvs(const CDStreamConfig &config,
 
     /* Iterate in reverse order to match exported polygons. */
     for (int i = 0; i < num_poly; i++) {
-      MPoly &current_poly = polygons[i];
+      const MPoly &current_poly = polygons[i];
       const MLoopUV *loopuv = mloopuv_array + current_poly.loopstart + current_poly.totloop;
 
       for (int j = 0; j < current_poly.totloop; j++, count++) {
@@ -85,8 +85,8 @@ static void get_uvs(const CDStreamConfig &config,
     int idx_count = 0;
 
     for (int i = 0; i < num_poly; i++) {
-      MPoly &current_poly = polygons[i];
-      MLoop *looppoly = mloop + current_poly.loopstart + current_poly.totloop;
+      const MPoly &current_poly = polygons[i];
+      const MLoop *looppoly = mloop + current_poly.loopstart + current_poly.totloop;
       const MLoopUV *loopuv = mloopuv_array + current_poly.loopstart + current_poly.totloop;
 
       for (int j = 0; j < current_poly.totloop; j++) {
@@ -318,8 +318,8 @@ static void read_uvs(const CDStreamConfig &config,
                      const Alembic::AbcGeom::V2fArraySamplePtr &uvs,
                      const UInt32ArraySamplePtr &indices)
 {
-  MPoly *mpolys = config.mpoly;
-  MLoop *mloops = config.mloop;
+  const MPoly *mpolys = config.mpoly;
+  const MLoop *mloops = config.mloop;
   MLoopUV *mloopuvs = static_cast<MLoopUV *>(data);
 
   unsigned int uv_index, loop_index, rev_loop_index;
@@ -328,7 +328,7 @@ static void read_uvs(const CDStreamConfig &config,
   const bool do_uvs_per_loop = (uv_scope == ABC_UV_SCOPE_LOOP);
 
   for (int i = 0; i < config.totpoly; i++) {
-    MPoly &poly = mpolys[i];
+    const MPoly &poly = mpolys[i];
     unsigned int rev_loop_offset = poly.loopstart + poly.totloop - 1;
 
     for (int f = 0; f < poly.totloop; f++) {
@@ -414,8 +414,8 @@ static void read_custom_data_mcols(const std::string &iobject_full_name,
   void *cd_data = config.add_customdata_cb(
       config.mesh, prop_header.getName().c_str(), CD_PROP_BYTE_COLOR);
   MCol *cfaces = static_cast<MCol *>(cd_data);
-  MPoly *mpolys = config.mpoly;
-  MLoop *mloops = config.mloop;
+  const MPoly *mpolys = config.mpoly;
+  const MLoop *mloops = config.mloop;
 
   size_t face_index = 0;
   size_t color_index;
@@ -428,9 +428,9 @@ static void read_custom_data_mcols(const std::string &iobject_full_name,
   bool use_dual_indexing = is_facevarying && indices->size() > 0;
 
   for (int i = 0; i < config.totpoly; i++) {
-    MPoly *poly = &mpolys[i];
-    MCol *cface = &cfaces[poly->loopstart + poly->totloop];
-    MLoop *mloop = &mloops[poly->loopstart + poly->totloop];
+    const MPoly *poly = &mpolys[i];
+     MCol *cface = &cfaces[poly->loopstart + poly->totloop];
+    const MLoop *mloop = &mloops[poly->loopstart + poly->totloop];
 
     for (int j = 0; j < poly->totloop; j++, face_index++) {
       cface--;

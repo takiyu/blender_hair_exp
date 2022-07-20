@@ -271,7 +271,7 @@ static void get_loops_polys(const Mesh *mesh, USDMeshData &usd_mesh_data)
     }
 
     if (construct_face_groups) {
-      usd_mesh_data.face_groups[mpoly->mat_nr].push_back(i);
+      usd_mesh_data.face_groups[poly.mat_nr].push_back(i);
     }
   }
 }
@@ -415,7 +415,7 @@ void USDGenericMeshWriter::write_normals(const Mesh *mesh, pxr::UsdGeomMesh usd_
 
       if ((poly.flag & ME_SMOOTH) == 0) {
         /* Flat shaded, use common normal for all verts. */
-        pxr::GfVec3f pxr_normal(face_normals[poly_idx]);
+        pxr::GfVec3f pxr_normal(face_normals[i]);
         for (int loop_idx = 0; loop_idx < poly.totloop; ++loop_idx) {
           loop_normals.push_back(pxr_normal);
         }
