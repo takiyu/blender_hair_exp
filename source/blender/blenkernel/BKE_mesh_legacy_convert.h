@@ -18,6 +18,15 @@ struct Mesh;
 struct MFace;
 
 /**
+ * Copy bevel weights from separate layers into vertices and edges.
+ */
+void BKE_mesh_legacy_bevel_weight_from_layers(struct Mesh *mesh);
+/**
+ * Copy bevel weights from vertices and edges to separate layers.
+ */
+void BKE_mesh_legacy_bevel_weight_to_layers(struct Mesh *mesh);
+
+/**
  * Recreate #MFace Tessellation.
  *
  * \note This doesn't use multi-threading like #BKE_mesh_recalc_looptri since

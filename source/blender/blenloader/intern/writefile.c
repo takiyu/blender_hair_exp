@@ -422,8 +422,6 @@ typedef struct {
   /** When true, write to #WriteData.current, could also call 'is_undo'. */
   bool use_memfile;
 
-  bool use_legacy_mesh_format;
-
   /**
    * Wrap writing, so we can use zstd or
    * other compression types later, see: G_FILE_COMPRESS
@@ -1085,7 +1083,6 @@ static bool write_file_handle(Main *mainvar,
                               MemFile *current,
                               int write_flags,
                               bool use_userdef,
-                              const bool use_legacy_mesh_format,
                               const BlendThumbnail *thumb)
 {
   BHead bhead;
@@ -1096,7 +1093,6 @@ static bool write_file_handle(Main *mainvar,
   blo_split_main(&mainlist, mainvar);
 
   wd = mywrite_begin(ww, compare, current);
-  wd->use_legacy_mesh_format = use_legacy_mesh_format;
   BlendWriter writer = {wd};
 
   sprintf(buf,
@@ -1436,8 +1432,7 @@ bool BLO_write_file(Main *mainvar,
   }
 
   /* actual file writing */
-  const bool err = write_file_handle(
-      mainvar, &ww, NULL, NULL, write_flags, use_userdef, params->use_legacy_mesh_format, thumb);
+  const bool err = write_file_handle(mainvar, &ww, NULL, NULL, write_flags, use_userdef, thumb);
 
   ww.close(&ww);
 
@@ -1481,7 +1476,7 @@ bool BLO_write_file_mem(Main *mainvar, MemFile *compare, MemFile *current, int w
   bool use_userdef = false;
 
   const bool err = write_file_handle(
-      mainvar, NULL, compare, current, write_flags, use_userdef, false, NULL);
+      mainvar, NULL, compare, current, write_flags, use_userdef, NULL);
 
   return (err == 0);
 }
@@ -1608,11 +1603,6 @@ void BLO_write_string(BlendWriter *writer, const char *data_ptr)
 bool BLO_write_is_undo(BlendWriter *writer)
 {
   return writer->wd->use_memfile;
-}
-
-bool BLO_write_use_legacy_mesh_format(const BlendWriter *writer)
-{
-  return writer->wd->use_legacy_mesh_format;
 }
 
 /** \} */

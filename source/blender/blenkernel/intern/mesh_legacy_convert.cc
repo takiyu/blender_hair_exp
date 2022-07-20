@@ -7,7 +7,7 @@
  * Functions to convert mesh data to and from legacy formats like #MFace.
  */
 
-// #include <climits>
+#define DNA_DEPRECATED_ALLOW
 
 #include "MEM_guardedalloc.h"
 
@@ -871,6 +871,65 @@ void BKE_mesh_add_mface_layers(CustomData *fdata, CustomData *ldata, int total)
   }
 
   CustomData_bmesh_update_active_layers(fdata, ldata);
+}
+
+/** \} */
+
+/* -------------------------------------------------------------------- */
+/** \name Bevel Weight Conversion
+ * \{ */
+
+void BKE_mesh_legacy_bevel_weight_from_layers(Mesh *mesh)
+{
+  using namespace blender;
+  MutableSpan<MVert> vertices(mesh->mvert, mesh->totvert);
+  if (const float *weights = (const float *)CustomData_get_layer(&mesh->vdata, CD_BWEIGHT)) {
+    mesh->cd_flag |= ME_CDFLAG_VERT_BWEIGHT;
+    for (const int i : vertices.index_range()) {
+      vertices[i].bweight = std::clamp(weights[i], 0.0f, 1.0f) * 255.0f;
+    }
+  }
+  else {
+    mesh->cd_flag &= ~ME_CDFLAG_VERT_BWEIGHT;
+    for (const int i : vertices.index_range()) {
+      vertices[i].bweight = 0;
+    }
+  }
+  MutableSpan<MEdge> edges(mesh->medge, mesh->totedge);
+  if (const float *weights = (const float *)CustomData_get_layer(&mesh->edata, CD_BWEIGHT)) {
+    mesh->cd_flag |= ME_CDFLAG_EDGE_BWEIGHT;
+    for (const int i : edges.index_range()) {
+      edges[i].bweight = std::clamp(weights[i], 0.0f, 1.0f) * 255.0f;
+    }
+  }
+  else {
+    mesh->cd_flag &= ~ME_CDFLAG_EDGE_BWEIGHT;
+    for (const int i : edges.index_range()) {
+      edges[i].bweight = 0;
+    }
+  }
+}
+
+void BKE_mesh_legacy_bevel_weight_to_layers(Mesh *mesh)
+{
+  using namespace blender;
+  const Span<MVert> vertices(mesh->mvert, mesh->totvert);
+  if (mesh->cd_flag & ME_CDFLAG_VERT_BWEIGHT) {
+    float *weights = (float *)CustomData_add_layer(
+        &mesh->vdata, CD_BWEIGHT, CD_DEFAULT, nullptr, vertices.size());
+    for (const int i : vertices.index_range()) {
+      weights[i] = vertices[i].bweight / 255.0f;
+    }
+  }
+
+  const Span<MEdge> edges(mesh->medge, mesh->totedge);
+  if (mesh->cd_flag & ME_CDFLAG_EDGE_BWEIGHT) {
+    float *weights = (float *)CustomData_add_layer(
+        &mesh->vdata, CD_BWEIGHT, CD_DEFAULT, nullptr, vertices.size());
+    for (const int i : vertices.index_range()) {
+      weights[i] = vertices[i].bweight / 255.0f;
+    }
+  }
 }
 
 /** \} */

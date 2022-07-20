@@ -181,8 +181,6 @@ void BLO_write_string(BlendWriter *writer, const char *data_ptr);
  */
 bool BLO_write_is_undo(BlendWriter *writer);
 
-bool BLO_write_use_legacy_mesh_format(const BlendWriter *writer);
-
 /** \} */
 
 /* -------------------------------------------------------------------- */
