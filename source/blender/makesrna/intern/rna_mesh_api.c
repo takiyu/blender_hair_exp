@@ -166,7 +166,7 @@ static void rna_Mesh_transform(Mesh *mesh, float mat[16], bool shape_keys)
 static void rna_Mesh_flip_normals(Mesh *mesh)
 {
   BKE_mesh_polygons_flip(
-      BKE_mesh_polygons(mesh), BKE_mesh_loops(mesh), &mesh->ldata, mesh->totpoly);
+      BKE_mesh_polygons(mesh), BKE_mesh_loops_for_write(mesh), &mesh->ldata, mesh->totpoly);
   BKE_mesh_tessface_clear(mesh);
   BKE_mesh_normals_tag_dirty(mesh);
   BKE_mesh_runtime_clear_geometry(mesh);

@@ -1019,11 +1019,10 @@ static void bake_targets_populate_pixels_color_attributes(BakeTargets *targets,
   const int tottri = poly_to_tri_count(me_eval->totpoly, me_eval->totloop);
   MLoopTri *looptri = MEM_mallocN(sizeof(*looptri) * tottri, __func__);
 
-  const MPoly *polygons = BKE_mesh_polygons(me_eval);
   const MLoop *loops = BKE_mesh_loops(me_eval);
   BKE_mesh_recalc_looptri(loops,
                           BKE_mesh_polygons(me_eval),
-                          BKE_Mesh_vertices(me_eval),
+                          BKE_mesh_vertices(me_eval),
                           me_eval->totloop,
                           me_eval->totpoly,
                           looptri);

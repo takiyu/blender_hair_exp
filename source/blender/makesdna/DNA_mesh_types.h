@@ -274,6 +274,10 @@ typedef struct Mesh {
   /** Deprecated, use mtface. */
   struct TFace *tface DNA_DEPRECATED;
 
+  /* Deprecated. Array of colors for the tessellated faces, must be number of tessellated
+   * faces * 4 in length. This is often stored in #fdata. */
+  struct MCol *mcol DNA_DEPRECATED;
+
   /* Deprecated storage of old faces (only triangles or quads). */
   CustomData fdata;
   /* Deprecated size of #fdata. */

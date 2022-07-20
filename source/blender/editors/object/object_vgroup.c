@@ -1217,7 +1217,7 @@ static int *getSurroundingVerts(Mesh *me, int vert, int *count)
   while (i--) {
     int j = mp->totloop;
     int first_l = mp->totloop - 1;
-    MLoop *ml = &loops[mp->loopstart];
+    const MLoop *ml = &loops[mp->loopstart];
     while (j--) {
       /* XXX This assume a vert can only be once in a poly, even though
        *     it seems logical to me, not totally sure of that. */
@@ -2455,11 +2455,11 @@ void ED_vgroup_mirror(Object *ob,
       BLI_bitmap *vert_tag = BLI_BITMAP_NEW(me->totvert, __func__);
       const MVert *vertices = BKE_mesh_vertices(me);
 
-      for (vidx = 0, mv = me; vidx < me->totvert; vidx++, mv++) {
+      for (vidx = 0, mv = vertices; vidx < me->totvert; vidx++, mv++) {
         if (!BLI_BITMAP_TEST(vert_tag, vidx)) {
           if ((vidx_mirr = mesh_get_x_mirror_vert(ob, NULL, vidx, use_topology)) != -1) {
             if (vidx != vidx_mirr) {
-              mv_mirr = &me[vidx_mirr];
+              mv_mirr = &vertices[vidx_mirr];
               if (!BLI_BITMAP_TEST(vert_tag, vidx_mirr)) {
 
                 if (use_vert_sel) {

@@ -800,19 +800,21 @@ void BKE_mesh_mdisp_flip(struct MDisps *md, bool use_loop_mdisp_flip);
  * \param mloop: the full loops array.
  * \param ldata: the loops custom data.
  */
-void BKE_mesh_polygon_flip_ex(struct MPoly *mpoly,
+void BKE_mesh_polygon_flip_ex(const struct MPoly *mpoly,
                               struct MLoop *mloop,
                               struct CustomData *ldata,
                               float (*lnors)[3],
                               struct MDisps *mdisp,
                               bool use_loop_mdisp_flip);
-void BKE_mesh_polygon_flip(struct MPoly *mpoly, struct MLoop *mloop, struct CustomData *ldata);
+void BKE_mesh_polygon_flip(const struct MPoly *mpoly,
+                           struct MLoop *mloop,
+                           struct CustomData *ldata);
 /**
  * Flip (invert winding of) all polygons (used to inverse their normals).
  *
  * \note Invalidates tessellation, caller must handle that.
  */
-void BKE_mesh_polygons_flip(struct MPoly *mpoly,
+void BKE_mesh_polygons_flip(const struct MPoly *mpoly,
                             struct MLoop *mloop,
                             struct CustomData *ldata,
                             int totpoly);

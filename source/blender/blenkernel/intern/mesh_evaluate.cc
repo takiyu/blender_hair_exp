@@ -667,7 +667,7 @@ void BKE_mesh_mdisp_flip(MDisps *md, const bool use_loop_mdisp_flip)
   }
 }
 
-void BKE_mesh_polygon_flip_ex(MPoly *mpoly,
+void BKE_mesh_polygon_flip_ex(const MPoly *mpoly,
                               MLoop *mloop,
                               CustomData *ldata,
                               float (*lnors)[3],
@@ -710,16 +710,16 @@ void BKE_mesh_polygon_flip_ex(MPoly *mpoly,
   }
 }
 
-void BKE_mesh_polygon_flip(MPoly *mpoly, MLoop *mloop, CustomData *ldata)
+void BKE_mesh_polygon_flip(const MPoly *mpoly, MLoop *mloop, CustomData *ldata)
 {
   MDisps *mdisp = (MDisps *)CustomData_get_layer(ldata, CD_MDISPS);
   BKE_mesh_polygon_flip_ex(mpoly, mloop, ldata, nullptr, mdisp, true);
 }
 
-void BKE_mesh_polygons_flip(MPoly *mpoly, MLoop *mloop, CustomData *ldata, int totpoly)
+void BKE_mesh_polygons_flip(const MPoly *mpoly, MLoop *mloop, CustomData *ldata, int totpoly)
 {
   MDisps *mdisp = (MDisps *)CustomData_get_layer(ldata, CD_MDISPS);
-  MPoly *mp;
+  const MPoly *mp;
   int i;
 
   for (mp = mpoly, i = 0; i < totpoly; mp++, i++) {

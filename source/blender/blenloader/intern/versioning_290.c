@@ -828,7 +828,7 @@ void blo_do_versions_290(FileData *fd, Library *UNUSED(lib), Main *bmain)
                                    me->totvert,
                                    BKE_mesh_edges_for_write(me),
                                    me->totedge,
-                                   me->mface,
+                                   (MFace *)CustomData_get_layer(&me->fdata, CD_MFACE),
                                    me->totface,
                                    BKE_mesh_loops_for_write(me),
                                    me->totloop,

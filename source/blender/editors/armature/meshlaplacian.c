@@ -645,8 +645,8 @@ void heat_bone_weighting(Object *ob,
 {
   LaplacianSystem *sys;
   MLoopTri *mlooptri;
-  MPoly *mp;
-  MLoop *ml;
+  const MPoly *mp;
+  const MLoop *ml;
   float solution, weight;
   int *vertsflipped = NULL, *mask = NULL;
   int a, tris_num, j, bbone, firstsegment, lastsegment;
@@ -1745,7 +1745,7 @@ void ED_mesh_deform_bind_callback(Object *object,
   MeshDeformModifierData *mmd_orig = (MeshDeformModifierData *)BKE_modifier_get_original(
       object, &mmd->modifier);
   MeshDeformBind mdb;
-  MVert *mvert;
+  const MVert *mvert;
   int a;
 
   waitcursor(1);

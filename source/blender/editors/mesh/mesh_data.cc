@@ -188,7 +188,7 @@ static void mesh_uv_reset_bmface(BMFace *f, const int cd_loop_uv_offset)
   mesh_uv_reset_array(fuv.data(), f->len);
 }
 
-static void mesh_uv_reset_mface(MPoly *mp, MLoopUV *mloopuv)
+static void mesh_uv_reset_mface(const MPoly *mp, MLoopUV *mloopuv)
 {
   Array<float *, BM_DEFAULT_NGON_STACK_SIZE> fuv(mp->totloop);
 
@@ -1193,8 +1193,7 @@ static void mesh_add_loops(Mesh *mesh, int len)
 static void mesh_add_polys(Mesh *mesh, int len)
 {
   CustomData pdata;
-  MPoly *mpoly;
-  int i, totpoly;
+  int totpoly;
 
   if (len == 0) {
     return;

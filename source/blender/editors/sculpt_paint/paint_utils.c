@@ -29,6 +29,7 @@
 #include "BKE_customdata.h"
 #include "BKE_image.h"
 #include "BKE_material.h"
+#include "BKE_mesh.h"
 #include "BKE_mesh_runtime.h"
 #include "BKE_paint.h"
 #include "BKE_report.h"
@@ -410,7 +411,7 @@ void paint_sample_color(
       cddata_masks.pmask |= CD_MASK_ORIGINDEX;
       Mesh *me = (Mesh *)ob->data;
       Mesh *me_eval = mesh_get_eval_final(depsgraph, scene, ob_eval, &cddata_masks);
-      const MPoly *polygons_eval = BKE_mesh_polygons(mesh);
+      const MPoly *polygons_eval = BKE_mesh_polygons(me_eval);
 
       ViewContext vc;
       const int mval[2] = {x, y};
@@ -698,7 +699,7 @@ static int vert_select_ungrouped_exec(bContext *C, wmOperator *op)
   Object *ob = CTX_data_active_object(C);
   Mesh *me = ob->data;
 
-  if (BLI_listbase_is_empty(&me->vertex_group_names) || (me->dvert == NULL)) {
+  if (BLI_listbase_is_empty(&me->vertex_group_names) || (BKE_mesh_deform_verts(me) == NULL)) {
     BKE_report(op->reports, RPT_ERROR, "No weights/vertex groups on object");
     return OPERATOR_CANCELLED;
   }

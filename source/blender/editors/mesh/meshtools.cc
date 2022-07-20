@@ -1269,8 +1269,6 @@ bool ED_mesh_pick_face_vert(
 
     /* tag all verts using this face */
     if (index_mp_to_orig) {
-      uint i;
-
       for (const int i : polygons.index_range()) {
         if (index_mp_to_orig[i] == poly_index) {
           ed_mesh_pick_face_vert__mpoly_find(

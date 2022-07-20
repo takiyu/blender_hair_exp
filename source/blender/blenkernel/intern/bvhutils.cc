@@ -1303,8 +1303,9 @@ BVHTree *BKE_bvhtree_from_mesh_get(struct BVHTreeFromMesh *data,
 
     case BVHTREE_FROM_FACES:
       BLI_assert(!(mesh->totface == 0 && mesh->totpoly != 0));
+      const MFace *mfaces = (const MFace *)CustomData_get_layer(&mesh->fdata, CD_MFACE);
       data->tree = bvhtree_from_mesh_faces_create_tree(
-          0.0f, tree_type, 6, vertices.data(), mesh->mface, mesh->totface, nullptr, -1);
+          0.0f, tree_type, 6, vertices.data(), mfaces, mesh->totface, nullptr, -1);
       break;
 
     case BVHTREE_FROM_LOOPTRI_NO_HIDDEN:

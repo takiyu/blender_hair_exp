@@ -278,6 +278,9 @@ static void mesh_blend_read_data(BlendDataReader *reader, ID *id)
   BLO_read_data_address(reader, &mesh->mface);
   BLO_read_data_address(reader, &mesh->tface);
   BLO_read_data_address(reader, &mesh->mtface);
+  /* Read mcol for compatibility with old files. */
+  BLO_read_data_address(reader, &mesh->mcol);
+
   BLO_read_data_address(reader, &mesh->mloopuv);
   BLO_read_data_address(reader, &mesh->mselect);
 
@@ -927,8 +930,6 @@ static void mesh_tessface_clear_intern(Mesh *mesh, int free_customdata)
     CustomData_reset(&mesh->fdata);
   }
 
-  mesh->mface = nullptr;
-  mesh->mtface = nullptr;
   mesh->totface = 0;
 }
 
@@ -1378,9 +1379,9 @@ void BKE_mesh_material_index_remove(Mesh *me, short index)
     }
   }
 
-  MFace *mf;
+  MFace *mf = (MFace *)CustomData_get_layer(&me->fdata, CD_MFACE);
   int i;
-  for (mf = me->mface, i = 0; i < me->totface; i++, mf++) {
+  for (i = 0; i < me->totface; i++, mf++) {
     if (mf->mat_nr && mf->mat_nr >= index) {
       mf->mat_nr--;
     }
@@ -1396,9 +1397,9 @@ bool BKE_mesh_material_index_used(Mesh *me, short index)
     }
   }
 
-  MFace *mf;
+  MFace *mf = (MFace *)CustomData_get_layer(&me->fdata, CD_MFACE);
   int i;
-  for (mf = me->mface, i = 0; i < me->totface; i++, mf++) {
+  for (i = 0; i < me->totface; i++, mf++) {
     if (mf->mat_nr == index) {
       return true;
     }
@@ -1414,9 +1415,9 @@ void BKE_mesh_material_index_clear(Mesh *me)
     poly.mat_nr = 0;
   }
 
-  MFace *mf;
+  MFace *mf = (MFace *)CustomData_get_layer(&me->fdata, CD_MFACE);
   int i;
-  for (mf = me->mface, i = 0; i < me->totface; i++, mf++) {
+  for (i = 0; i < me->totface; i++, mf++) {
     mf->mat_nr = 0;
   }
 }

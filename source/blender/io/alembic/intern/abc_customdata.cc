@@ -56,17 +56,16 @@ static void get_uvs(const CDStreamConfig &config,
     return;
   }
 
-  const int num_poly = config.totpoly;
-  const MPoly *polygons = config.mpoly;
-  const MLoop *mloop = config.mloop;
+  const Span<MPoly> polygons = config.polygons;
+  const Span<MLoop> loops = config.loops;
 
   if (!config.pack_uvs) {
     int count = 0;
-    uvidx.resize(config.totloop);
-    uvs.resize(config.totloop);
+    uvidx.resize(loops.size());
+    uvs.resize(loops.size());
 
     /* Iterate in reverse order to match exported polygons. */
-    for (int i = 0; i < num_poly; i++) {
+    for (const int i : polygons.index_range()) {
       const MPoly &current_poly = polygons[i];
       const MLoopUV *loopuv = mloopuv_array + current_poly.loopstart + current_poly.totloop;
 
@@ -81,12 +80,12 @@ static void get_uvs(const CDStreamConfig &config,
   }
   else {
     /* Mapping for indexed UVs, deduplicating UV coordinates at vertices. */
-    std::vector<std::vector<uint32_t>> idx_map(config.totvert);
+    std::vector<std::vector<uint32_t>> idx_map(config.vertices.size());
     int idx_count = 0;
 
-    for (int i = 0; i < num_poly; i++) {
+    for (const int i : polygons.index_range()) {
       const MPoly &current_poly = polygons[i];
-      const MLoop *looppoly = mloop + current_poly.loopstart + current_poly.totloop;
+      const MLoop *looppoly = &loops[current_poly.loopstart + current_poly.totloop];
       const MLoopUV *loopuv = mloopuv_array + current_poly.loopstart + current_poly.totloop;
 
       for (int j = 0; j < current_poly.totloop; j++) {
@@ -172,19 +171,19 @@ static void get_cols(const CDStreamConfig &config,
                      const void *cd_data)
 {
   const float cscale = 1.0f / 255.0f;
-  const MPoly *polys = config.mpoly;
-  const MLoop *mloops = config.mloop;
+  const Span<MPoly> polygons = config.polygons;
+  const Span<MLoop> loops = config.loops;
   const MCol *cfaces = static_cast<const MCol *>(cd_data);
 
-  buffer.reserve(config.totvert);
-  uvidx.reserve(config.totvert);
+  buffer.reserve(config.vertices.size());
+  uvidx.reserve(config.vertices.size());
 
   Imath::C4f col;
 
-  for (int i = 0; i < config.totpoly; i++) {
-    const MPoly *p = &polys[i];
+  for (const int i : polygons.index_range()) {
+    const MPoly *p = &polygons[i];
     const MCol *cface = &cfaces[p->loopstart + p->totloop];
-    const MLoop *mloop = &mloops[p->loopstart + p->totloop];
+    const MLoop *mloop = &loops[p->loopstart + p->totloop];
 
     for (int j = 0; j < p->totloop; j++) {
       cface--;
@@ -247,9 +246,9 @@ void write_generated_coordinates(const OCompoundProperty &prop, CDStreamConfig &
   const float(*orcodata)[3] = static_cast<const float(*)[3]>(customdata);
 
   /* Convert 3D vertices from float[3] z=up to V3f y=up. */
-  std::vector<Imath::V3f> coords(config.totvert);
+  std::vector<Imath::V3f> coords(config.vertices.size());
   float orco_yup[3];
-  for (int vertex_idx = 0; vertex_idx < config.totvert; vertex_idx++) {
+  for (int vertex_idx = 0; vertex_idx < config.vertices.size(); vertex_idx++) {
     copy_yup_from_zup(orco_yup, orcodata[vertex_idx]);
     coords[vertex_idx].setValue(orco_yup[0], orco_yup[1], orco_yup[2]);
   }
@@ -318,8 +317,8 @@ static void read_uvs(const CDStreamConfig &config,
                      const Alembic::AbcGeom::V2fArraySamplePtr &uvs,
                      const UInt32ArraySamplePtr &indices)
 {
-  const MPoly *mpolys = config.mpoly;
-  const MLoop *mloops = config.mloop;
+  const Span<MPoly> polygons = config.polygons;
+  const Span<MLoop> loops = config.loops;
   MLoopUV *mloopuvs = static_cast<MLoopUV *>(data);
 
   unsigned int uv_index, loop_index, rev_loop_index;
@@ -327,13 +326,13 @@ static void read_uvs(const CDStreamConfig &config,
   BLI_assert(uv_scope != ABC_UV_SCOPE_NONE);
   const bool do_uvs_per_loop = (uv_scope == ABC_UV_SCOPE_LOOP);
 
-  for (int i = 0; i < config.totpoly; i++) {
-    const MPoly &poly = mpolys[i];
+  for (const int i : polygons.index_range()) {
+    const MPoly &poly = polygons[i];
     unsigned int rev_loop_offset = poly.loopstart + poly.totloop - 1;
 
     for (int f = 0; f < poly.totloop; f++) {
       rev_loop_index = rev_loop_offset - f;
-      loop_index = do_uvs_per_loop ? poly.loopstart + f : mloops[rev_loop_index].v;
+      loop_index = do_uvs_per_loop ? poly.loopstart + f : loops[rev_loop_index].v;
       uv_index = (*indices)[loop_index];
       const Imath::V2f &uv = (*uvs)[uv_index];
 
@@ -385,7 +384,7 @@ static void read_custom_data_mcols(const std::string &iobject_full_name,
 
     color_param.getIndexed(sample, iss);
     is_facevarying = sample.getScope() == kFacevaryingScope &&
-                     config.totloop == sample.getIndices()->size();
+                     config.loops.size() == sample.getIndices()->size();
 
     c3f_ptr = sample.getVals();
     indices = sample.getIndices();
@@ -398,7 +397,7 @@ static void read_custom_data_mcols(const std::string &iobject_full_name,
 
     color_param.getIndexed(sample, iss);
     is_facevarying = sample.getScope() == kFacevaryingScope &&
-                     config.totloop == sample.getIndices()->size();
+                     config.loops.size() == sample.getIndices()->size();
 
     c4f_ptr = sample.getVals();
     indices = sample.getIndices();
@@ -414,8 +413,8 @@ static void read_custom_data_mcols(const std::string &iobject_full_name,
   void *cd_data = config.add_customdata_cb(
       config.mesh, prop_header.getName().c_str(), CD_PROP_BYTE_COLOR);
   MCol *cfaces = static_cast<MCol *>(cd_data);
-  const MPoly *mpolys = config.mpoly;
-  const MLoop *mloops = config.mloop;
+  const Span<MPoly> polygons = config.polygons;
+  const Span<MLoop> loops = config.loops;
 
   size_t face_index = 0;
   size_t color_index;
@@ -427,10 +426,10 @@ static void read_custom_data_mcols(const std::string &iobject_full_name,
    * is why we have to check for indices->size() > 0 */
   bool use_dual_indexing = is_facevarying && indices->size() > 0;
 
-  for (int i = 0; i < config.totpoly; i++) {
-    const MPoly *poly = &mpolys[i];
-     MCol *cface = &cfaces[poly->loopstart + poly->totloop];
-    const MLoop *mloop = &mloops[poly->loopstart + poly->totloop];
+  for (const int i : polygons.index_range()) {
+    const MPoly *poly = &polygons[i];
+    MCol *cface = &cfaces[poly->loopstart + poly->totloop];
+    const MLoop *mloop = &loops[poly->loopstart + poly->totloop];
 
     for (int j = 0; j < poly->totloop; j++, face_index++) {
       cface--;
@@ -597,14 +596,14 @@ AbcUvScope get_uv_scope(const Alembic::AbcGeom::GeometryScope scope,
                         const CDStreamConfig &config,
                         const Alembic::AbcGeom::UInt32ArraySamplePtr &indices)
 {
-  if (scope == kFacevaryingScope && indices->size() == config.totloop) {
+  if (scope == kFacevaryingScope && indices->size() == config.loops.size()) {
     return ABC_UV_SCOPE_LOOP;
   }
 
   /* kVaryingScope is sometimes used for vertex scopes as the values vary across the vertices. To
    * be sure, one has to check the size of the data against the number of vertices, as it could
    * also be a varying attribute across the faces (i.e. one value per face). */
-  if ((ELEM(scope, kVaryingScope, kVertexScope)) && indices->size() == config.totvert) {
+  if ((ELEM(scope, kVaryingScope, kVertexScope)) && indices->size() == config.vertices.size()) {
     return ABC_UV_SCOPE_VERTEX;
   }
 

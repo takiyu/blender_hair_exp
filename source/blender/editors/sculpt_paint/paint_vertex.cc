@@ -4088,27 +4088,30 @@ static bool vertex_color_set(Object *ob, ColorPaint4f paintcol_in, CustomDataLay
   }
   else {
     Color *color_layer = static_cast<Color *>(layer->data);
+    const Span<MVert> vertices = blender::bke::mesh_vertices(*me);
+    const Span<MPoly> polygons = blender::bke::mesh_polygons(*me);
+    const Span<MLoop> loops = blender::bke::mesh_loops(*me);
 
-    const MPoly *mp = ss->mpoly;
-    for (int i = 0; i < me->totpoly; i++, mp++) {
-      if (use_face_sel && !(mp->flag & ME_FACE_SEL)) {
+    for (const int i : polygons.index_range()) {
+      const MPoly &poly = polygons[i];
+      if (use_face_sel && !(poly.flag & ME_FACE_SEL)) {
         continue;
       }
 
       int j = 0;
       do {
-        uint vidx = ss->mloop[mp->loopstart + j].v;
+        uint vidx = loops[poly.loopstart + j].v;
 
-        if (!(use_vert_sel && !(ss->mvert[vidx].flag & SELECT))) {
+        if (!(use_vert_sel && !(vertices[vidx].flag & SELECT))) {
           if constexpr (domain == ATTR_DOMAIN_CORNER) {
-            color_layer[mp->loopstart + j] = paintcol;
+            color_layer[poly.loopstart + j] = paintcol;
           }
           else {
             color_layer[vidx] = paintcol;
           }
         }
         j++;
-      } while (j < mp->totloop);
+      } while (j < poly.totloop);
     }
 
     /* remove stale me->mcol, will be added later */

@@ -673,8 +673,8 @@ static bool mesh_is_manifold_consistent(Mesh *mesh)
    * check that the direction of the faces are consistent and doesn't suddenly
    * flip
    */
-  const Span<MVert> vertices = bke::mesh_vertices(*mesh);
-  const Span<MEdge> edges = bke::mesh_edges(*mesh);
+  const Span<MVert> vertices = blender::bke::mesh_vertices(*mesh);
+  const Span<MEdge> edges = blender::bke::mesh_edges(*mesh);
   const Span<MLoop> loops = blender::bke::mesh_loops(*mesh);
 
   bool is_manifold_consistent = true;
@@ -704,7 +704,7 @@ static bool mesh_is_manifold_consistent(Mesh *mesh)
   }
 
   if (is_manifold_consistent) {
-    for (edges.index_range()) {
+    for (const int i : edges.index_range()) {
       /* Check for wire edges. */
       if (edge_faces[i] == 0) {
         is_manifold_consistent = false;
