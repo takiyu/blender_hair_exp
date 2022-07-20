@@ -1426,6 +1426,7 @@ void BKE_mesh_nomain_to_mesh(Mesh *mesh_src,
                              const CustomData_MeshMasks *mask,
                              bool take_ownership)
 {
+  using namespace blender::bke;
   BLI_assert(mesh_src->id.tag & LIB_TAG_NO_MAIN);
 
   /* mesh_src might depend on mesh_dst, so we need to do everything with a local copy */
@@ -1505,30 +1506,30 @@ void BKE_mesh_nomain_to_mesh(Mesh *mesh_src,
     CustomData_add_layer(&tmp.vdata,
                          CD_MVERT,
                          CD_ASSIGN,
-                         (alloctype == CD_ASSIGN) ? mesh_src->mvert :
-                                                    MEM_dupallocN(mesh_src->mvert),
+                         (alloctype == CD_ASSIGN) ? mesh_vertices_for_write(*mesh_src).data() :
+                                                    MEM_dupallocN(mesh_vertices(*mesh_src).data()),
                          totvert);
   }
   if (!CustomData_has_layer(&tmp.edata, CD_MEDGE)) {
     CustomData_add_layer(&tmp.edata,
                          CD_MEDGE,
                          CD_ASSIGN,
-                         (alloctype == CD_ASSIGN) ? mesh_src->medge :
-                                                    MEM_dupallocN(mesh_src->medge),
+                         (alloctype == CD_ASSIGN) ? mesh_edges_for_write(*mesh_src).data() :
+                                                    MEM_dupallocN(mesh_edges(*mesh_src).data()),
                          totedge);
   }
   if (!CustomData_has_layer(&tmp.pdata, CD_MPOLY)) {
     CustomData_add_layer(&tmp.ldata,
                          CD_MLOOP,
                          CD_ASSIGN,
-                         (alloctype == CD_ASSIGN) ? mesh_src->mloop :
-                                                    MEM_dupallocN(mesh_src->mloop),
+                         (alloctype == CD_ASSIGN) ? mesh_loops_for_write(*mesh_src).data() :
+                                                    MEM_dupallocN(mesh_loops(*mesh_src).data()),
                          tmp.totloop);
     CustomData_add_layer(&tmp.pdata,
                          CD_MPOLY,
                          CD_ASSIGN,
-                         (alloctype == CD_ASSIGN) ? mesh_src->mpoly :
-                                                    MEM_dupallocN(mesh_src->mpoly),
+                         (alloctype == CD_ASSIGN) ? mesh_polygons_for_write(*mesh_src).data() :
+                                                    MEM_dupallocN(mesh_polygons(*mesh_src).data()),
                          tmp.totpoly);
   }
 
