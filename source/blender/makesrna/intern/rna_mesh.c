@@ -357,6 +357,27 @@ static void rna_MeshVertex_normal_get(PointerRNA *ptr, float *value)
   copy_v3_v3(value, vert_normals[index]);
 }
 
+static bool rna_MeshVertex_hide_get(PointerRNA *ptr)
+{
+  const Mesh *mesh = rna_mesh(ptr);
+  const bool *hide_vert = (const bool *)CustomData_get_layer_named(
+      &mesh->vdata, CD_PROP_BOOL, ".hide_vert");
+  const int index = (const MVert *)ptr->data - mesh->mvert;
+  BLI_assert(index >= 0);
+  BLI_assert(index < mesh->totvert);
+  return hide_vert[index];
+}
+
+static void rna_MeshVertex_hide_set(PointerRNA *ptr, bool value)
+{
+  Mesh *mesh = rna_mesh(ptr);
+  bool *hide_vert = (bool *)CustomData_get_layer_named(&mesh->vdata, CD_PROP_BOOL, ".hide_vert");
+  const int index = (const MVert *)ptr->data - mesh->mvert;
+  BLI_assert(index >= 0);
+  BLI_assert(index < mesh->totvert);
+  hide_vert[index] = value;
+}
+
 static float rna_MeshVertex_bevel_weight_get(PointerRNA *ptr)
 {
   MVert *mvert = (MVert *)ptr->data;
@@ -475,6 +496,27 @@ static void rna_MeshPolygon_normal_get(PointerRNA *ptr, float *values)
   const MLoop *loops = BKE_mesh_loops(me);
 
   BKE_mesh_calc_poly_normal(mp, loops + mp->loopstart, vertices, values);
+}
+
+static bool rna_MeshPolygon_hide_get(PointerRNA *ptr)
+{
+  const Mesh *mesh = rna_mesh(ptr);
+  const bool *hide_face = (const bool *)CustomData_get_layer_named(
+      &mesh->pdata, CD_PROP_BOOL, ".hide_face");
+  const int index = (const MPoly *)ptr->data - mesh->mpoly;
+  BLI_assert(index >= 0);
+  BLI_assert(index < mesh->totpoly);
+  return hide_face[index];
+}
+
+static void rna_MeshPolygon_hide_set(PointerRNA *ptr, bool value)
+{
+  Mesh *mesh = rna_mesh(ptr);
+  bool *hide_face = (bool *)CustomData_get_layer_named(&mesh->pdata, CD_PROP_BOOL, ".hide_face");
+  const int index = (const MPoly *)ptr->data - mesh->mpoly;
+  BLI_assert(index >= 0);
+  BLI_assert(index < mesh->totpoly);
+  hide_face[index] = value;
 }
 
 static void rna_MeshPolygon_center_get(PointerRNA *ptr, float *values)
@@ -1230,6 +1272,27 @@ static int rna_MeshEdge_index_get(PointerRNA *ptr)
   return (int)(edge - edges);
 }
 
+static bool rna_MeshEdge_hide_get(PointerRNA *ptr)
+{
+  const Mesh *mesh = rna_mesh(ptr);
+  const bool *hide_edge = (const bool *)CustomData_get_layer_named(
+      &mesh->pdata, CD_PROP_BOOL, ".hide_edge");
+  const int index = (const MEdge *)ptr->data - mesh->medge;
+  BLI_assert(index >= 0);
+  BLI_assert(index < mesh->totedge);
+  return hide_edge[index];
+}
+
+static void rna_MeshEdge_hide_set(PointerRNA *ptr, bool value)
+{
+  Mesh *mesh = rna_mesh(ptr);
+  bool *hide_edge = (bool *)CustomData_get_layer_named(&mesh->edata, CD_PROP_BOOL, ".hide_edge");
+  const int index = (const MEdge *)ptr->data - mesh->medge;
+  BLI_assert(index >= 0);
+  BLI_assert(index < mesh->totedge);
+  hide_edge[index] = value;
+}
+
 static int rna_MeshLoopTriangle_index_get(PointerRNA *ptr)
 {
   Mesh *me = rna_mesh(ptr);
@@ -1931,8 +1994,8 @@ static void rna_def_mvert(BlenderRNA *brna)
   RNA_def_property_update(prop, 0, "rna_Mesh_update_select");
 
   prop = RNA_def_property(srna, "hide", PROP_BOOLEAN, PROP_NONE);
-  RNA_def_property_boolean_sdna(prop, NULL, "flag", ME_HIDE);
   RNA_def_property_ui_text(prop, "Hide", "");
+  RNA_def_property_boolean_funcs(prop, "rna_MeshVertex_hide_get", "rna_MeshVertex_hide_set");
   RNA_def_property_update(prop, 0, "rna_Mesh_update_select");
 
   prop = RNA_def_property(srna, "bevel_weight", PROP_FLOAT, PROP_NONE);
@@ -2007,8 +2070,8 @@ static void rna_def_medge(BlenderRNA *brna)
   RNA_def_property_update(prop, 0, "rna_Mesh_update_select");
 
   prop = RNA_def_property(srna, "hide", PROP_BOOLEAN, PROP_NONE);
-  RNA_def_property_boolean_sdna(prop, NULL, "flag", ME_HIDE);
   RNA_def_property_ui_text(prop, "Hide", "");
+  RNA_def_property_boolean_funcs(prop, "rna_MeshEdge_hide_get", "rna_MeshEdge_hide_set");
   RNA_def_property_update(prop, 0, "rna_Mesh_update_select");
 
   prop = RNA_def_property(srna, "use_seam", PROP_BOOLEAN, PROP_NONE);
@@ -2220,8 +2283,8 @@ static void rna_def_mpolygon(BlenderRNA *brna)
   RNA_def_property_update(prop, 0, "rna_Mesh_update_select");
 
   prop = RNA_def_property(srna, "hide", PROP_BOOLEAN, PROP_NONE);
-  RNA_def_property_boolean_sdna(prop, NULL, "flag", ME_HIDE);
   RNA_def_property_ui_text(prop, "Hide", "");
+  RNA_def_property_boolean_funcs(prop, "rna_MeshPolygon_hide_get", "rna_MeshPolygon_hide_set");
   RNA_def_property_update(prop, 0, "rna_Mesh_update_select");
 
   prop = RNA_def_property(srna, "use_smooth", PROP_BOOLEAN, PROP_NONE);

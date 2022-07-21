@@ -670,7 +670,9 @@ static void draw_subdiv_cache_extra_coarse_face_data_bm(BMesh *bm,
   }
 }
 
-static void draw_subdiv_cache_extra_coarse_face_data_mesh(Mesh *mesh, uint32_t *flags_data)
+static void draw_subdiv_cache_extra_coarse_face_data_mesh(const MeshRenderData *mr,
+                                                          Mesh *mesh,
+                                                          uint32_t *flags_data)
 {
   const Span<MPoly> polygons = blender::bke::mesh_polygons(*mesh);
   for (const int i : polygons.index_range()) {
@@ -681,7 +683,7 @@ static void draw_subdiv_cache_extra_coarse_face_data_mesh(Mesh *mesh, uint32_t *
     if ((polygons[i].flag & ME_FACE_SEL) != 0) {
       flag |= SUBDIV_COARSE_FACE_FLAG_SELECT;
     }
-    if ((polygons[i].flag & ME_HIDE) != 0) {
+    if (mr->hide_face && mr->hide_face[i]) {
       flag |= SUBDIV_COARSE_FACE_FLAG_HIDDEN;
     }
     flags_data[i] = (uint)(polygons[i].loopstart) | (flag << SUBDIV_COARSE_FACE_FLAG_OFFSET);
@@ -694,7 +696,7 @@ static void draw_subdiv_cache_extra_coarse_face_data_mapped(Mesh *mesh,
                                                             uint32_t *flags_data)
 {
   if (bm == nullptr) {
-    draw_subdiv_cache_extra_coarse_face_data_mesh(mesh, flags_data);
+    draw_subdiv_cache_extra_coarse_face_data_mesh(mr, mesh, flags_data);
     return;
   }
 
@@ -729,7 +731,7 @@ static void draw_subdiv_cache_update_extra_coarse_face_data(DRWSubdivCache *cach
     draw_subdiv_cache_extra_coarse_face_data_mapped(mesh, cache->bm, mr, flags_data);
   }
   else {
-    draw_subdiv_cache_extra_coarse_face_data_mesh(mesh, flags_data);
+    draw_subdiv_cache_extra_coarse_face_data_mesh(mr, mesh, flags_data);
   }
 
   /* Make sure updated data is re-uploaded. */

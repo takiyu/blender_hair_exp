@@ -211,25 +211,26 @@ static void gpu_pbvh_batch_init(GPU_PBVH_Buffers *buffers, GPUPrimType prim)
  * \{ */
 
 static bool gpu_pbvh_is_looptri_visible(const MLoopTri *lt,
-                                        const MVert *mvert,
+                                        const bool *hide_vert,
                                         const MLoop *mloop,
                                         const int *sculpt_face_sets)
 {
-  return (!paint_is_face_hidden(lt, mvert, mloop) && sculpt_face_sets &&
+  return (!paint_is_face_hidden(lt, hide_vert, mloop) && sculpt_face_sets &&
           sculpt_face_sets[lt->poly] > SCULPT_FACE_SET_NONE);
 }
 
 void GPU_pbvh_mesh_buffers_update(PBVHGPUFormat *vbo_id,
                                   GPU_PBVH_Buffers *buffers,
                                   const MVert *mvert,
+                                  const float (*vert_normals)[3],
+                                  const bool *hide_vert,
                                   const CustomData *vdata,
                                   const CustomData *ldata,
                                   const float *vmask,
                                   const int *sculpt_face_sets,
                                   int face_sets_color_seed,
                                   int face_sets_color_default,
-                                  int update_flags,
-                                  const float (*vert_normals)[3])
+                                  int update_flags)
 {
   GPUAttrRef vcol_refs[MAX_GPU_ATTR];
   GPUAttrRef cd_uvs[MAX_GPU_ATTR];
@@ -314,7 +315,7 @@ void GPU_pbvh_mesh_buffers_update(PBVHGPUFormat *vbo_id,
           for (uint i = 0; i < buffers->face_indices_len; i++) {
             const MLoopTri *lt = &buffers->looptri[buffers->face_indices[i]];
 
-            if (!gpu_pbvh_is_looptri_visible(lt, mvert, buffers->mloop, sculpt_face_sets)) {
+            if (!gpu_pbvh_is_looptri_visible(lt, hide_vert, buffers->mloop, sculpt_face_sets)) {
               continue;
             }
 
@@ -354,7 +355,7 @@ void GPU_pbvh_mesh_buffers_update(PBVHGPUFormat *vbo_id,
               buffers->mloop[lt->tri[2]].v,
           };
 
-          if (!gpu_pbvh_is_looptri_visible(lt, mvert, buffers->mloop, sculpt_face_sets)) {
+          if (!gpu_pbvh_is_looptri_visible(lt, hide_vert, buffers->mloop, sculpt_face_sets)) {
             continue;
           }
 
@@ -394,7 +395,7 @@ void GPU_pbvh_mesh_buffers_update(PBVHGPUFormat *vbo_id,
             buffers->mloop[lt->tri[2]].v,
         };
 
-        if (!gpu_pbvh_is_looptri_visible(lt, mvert, buffers->mloop, sculpt_face_sets)) {
+        if (!gpu_pbvh_is_looptri_visible(lt, hide_vert, buffers->mloop, sculpt_face_sets)) {
           continue;
         }
 
@@ -460,7 +461,7 @@ void GPU_pbvh_mesh_buffers_update(PBVHGPUFormat *vbo_id,
 GPU_PBVH_Buffers *GPU_pbvh_mesh_buffers_build(const MPoly *mpoly,
                                               const MLoop *mloop,
                                               const MLoopTri *looptri,
-                                              const MVert *mvert,
+                                              const bool *hide_vert,
                                               const int *face_indices,
                                               const int *sculpt_face_sets,
                                               const int face_indices_len,
@@ -480,7 +481,7 @@ GPU_PBVH_Buffers *GPU_pbvh_mesh_buffers_build(const MPoly *mpoly,
   /* Count the number of visible triangles */
   for (i = 0, tottri = 0; i < face_indices_len; i++) {
     const MLoopTri *lt = &looptri[face_indices[i]];
-    if (gpu_pbvh_is_looptri_visible(lt, mvert, mloop, sculpt_face_sets)) {
+    if (gpu_pbvh_is_looptri_visible(lt, hide_vert, mloop, sculpt_face_sets)) {
       int r_edges[3];
       BKE_mesh_looptri_get_real_edges(mesh, lt, r_edges);
       for (int j = 0; j < 3; j++) {
@@ -513,7 +514,7 @@ GPU_PBVH_Buffers *GPU_pbvh_mesh_buffers_build(const MPoly *mpoly,
     const MLoopTri *lt = &looptri[face_indices[i]];
 
     /* Skip hidden faces */
-    if (!gpu_pbvh_is_looptri_visible(lt, mvert, mloop, sculpt_face_sets)) {
+    if (!gpu_pbvh_is_looptri_visible(lt, hide_vert, mloop, sculpt_face_sets)) {
       continue;
     }
 

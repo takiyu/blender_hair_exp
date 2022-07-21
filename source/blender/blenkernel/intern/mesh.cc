@@ -28,6 +28,7 @@
 #include "BLI_math.h"
 #include "BLI_math_vector.hh"
 #include "BLI_memarena.h"
+#include "BLI_span.hh"
 #include "BLI_string.h"
 #include "BLI_task.hh"
 #include "BLI_utildefines.h"
@@ -245,6 +246,8 @@ static void mesh_blend_write(BlendWriter *writer, ID *id, const void *id_address
     CustomData_blend_write_prepare(mesh->pdata, poly_layers);
   }
 
+  BKE_mesh_legacy_convert_hide_layers_to_flags(mesh);
+
   BLO_write_id_struct(writer, Mesh, id_address, &mesh->id);
   BKE_id_blend_write(writer, &mesh->id);
 
@@ -316,6 +319,8 @@ static void mesh_blend_read_data(BlendDataReader *reader, ID *id)
       BLI_endian_switch_uint32_array(tf->col, 4);
     }
   }
+
+  BKE_mesh_legacy_convert_flags_to_hide_layers(mesh);
 
   /* We don't expect to load normals from files, since they are derived data. */
   BKE_mesh_normals_tag_dirty(mesh);

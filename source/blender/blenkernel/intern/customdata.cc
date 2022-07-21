@@ -2327,6 +2327,43 @@ bool CustomData_merge(const CustomData *source,
   return changed;
 }
 
+static bool attribute_stored_in_bmesh_flag(const StringRef name)
+{
+  return ELEM(name, ".hide_vert", ".hide_edge", ".hide_face");
+}
+
+static CustomData shallow_copy_remove_non_bmesh_attributes(const CustomData &src)
+{
+  Vector<CustomDataLayer> dst_layers;
+  for (const CustomDataLayer &layer : Span<CustomDataLayer>{src.layers, src.totlayer}) {
+    if (attribute_stored_in_bmesh_flag(layer.name)) {
+      dst_layers.append(layer);
+    }
+  }
+
+  CustomData dst = src;
+  dst.layers = static_cast<CustomDataLayer *>(
+      MEM_calloc_arrayN(dst_layers.size(), sizeof(CustomDataLayer), __func__));
+  dst.totlayer = dst_layers.size();
+  memcpy(dst.layers, dst_layers.data(), dst_layers.as_span().size_in_bytes());
+
+  CustomData_update_typemap(&dst);
+
+  return dst;
+}
+
+bool CustomData_merge_mesh_to_bmesh(const CustomData *source,
+                                    CustomData *dest,
+                                    eCustomDataMask mask,
+                                    eCDAllocType alloctype,
+                                    int totelem)
+{
+  CustomData source_copy = shallow_copy_remove_non_bmesh_attributes(*source);
+  const bool result = CustomData_merge(&source_copy, dest, mask, alloctype, totelem);
+  MEM_SAFE_FREE(source_copy.layers);
+  return result;
+}
+
 void CustomData_realloc(CustomData *data, int totelem)
 {
   BLI_assert(totelem >= 0);
@@ -2356,6 +2393,17 @@ void CustomData_copy(const CustomData *source,
   }
 
   CustomData_merge(source, dest, mask, alloctype, totelem);
+}
+
+void CustomData_copy_mesh_to_bmesh(const CustomData *source,
+                                   CustomData *dest,
+                                   eCustomDataMask mask,
+                                   eCDAllocType alloctype,
+                                   int totelem)
+{
+  CustomData source_copy = shallow_copy_remove_non_bmesh_attributes(*source);
+  CustomData_copy(&source_copy, dest, mask, alloctype, totelem);
+  MEM_SAFE_FREE(source_copy.layers);
 }
 
 static void customData_free_layer__internal(CustomDataLayer *layer, int totelem)
@@ -4443,9 +4491,52 @@ bool CustomData_verify_versions(CustomData *data, int index)
   return keeplayer;
 }
 
+static bool CustomData_layer_ensure_data_exists(CustomDataLayer *layer, size_t count)
+{
+  BLI_assert(layer);
+  const LayerTypeInfo *typeInfo = layerType_getInfo(layer->type);
+  BLI_assert(typeInfo);
+
+  if (layer->data || count == 0) {
+    return false;
+  }
+
+  switch (layer->type) {
+    /* When more instances of corrupt files are found, add them here. */
+    case CD_PROP_BOOL: /* See T84935. */
+    case CD_MLOOPUV:   /* See T90620. */
+      layer->data = MEM_calloc_arrayN(count, typeInfo->size, layerType_getName(layer->type));
+      BLI_assert(layer->data);
+      if (typeInfo->set_default) {
+        typeInfo->set_default(layer->data, count);
+      }
+      return true;
+      break;
+
+    case CD_MTEXPOLY:
+      /* TODO: Investigate multiple test failures on cycles, e.g. cycles_shadow_catcher_cpu. */
+      break;
+
+    default:
+      /* Log an error so we can collect instances of bad files. */
+      CLOG_WARN(&LOG, "CustomDataLayer->data is NULL for type %d.", layer->type);
+      break;
+  }
+  return false;
+}
+
 bool CustomData_layer_validate(CustomDataLayer *layer, const uint totitems, const bool do_fixes)
 {
+  BLI_assert(layer);
   const LayerTypeInfo *typeInfo = layerType_getInfo(layer->type);
+  BLI_assert(typeInfo);
+
+  if (do_fixes) {
+    CustomData_layer_ensure_data_exists(layer, totitems);
+  }
+
+  BLI_assert((totitems == 0) || layer->data);
+  BLI_assert(MEM_allocN_len(layer->data) >= totitems * typeInfo->size);
 
   if (typeInfo->validate != nullptr) {
     return typeInfo->validate(layer->data, totitems, do_fixes);
@@ -5206,16 +5297,15 @@ void CustomData_blend_read(BlendDataReader *reader, CustomData *data, int count)
 
     if (CustomData_verify_versions(data, i)) {
       BLO_read_data_address(reader, &layer->data);
-      if (layer->data == nullptr && count > 0 && layer->type == CD_PROP_BOOL) {
-        /* Usually this should never happen, except when a custom data layer has not been written
-         * to a file correctly. */
-        CLOG_WARN(&LOG, "Reallocating custom data layer that was not saved correctly.");
-        const LayerTypeInfo *info = layerType_getInfo(layer->type);
-        layer->data = MEM_calloc_arrayN((size_t)count, info->size, layerType_getName(layer->type));
-        if (info->set_default) {
-          info->set_default(layer->data, count);
-        }
+      if (CustomData_layer_ensure_data_exists(layer, count)) {
+        /* Under normal operations, this shouldn't happen, but...
+         * For a CD_PROP_BOOL example, see T84935.
+         * For a CD_MLOOPUV example, see T90620. */
+        CLOG_WARN(&LOG,
+                  "Allocated custom data layer that was not saved correctly for layer->type = %d.",
+                  layer->type);
       }
+
       if (layer->type == CD_MDISPS) {
         blend_read_mdisps(
             reader, count, static_cast<MDisps *>(layer->data), layer->flag & CD_FLAG_EXTERNAL);

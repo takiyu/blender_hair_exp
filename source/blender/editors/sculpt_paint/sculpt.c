@@ -341,10 +341,12 @@ int SCULPT_active_face_set_get(SculptSession *ss)
 void SCULPT_vertex_visible_set(SculptSession *ss, int index, bool visible)
 {
   switch (BKE_pbvh_type(ss->pbvh)) {
-    case PBVH_FACES:
-      SET_FLAG_FROM_TEST(ss->mvert[index].flag, !visible, ME_HIDE);
+    case PBVH_FACES: {
+      bool *hide_vert = BKE_pbvh_get_vert_hide_for_write(ss->pbvh);
+      hide_vert[index] = visible;
       BKE_pbvh_vert_mark_update(ss->pbvh, index);
       break;
+    }
     case PBVH_BMESH:
       BM_elem_flag_set(BM_vert_at_index(ss->bm, index), BM_ELEM_HIDDEN, !visible);
       break;
@@ -356,8 +358,10 @@ void SCULPT_vertex_visible_set(SculptSession *ss, int index, bool visible)
 bool SCULPT_vertex_visible_get(SculptSession *ss, int index)
 {
   switch (BKE_pbvh_type(ss->pbvh)) {
-    case PBVH_FACES:
-      return !(ss->mvert[index].flag & ME_HIDE);
+    case PBVH_FACES: {
+      const bool *hide_vert = BKE_pbvh_get_vert_hide(ss->pbvh);
+      return hide_vert == NULL || !hide_vert[index];
+    }
     case PBVH_BMESH:
       return !BM_elem_flag_test(BM_vert_at_index(ss->bm, index), BM_ELEM_HIDDEN);
     case PBVH_GRIDS: {
@@ -3362,7 +3366,7 @@ static void do_brush_action(Sculpt *sd,
   if (brush->deform_target == BRUSH_DEFORM_TARGET_CLOTH_SIM) {
     if (!ss->cache->cloth_sim) {
       ss->cache->cloth_sim = SCULPT_cloth_brush_simulation_create(
-          ss, 1.0f, 0.0f, 0.0f, false, true);
+          ob, 1.0f, 0.0f, 0.0f, false, true);
       SCULPT_cloth_brush_simulation_init(ss, ss->cache->cloth_sim);
     }
     SCULPT_cloth_brush_store_simulation_state(ss, ss->cache->cloth_sim);

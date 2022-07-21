@@ -49,7 +49,7 @@ typedef struct GPU_PBVH_Buffers GPU_PBVH_Buffers;
 GPU_PBVH_Buffers *GPU_pbvh_mesh_buffers_build(const struct MPoly *mpoly,
                                               const struct MLoop *mloop,
                                               const struct MLoopTri *looptri,
-                                              const struct MVert *mvert,
+                                              const bool *hide_vert,
                                               const int *face_indices,
                                               const int *sculpt_face_sets,
                                               int face_indices_len,
@@ -92,14 +92,15 @@ enum {
 void GPU_pbvh_mesh_buffers_update(PBVHGPUFormat *vbo_id,
                                   GPU_PBVH_Buffers *buffers,
                                   const struct MVert *mvert,
+                                  const float (*vert_normals)[3],
+                                  const bool *hide_vert,
                                   const CustomData *vdata,
                                   const CustomData *ldata,
                                   const float *vmask,
                                   const int *sculpt_face_sets,
                                   const int face_sets_color_seed,
                                   const int face_sets_color_default,
-                                  const int update_flags,
-                                  const float (*vert_normals)[3]);
+                                  const int update_flags);
 
 bool GPU_pbvh_attribute_names_update(PBVHType pbvh_type,
                                      PBVHGPUFormat *vbo_id,
