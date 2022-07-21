@@ -647,6 +647,7 @@ void paintvert_hide(bContext *C, Object *ob, const bool unselected)
       vert.flag &= ~SELECT;
     }
   }
+  hide_vert.finish();
 
   BKE_mesh_flush_hidden_from_verts(me);
 
