@@ -956,6 +956,10 @@ static void convert_bmesh_hide_flags_to_mesh_attributes(BMesh &bm,
   BLI_assert(CustomData_get_layer_named(&bm.edata, CD_PROP_BOOL, ".edge_vert") == nullptr);
   BLI_assert(CustomData_get_layer_named(&bm.pdata, CD_PROP_BOOL, ".face_vert") == nullptr);
 
+  if (!(need_hide_vert || need_hide_edge || need_hide_face)) {
+    return;
+  }
+
   bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(mesh);
   BM_mesh_elem_table_ensure(&bm, BM_VERT | BM_EDGE | BM_FACE);
 
