@@ -128,7 +128,7 @@ static void smoothModifier_do(
 
     const short flag = smd->flag;
     if (dvert) {
-      MDeformVert *dv = dvert;
+      const MDeformVert *dv = dvert;
       for (int i = 0; i < verts_num; i++, dv++) {
         float *vco_orig = vertexCos[i];
         if (accumulated_vecs_count[i] > 0) {

@@ -2664,7 +2664,7 @@ static void mesh_to_softbody(Object *ob)
 {
   SoftBody *sb;
   Mesh *me = ob->data;
-  MEdge *medge = BKE_Mesh_edges(me);
+  const MEdge *medge = BKE_mesh_edges(me);
   BodyPoint *bp;
   BodySpring *bs;
   int a, totedge;

@@ -1423,7 +1423,7 @@ static void lineart_mvert_transform_task(void *__restrict userdata,
                                          const TaskParallelTLS *__restrict UNUSED(tls))
 {
   VertData *vert_task_data = (VertData *)userdata;
-  MVert *m_v = &vert_task_data->mvert[i];
+  const MVert *m_v = &vert_task_data->mvert[i];
   double co[4];
   LineartVert *v = &vert_task_data->v_arr[i];
   copy_v3db_v3fl(co, m_v->co);
@@ -1719,7 +1719,7 @@ typedef struct LooseEdgeData {
 
 static void lineart_loose_data_reallocate(LooseEdgeData *loose_data, int count)
 {
-  MEdge **new_arr = MEM_callocN(sizeof(MEdge *) * count, "loose edge array");
+  const MEdge **new_arr = MEM_callocN(sizeof(MEdge *) * count, "loose edge array");
   if (loose_data->loose_array) {
     memcpy(new_arr, loose_data->loose_array, sizeof(MEdge *) * loose_data->loose_max);
     MEM_freeN(loose_data->loose_array);
@@ -1929,7 +1929,7 @@ static void lineart_edge_neighbor_init_task(void *__restrict userdata,
   LineartAdjacentEdge *adj_e = &en_data->adj_e[i];
   MLoopTri *looptri = &en_data->mlooptri[i / 3];
   LineartEdgeNeighbor *edge_nabr = &en_data->edge_nabr[i];
-  MLoop *mloop = en_data->mloop;
+  const MLoop *mloop = en_data->mloop;
 
   adj_e->e = i;
   adj_e->v1 = mloop[looptri->tri[i % 3]].v;

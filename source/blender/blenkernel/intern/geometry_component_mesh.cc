@@ -738,7 +738,7 @@ static GVArray adapt_mesh_domain_edge_to_face(const Mesh &mesh, const GVArray &v
       if constexpr (std::is_same_v<T, bool>) {
         /* A face is selected if all of its edges are selected. */
         new_varray = VArray<bool>::ForFunc(
-            polygons.size(), [loops, polysgons, varray = varray.typed<T>()](const int face_index) {
+            polygons.size(), [loops, polygons, varray = varray.typed<T>()](const int face_index) {
               const MPoly &poly = polygons[face_index];
               for (const int loop_index : IndexRange(poly.loopstart, poly.totloop)) {
                 const MLoop &loop = loops[loop_index];
@@ -1034,9 +1034,9 @@ class VertexGroupsAttributeProvider final : public DynamicAttributesProvider {
       static const float default_value = 0.0f;
       return {VArray<float>::ForSingle(default_value, mesh->totvert), ATTR_DOMAIN_POINT};
     }
-    return {
-        VArray<float>::For<VArrayImpl_For_VertexWeights>(dvert, mesh->totvert, vertex_group_index),
-        ATTR_DOMAIN_POINT};
+    return {VArray<float>::For<VArrayImpl_For_VertexWeights>(
+                const_cast<MDeformVert *>(dvert), mesh->totvert, vertex_group_index),
+            ATTR_DOMAIN_POINT};
   }
 
   GAttributeWriter try_get_for_write(void *owner, const AttributeIDRef &attribute_id) const final

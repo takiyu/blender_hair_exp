@@ -519,7 +519,7 @@ static bool cache_settings_equal(CorrectiveSmoothModifierData *csmd)
  */
 static void calc_deltas(CorrectiveSmoothModifierData *csmd,
                         Mesh *mesh,
-                        MDeformVert *dvert,
+                        const MDeformVert *dvert,
                         const int defgrp_index,
                         const float (*rest_coords)[3],
                         uint verts_num)

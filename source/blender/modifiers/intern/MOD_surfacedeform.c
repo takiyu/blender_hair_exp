@@ -1175,7 +1175,7 @@ static bool surfacedeformBind(Object *ob,
   const MVert *mvert = BKE_mesh_vertices(target);
   const MPoly *mpoly = BKE_mesh_polygons(target);
   const MEdge *medge = BKE_mesh_edges(target);
-  const MLoop *mloop = BKE_Mesh_loops(target);
+  const MLoop *mloop = BKE_mesh_loops(target);
   uint tedges_num = target->totedge;
   int adj_result;
   SDefAdjacencyArray *vert_edges;

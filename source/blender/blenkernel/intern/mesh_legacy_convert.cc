@@ -165,9 +165,7 @@ static void convert_mfaces_to_mpolys(ID *id,
                                      MEdge *medge,
                                      MFace *mface,
                                      int *r_totloop,
-                                     int *r_totpoly,
-                                     MLoop **r_mloop,
-                                     MPoly **r_mpoly)
+                                     int *r_totpoly)
 {
   MFace *mf;
   MLoop *ml, *mloop;
@@ -185,8 +183,7 @@ static void convert_mfaces_to_mpolys(ID *id,
   CustomData_free(pdata, totpoly_i);
 
   totpoly = totface_i;
-  mpoly = (MPoly *)MEM_calloc_arrayN((size_t)totpoly, sizeof(MPoly), "mpoly converted");
-  CustomData_add_layer(pdata, CD_MPOLY, CD_ASSIGN, mpoly, totpoly);
+  mpoly = (MPoly *)CustomData_add_layer(pdata, CD_MPOLY, CD_CALLOC, nullptr, totpoly);
 
   numTex = CustomData_number_of_layers(fdata, CD_MTFACE);
   numCol = CustomData_number_of_layers(fdata, CD_MCOL);
@@ -197,9 +194,7 @@ static void convert_mfaces_to_mpolys(ID *id,
     totloop += mf->v4 ? 4 : 3;
   }
 
-  mloop = (MLoop *)MEM_calloc_arrayN((size_t)totloop, sizeof(MLoop), "mloop converted");
-
-  CustomData_add_layer(ldata, CD_MLOOP, CD_ASSIGN, mloop, totloop);
+  mloop = (MLoop *)CustomData_add_layer(ldata, CD_MLOOP, CD_CALLOC, nullptr, totloop);
 
   CustomData_to_bmeshpoly(fdata, ldata, totloop);
 
@@ -271,8 +266,6 @@ static void convert_mfaces_to_mpolys(ID *id,
 
   *r_totpoly = totpoly;
   *r_totloop = totloop;
-  *r_mpoly = mpoly;
-  *r_mloop = mloop;
 
 #undef ME_FGON
 }
@@ -287,12 +280,10 @@ void BKE_mesh_convert_mfaces_to_mpolys(Mesh *mesh)
                            mesh->totface,
                            mesh->totloop,
                            mesh->totpoly,
-                           mesh->medge,
-                           mesh->mface,
+                           blender::bke::mesh_edges_for_write(*mesh).data(),
+                           (MFace *)CustomData_get_layer(&mesh->fdata, CD_MFACE),
                            &mesh->totloop,
-                           &mesh->totpoly,
-                           &mesh->mloop,
-                           &mesh->mpoly);
+                           &mesh->totpoly);
 
   BKE_mesh_update_customdata_pointers(mesh, true);
 }
@@ -346,12 +337,10 @@ void BKE_mesh_do_versions_convert_mfaces_to_mpolys(Mesh *mesh)
                            mesh->totface,
                            mesh->totloop,
                            mesh->totpoly,
-                           mesh->medge,
-                           mesh->mface,
+                           blender::bke::mesh_edges_for_write(*mesh).data(),
+                           (MFace *)CustomData_get_layer(&mesh->fdata, CD_MFACE),
                            &mesh->totloop,
-                           &mesh->totpoly,
-                           &mesh->mloop,
-                           &mesh->mpoly);
+                           &mesh->totpoly);
 
   CustomData_bmesh_do_versions_update_active_layers(&mesh->fdata, &mesh->ldata);
 
@@ -785,7 +774,7 @@ void BKE_mesh_tessface_calc(Mesh *mesh)
   mesh->totface = mesh_tessface_calc(&mesh->fdata,
                                      &mesh->ldata,
                                      &mesh->pdata,
-                                     mesh->mvert,
+                                     BKE_mesh_vertices_for_write(mesh),
                                      mesh->totface,
                                      mesh->totloop,
                                      mesh->totpoly);
@@ -887,7 +876,7 @@ void BKE_mesh_legacy_convert_hide_layers_to_flags(Mesh *mesh)
   using namespace blender::bke;
   const AttributeAccessor attributes = mesh_attributes(*mesh);
 
-  MutableSpan<MVert> vertices(mesh->mvert, mesh->totvert);
+  MutableSpan<MVert> vertices = mesh_vertices_for_write(*mesh);
   const VArray<bool> hide_vert = attributes.lookup_or_default<bool>(
       ".hide_vert", ATTR_DOMAIN_POINT, false);
   threading::parallel_for(vertices.index_range(), 4096, [&](IndexRange range) {
@@ -896,7 +885,7 @@ void BKE_mesh_legacy_convert_hide_layers_to_flags(Mesh *mesh)
     }
   });
 
-  MutableSpan<MEdge> edges(mesh->medge, mesh->totedge);
+  MutableSpan<MEdge> edges = mesh_edges_for_write(*mesh);
   const VArray<bool> hide_edge = attributes.lookup_or_default<bool>(
       ".hide_edge", ATTR_DOMAIN_EDGE, false);
   threading::parallel_for(edges.index_range(), 4096, [&](IndexRange range) {
@@ -905,7 +894,7 @@ void BKE_mesh_legacy_convert_hide_layers_to_flags(Mesh *mesh)
     }
   });
 
-  MutableSpan<MPoly> polygons(mesh->mpoly, mesh->totpoly);
+  MutableSpan<MPoly> polygons = mesh_polygons_for_write(*mesh);
   const VArray<bool> hide_face = attributes.lookup_or_default<bool>(
       ".hide_face", ATTR_DOMAIN_FACE, false);
   threading::parallel_for(polygons.index_range(), 4096, [&](IndexRange range) {
@@ -921,7 +910,7 @@ void BKE_mesh_legacy_convert_flags_to_hide_layers(Mesh *mesh)
   using namespace blender::bke;
   MutableAttributeAccessor attributes = mesh_attributes_for_write(*mesh);
 
-  const Span<MVert> vertices(mesh->mvert, mesh->totvert);
+  const Span<MVert> vertices = mesh_vertices(*mesh);
   if (std::any_of(vertices.begin(), vertices.end(), [](const MVert &vert) {
         return vert.flag & ME_HIDE;
       })) {
@@ -935,7 +924,7 @@ void BKE_mesh_legacy_convert_flags_to_hide_layers(Mesh *mesh)
     hide_vert.finish();
   }
 
-  const Span<MEdge> edges(mesh->medge, mesh->totedge);
+  const Span<MEdge> edges = mesh_edges(*mesh);
   if (std::any_of(
           edges.begin(), edges.end(), [](const MEdge &edge) { return edge.flag & ME_HIDE; })) {
     SpanAttributeWriter<bool> hide_edge = attributes.lookup_or_add_for_write_only_span<bool>(
@@ -948,7 +937,7 @@ void BKE_mesh_legacy_convert_flags_to_hide_layers(Mesh *mesh)
     hide_edge.finish();
   }
 
-  const Span<MPoly> polygons(mesh->mpoly, mesh->totpoly);
+  const Span<MPoly> polygons = mesh_polygons(*mesh);
   if (std::any_of(polygons.begin(), polygons.end(), [](const MPoly &poly) {
         return poly.flag & ME_HIDE;
       })) {

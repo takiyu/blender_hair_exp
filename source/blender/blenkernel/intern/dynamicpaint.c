@@ -1811,7 +1811,7 @@ static void dynamicPaint_applySurfaceDisplace(DynamicPaintSurface *surface, Mesh
 
   /* displace paint */
   if (surface->type == MOD_DPAINT_SURFACE_T_DISPLACE) {
-    MVert *mvert = BKE_mesh_vertices(result);
+    MVert *mvert = BKE_mesh_vertices_for_write(result);
 
     DynamicPaintModifierApplyData data = {
         .surface = surface,
@@ -2010,7 +2010,7 @@ static Mesh *dynamicPaint_Modifier_apply(DynamicPaintModifierData *pmd, Object *
           }
           /* wave simulation */
           else if (surface->type == MOD_DPAINT_SURFACE_T_WAVE) {
-            MVert *mvert = BKE_mesh_vertices(result);
+            MVert *mvert = BKE_mesh_vertices_for_write(result);
 
             DynamicPaintModifierApplyData data = {
                 .surface = surface,

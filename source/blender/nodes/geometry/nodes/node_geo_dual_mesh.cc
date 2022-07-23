@@ -921,6 +921,11 @@ static void calc_dual_mesh(GeometrySet &geometry_set,
                       bke::mesh_attributes(mesh_in),
                       bke::mesh_attributes_for_write(*mesh_out));
 
+  MutableSpan<MVert> dst_vertices = bke::mesh_vertices_for_write(*mesh_out);
+  MutableSpan<MEdge> dst_edges = bke::mesh_edges_for_write(*mesh_out);
+  MutableSpan<MPoly> dst_polygons = bke::mesh_polygons_for_write(*mesh_out);
+  MutableSpan<MLoop> dst_loops = bke::mesh_loops_for_write(*mesh_out);
+
   int loop_start = 0;
   for (const int i : IndexRange(mesh_out->totpoly)) {
     dst_polygons[i].loopstart = loop_start;

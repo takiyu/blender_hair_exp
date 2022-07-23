@@ -597,10 +597,10 @@ void SCULPT_visibility_sync_all_vertex_to_face_sets(SculptSession *ss)
 {
   if (BKE_pbvh_type(ss->pbvh) == PBVH_FACES) {
     for (int i = 0; i < ss->totfaces; i++) {
-      MPoly *poly = &ss->mpoly[i];
+      const MPoly *poly = &ss->mpoly[i];
       bool poly_visible = true;
       for (int l = 0; l < poly->totloop; l++) {
-        MLoop *loop = &ss->mloop[poly->loopstart + l];
+        const MLoop *loop = &ss->mloop[poly->loopstart + l];
         if (!SCULPT_vertex_visible_get(ss, (int)loop->v)) {
           poly_visible = false;
         }
@@ -641,9 +641,9 @@ static bool sculpt_check_unique_face_set_for_edge_in_base_mesh(SculptSession *ss
   MeshElemMap *vert_map = &ss->pmap[v1];
   int p1 = -1, p2 = -1;
   for (int i = 0; i < ss->pmap[v1].count; i++) {
-    MPoly *p = &ss->mpoly[vert_map->indices[i]];
+    const MPoly *p = &ss->mpoly[vert_map->indices[i]];
     for (int l = 0; l < p->totloop; l++) {
-      MLoop *loop = &ss->mloop[p->loopstart + l];
+      const MLoop *loop = &ss->mloop[p->loopstart + l];
       if (loop->v == v2) {
         if (p1 == -1) {
           p1 = vert_map->indices[i];

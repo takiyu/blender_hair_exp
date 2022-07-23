@@ -671,7 +671,7 @@ static float *sculpt_expand_diagonals_falloff_create(Object *ob, const int v)
     int v_next;
     BLI_gsqueue_pop(queue, &v_next);
     for (int j = 0; j < ss->pmap[v_next].count; j++) {
-      MPoly *p = &ss->mpoly[ss->pmap[v_next].indices[j]];
+      const MPoly *p = &ss->mpoly[ss->pmap[v_next].indices[j]];
       for (int l = 0; l < p->totloop; l++) {
         const int neighbor_v = loops[p->loopstart + l].v;
         if (BLI_BITMAP_TEST(visited_vertices, neighbor_v)) {

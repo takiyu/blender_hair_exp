@@ -74,7 +74,6 @@ static CLG_LogRef LOG = {"bke.mesh_convert"};
 void BKE_mesh_from_metaball(ListBase *lb, Mesh *me)
 {
   DispList *dl;
-  MVert *mvert;
   MLoop *mloop, *allloop;
   MPoly *mpoly;
   int a, *index;
@@ -85,7 +84,7 @@ void BKE_mesh_from_metaball(ListBase *lb, Mesh *me)
   }
 
   if (dl->type == DL_INDEX4) {
-    mvert = (MVert *)CustomData_add_layer(&me->vdata, CD_MVERT, CD_CALLOC, nullptr, dl->nr);
+    CustomData_add_layer(&me->vdata, CD_MVERT, CD_CALLOC, nullptr, dl->nr);
     allloop = mloop = (MLoop *)CustomData_add_layer(
         &me->ldata, CD_MLOOP, CD_CALLOC, nullptr, dl->parts * 4);
     mpoly = (MPoly *)CustomData_add_layer(&me->pdata, CD_MPOLY, CD_CALLOC, nullptr, dl->parts);

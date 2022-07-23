@@ -372,11 +372,12 @@ template<typename T>
 static VectorSet<int> vert_indices_from_edges(const Mesh &mesh, const Span<T> edge_indices)
 {
   static_assert(is_same_any_v<T, int, int64_t>);
+  const Span<MEdge> edges = bke::mesh_edges(mesh);
 
   VectorSet<int> vert_indices;
   vert_indices.reserve(edge_indices.size());
   for (const T i_edge : edge_indices) {
-    const MEdge &edge = mesh.medge[i_edge];
+    const MEdge &edge = edges[i_edge];
     vert_indices.add(edge.v1);
     vert_indices.add(edge.v2);
   }

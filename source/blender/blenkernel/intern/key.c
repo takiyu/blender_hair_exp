@@ -1257,7 +1257,7 @@ static void do_key(const int start,
 
 static float *get_weights_array(Object *ob, char *vgroup, WeightsArrayCache *cache)
 {
-  MDeformVert *dvert = NULL;
+  const MDeformVert *dvert = NULL;
   BMEditMesh *em = NULL;
   BMIter iter;
   BMVert *eve;
@@ -1601,8 +1601,9 @@ float *BKE_key_evaluate_object_ex(
     switch (GS(obdata->name)) {
       case ID_ME: {
         Mesh *mesh = (Mesh *)obdata;
+        MVert *vertices = BKE_mesh_vertices_for_write(mesh);
         const int totvert = min_ii(tot, mesh->totvert);
-        keyblock_data_convert_to_mesh((const float(*)[3])out, mesh->mvert, totvert);
+        keyblock_data_convert_to_mesh((const float(*)[3])out, vertices, totvert);
         break;
       }
       case ID_LT: {

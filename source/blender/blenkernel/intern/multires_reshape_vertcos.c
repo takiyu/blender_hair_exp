@@ -53,7 +53,7 @@ static void multires_reshape_vertcos_foreach_vertex(const SubdivForeachContext *
                                                              grid_coord.grid_index);
 
   const Mesh *base_mesh = reshape_context->base_mesh;
-  const MPoly *base_poly = &base_mesh->mpoly[face_index];
+  const MPoly *base_poly = &reshape_context->base_polygons[face_index];
   const int num_corners = base_poly->totloop;
   const int start_grid_index = reshape_context->face_start_grid_index[face_index];
   const int corner = grid_coord.grid_index - start_grid_index;

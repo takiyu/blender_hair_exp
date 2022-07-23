@@ -5,6 +5,7 @@
  * \ingroup bke
  */
 
+#include "BKE_mesh.h"
 #include "BKE_subdiv_ccg.h"
 
 #include "MEM_guardedalloc.h"

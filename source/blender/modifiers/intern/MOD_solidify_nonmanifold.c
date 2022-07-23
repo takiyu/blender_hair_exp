@@ -137,10 +137,10 @@ Mesh *MOD_solidify_nonmanifold_modifyMesh(ModifierData *md,
   Mesh *result;
   const SolidifyModifierData *smd = (SolidifyModifierData *)md;
 
-  MVert *mv, *mvert, *orig_mvert;
-  MEdge *ed, *medge, *orig_medge;
-  MLoop *ml, *mloop, *orig_mloop;
-  MPoly *mp, *mpoly, *orig_mpoly;
+  MVert *mv, *mvert;
+  MEdge *ed, *medge;
+  MLoop *ml, *mloop;
+  MPoly *mp, *mpoly;
   const uint verts_num = (uint)mesh->totvert;
   const uint edges_num = (uint)mesh->totedge;
   const uint polys_num = (uint)mesh->totpoly;
@@ -188,10 +188,10 @@ Mesh *MOD_solidify_nonmanifold_modifyMesh(ModifierData *md,
 
   const bool do_flat_faces = dvert && (smd->flag & MOD_SOLIDIFY_NONMANIFOLD_FLAT_FACES);
 
-  orig_mvert = BKE_mesh_vertices(mesh);
-  orig_medge = BKE_mesh_edges(mesh);
-  orig_mloop = BKE_mesh_polygons(mesh);
-  orig_mpoly = BKE_mesh_loops(mesh);
+  const MVert *orig_mvert = BKE_mesh_vertices(mesh);
+  const MEdge *orig_medge = BKE_mesh_edges(mesh);
+  const MPoly *orig_mpoly = BKE_mesh_polygons(mesh);
+  const MLoop *orig_mloop = BKE_mesh_loops(mesh);
 
   uint new_verts_num = 0;
   uint new_edges_num = 0;

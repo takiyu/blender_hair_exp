@@ -64,9 +64,9 @@ typedef struct ShrinkwrapCalcData {
   float (*vertexCos)[3]; /* vertexs being shrinkwraped */
   int numVerts;
 
-  struct MDeformVert *dvert; /* Pointer to mdeform array */
-  int vgroup;                /* Vertex group num */
-  bool invert_vgroup;        /* invert vertex group influence */
+  const struct MDeformVert *dvert; /* Pointer to mdeform array */
+  int vgroup;                      /* Vertex group num */
+  bool invert_vgroup;              /* invert vertex group influence */
 
   struct Mesh *target;                /* mesh we are shrinking to */
   struct SpaceTransform local2target; /* transform to move between local and target space */
@@ -113,7 +113,6 @@ bool BKE_shrinkwrap_init_tree(
   }
 
   data->mesh = mesh;
-  data->edges = BKE_mesh_edges(mesh);
 
   if (shrinkType == MOD_SHRINKWRAP_NEAREST_VERTEX) {
     data->bvh = BKE_bvhtree_from_mesh_get(&data->treeData, mesh, BVHTREE_FROM_VERTS, 2);
@@ -1370,7 +1369,7 @@ void shrinkwrapModifier_deform(ShrinkwrapModifierData *smd,
                                struct Scene *scene,
                                Object *ob,
                                Mesh *mesh,
-                               MDeformVert *dvert,
+                               const MDeformVert *dvert,
                                const int defgrp_index,
                                float (*vertexCos)[3],
                                int numVerts)

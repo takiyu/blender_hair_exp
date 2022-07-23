@@ -367,6 +367,7 @@ static Mesh *doOcean(ModifierData *md, const ModifierEvalContext *ctx, Mesh *mes
   cfra_for_cache -= omd->bakestart; /* shift to 0 based */
 
   MVert *vertices = BKE_mesh_vertices_for_write(result);
+  MPoly *polygons = BKE_mesh_polygons_for_write(result);
 
   /* add vcols before displacement - allows lookup based on position */
 
@@ -385,10 +386,9 @@ static Mesh *doOcean(ModifierData *md, const ModifierEvalContext *ctx, Mesh *mes
       }
 
       if (mloopcols) { /* unlikely to fail */
-        MPoly *mpolys = result->mpoly;
         MPoly *mp;
 
-        for (i = 0, mp = mpolys; i < polys_num; i++, mp++) {
+        for (i = 0, mp = polygons; i < polys_num; i++, mp++) {
           MLoop *ml = &mloops[mp->loopstart];
           MLoopCol *mlcol = &mloopcols[mp->loopstart];
 

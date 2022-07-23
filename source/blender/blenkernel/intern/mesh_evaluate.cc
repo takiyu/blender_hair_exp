@@ -400,7 +400,6 @@ void BKE_mesh_poly_edgebitmap_insert(uint *edge_bitmap, const MPoly *mp, const M
 
 bool BKE_mesh_center_median(const Mesh *me, float r_cent[3])
 {
-  int i = me->totvert;
   const Span<MVert> vertices = blender::bke::mesh_vertices(*me);
   zero_v3(r_cent);
   for (const MVert &vert : vertices) {
@@ -747,9 +746,8 @@ void BKE_mesh_flush_hidden_from_verts(Mesh *me)
     return;
   }
   const VArraySpan<bool> hide_vert_span{hide_vert};
-  const Span<MEdge> edges(me->medge, me->totedge);
-  const Span<MPoly> polys(me->mpoly, me->totpoly);
-  const Span<MLoop> loops(me->mloop, me->totloop);
+  const Span<MEdge> edges = mesh_edges(*me);
+  const Span<MPoly> polys = mesh_polygons(*me);
 
   /* Hide edges when either of their vertices are hidden. */
   SpanAttributeWriter<bool> hide_edge = attributes.lookup_or_add_for_write_only_span<bool>(
@@ -786,8 +784,8 @@ void BKE_mesh_flush_hidden_from_polys(Mesh *me)
     return;
   }
   const VArraySpan<bool> hide_face_span{hide_face};
-  const Span<MPoly> polys(me->mpoly, me->totpoly);
-  const Span<MLoop> loops(me->mloop, me->totloop);
+  const Span<MPoly> polys = mesh_polygons(*me);
+  const Span<MLoop> loops = mesh_loops(*me);
   SpanAttributeWriter<bool> hide_vert = attributes.lookup_or_add_for_write_only_span<bool>(
       ".hide_vert", ATTR_DOMAIN_POINT);
   SpanAttributeWriter<bool> hide_edge = attributes.lookup_or_add_for_write_only_span<bool>(
@@ -857,8 +855,13 @@ void BKE_mesh_flush_select_from_polys_ex(MVert *mvert,
 }
 void BKE_mesh_flush_select_from_polys(Mesh *me)
 {
-  BKE_mesh_flush_select_from_polys_ex(
-      me->mvert, me->totvert, me->mloop, me->medge, me->totedge, me->mpoly, me->totpoly);
+  BKE_mesh_flush_select_from_polys_ex(blender::bke::mesh_vertices_for_write(*me).data(),
+                                      me->totvert,
+                                      blender::bke::mesh_loops(*me).data(),
+                                      blender::bke::mesh_edges_for_write(*me).data(),
+                                      me->totedge,
+                                      blender::bke::mesh_polygons(*me).data(),
+                                      me->totpoly);
 }
 
 static void mesh_flush_select_from_verts(const Span<MVert> verts,
@@ -904,12 +907,12 @@ void BKE_mesh_flush_select_from_verts(Mesh *me)
 {
   const blender::bke::AttributeAccessor attributes = blender::bke::mesh_attributes(*me);
   mesh_flush_select_from_verts(
-      {me->mvert, me->totvert},
-      {me->mloop, me->totloop},
+      blender::bke::mesh_vertices(*me),
+      blender::bke::mesh_loops(*me),
       attributes.lookup_or_default<bool>(".hide_edge", ATTR_DOMAIN_EDGE, false),
       attributes.lookup_or_default<bool>(".hide_face", ATTR_DOMAIN_FACE, false),
-      {me->medge, me->totedge},
-      {me->mpoly, me->totpoly});
+      blender::bke::mesh_edges_for_write(*me),
+      blender::bke::mesh_polygons_for_write(*me));
 }
 
 /** \} */

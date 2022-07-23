@@ -60,6 +60,8 @@
 #  include "usd.h"
 #endif
 
+using blender::Span;
+
 static void initData(ModifierData *md)
 {
   MeshSeqCacheModifierData *mcmd = reinterpret_cast<MeshSeqCacheModifierData *>(md);

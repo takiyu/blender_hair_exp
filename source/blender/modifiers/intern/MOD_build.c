@@ -62,7 +62,8 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, struct
   int *vertMap, *edgeMap, *faceMap;
   float frac;
   MPoly *mpoly_dst;
-  MLoop *ml_dst, *ml_src /*, *mloop_dst */;
+  MLoop *ml_dst;
+  const MLoop *ml_src;
   GHashIterator gh_iter;
   /* maps vert indices in old mesh to indices in new mesh */
   GHash *vertHash = BLI_ghash_int_new("build ve apply gh");
@@ -242,7 +243,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, struct
   /* copy the faces across, remapping indices */
   k = 0;
   for (i = 0; i < faces_dst_num; i++) {
-    MPoly *source;
+    const MPoly *source;
     MPoly *dest;
 
     source = mpoly_src + faceMap[i];

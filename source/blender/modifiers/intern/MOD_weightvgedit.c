@@ -27,6 +27,7 @@
 #include "BKE_context.h"
 #include "BKE_deform.h"
 #include "BKE_lib_query.h"
+#include "BKE_mesh.h"
 #include "BKE_modifier.h"
 #include "BKE_screen.h"
 #include "BKE_texture.h" /* Texture masking. */
@@ -158,7 +159,6 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
 
   WeightVGEditModifierData *wmd = (WeightVGEditModifierData *)md;
 
-  MDeformVert *dvert = NULL;
   MDeformWeight **dw = NULL;
   float *org_w; /* Array original weights. */
   float *new_w; /* Array new weights. */

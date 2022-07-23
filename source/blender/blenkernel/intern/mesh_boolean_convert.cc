@@ -160,7 +160,7 @@ const MPoly *MeshesToIMeshInfo::input_mpoly_for_orig_index(int orig_index,
   int orig_mesh_index = input_mesh_for_imesh_face(orig_index);
   BLI_assert(0 <= orig_mesh_index && orig_mesh_index < meshes.size());
   const Mesh *me = meshes[orig_mesh_index];
-  MutableSpan<MPoly> polygons = bke::mesh_polygons_for_write(*me);
+  const Span<MPoly> polygons = bke::mesh_polygons(*me);
   int index_in_mesh = orig_index - mesh_poly_offset[orig_mesh_index];
   BLI_assert(0 <= index_in_mesh && index_in_mesh < me->totpoly);
   const MPoly *mp = &polygons[index_in_mesh];
@@ -207,7 +207,7 @@ const MEdge *MeshesToIMeshInfo::input_medge_for_orig_index(int orig_index,
   int orig_mesh_index = input_mesh_for_imesh_edge(orig_index);
   BLI_assert(0 <= orig_mesh_index && orig_mesh_index < meshes.size());
   const Mesh *me = meshes[orig_mesh_index];
-  const Span<MEdge> edges = blender::bke::mesh_edges(*mesh);
+  const Span<MEdge> edges = blender::bke::mesh_edges(*me);
   int index_in_mesh = orig_index - mesh_edge_offset[orig_mesh_index];
   BLI_assert(0 <= index_in_mesh && index_in_mesh < me->totedge);
   const MEdge *medge = &edges[index_in_mesh];
@@ -307,8 +307,8 @@ static IMesh meshes_to_imesh(Span<const Mesh *> meshes,
 
     Vector<Vert *> verts(me->totvert);
     const Span<MVert> vertices = bke::mesh_vertices(*me);
-    const Span<MPoly> polygons = bke::mesh_polygons(*mesh);
-    const Span<MLoop> loops = bke::mesh_loops(*mesh);
+    const Span<MPoly> polygons = bke::mesh_polygons(*me);
+    const Span<MLoop> loops = bke::mesh_loops(*me);
 
     /* Allocate verts
      * Skip the matrix multiplication for each point when there is no transform for a mesh,
@@ -503,7 +503,7 @@ static int fill_orig_loops(const Face *f,
   }
   int orig_me_vert_offset = mim.mesh_vert_offset[orig_me_index];
   int first_orig_v_in_orig_me = first_orig_v - orig_me_vert_offset;
-  BLI_assert(0 <= first_orig_v_in_orig_me && first_orig_v_in_orig_me < orig_verts_num);
+  BLI_assert(0 <= first_orig_v_in_orig_me && first_orig_v_in_orig_me < orig_me->totvert);
   /* Assume all vertices in an mpoly are unique. */
   int offset = -1;
   for (const int i : orig_loops.index_range()) {
@@ -523,7 +523,7 @@ static int fill_orig_loops(const Face *f,
     int fv_orig = f->vert[mp_loop_index]->orig;
     if (fv_orig != NO_INDEX) {
       fv_orig -= orig_me_vert_offset;
-      if (fv_orig < 0 || fv_orig >= orig_verts_num) {
+      if (fv_orig < 0 || fv_orig >= orig_me->totvert) {
         fv_orig = NO_INDEX;
       }
     }
@@ -533,7 +533,7 @@ static int fill_orig_loops(const Face *f,
       int fvnext_orig = f->vert[(mp_loop_index + 1) % orig_mplen]->orig;
       if (fvnext_orig != NO_INDEX) {
         fvnext_orig -= orig_me_vert_offset;
-        if (fvnext_orig < 0 || fvnext_orig >= orig_verts_num) {
+        if (fvnext_orig < 0 || fvnext_orig >= orig_me->totvert) {
           fvnext_orig = NO_INDEX;
         }
       }
@@ -715,7 +715,7 @@ static Mesh *imesh_to_mesh(IMesh *im, MeshesToIMeshInfo &mim)
 
   merge_vertex_loop_poly_customdata_layers(result, mim);
   /* Set the vertex coordinate values and other data. */
-  MutableSpan<MVert> vertices = bke::mesh_vertices_for_write(*mesh);
+  MutableSpan<MVert> vertices = bke::mesh_vertices_for_write(*result);
   for (int vi : im->vert_index_range()) {
     const Vert *v = im->vert(vi);
     MVert *mv = &vertices[vi];
@@ -731,8 +731,8 @@ static Mesh *imesh_to_mesh(IMesh *im, MeshesToIMeshInfo &mim)
   /* Set the loopstart and totloop for each output poly,
    * and set the vertices in the appropriate loops. */
   int cur_loop_index = 0;
-  MutableSpan<MLoop> dst_loops = bke::mesh_loops(*result);
-  MutableSpan<MPoly> dst_polygons = bke::mesh_polygons_for_write(*mesh);
+  MutableSpan<MLoop> dst_loops = bke::mesh_loops_for_write(*result);
+  MutableSpan<MPoly> dst_polygons = bke::mesh_polygons_for_write(*result);
   MLoop *l = dst_loops.data();
   for (int fi : im->face_index_range()) {
     const Face *f = im->face(fi);

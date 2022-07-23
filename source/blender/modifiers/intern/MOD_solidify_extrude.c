@@ -152,10 +152,10 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
   Mesh *result;
   const SolidifyModifierData *smd = (SolidifyModifierData *)md;
 
-  MVert *mv, *mvert, *orig_mvert;
-  MEdge *ed, *medge, *orig_medge;
-  MLoop *ml, *mloop, *orig_mloop;
-  MPoly *mp, *mpoly, *orig_mpoly;
+  MVert *mv, *mvert;
+  MEdge *ed, *medge;
+  MLoop *ml, *mloop;
+  MPoly *mp, *mpoly;
   const uint verts_num = (uint)mesh->totvert;
   const uint edges_num = (uint)mesh->totedge;
   const uint polys_num = (uint)mesh->totpoly;
@@ -215,10 +215,10 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
 
   MOD_get_vgroup(ctx->object, mesh, smd->defgrp_name, &dvert, &defgrp_index);
 
-  orig_mvert = BKE_mesh_vertices(mesh);
-  orig_medge = BKE_mesh_edges(mesh);
-  orig_mloop = BKE_mesh_polygons(mesh);
-  orig_mpoly = BKE_mesh_loops(mesh);
+  const MVert *orig_mvert = BKE_mesh_vertices(mesh);
+  const MEdge *orig_medge = BKE_mesh_edges(mesh);
+  const MPoly *orig_mpoly = BKE_mesh_loops(mesh);
+  const MLoop *orig_mloop = BKE_mesh_polygons(mesh);
 
   if (need_poly_normals) {
     /* calculate only face normals */
@@ -560,7 +560,7 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
       for (i_orig = 0; i_orig < i_end; i_orig++, mv++) {
         const uint i = do_shell_align ? i_orig : new_vert_arr[i_orig];
         if (dvert) {
-          MDeformVert *dv = &dvert[i];
+          const MDeformVert *dv = &dvert[i];
           if (defgrp_invert) {
             ofs_new_vgroup = 1.0f - BKE_defvert_find_weight(dv, defgrp_index);
           }
@@ -611,7 +611,7 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
       for (i_orig = 0; i_orig < i_end; i_orig++, mv++) {
         const uint i = do_shell_align ? i_orig : new_vert_arr[i_orig];
         if (dvert) {
-          MDeformVert *dv = &dvert[i];
+          const MDeformVert *dv = &dvert[i];
           if (defgrp_invert) {
             ofs_new_vgroup = 1.0f - BKE_defvert_find_weight(dv, defgrp_index);
           }
@@ -754,7 +754,7 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
 
     /* vertex group support */
     if (dvert) {
-      MDeformVert *dv = dvert;
+      const MDeformVert *dv = dvert;
       float scalar;
 
       if (defgrp_invert) {
@@ -960,15 +960,15 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
 
   /* Add vertex weights for rim and shell vgroups. */
   if (shell_defgrp_index != -1 || rim_defgrp_index != -1) {
-    dvert = BKE_mesh_deform_verts_for_write(result);
+    const MDeformVert *dst_dvert = BKE_mesh_deform_verts_for_write(result);
 
     /* Ultimate security check. */
-    if (dvert != NULL) {
+    if (dst_dvert != NULL) {
 
       if (rim_defgrp_index != -1) {
         for (uint i = 0; i < rimVerts; i++) {
-          BKE_defvert_ensure_index(&dvert[new_vert_arr[i]], rim_defgrp_index)->weight = 1.0f;
-          BKE_defvert_ensure_index(&dvert[(do_shell ? new_vert_arr[i] : i) + verts_num],
+          BKE_defvert_ensure_index(&dst_dvert[new_vert_arr[i]], rim_defgrp_index)->weight = 1.0f;
+          BKE_defvert_ensure_index(&dst_dvert[(do_shell ? new_vert_arr[i] : i) + verts_num],
                                    rim_defgrp_index)
               ->weight = 1.0f;
         }
@@ -976,7 +976,7 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
 
       if (shell_defgrp_index != -1) {
         for (uint i = verts_num; i < result->totvert; i++) {
-          BKE_defvert_ensure_index(&dvert[i], shell_defgrp_index)->weight = 1.0f;
+          BKE_defvert_ensure_index(&dst_dvert[i], shell_defgrp_index)->weight = 1.0f;
         }
       }
     }

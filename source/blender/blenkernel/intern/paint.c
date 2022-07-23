@@ -1626,7 +1626,7 @@ static void sculpt_update_object(Depsgraph *depsgraph,
   Scene *scene = DEG_get_input_scene(depsgraph);
   Sculpt *sd = scene->toolsettings->sculpt;
   SculptSession *ss = ob->sculpt;
-  const Mesh *me = BKE_object_get_original_mesh(ob);
+  Mesh *me = BKE_object_get_original_mesh(ob);
   MultiresModifierData *mmd = BKE_sculpt_multires_active(scene, ob);
   const bool use_face_sets = (ob->mode & OB_MODE_SCULPT) != 0;
 
@@ -1663,7 +1663,7 @@ static void sculpt_update_object(Depsgraph *depsgraph,
 
     /* These are assigned to the base mesh in Multires. This is needed because Face Sets operators
      * and tools use the Face Sets data from the base mesh when Multires is active. */
-    ss->mvert = BKE_mesh_vertices(me);
+    ss->mvert = BKE_mesh_vertices_for_write(me);
     ss->mpoly = BKE_mesh_polygons(me);
     ss->mloop = BKE_mesh_loops(me);
   }
@@ -2218,7 +2218,7 @@ static PBVH *build_pbvh_from_regular_mesh(Object *ob, Mesh *me_eval_deform, bool
   BKE_pbvh_respect_hide_set(pbvh, respect_hide);
 
   MLoopTri *looptri = MEM_malloc_arrayN(looptris_num, sizeof(*looptri), __func__);
-  const MVert *vertices = BKE_mesh_vertices(me);
+  const MVert *vertices = BKE_mesh_vertices_for_write(me);
   const MPoly *polygons = BKE_mesh_polygons(me);
   const MLoop *loops = BKE_mesh_loops(me);
 

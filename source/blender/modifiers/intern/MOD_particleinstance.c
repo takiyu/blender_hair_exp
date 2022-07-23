@@ -351,7 +351,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
     /* set vertices coordinates */
     for (k = 0; k < totvert; k++) {
       ParticleKey state;
-      MVert *inMV;
+      const MVert *inMV;
       int vindex = p_skip * totvert + k;
       MVert *mv = mvert + vindex;
 
@@ -484,7 +484,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
     /* create polys and loops */
     for (k = 0; k < totpoly; k++) {
 
-      MPoly *inMP = orig_mpoly + k;
+      const MPoly *inMP = orig_mpoly + k;
       MPoly *mp = mpoly + p_skip * totpoly + k;
 
       CustomData_copy_data(&mesh->pdata, &result->pdata, k, p_skip * totpoly + k, 1);
@@ -492,7 +492,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
       mp->loopstart += p_skip * totloop;
 
       {
-        MLoop *inML = orig_mloop + inMP->loopstart;
+        const MLoop *inML = orig_mloop + inMP->loopstart;
         MLoop *ml = mloop + mp->loopstart;
         int j = mp->totloop;
 

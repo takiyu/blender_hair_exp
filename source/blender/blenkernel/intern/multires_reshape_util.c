@@ -152,7 +152,7 @@ bool multires_reshape_context_create_from_base_mesh(MultiresReshapeContext *resh
   reshape_context->mmd = mmd;
 
   reshape_context->base_mesh = base_mesh;
-  reshape_context->base_vertices = BKE_mesh_vertices(base_mesh);
+  reshape_context->base_vertices = BKE_mesh_vertices_for_write(base_mesh);
   reshape_context->base_edges = BKE_mesh_edges(base_mesh);
   reshape_context->base_polygons = BKE_mesh_polygons(base_mesh);
   reshape_context->base_loops = BKE_mesh_loops(base_mesh);
@@ -189,7 +189,7 @@ bool multires_reshape_context_create_from_object(MultiresReshapeContext *reshape
   reshape_context->mmd = mmd;
 
   reshape_context->base_mesh = base_mesh;
-  reshape_context->base_vertices = BKE_mesh_vertices(base_mesh);
+  reshape_context->base_vertices = BKE_mesh_vertices_for_write(base_mesh);
   reshape_context->base_edges = BKE_mesh_edges(base_mesh);
   reshape_context->base_polygons = BKE_mesh_polygons(base_mesh);
   reshape_context->base_loops = BKE_mesh_loops(base_mesh);
@@ -652,7 +652,6 @@ static void foreach_grid_face_coordinate_task(void *__restrict userdata_v,
 
   const MultiresReshapeContext *reshape_context = data->reshape_context;
 
-  const Mesh *base_mesh = data->reshape_context->base_mesh;
   const MPoly *mpoly = reshape_context->base_polygons;
   const int grid_size = data->grid_size;
   const float grid_size_1_inv = 1.0f / (((float)grid_size) - 1.0f);

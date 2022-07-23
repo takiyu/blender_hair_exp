@@ -85,9 +85,11 @@ static VArray<int> construct_vertex_count_gvarray(const MeshComponent &component
     return {};
   }
 
+  const Span<MPoly> polygons = bke::mesh_polygons(*mesh);
+
   return component.attributes()->adapt_domain<int>(
       VArray<int>::ForFunc(mesh->totpoly,
-                           [mesh](const int i) -> float { return mesh->mpoly[i].totloop; }),
+                           [polygons](const int i) -> float { return polygons[i].totloop; }),
       ATTR_DOMAIN_FACE,
       domain);
 }

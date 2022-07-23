@@ -726,7 +726,6 @@ static void duplicate_edges(GeometrySet &geometry_set,
   };
   const MeshComponent &src_component = *geometry_set.get_component_for_read<MeshComponent>();
   const Mesh &mesh = *src_component.get_for_read();
-  const Span<MVert> vertices = bke::mesh_vertices(mesh);
   const Span<MEdge> edges = bke::mesh_edges(mesh);
 
   GeometryComponentFieldContext field_context{src_component, ATTR_DOMAIN_EDGE};
@@ -740,7 +739,6 @@ static void duplicate_edges(GeometrySet &geometry_set,
   Array<int> edge_offsets = accumulate_counts_to_offsets(selection, counts);
 
   Mesh *new_mesh = BKE_mesh_new_nomain(edge_offsets.last() * 2, edge_offsets.last(), 0, 0, 0);
-  MutableSpan<MVert> new_verts = bke::mesh_vertices_for_write(*new_mesh);
   MutableSpan<MEdge> new_edges = bke::mesh_edges_for_write(*new_mesh);
 
   Array<int> vert_orig_indices(edge_offsets.last() * 2);

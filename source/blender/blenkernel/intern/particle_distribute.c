@@ -525,10 +525,11 @@ static void distribute_from_faces_exec(ParticleTask *thread, ParticleData *pa, i
   int i;
   int rng_skip_tot = PSYS_RND_DIST_SKIP; /* count how many rng_* calls won't need skipping */
 
+  MFace *mfaces = (MFace *)CustomData_get_layer(&mesh->fdata, CD_MFACE);
   MFace *mface;
 
   pa->num = i = ctx->index[p];
-  mface = &CustomData_get_layer(&mesh->fdata, CD_MFACE)[i];
+  mface = &mfaces[i];
 
   switch (distr) {
     case PART_DISTR_JIT:
@@ -578,7 +579,8 @@ static void distribute_from_volume_exec(ParticleTask *thread, ParticleData *pa, 
   MVert *mvert = BKE_mesh_vertices_for_write(mesh);
 
   pa->num = i = ctx->index[p];
-  mface = &CustomData_get_layer(&mesh->fdata, CD_MFACE)[i];
+  MFace *mfaces = (MFace *)CustomData_get_layer(&mesh->fdata, CD_MFACE);
+  mface = &mfaces[i];
 
   switch (distr) {
     case PART_DISTR_JIT:
@@ -689,7 +691,8 @@ static void distribute_children_exec(ParticleTask *thread, ChildParticle *cpa, i
     return;
   }
 
-  mf = &CustomData_get_layer(&mesh->fdata, CD_MFACE)[ctx->index[p]];
+  MFace *mfaces = (MFace *)CustomData_get_layer(&mesh->fdata, CD_MFACE);
+  mf = &mfaces[i];
 
   randu = BLI_rng_get_float(thread->rng);
   randv = BLI_rng_get_float(thread->rng);
@@ -1042,8 +1045,9 @@ static int psys_thread_context_init_distribute(ParticleThreadContext *ctx,
 
     orcodata = CustomData_get_layer(&mesh->vdata, CD_ORCO);
 
+    MFace *mfaces = (MFace *)CustomData_get_layer(&mesh->fdata, CD_MFACE);
     for (i = 0; i < totelem; i++) {
-      MFace *mf = &CustomData_get_layer(&mesh->fdata, CD_MFACE)[i];
+      MFace *mf = &mfaces[i];
 
       if (orcodata) {
         /* Transform orcos from normalized 0..1 to object space. */
@@ -1106,8 +1110,9 @@ static int psys_thread_context_init_distribute(ParticleThreadContext *ctx,
       }
     }
     else { /* PART_FROM_FACE / PART_FROM_VOLUME */
+      MFace *mfaces = (MFace *)CustomData_get_layer(&mesh->fdata, CD_MFACE);
       for (i = 0; i < totelem; i++) {
-        MFace *mf = &CustomData_get_layer(&mesh->fdata, CD_MFACE)[i];
+        MFace *mf = &mfaces[i];
         tweight = vweight[mf->v1] + vweight[mf->v2] + vweight[mf->v3];
 
         if (mf->v4) {

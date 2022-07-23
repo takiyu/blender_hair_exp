@@ -23,6 +23,7 @@
 #include "BKE_context.h"
 #include "BKE_deform.h"
 #include "BKE_lib_query.h"
+#include "BKE_mesh.h"
 #include "BKE_modifier.h"
 #include "BKE_screen.h"
 
@@ -81,11 +82,11 @@ static void matrix_from_obj_pchan(float mat[4][4], Object *ob, const char *bonen
 }
 
 typedef struct UVWarpData {
-  MPoly *mpoly;
-  MLoop *mloop;
+  const MPoly *mpoly;
+  const MLoop *mloop;
   MLoopUV *mloopuv;
 
-  MDeformVert *dvert;
+  const MDeformVert *dvert;
   int defgrp_index;
 
   float (*warp_mat)[4];

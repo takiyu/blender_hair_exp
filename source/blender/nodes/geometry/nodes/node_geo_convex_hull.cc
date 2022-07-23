@@ -46,7 +46,7 @@ static Mesh *hull_from_bullet(const Mesh *mesh, Span<float3> coords)
   }
 
   /* Copy vertices. */
-  MutableSpan<MVert> dst_vertices = bke::mesh_vertices_for_write(result);
+  MutableSpan<MVert> dst_vertices = bke::mesh_vertices_for_write(*result);
   for (const int i : IndexRange(verts_num)) {
     float co[3];
     int original_index;
@@ -74,7 +74,7 @@ static Mesh *hull_from_bullet(const Mesh *mesh, Span<float3> coords)
    * to a loop and edges need to be created from that. */
   Array<MLoop> mloop_src(loops_num);
   uint edge_index = 0;
-  MutableSpan<MEdge> edges = bke::mesh_edges_for_write(*mesh);
+  MutableSpan<MEdge> edges = bke::mesh_edges_for_write(*result);
 
   for (const int i : IndexRange(loops_num)) {
     int v_from;
@@ -110,8 +110,8 @@ static Mesh *hull_from_bullet(const Mesh *mesh, Span<float3> coords)
   Array<int> loops;
   int j = 0;
   MutableSpan<MPoly> polygons = bke::mesh_polygons_for_write(*result);
-  MutableSpan<MLoop> loops = bke::mesh_loops_for_write(*result);
-  MLoop *loop = loops.data();
+  MutableSpan<MLoop> mesh_loops = bke::mesh_loops_for_write(*result);
+  MLoop *loop = mesh_loops.data();
 
   for (const int i : IndexRange(faces_num)) {
     const int len = plConvexHullGetFaceSize(hull, i);
@@ -122,7 +122,7 @@ static Mesh *hull_from_bullet(const Mesh *mesh, Span<float3> coords)
     loops.reinitialize(len);
     plConvexHullGetFaceLoops(hull, i, loops.data());
 
-    MPoly &face = result->mpoly[i];
+    MPoly &face = polygons[i];
     face.loopstart = j;
     face.totloop = len;
     for (const int k : IndexRange(len)) {

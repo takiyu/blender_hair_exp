@@ -105,7 +105,7 @@ void shrinkwrapModifier_deform(struct ShrinkwrapModifierData *smd,
                                struct Scene *scene,
                                struct Object *ob,
                                struct Mesh *mesh,
-                               struct MDeformVert *dvert,
+                               const struct MDeformVert *dvert,
                                int defgrp_index,
                                float (*vertexCos)[3],
                                int numVerts);

@@ -53,7 +53,7 @@ static void generate_vert_coordinates(Mesh *mesh,
 
   INIT_MINMAX(min_co, max_co);
 
-  MVert *mv = BKE_mesh_vertices(mesh);
+  const MVert *mv = BKE_mesh_vertices(mesh);
   for (int i = 0; i < mesh->totvert; i++, mv++) {
     copy_v3_v3(r_cos[i], mv->co);
     if (r_size != NULL && ob_center == NULL) {
@@ -117,13 +117,13 @@ static void generate_vert_coordinates(Mesh *mesh,
 
 /* Note this modifies nos_new in-place. */
 static void mix_normals(const float mix_factor,
-                        MDeformVert *dvert,
+                        const MDeformVert *dvert,
                         const int defgrp_index,
                         const bool use_invert_vgroup,
                         const float mix_limit,
                         const short mix_mode,
                         const int verts_num,
-                        MLoop *mloop,
+                        const MLoop *mloop,
                         float (*nos_old)[3],
                         float (*nos_new)[3],
                         const int loops_num)
@@ -175,11 +175,11 @@ static void mix_normals(const float mix_factor,
 static bool polygons_check_flip(MLoop *mloop,
                                 float (*nos)[3],
                                 CustomData *ldata,
-                                MPoly *mpoly,
+                                const MPoly *mpoly,
                                 float (*polynors)[3],
                                 const int polys_num)
 {
-  MPoly *mp;
+  const MPoly *mp;
   MDisps *mdisp = CustomData_get_layer(ldata, CD_MDISPS);
   int i;
   bool flipped = false;
@@ -225,7 +225,7 @@ static void normalEditModifier_do_radial(NormalEditModifierData *enmd,
                                          const int verts_num,
                                          MEdge *medge,
                                          const int edges_num,
-                                         const MLoop *mloop,
+                                         MLoop *mloop,
                                          const int loops_num,
                                          const MPoly *mpoly,
                                          const int polys_num)
@@ -279,7 +279,7 @@ static void normalEditModifier_do_radial(NormalEditModifierData *enmd,
     const float m2 = (b * b) / (a * a);
     const float n2 = (c * c) / (a * a);
 
-    MLoop *ml;
+    const MLoop *ml;
     float(*no)[3];
 
     /* We reuse cos to now store the ellipsoid-normal of the verts! */
@@ -362,7 +362,7 @@ static void normalEditModifier_do_directional(NormalEditModifierData *enmd,
                                               const int verts_num,
                                               MEdge *medge,
                                               const int edges_num,
-                                              const MLoop *mloop,
+                                              MLoop *mloop,
                                               const int loops_num,
                                               const MPoly *mpoly,
                                               const int polys_num)
@@ -515,7 +515,7 @@ static Mesh *normalEditModifier_do(NormalEditModifierData *enmd,
   const MVert *vertices = BKE_mesh_vertices(mesh);
   MEdge *edges = BKE_mesh_edges_for_write(mesh);
   const MPoly *polygons = BKE_mesh_polygons(mesh);
-  const MLoop *loops = BKE_mesh_loops(mesh);
+  MLoop *loops = BKE_mesh_loops_for_write(mesh);
 
   int defgrp_index;
   const MDeformVert *dvert;

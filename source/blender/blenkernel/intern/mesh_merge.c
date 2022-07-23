@@ -44,7 +44,8 @@ static int cddm_poly_compare(const MLoop *mloop_array,
   bool compare_completed = false;
   bool same_loops = false;
 
-  MLoop *mloop_source, *mloop_target;
+  const MLoop *mloop_source;
+  const MLoop *mloop_target;
 
   BLI_assert(ELEM(direct_reverse, 1, -1));
 
@@ -210,7 +211,8 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
 
   const int totvert_final = totvert - tot_vtargetmap;
 
-  MVert *mv, *mvert = MEM_malloc_arrayN(totvert_final, sizeof(*mvert), __func__);
+  const MVert *mv;
+  MVert *mvert = MEM_malloc_arrayN(totvert_final, sizeof(*mvert), __func__);
   int *oldv = MEM_malloc_arrayN(totvert_final, sizeof(*oldv), __func__);
   int *newv = MEM_malloc_arrayN(totvert, sizeof(*newv), __func__);
   STACK_DECLARE(mvert);
@@ -219,13 +221,15 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
   /* NOTE: create (totedge + totloop) elements because partially invalid polys due to merge may
    * require generating new edges, and while in 99% cases we'll still end with less final edges
    * than totedge, cases can be forged that would end requiring more. */
-  MEdge *med, *medge = MEM_malloc_arrayN((totedge + totloop), sizeof(*medge), __func__);
+  const MEdge *med;
+  MEdge *medge = MEM_malloc_arrayN((totedge + totloop), sizeof(*medge), __func__);
   int *olde = MEM_malloc_arrayN((totedge + totloop), sizeof(*olde), __func__);
   int *newe = MEM_malloc_arrayN((totedge + totloop), sizeof(*newe), __func__);
   STACK_DECLARE(medge);
   STACK_DECLARE(olde);
 
-  MLoop *ml, *mloop = MEM_malloc_arrayN(totloop, sizeof(*mloop), __func__);
+  const MLoop *ml;
+  MLoop *mloop = MEM_malloc_arrayN(totloop, sizeof(*mloop), __func__);
   int *oldl = MEM_malloc_arrayN(totloop, sizeof(*oldl), __func__);
 #ifdef USE_LOOPS
   int *newl = MEM_malloc_arrayN(totloop, sizeof(*newl), __func__);
@@ -233,7 +237,8 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
   STACK_DECLARE(mloop);
   STACK_DECLARE(oldl);
 
-  MPoly *mp, *mpoly = MEM_malloc_arrayN(totpoly, sizeof(*medge), __func__);
+  const MPoly *mp;
+  MPoly *mpoly = MEM_malloc_arrayN(totpoly, sizeof(*medge), __func__);
   int *oldp = MEM_malloc_arrayN(totpoly, sizeof(*oldp), __func__);
   STACK_DECLARE(mpoly);
   STACK_DECLARE(oldp);
@@ -570,25 +575,25 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
       mesh, STACK_SIZE(mvert), STACK_SIZE(medge), 0, STACK_SIZE(mloop), STACK_SIZE(mpoly));
 
   /* Update edge indices and copy customdata. */
-  med = medge;
-  for (i = 0; i < result->totedge; i++, med++) {
-    BLI_assert(newv[med->v1] != -1);
-    med->v1 = newv[med->v1];
-    BLI_assert(newv[med->v2] != -1);
-    med->v2 = newv[med->v2];
+  MEdge *new_med = medge;
+  for (i = 0; i < result->totedge; i++, new_med++) {
+    BLI_assert(newv[new_med->v1] != -1);
+    new_med->v1 = newv[new_med->v1];
+    BLI_assert(newv[new_med->v2] != -1);
+    new_med->v2 = newv[new_med->v2];
 
     /* Can happen in case vtargetmap contains some double chains, we do not support that. */
-    BLI_assert(med->v1 != med->v2);
+    BLI_assert(new_med->v1 != new_med->v2);
 
     CustomData_copy_data(&mesh->edata, &result->edata, olde[i], i, 1);
   }
 
   /* Update loop indices and copy customdata. */
-  ml = mloop;
-  for (i = 0; i < result->totloop; i++, ml++) {
+  MLoop *new_ml = mloop;
+  for (i = 0; i < result->totloop; i++, new_ml++) {
     /* Edge remapping has already be done in main loop handling part above. */
     BLI_assert(newv[ml->v] != -1);
-    ml->v = newv[ml->v];
+    new_ml->v = newv[ml->v];
 
     CustomData_copy_data(&mesh->ldata, &result->ldata, oldl[i], i, 1);
   }
@@ -607,16 +612,16 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
 
   /* Copy over data. #CustomData_add_layer can do this, need to look it up. */
   if (STACK_SIZE(mvert)) {
-    memcpy(BKE_mesh_vertices(result), mvert, sizeof(MVert) * STACK_SIZE(mvert));
+    memcpy(BKE_mesh_vertices_for_write(result), mvert, sizeof(MVert) * STACK_SIZE(mvert));
   }
   if (STACK_SIZE(medge)) {
-    memcpy(BKE_mesh_edges(result), medge, sizeof(MEdge) * STACK_SIZE(medge));
+    memcpy(BKE_mesh_edges_for_write(result), medge, sizeof(MEdge) * STACK_SIZE(medge));
   }
   if (STACK_SIZE(mloop)) {
-    memcpy(BKE_mesh_loops(result), mloop, sizeof(MLoop) * STACK_SIZE(mloop));
+    memcpy(BKE_mesh_loops_for_write(result), mloop, sizeof(MLoop) * STACK_SIZE(mloop));
   }
   if (STACK_SIZE(mpoly)) {
-    memcpy(BKE_mesh_polygons(result), mpoly, sizeof(MPoly) * STACK_SIZE(mpoly));
+    memcpy(BKE_mesh_polygons_for_write(result), mpoly, sizeof(MPoly) * STACK_SIZE(mpoly));
   }
 
   MEM_freeN(mvert);

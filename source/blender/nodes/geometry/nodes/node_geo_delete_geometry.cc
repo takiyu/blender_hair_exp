@@ -222,7 +222,12 @@ static void copy_masked_edges_to_new_mesh(const Mesh &src_mesh,
     if (i_dst == -1) {
       continue;
     }
-    dst_edges[i_dst] = src_edges[i_src];
+    const MEdge &e_src = src_edges[i_src];
+    MEdge &e_dst = dst_edges[i_dst];
+
+    e_dst = e_src;
+    e_dst.v1 = vertex_map[e_src.v1];
+    e_dst.v2 = vertex_map[e_src.v2];
   }
 }
 

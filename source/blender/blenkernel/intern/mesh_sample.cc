@@ -21,6 +21,7 @@ BLI_NOINLINE static void sample_point_attribute(const Mesh &mesh,
                                                 const IndexMask mask,
                                                 const MutableSpan<T> data_out)
 {
+  const Span<MLoop> loops = mesh_loops(mesh);
   const Span<MLoopTri> looptris{BKE_mesh_runtime_looptri_ensure(&mesh),
                                 BKE_mesh_runtime_looptri_len(&mesh)};
 
@@ -29,9 +30,9 @@ BLI_NOINLINE static void sample_point_attribute(const Mesh &mesh,
     const MLoopTri &looptri = looptris[looptri_index];
     const float3 &bary_coord = bary_coords[i];
 
-    const int v0_index = mesh.mloop[looptri.tri[0]].v;
-    const int v1_index = mesh.mloop[looptri.tri[1]].v;
-    const int v2_index = mesh.mloop[looptri.tri[2]].v;
+    const int v0_index = loops[looptri.tri[0]].v;
+    const int v1_index = loops[looptri.tri[1]].v;
+    const int v2_index = loops[looptri.tri[2]].v;
 
     const T v0 = data_in[v0_index];
     const T v1 = data_in[v1_index];

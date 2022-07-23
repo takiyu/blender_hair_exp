@@ -951,7 +951,7 @@ static void multires_unsubdivide_prepare_original_bmesh_for_extract(
   context->loop_to_face_map = MEM_calloc_arrayN(original_mesh->totloop, sizeof(int), "loop map");
 
   for (int i = 0; i < original_mesh->totpoly; i++) {
-    MPoly *poly = &original_polygons[i];
+    const MPoly *poly = &original_polygons[i];
     for (int l = 0; l < poly->totloop; l++) {
       int original_loop_index = l + poly->loopstart;
       context->loop_to_face_map[original_loop_index] = i;

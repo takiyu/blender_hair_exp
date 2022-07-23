@@ -263,7 +263,7 @@ void BKE_mesh_foreach_mapped_face_center(
   else {
     const MVert *mvert = BKE_mesh_vertices(mesh);
     const MPoly *mp = BKE_mesh_polygons(mesh);
-    const MPoly *loops = BKE_mesh_loops(mesh);
+    const MLoop *loops = BKE_mesh_loops(mesh);
     const MLoop *ml;
     float _no_buf[3];
     float *no = (flag & MESH_FOREACH_USE_NORMAL) ? _no_buf : NULL;
@@ -306,7 +306,7 @@ void BKE_mesh_foreach_mapped_subdiv_face_center(
 {
   const MVert *vertices = BKE_mesh_vertices(mesh);
   const MPoly *mp = BKE_mesh_polygons(mesh);
-  const MPoly *loops = BKE_mesh_loops(mesh);
+  const MLoop *loops = BKE_mesh_loops(mesh);
   const MLoop *ml;
   const MVert *mv;
   const float(*vert_normals)[3] = (flag & MESH_FOREACH_USE_NORMAL) ?

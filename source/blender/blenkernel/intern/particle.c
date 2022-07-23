@@ -14,7 +14,7 @@
 
 #include "MEM_guardedalloc.h"
 
-// #include "DNA_defaults.h"
+#include "DNA_defaults.h"
 
 #include "DNA_cloth_types.h"
 #include "DNA_collection_types.h"
@@ -72,7 +72,7 @@
 
 #include "RE_texture.h"
 
-// #include "BLO_read_write.h"
+#include "BLO_read_write.h"
 
 #include "particle_private.h"
 
@@ -1853,7 +1853,8 @@ static float psys_interpolate_value_from_verts(
       return values[index];
     case PART_FROM_FACE:
     case PART_FROM_VOLUME: {
-      MFace *mf = &CustomData_get_layer(&mesh->fdata, CD_MFACE)[index];
+      MFace *mfaces = CustomData_get_layer(&mesh->fdata, CD_MFACE);
+      MFace *mf = &mfaces[index];
       return interpolate_particle_value(
           values[mf->v1], values[mf->v2], values[mf->v3], values[mf->v4], fw, mf->v4);
     }
@@ -2145,7 +2146,8 @@ void psys_particle_on_dm(Mesh *mesh_final,
     MTFace *mtface;
     MVert *mvert;
 
-    mface = &CustomData_get_layer(&mesh_final->fdata, CD_MFACE)[mapindex];
+    MFace *mfaces = CustomData_get_layer(&mesh_final->fdata, CD_MFACE);
+    mface = &mfaces[mapindex];
     mvert = BKE_mesh_vertices_for_write(mesh_final);
     mtface = CustomData_get_layer(&mesh_final->fdata, CD_MTFACE);
 
@@ -2636,7 +2638,7 @@ float *psys_cache_vgroup(Mesh *mesh, ParticleSystem *psys, int vgroup)
     /* hair dynamics pinning vgroup */
   }
   else if (psys->vgroup[vgroup]) {
-    MDeformVert *dvert = mesh->dvert;
+    const MDeformVert *dvert = BKE_mesh_deform_verts(mesh);
     if (dvert) {
       int totvert = mesh->totvert, i;
       vg = MEM_callocN(sizeof(float) * totvert, "vg_cache");
@@ -3850,7 +3852,8 @@ static void psys_face_mat(Object *ob, Mesh *mesh, ParticleData *pa, float mat[4]
     return;
   }
 
-  mface = &CustomData_get_layer(&mesh->fdata, CD_MFACE)[i];
+  MFace *mfaces = CustomData_get_layer(&mesh->fdata, CD_MFACE);
+  mface = &mfaces[i];
   const OrigSpaceFace *osface = CustomData_get(&mesh->fdata, i, CD_ORIGSPACE);
 
   if (orco && (orcodata = CustomData_get_layer(&mesh->vdata, CD_ORCO))) {
@@ -4158,15 +4161,12 @@ static int get_particle_uv(Mesh *mesh,
                            float *texco,
                            bool from_vert)
 {
+  MFace *mfaces = (MFace *)CustomData_get_layer(&mesh->fdata, CD_MFACE);
   MFace *mf;
   const MTFace *tf;
   int i;
 
   tf = CustomData_get_layer_named(&mesh->fdata, CD_MTFACE, name);
-
-  if (tf == NULL) {
-    tf = mesh->mtface;
-  }
 
   if (tf == NULL) {
     return 0;
@@ -4189,7 +4189,7 @@ static int get_particle_uv(Mesh *mesh,
   }
   else {
     if (from_vert) {
-      mf = mesh->mface;
+      mf = mfaces;
 
       /* This finds the first face to contain the emitting vertex,
        * this is not ideal, but is mostly fine as UV seams generally
@@ -4202,7 +4202,7 @@ static int get_particle_uv(Mesh *mesh,
       }
     }
     else {
-      mf = &mesh->mface[i];
+      mf = &mfaces[i];
     }
 
     psys_interpolate_uvs(&tf[i], mf->v4, fuv, texco);

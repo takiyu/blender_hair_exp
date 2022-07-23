@@ -214,7 +214,7 @@ static Mesh *uvprojectModifier_do(UVProjectModifierData *umd,
         uint fidx = mp->totloop - 1;
         do {
           uint lidx = mp->loopstart + fidx;
-          uint vidx = mloop[lidx].v;
+          uint vidx = loops[lidx].v;
           BLI_uvproject_from_camera(mloop_uv[lidx].uv, coords[vidx], projectors[0].uci);
         } while (fidx--);
       }
@@ -223,7 +223,7 @@ static Mesh *uvprojectModifier_do(UVProjectModifierData *umd,
         uint fidx = mp->totloop - 1;
         do {
           uint lidx = mp->loopstart + fidx;
-          uint vidx = mloop[lidx].v;
+          uint vidx = loops[lidx].v;
           copy_v2_v2(mloop_uv[lidx].uv, coords[vidx]);
         } while (fidx--);
       }
@@ -237,7 +237,7 @@ static Mesh *uvprojectModifier_do(UVProjectModifierData *umd,
 
       /* get the untransformed face normal */
       BKE_mesh_calc_poly_normal_coords(
-          mp, mloop + mp->loopstart, (const float(*)[3])coords, face_no);
+          mp, loops + mp->loopstart, (const float(*)[3])coords, face_no);
 
       /* find the projector which the face points at most directly
        * (projector normal with largest dot product is best)
@@ -257,7 +257,7 @@ static Mesh *uvprojectModifier_do(UVProjectModifierData *umd,
         uint fidx = mp->totloop - 1;
         do {
           uint lidx = mp->loopstart + fidx;
-          uint vidx = mloop[lidx].v;
+          uint vidx = loops[lidx].v;
           BLI_uvproject_from_camera(mloop_uv[lidx].uv, coords[vidx], best_projector->uci);
         } while (fidx--);
       }
@@ -265,7 +265,7 @@ static Mesh *uvprojectModifier_do(UVProjectModifierData *umd,
         uint fidx = mp->totloop - 1;
         do {
           uint lidx = mp->loopstart + fidx;
-          uint vidx = mloop[lidx].v;
+          uint vidx = loops[lidx].v;
           mul_v2_project_m4_v3(mloop_uv[lidx].uv, best_projector->projmat, coords[vidx]);
         } while (fidx--);
       }

@@ -230,34 +230,34 @@ static Mesh *remesh_voxel_volume_to_mesh(const openvdb::FloatGrid::Ptr level_set
 
   Mesh *mesh = BKE_mesh_new_nomain(
       vertices.size(), 0, 0, quads.size() * 4 + tris.size() * 3, quads.size() + tris.size());
-  MutableSpan<MVert> vertices = blender::bke::mesh_vertices_for_write(*mesh);
-  MutableSpan<MPoly> polygons = blender::bke::mesh_polygons_for_write(*mesh);
-  MutableSpan<MLoop> loops = blender::bke::mesh_loops_for_write(*mesh);
+  MutableSpan<MVert> mesh_vertices = blender::bke::mesh_vertices_for_write(*mesh);
+  MutableSpan<MPoly> mesh_polygons = blender::bke::mesh_polygons_for_write(*mesh);
+  MutableSpan<MLoop> mesh_loops = blender::bke::mesh_loops_for_write(*mesh);
 
-  for (const int i : vertices.index_range()) {
-    copy_v3_v3(vertices[i].co, float3(vertices[i].x(), vertices[i].y(), vertices[i].z()));
+  for (const int i : mesh_vertices.index_range()) {
+    copy_v3_v3(mesh_vertices[i].co, float3(vertices[i].x(), vertices[i].y(), vertices[i].z()));
   }
 
   for (const int i : IndexRange(quads.size())) {
-    MPoly &poly = polygons[i];
+    MPoly &poly = mesh_polygons[i];
     const int loopstart = i * 4;
     poly.loopstart = loopstart;
     poly.totloop = 4;
-    loops[loopstart].v = quads[i][0];
-    loops[loopstart + 1].v = quads[i][3];
-    loops[loopstart + 2].v = quads[i][2];
-    loops[loopstart + 3].v = quads[i][1];
+    mesh_loops[loopstart].v = quads[i][0];
+    mesh_loops[loopstart + 1].v = quads[i][3];
+    mesh_loops[loopstart + 2].v = quads[i][2];
+    mesh_loops[loopstart + 3].v = quads[i][1];
   }
 
   const int triangle_loop_start = quads.size() * 4;
   for (const int i : IndexRange(tris.size())) {
-    MPoly &poly = polygons[quads.size() + i];
+    MPoly &poly = mesh_polygons[quads.size() + i];
     const int loopstart = triangle_loop_start + i * 3;
     poly.loopstart = loopstart;
     poly.totloop = 3;
-    loops[loopstart].v = tris[i][2];
-    loops[loopstart + 1].v = tris[i][1];
-    loops[loopstart + 2].v = tris[i][0];
+    mesh_loops[loopstart].v = tris[i][2];
+    mesh_loops[loopstart + 1].v = tris[i][1];
+    mesh_loops[loopstart + 2].v = tris[i][0];
   }
 
   BKE_mesh_calc_edges(mesh, false, false);

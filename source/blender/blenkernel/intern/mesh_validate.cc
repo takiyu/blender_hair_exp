@@ -1081,7 +1081,7 @@ bool BKE_mesh_validate(Mesh *me, const bool do_verbose, const bool cddata_check_
                            vertices.size(),
                            edges.data(),
                            edges.size(),
-                           me->mface,
+                           (MFace *)CustomData_get_layer(&me->fdata, CD_MFACE),
                            me->totface,
                            loops.data(),
                            loops.size(),
@@ -1135,7 +1135,7 @@ bool BKE_mesh_is_valid(Mesh *me)
       vertices.size(),
       edges.data(),
       edges.size(),
-      me->mface,
+      (MFace *)CustomData_get_layer(&me->fdata, CD_MFACE),
       me->totface,
       loops.data(),
       loops.size(),
@@ -1183,11 +1183,12 @@ void BKE_mesh_strip_loose_faces(Mesh *me)
   /* NOTE: We need to keep this for edge creation (for now?), and some old `readfile.c` code. */
   MFace *f;
   int a, b;
+  MFace *mfaces = (MFace *)CustomData_get_layer(&me->fdata, CD_MFACE);
 
-  for (a = b = 0, f = me->mface; a < me->totface; a++, f++) {
+  for (a = b = 0, f = mfaces; a < me->totface; a++, f++) {
     if (f->v3) {
       if (a != b) {
-        memcpy(&me->mface[b], f, sizeof(me->mface[b]));
+        memcpy(&mfaces[b], f, sizeof(mfaces[b]));
         CustomData_copy_data(&me->fdata, &me->fdata, a, b, 1);
       }
       b++;
@@ -1504,7 +1505,7 @@ void BKE_mesh_calc_edges_legacy(Mesh *me, const bool use_old)
   MutableSpan<MLoop> loops = blender::bke::mesh_loops_for_write(*me);
 
   mesh_calc_edges_mdata(vertices.data(),
-                        me->mface,
+                        (MFace *)CustomData_get_layer(&me->fdata, CD_MFACE),
                         loops.data(),
                         polygons.data(),
                         vertices.size(),
@@ -1549,8 +1550,9 @@ void BKE_mesh_calc_edges_tessface(Mesh *mesh)
 {
   const int numFaces = mesh->totface;
   EdgeSet *eh = BLI_edgeset_new_ex(__func__, BLI_EDGEHASH_SIZE_GUESS_FROM_POLYS(numFaces));
+  MFace *mfaces = (MFace *)CustomData_get_layer(&mesh->fdata, CD_MFACE);
 
-  MFace *mf = mesh->mface;
+  MFace *mf = mfaces;
   for (int i = 0; i < numFaces; i++, mf++) {
     BLI_edgeset_add(eh, mf->v1, mf->v2);
     BLI_edgeset_add(eh, mf->v2, mf->v3);

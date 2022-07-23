@@ -211,14 +211,18 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
   /* Subsurf for eg won't have mesh data in the custom-data arrays.
    * now add mvert/medge/mpoly layers. */
   if (!CustomData_has_layer(&mesh->vdata, CD_MVERT)) {
-    memcpy(BKE_mesh_vertices(result), BKE_mesh_vertices(mesh), sizeof(MVert) * mesh->totvert);
+    memcpy(BKE_mesh_vertices_for_write(result),
+           BKE_mesh_vertices(mesh),
+           sizeof(MVert) * mesh->totvert);
   }
   if (!CustomData_has_layer(&mesh->edata, CD_MEDGE)) {
-    memcpy(BKE_mesh_edges(result), BKE_mesh_edges(mesh), sizeof(MEdge) * mesh->totedge);
+    memcpy(BKE_mesh_edges_for_write(result), BKE_mesh_edges(mesh), sizeof(MEdge) * mesh->totedge);
   }
   if (!CustomData_has_layer(&mesh->pdata, CD_MPOLY)) {
-    memcpy(BKE_mesh_loops(result), BKE_mesh_loops(mesh), sizeof(MLoop) * mesh->totloop);
-    memcpy(BKE_mesh_polygons(result), BKE_mesh_polygons(mesh), sizeof(MPoly) * mesh->totpoly);
+    memcpy(BKE_mesh_loops_for_write(result), BKE_mesh_loops(mesh), sizeof(MLoop) * mesh->totloop);
+    memcpy(BKE_mesh_polygons_for_write(result),
+           BKE_mesh_polygons(mesh),
+           sizeof(MPoly) * mesh->totpoly);
   }
 
   /* Copy custom-data to new geometry,
@@ -237,7 +241,7 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
   }
 
   /* mirror vertex coordinates */
-  mv_prev = BKE_mesh_vertices(result);
+  mv_prev = BKE_mesh_vertices_for_write(result);
   mv = mv_prev + maxVerts;
   for (i = 0; i < maxVerts; i++, mv++, mv_prev++) {
     mul_m4_v3(mtx, mv->co);
@@ -304,15 +308,15 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
   }
 
   /* adjust mirrored edge vertex indices */
-  me = BKE_mesh_edges(result) + maxEdges;
+  me = BKE_mesh_edges_for_write(result) + maxEdges;
   for (i = 0; i < maxEdges; i++, me++) {
     me->v1 += maxVerts;
     me->v2 += maxVerts;
   }
 
   /* adjust mirrored poly loopstart indices, and reverse loop order (normals) */
-  mp = BKE_mesh_polygons(result) + maxPolys;
-  ml = BKE_mesh_loops(result);
+  mp = BKE_mesh_polygons_for_write(result) + maxPolys;
+  ml = BKE_mesh_loops_for_write(result);
   for (i = 0; i < maxPolys; i++, mp++) {
     MLoop *ml2;
     int j, e;
@@ -341,7 +345,7 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
   }
 
   /* adjust mirrored loop vertex and edge indices */
-  ml = BKE_mesh_loops(result) + maxLoops;
+  ml = BKE_mesh_loops_for_write(result) + maxLoops;
   for (i = 0; i < maxLoops; i++, ml++) {
     ml->v += maxVerts;
     ml->e += maxEdges;
