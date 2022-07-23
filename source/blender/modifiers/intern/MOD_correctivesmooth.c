@@ -109,7 +109,7 @@ static void requiredDataMask(Object *UNUSED(ob),
 }
 
 /* check individual weights for changes and cache values */
-static void mesh_get_weights(MDeformVert *dvert,
+static void mesh_get_weights(const MDeformVert *dvert,
                              const int defgrp_index,
                              const uint verts_num,
                              const bool use_invert_vgroup,
@@ -358,7 +358,7 @@ static void smooth_iter(CorrectiveSmoothModifierData *csmd,
 
 static void smooth_verts(CorrectiveSmoothModifierData *csmd,
                          Mesh *mesh,
-                         MDeformVert *dvert,
+                         const MDeformVert *dvert,
                          const int defgrp_index,
                          float (*vertexCos)[3],
                          uint verts_num)

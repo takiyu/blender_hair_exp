@@ -1412,7 +1412,7 @@ typedef struct LineartEdgeNeighbor {
 } LineartEdgeNeighbor;
 
 typedef struct VertData {
-  MVert *mvert;
+  const MVert *mvert;
   LineartVert *v_arr;
   double (*model_view)[4];
   double (*model_view_proj)[4];
@@ -1713,7 +1713,7 @@ static void lineart_identify_mlooptri_feature_edges(void *__restrict userdata,
 typedef struct LooseEdgeData {
   int loose_count;
   int loose_max;
-  MEdge **loose_array;
+  const MEdge **loose_array;
   Mesh *me;
 } LooseEdgeData;
 
@@ -1745,7 +1745,7 @@ static void lineart_join_loose_edge_arr(LooseEdgeData *loose_data, LooseEdgeData
   to_be_joined->loose_array = NULL;
 }
 
-static void lineart_add_loose_edge(LooseEdgeData *loose_data, MEdge *e)
+static void lineart_add_loose_edge(LooseEdgeData *loose_data, const MEdge *e)
 {
   if (loose_data->loose_count >= loose_data->loose_max) {
     int min_amount = MAX2(100, loose_data->loose_count * 2);
@@ -1917,8 +1917,8 @@ static void lineart_load_tri_task(void *__restrict userdata,
 typedef struct EdgeNeighborData {
   LineartEdgeNeighbor *edge_nabr;
   LineartAdjacentEdge *adj_e;
-  MLoopTri *mlooptri;
-  MLoop *mloop;
+  const MLoopTri *mlooptri;
+  const MLoop *mloop;
 } EdgeNeighborData;
 
 static void lineart_edge_neighbor_init_task(void *__restrict userdata,
@@ -5302,7 +5302,7 @@ static void lineart_gpencil_generate(LineartCache *cache,
         if (eval_ob && eval_ob->type == OB_MESH) {
           int dindex = 0;
           Mesh *me = BKE_object_get_evaluated_mesh(eval_ob);
-          const MDeformVert *dvert = BKE_mesh_deform_verts(me);
+          MDeformVert *dvert = BKE_mesh_deform_verts_for_write(me);
           if (dvert) {
             LISTBASE_FOREACH (bDeformGroup *, db, &me->vertex_group_names) {
               if ((!source_vgname) || strstr(db->name, source_vgname) == db->name) {

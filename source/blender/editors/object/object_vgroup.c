@@ -2039,14 +2039,13 @@ static void vgroup_smooth_subset(Object *ob,
         }
         else {
           int j;
-          const MVert *vertices = BKE_mesh_vertices(me);
           const MEdge *edges = BKE_mesh_edges(me);
 
           /* checked already */
-          BLI_assert(IS_ME_VERT_WRITE(&vertices[i]));
+          BLI_assert(IS_ME_VERT_WRITE(&BKE_mesh_vertices(me)[i]));
 
           for (j = 0; j < emap[i].count; j++) {
-            MEdge *e = &edges[emap[i].indices[j]];
+            const MEdge *e = &edges[emap[i].indices[j]];
             const int i_other = (e->v1 == i ? e->v2 : e->v1);
             if (IS_ME_VERT_READ(i_other)) {
               WEIGHT_ACCUMULATE;
@@ -2363,7 +2362,7 @@ void ED_vgroup_mirror(Object *ob,
                   def_nr)
 
   BMVert *eve, *eve_mirr;
-  MDeformVert *dvert, *dvert_mirr;
+  MDeformVert *dvert_mirr;
   char sel, sel_mirr;
   int *flip_map = NULL, flip_map_len;
   const int def_nr = BKE_object_defgroup_active_index_get(ob) - 1;
@@ -2421,7 +2420,7 @@ void ED_vgroup_mirror(Object *ob,
                 sel_mirr = BM_elem_flag_test(eve_mirr, BM_ELEM_SELECT);
 
                 if ((sel || sel_mirr) && (eve != eve_mirr)) {
-                  dvert = BM_ELEM_CD_GET_VOID_P(eve, cd_dvert_offset);
+                  MDeformVert *dvert = BM_ELEM_CD_GET_VOID_P(eve, cd_dvert_offset);
                   dvert_mirr = BM_ELEM_CD_GET_VOID_P(eve_mirr, cd_dvert_offset);
 
                   VGROUP_MIRR_OP;
@@ -2446,8 +2445,8 @@ void ED_vgroup_mirror(Object *ob,
       const MVert *mv, *mv_mirr;
       int vidx, vidx_mirr;
       const bool use_vert_sel = (me->editflag & ME_EDIT_PAINT_VERT_SEL) != 0;
-      MDeformVert *dvert = BKE_mesh_deform_verts_for_write(me);
-      if (dvert == NULL) {
+      MDeformVert *dverts = BKE_mesh_deform_verts_for_write(me);
+      if (dverts == NULL) {
         goto cleanup;
       }
 
@@ -2471,7 +2470,7 @@ void ED_vgroup_mirror(Object *ob,
                 }
 
                 if (sel || sel_mirr) {
-                  dvert = &dvert[vidx];
+                  MDeformVert *dvert = &dverts[vidx];
                   dvert_mirr = &dvert[vidx_mirr];
 
                   VGROUP_MIRR_OP;
@@ -2525,7 +2524,7 @@ void ED_vgroup_mirror(Object *ob,
             sel_mirr = bp_mirr->f1 & SELECT;
 
             if (sel || sel_mirr) {
-              dvert = &lt->dvert[i1];
+              MDeformVert *dvert = &lt->dvert[i1];
               dvert_mirr = &lt->dvert[i2];
 
               VGROUP_MIRR_OP;

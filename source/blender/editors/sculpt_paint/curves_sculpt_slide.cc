@@ -112,6 +112,8 @@ struct SlideOperationExecutor {
 
   Object *surface_ob_eval_ = nullptr;
   Mesh *surface_eval_ = nullptr;
+  Span<MVert> surface_vertices_eval_;
+  Span<MLoop> surface_loops_eval_;
   Span<MLoopTri> surface_looptris_eval_;
   VArraySpan<float2> surface_uv_map_eval_;
   BVHTreeFromMesh surface_bvh_eval_;
@@ -191,6 +193,8 @@ struct SlideOperationExecutor {
     }
     surface_looptris_eval_ = {BKE_mesh_runtime_looptri_ensure(surface_eval_),
                               BKE_mesh_runtime_looptri_len(surface_eval_)};
+    surface_vertices_eval_ = bke::mesh_vertices(*surface_eval_);
+    surface_loops_eval_ = bke::mesh_loops(*surface_eval_);
     surface_uv_map_eval_ =
         bke::mesh_attributes(*surface_eval_).lookup<float2>(uv_map_name, ATTR_DOMAIN_CORNER);
     if (surface_uv_map_eval_.is_empty()) {
@@ -369,7 +373,7 @@ struct SlideOperationExecutor {
         /* Compute the uv of the new surface position on the evaluated mesh. */
         const MLoopTri &looptri_eval = surface_looptris_eval_[looptri_index_eval];
         const float3 bary_weights_eval = bke::mesh_surface_sample::compute_bary_coord_in_triangle(
-            *surface_eval_, looptri_eval, hit_pos_eval_su);
+            surface_vertices_eval_, surface_loops_eval_, looptri_eval, hit_pos_eval_su);
         const float2 uv = attribute_math::mix3(bary_weights_eval,
                                                surface_uv_map_eval_[looptri_eval.tri[0]],
                                                surface_uv_map_eval_[looptri_eval.tri[1]],

@@ -42,11 +42,9 @@ static VArray<float3> construct_uv_gvarray(const MeshComponent &component,
     return {};
   }
   const Span<MVert> vertices = bke::mesh_vertices(*mesh);
-  const Span<MEdge> edges = bke::mesh_edges(*mesh);
   const Span<MPoly> polygons = bke::mesh_polygons(*mesh);
   const Span<MLoop> loops = bke::mesh_loops(*mesh);
 
-  const int face_num = component.attribute_domain_size(ATTR_DOMAIN_FACE);
   GeometryComponentFieldContext face_context{component, ATTR_DOMAIN_FACE};
   FieldEvaluator face_evaluator{face_context, polygons.size()};
   face_evaluator.add(selection_field);

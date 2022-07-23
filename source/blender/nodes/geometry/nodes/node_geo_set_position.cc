@@ -43,7 +43,7 @@ static void set_computed_position_and_offset(GeometryComponent &component,
               selection.index_range(), grain_size, [&](const IndexRange range) {
                 for (const int i : selection.slice(range)) {
                   const float3 offset = in_offsets[i];
-                  add_v3_v3(mverts[i].co, offset);
+                  add_v3_v3(vertices[i].co, offset);
                 }
               });
         });
@@ -55,7 +55,7 @@ static void set_computed_position_and_offset(GeometryComponent &component,
                   selection.index_range(), grain_size, [&](const IndexRange range) {
                     for (const int i : selection.slice(range)) {
                       const float3 new_position = in_positions[i] + in_offsets[i];
-                      copy_v3_v3(mverts[i].co, new_position);
+                      copy_v3_v3(vertices[i].co, new_position);
                     }
                   });
             });

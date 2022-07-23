@@ -144,8 +144,6 @@ static void interpolate_position_with_interpolation(CurvesGeometry &curves,
 {
   MutableSpan<float3> positions_cu = curves.positions_for_write();
   const int added_curves_num = root_positions_cu.size();
-  const Span<MVert> surface_vertices = bke::mesh_vertices(surface);
-  const Span<MLoop> surface_loops = bke::mesh_loops(surface);
 
   const Span<float2> uv_coords = curves.surface_uv_coords();
 
@@ -243,6 +241,8 @@ void add_curves_on_mesh(CurvesGeometry &curves, const AddCurvesOnMeshInputs &inp
   Vector<float2> used_uvs;
 
   /* Find faces that the passed in uvs belong to. */
+  const Span<MVert> surface_vertices = bke::mesh_vertices(*inputs.surface);
+  const Span<MLoop> surface_loops = bke::mesh_loops(*inputs.surface);
   for (const int i : inputs.uvs.index_range()) {
     const float2 &uv = inputs.uvs[i];
     const ReverseUVSampler::Result result = inputs.reverse_uv_sampler->sample(uv);
@@ -254,9 +254,9 @@ void add_curves_on_mesh(CurvesGeometry &curves, const AddCurvesOnMeshInputs &inp
     looptris.append(&looptri);
     const float3 root_position_su = attribute_math::mix3<float3>(
         result.bary_weights,
-        inputs.surface->mvert[inputs.surface->mloop[looptri.tri[0]].v].co,
-        inputs.surface->mvert[inputs.surface->mloop[looptri.tri[1]].v].co,
-        inputs.surface->mvert[inputs.surface->mloop[looptri.tri[2]].v].co);
+        surface_vertices[surface_loops[looptri.tri[0]].v].co,
+        surface_vertices[surface_loops[looptri.tri[1]].v].co,
+        surface_vertices[surface_loops[looptri.tri[2]].v].co);
     root_positions_cu.append(inputs.transforms->surface_to_curves * root_position_su);
     used_uvs.append(uv);
   }

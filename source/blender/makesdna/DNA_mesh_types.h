@@ -191,12 +191,6 @@ typedef struct Mesh {
   int attributes_active_index;
 
   /**
-   * 2D vector data used for UVs. "UV" data can also be stored as generic attributes in #ldata.
-   * \note This pointer is for convenient access to the #CD_MLOOPUV layer in #ldata.
-   */
-  struct MLoopUV *mloopuv;
-
-  /**
    * Runtime storage of the edit mode mesh. If it exists, it generally has the most up-to-date
    * information about the mesh.
    * \note When the object is available, the preferred access method is #BKE_editmesh_from_object.

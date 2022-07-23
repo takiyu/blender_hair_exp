@@ -216,7 +216,8 @@ static const short add_faces[24] = {
 
 static MFace *get_dface(Mesh *mesh, Mesh *split, int cur, int i, MFace *mf)
 {
-  MFace *df = &split->mface[cur];
+  MFace *mfaces = CustomData_get_layer(&split->fdata, CD_MFACE);
+  MFace *df = &mfaces[cur];
   CustomData_copy_data(&mesh->fdata, &split->fdata, i, cur, 1);
   *df = *mf;
   return df;
@@ -639,7 +640,7 @@ static Mesh *cutEdges(ExplodeModifierData *emd, Mesh *mesh)
 {
   Mesh *split_m;
   MFace *mf = NULL, *df1 = NULL;
-  MFace *mface = mesh->mface;
+  MFace *mface = CustomData_get_layer(&mesh->fdata, CD_MFACE);
   MVert *dupve, *mv;
   EdgeHash *edgehash;
   EdgeHashIterator *ehi;
@@ -775,7 +776,7 @@ static Mesh *cutEdges(ExplodeModifierData *emd, Mesh *mesh)
   curdupface = 0;  //=totface;
   // curdupin=totesplit;
   for (i = 0, fs = facesplit; i < totface; i++, fs++) {
-    mf = &mesh->mface[i];
+    mf = &mface[i];
 
     switch (*fs) {
       case 3:
@@ -879,8 +880,9 @@ static Mesh *cutEdges(ExplodeModifierData *emd, Mesh *mesh)
     curdupface += add_faces[*fs] + 1;
   }
 
+  MFace *split_mface = CustomData_get_layer(&split_m->fdata, CD_MFACE);
   for (i = 0; i < curdupface; i++) {
-    mf = &split_m->mface[i];
+    mf = &split_mface[i];
     BKE_mesh_mface_index_validate(mf, &split_m->fdata, i, ((mf->flag & ME_FACE_SEL) ? 4 : 3));
   }
 
@@ -918,7 +920,7 @@ static Mesh *explodeMesh(ExplodeModifierData *emd,
 
   totface = mesh->totface;
   totvert = mesh->totvert;
-  mface = mesh->mface;
+  mface = CustomData_get_layer(&mesh->fdata, CD_MFACE);
   totpart = psmd->psys->totpart;
 
   sim.depsgraph = ctx->depsgraph;
@@ -987,6 +989,7 @@ static Mesh *explodeMesh(ExplodeModifierData *emd,
 
   psmd->psys->lattice_deform_data = psys_create_lattice_deform_data(&sim);
 
+  const MVert *mesh_vertices = BKE_mesh_vertices(mesh);
   MVert *explode_vertices = BKE_mesh_vertices_for_write(explode);
 
   /* duplicate & displace vertices */
@@ -1040,6 +1043,7 @@ static Mesh *explodeMesh(ExplodeModifierData *emd,
   BLI_edgehashIterator_free(ehi);
 
   /* Map new vertices to faces. */
+  MFace *explode_mface = CustomData_get_layer(&explode->fdata, CD_MFACE);
   for (i = 0, u = 0; i < totface; i++) {
     MFace source;
     int orig_v4;
@@ -1061,8 +1065,8 @@ static Mesh *explodeMesh(ExplodeModifierData *emd,
       pa = NULL;
     }
 
-    source = mesh->mface[i];
-    mf = &explode->mface[u];
+    source = mface[i];
+    mf = &explode_mface[u];
 
     orig_v4 = source.v4;
 

@@ -469,7 +469,7 @@ void MeshImporter::allocate_poly_data(COLLADAFW::Mesh *collada_mesh, Mesh *me)
             &me->ldata, CD_MLOOPUV, CD_DEFAULT, nullptr, me->totloop, uvname.c_str());
       }
       /* activate the first uv map */
-      me->mloopuv = (MLoopUV *)CustomData_get_layer_n(&me->ldata, CD_MLOOPUV, 0);
+      CustomData_set_layer_active(&me->ldata, CD_MLOOPUV, 0);
     }
 
     int totcolset = collada_mesh->getColors().getInputInfosArray().getCount();

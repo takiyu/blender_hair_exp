@@ -150,7 +150,7 @@ typedef struct DisplaceUserdata {
   /*const*/ DisplaceModifierData *dmd;
   struct Scene *scene;
   struct ImagePool *pool;
-  MDeformVert *dvert;
+  const MDeformVert *dvert;
   float weight;
   int defgrp_index;
   int direction;
@@ -170,7 +170,7 @@ static void displaceModifier_do_task(void *__restrict userdata,
 {
   DisplaceUserdata *data = (DisplaceUserdata *)userdata;
   DisplaceModifierData *dmd = data->dmd;
-  MDeformVert *dvert = data->dvert;
+  const MDeformVert *dvert = data->dvert;
   const bool invert_vgroup = (dmd->flag & MOD_DISP_INVERT_VGROUP) != 0;
   float weight = data->weight;
   int defgrp_index = data->defgrp_index;

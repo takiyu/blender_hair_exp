@@ -57,7 +57,7 @@ static void mesh_flip_faces(MeshComponent &component, const Field<bool> &selecti
             using T = decltype(dummy);
             MutableSpan<T> dst_span = attribute.span.typed<T>();
             for (const int j : selection.index_range()) {
-              const MPoly &poly = polys[selection[j]];
+              const MPoly &poly = polygons[selection[j]];
               dst_span.slice(poly.loopstart + 1, poly.totloop - 1).reverse();
             }
           });

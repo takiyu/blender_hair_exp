@@ -587,8 +587,9 @@ static void bvhtree_from_mesh_setup_data(BVHTree *tree,
 
   r_data->vert = vert;
   r_data->edge = edge;
-  r_data->face = face;
+  r_data->polygons = polygons;
   r_data->loop = loop;
+  r_data->face = face;
   r_data->looptri = looptri;
   r_data->vert_normals = vert_normals;
 
@@ -1259,7 +1260,7 @@ BVHTree *BKE_bvhtree_from_mesh_get(struct BVHTreeFromMesh *data,
                                vertices.data(),
                                edges.data(),
                                polygons.data(),
-                               mesh->mface,
+                               (const MFace *)CustomData_get_layer(&mesh->fdata, CD_MFACE),
                                loops.data(),
                                looptri,
                                BKE_mesh_vertex_normals_ensure(mesh),
@@ -1307,12 +1308,18 @@ BVHTree *BKE_bvhtree_from_mesh_get(struct BVHTreeFromMesh *data,
 
     case BVHTREE_FROM_FACES:
       BLI_assert(!(mesh->totface == 0 && mesh->totpoly != 0));
-      const MFace *mfaces = (const MFace *)CustomData_get_layer(&mesh->fdata, CD_MFACE);
       data->tree = bvhtree_from_mesh_faces_create_tree(
-          0.0f, tree_type, 6, vertices.data(), mfaces, mesh->totface, nullptr, -1);
+          0.0f,
+          tree_type,
+          6,
+          vertices.data(),
+          (const MFace *)CustomData_get_layer(&mesh->fdata, CD_MFACE),
+          mesh->totface,
+          nullptr,
+          -1);
       break;
 
-    case BVHTREE_FROM_LOOPTRI_NO_HIDDEN:
+    case BVHTREE_FROM_LOOPTRI_NO_HIDDEN: {
       blender::bke::AttributeAccessor attributes = blender::bke::mesh_attributes(*mesh);
       mask = looptri_no_hidden_map_get(
           polygons.data(),
@@ -1320,49 +1327,50 @@ BVHTree *BKE_bvhtree_from_mesh_get(struct BVHTreeFromMesh *data,
           looptri_len,
           &mask_bits_act_len);
       ATTR_FALLTHROUGH;
+    }
+    case BVHTREE_FROM_LOOPTRI:
+      data->tree = bvhtree_from_mesh_looptri_create_tree(0.0f,
+                                                         tree_type,
+                                                         6,
+                                                         vertices.data(),
+                                                         loops.data(),
+                                                         looptri,
+                                                         looptri_len,
+                                                         mask,
+                                                         mask_bits_act_len);
+      break;
+    case BVHTREE_FROM_EM_VERTS:
+    case BVHTREE_FROM_EM_EDGES:
+    case BVHTREE_FROM_EM_LOOPTRI:
+    case BVHTREE_MAX_ITEM:
+      BLI_assert(false);
+      break;
   }
-  case BVHTREE_FROM_LOOPTRI:
-    data->tree = bvhtree_from_mesh_looptri_create_tree(0.0f,
-                                                       tree_type,
-                                                       6,
-                                                       vertices.data(),
-                                                       loops.data(),
-                                                       looptri,
-                                                       looptri_len,
-                                                       mask,
-                                                       mask_bits_act_len);
-    break;
-  case BVHTREE_FROM_EM_VERTS:
-  case BVHTREE_FROM_EM_EDGES:
-  case BVHTREE_FROM_EM_LOOPTRI:
-  case BVHTREE_MAX_ITEM:
-    BLI_assert(false);
-    break;
-}
 
-if (mask != nullptr) {
-  MEM_freeN(mask);
-}
+  if (mask != nullptr) {
+    MEM_freeN(mask);
+  }
 
-bvhtree_balance(data->tree, lock_started);
+  bvhtree_balance(data->tree, lock_started);
 
-/* Save on cache for later use */
-// printf("BVHTree built and saved on cache\n");
-BLI_assert(data->cached == false);
-data->cached = true;
-bvhcache_insert(*bvh_cache_p, data->tree, bvh_cache_type);
-bvhcache_unlock(*bvh_cache_p, lock_started);
+  /* Save on cache for later use */
+  // printf("BVHTree built and saved on cache\n");
+  BLI_assert(data->cached == false);
+  data->cached = true;
+  bvhcache_insert(*bvh_cache_p, data->tree, bvh_cache_type);
+  bvhcache_unlock(*bvh_cache_p, lock_started);
 
 #ifdef DEBUG
-if (data->tree != nullptr) {
-  if (BLI_bvhtree_get_tree_type(data->tree) != tree_type) {
-    printf(
-        "tree_type %d obtained instead of %d\n", BLI_bvhtree_get_tree_type(data->tree), tree_type);
+  if (data->tree != nullptr) {
+    if (BLI_bvhtree_get_tree_type(data->tree) != tree_type) {
+      printf("tree_type %d obtained instead of %d\n",
+             BLI_bvhtree_get_tree_type(data->tree),
+             tree_type);
+    }
   }
-}
 #endif
 
-return data->tree;
+  return data->tree;
 }
 
 BVHTree *BKE_bvhtree_from_editmesh_get(BVHTreeFromEditMesh *data,

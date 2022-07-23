@@ -97,7 +97,7 @@ static BVHTree *bvhtree_build_from_cloth(ClothModifierData *clmd, float epsilon)
     }
   }
   else {
-    MEdge *edges = cloth->edges;
+    const MEdge *edges = cloth->edges;
 
     for (int i = 0; i < cloth->primitive_num; i++) {
       float co[2][3];
@@ -177,7 +177,7 @@ void bvhtree_update_from_cloth(ClothModifierData *clmd, bool moving, bool self)
   }
   else {
     if (verts) {
-      MEdge *edges = cloth->edges;
+      const MEdge *edges = cloth->edges;
 
       for (i = 0; i < cloth->primitive_num; i++) {
         float co[2][3];

@@ -881,8 +881,7 @@ Mesh *USDMeshReader::read_mesh(Mesh *existing_mesh,
         existing_mesh, positions_.size(), 0, 0, face_indices_.size(), face_counts_.size());
 
     for (pxr::TfToken token : uv_tokens) {
-      void *cd_ptr = add_customdata_cb(active_mesh, token.GetText(), CD_MLOOPUV);
-      active_mesh->mloopuv = static_cast<MLoopUV *>(cd_ptr);
+      add_customdata_cb(active_mesh, token.GetText(), CD_MLOOPUV);
     }
   }
 

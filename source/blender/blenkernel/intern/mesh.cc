@@ -220,7 +220,8 @@ static void mesh_blend_write(BlendWriter *writer, ID *id, const void *id_address
   Vector<CustomDataLayer, 16> poly_layers;
 
   /* cache only - don't write */
-  mesh->mface = nullptr;
+  // TODO: Reenable. */
+  // mesh->mface = nullptr;
   mesh->totface = 0;
   memset(&mesh->fdata, 0, sizeof(mesh->fdata));
   mesh->runtime = blender::dna::shallow_zero_initialize();
@@ -278,13 +279,10 @@ static void mesh_blend_read_data(BlendDataReader *reader, ID *id)
   Mesh *mesh = (Mesh *)id;
   BLO_read_pointer_array(reader, (void **)&mesh->mat);
 
-  BLO_read_data_address(reader, &mesh->mface);
   BLO_read_data_address(reader, &mesh->tface);
-  BLO_read_data_address(reader, &mesh->mtface);
   /* Read mcol for compatibility with old files. */
   BLO_read_data_address(reader, &mesh->mcol);
 
-  BLO_read_data_address(reader, &mesh->mloopuv);
   BLO_read_data_address(reader, &mesh->mselect);
 
   /* animdata */
@@ -293,7 +291,8 @@ static void mesh_blend_read_data(BlendDataReader *reader, ID *id)
 
   /* Normally BKE_defvert_blend_read should be called in CustomData_blend_read,
    * but for backwards compatibility in do_versions to work we do it here. */
-  BKE_defvert_blend_read(reader, mesh->totvert, mesh->dvert);
+  // TODO: Reenable.
+  // BKE_defvert_blend_read(reader, mesh->totvert, mesh->dvert);
   BLO_read_list(reader, &mesh->vertex_group_names);
 
   CustomData_blend_read(reader, &mesh->vdata, mesh->totvert);
@@ -870,8 +869,6 @@ static void mesh_update_linked_customdata(Mesh *me, const bool do_ensure_tess_cd
 void BKE_mesh_update_customdata_pointers(Mesh *me, const bool do_ensure_tess_cd)
 {
   mesh_update_linked_customdata(me, do_ensure_tess_cd);
-
-  me->mloopuv = (MLoopUV *)CustomData_get_layer(&me->ldata, CD_MLOOPUV);
 }
 
 bool BKE_mesh_has_custom_loop_normals(Mesh *me)
@@ -1635,25 +1632,24 @@ void BKE_mesh_do_versions_cd_flag_init(Mesh *mesh)
     return;
   }
 
-  MVert *mv;
-  MEdge *med;
-  int i;
+  const Span<MVert> vertices = blender::bke::mesh_vertices(*mesh);
+  const Span<MEdge> edges = blender::bke::mesh_edges(*mesh);
 
-  for (mv = mesh->mvert, i = 0; i < mesh->totvert; mv++, i++) {
-    if (mv->bweight != 0) {
+  for (const MVert &vert : vertices) {
+    if (vert.bweight != 0) {
       mesh->cd_flag |= ME_CDFLAG_VERT_BWEIGHT;
       break;
     }
   }
 
-  for (med = mesh->medge, i = 0; i < mesh->totedge; med++, i++) {
-    if (med->bweight != 0) {
+  for (const MEdge &edge : edges) {
+    if (edge.bweight != 0) {
       mesh->cd_flag |= ME_CDFLAG_EDGE_BWEIGHT;
       if (mesh->cd_flag & ME_CDFLAG_EDGE_CREASE) {
         break;
       }
     }
-    if (med->crease != 0) {
+    if (edge.crease != 0) {
       mesh->cd_flag |= ME_CDFLAG_EDGE_CREASE;
       if (mesh->cd_flag & ME_CDFLAG_EDGE_BWEIGHT) {
         break;

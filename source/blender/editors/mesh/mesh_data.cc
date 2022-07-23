@@ -283,9 +283,13 @@ int ED_mesh_uv_add(
       return -1;
     }
 
-    if (me->mloopuv && do_init) {
-      CustomData_add_layer_named(
-          &me->ldata, CD_MLOOPUV, CD_DUPLICATE, me->mloopuv, me->totloop, name);
+    if (CustomData_has_layer(&me->ldata, CD_MLOOPUV) && do_init) {
+      CustomData_add_layer_named(&me->ldata,
+                                 CD_MLOOPUV,
+                                 CD_DUPLICATE,
+                                 CustomData_get_layer(&me->ldata, CD_MLOOPUV),
+                                 me->totloop,
+                                 name);
       is_init = true;
     }
     else {
@@ -1132,8 +1136,7 @@ static void mesh_add_verts(Mesh *mesh, int len)
 static void mesh_add_edges(Mesh *mesh, int len)
 {
   CustomData edata;
-  MEdge *medge;
-  int i, totedge;
+  int totedge;
 
   if (len == 0) {
     return;

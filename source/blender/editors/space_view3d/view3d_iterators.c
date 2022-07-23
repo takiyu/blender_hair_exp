@@ -268,7 +268,7 @@ static void meshobject_foreachScreenVert__mapFunc(void *userData,
   if (data->hide_vert && data->hide_vert[index]) {
     return;
   }
-  struct MVert *mv = &((Mesh *)(data->vc.obact->data))->mvert[index];
+  MVert *mv = &data->vertices[index];
 
   float screen_co[2];
 

@@ -11,6 +11,7 @@
 #include "BLI_task.hh"
 
 #include "BKE_material.h"
+#include "BKE_mesh.h"
 
 namespace blender::nodes::node_geo_material_selection_cc {
 
@@ -25,7 +26,8 @@ static void select_mesh_by_material(const Mesh &mesh,
                                     const IndexMask mask,
                                     const MutableSpan<bool> r_selection)
 {
-  BLI_assert(mesh.totpoly >= r_selection.size());
+  const Span<MPoly> polygons = bke::mesh_polygons(mesh);
+  BLI_assert(polygons.size() >= r_selection.size());
   Vector<int> material_indices;
   for (const int i : IndexRange(mesh.totcol)) {
     if (mesh.mat[i] == material) {
@@ -35,7 +37,7 @@ static void select_mesh_by_material(const Mesh &mesh,
   threading::parallel_for(mask.index_range(), 1024, [&](IndexRange range) {
     for (const int i : range) {
       const int face_index = mask[i];
-      r_selection[i] = material_indices.contains(mesh.mpoly[face_index].mat_nr);
+      r_selection[i] = material_indices.contains(polygons[face_index].mat_nr);
     }
   });
 }

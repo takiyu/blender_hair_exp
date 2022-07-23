@@ -322,11 +322,11 @@ static void data_transfer_dtdata_type_postprocess(Object *UNUSED(ob_src),
     /* Bake edited destination loop normals into custom normals again. */
     const MVert *verts_dst = BKE_mesh_vertices(me_dst);
     const int num_verts_dst = me_dst->totvert;
-    const MEdge *edges_dst = BKE_mesh_edges(me_dst);
+    MEdge *edges_dst = BKE_mesh_edges_for_write(me_dst);
     const int num_edges_dst = me_dst->totedge;
-    const MPoly *polys_dst = BKE_mesh_polygons(me_dst);
+    MPoly *polys_dst = BKE_mesh_polygons_for_write(me_dst);
     const int num_polys_dst = me_dst->totpoly;
-    const MLoop *loops_dst = BKE_mesh_loops(me_dst);
+    MLoop *loops_dst = BKE_mesh_loops_for_write(me_dst);
     const int num_loops_dst = me_dst->totloop;
     CustomData *ldata_dst = &me_dst->ldata;
 

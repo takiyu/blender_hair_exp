@@ -99,8 +99,8 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, struct
 
   /* if there's at least one face, build based on faces */
   if (faces_dst_num) {
-    MPoly *mpoly, *mp;
-    MLoop *ml, *mloop;
+    const MPoly *mpoly, *mp;
+    const MLoop *ml, *mloop;
     uintptr_t hash_num, hash_num_alt;
 
     if (bmd->flag & MOD_BUILD_FLAG_RANDOMIZE) {
@@ -135,7 +135,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, struct
     hash_num = 0;
     hash_num_alt = 0;
     for (i = 0; i < edge_src_num; i++, hash_num_alt++) {
-      MEdge *me = medge_src + i;
+      const MEdge *me = medge_src + i;
 
       if (BLI_ghash_haskey(vertHash, POINTER_FROM_INT(me->v1)) &&
           BLI_ghash_haskey(vertHash, POINTER_FROM_INT(me->v2))) {
@@ -147,7 +147,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, struct
     BLI_assert(hash_num == BLI_ghash_len(edgeHash));
   }
   else if (edges_dst_num) {
-    MEdge *medge, *me;
+    const MEdge *medge, *me;
     uintptr_t hash_num;
 
     if (bmd->flag & MOD_BUILD_FLAG_RANDOMIZE) {

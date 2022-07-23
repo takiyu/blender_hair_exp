@@ -308,7 +308,7 @@ static void mesh_merge_transform(Mesh *result,
 
   /* remap the vertex groups if necessary */
   if (CustomData_has_layer(&result->vdata, CD_MDEFORMVERT)) {
-    MDeformVert *dvert = BKE_mesh_deform_verts_for_write(me);
+    MDeformVert *dvert = BKE_mesh_deform_verts_for_write(result);
     BKE_object_defgroup_index_map_apply(&dvert[cap_verts_index], cap_nverts, remap, remap_len);
   }
 

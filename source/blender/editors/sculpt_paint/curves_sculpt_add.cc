@@ -90,6 +90,8 @@ struct AddOperationExecutor {
 
   Object *surface_ob_eval_ = nullptr;
   Mesh *surface_eval_ = nullptr;
+  Span<MVert> surface_vertices_eval_;
+  Span<MLoop> surface_loops_eval_;
   Span<MLoopTri> surface_looptris_eval_;
   VArraySpan<float2> surface_uv_map_eval_;
   BVHTreeFromMesh surface_bvh_eval_;
@@ -132,6 +134,12 @@ struct AddOperationExecutor {
       return;
     }
     surface_eval_ = BKE_object_get_evaluated_mesh(surface_ob_eval_);
+    surface_vertices_eval_ = bke::mesh_vertices(*surface_eval_);
+    surface_loops_eval_ = bke::mesh_loops(*surface_eval_);
+    surface_looptris_eval_ = {BKE_mesh_runtime_looptri_ensure(surface_eval_),
+                              BKE_mesh_runtime_looptri_len(surface_eval_)};
+    BKE_bvhtree_from_mesh_get(&surface_bvh_eval_, surface_eval_, BVHTREE_FROM_LOOPTRI, 2);
+    BLI_SCOPED_DEFER([&]() { free_bvhtree_from_mesh(&surface_bvh_eval_); });
 
     curves_sculpt_ = ctx_.scene->toolsettings->curves_sculpt;
     brush_ = BKE_paint_brush_for_read(&curves_sculpt_->paint);
@@ -170,12 +178,6 @@ struct AddOperationExecutor {
     const double time = PIL_check_seconds_timer() * 1000000.0;
     /* Use a pointer cast to avoid overflow warnings. */
     RandomNumberGenerator rng{*(uint32_t *)(&time)};
-
-    BKE_bvhtree_from_mesh_get(&surface_bvh_eval_, surface_eval_, BVHTREE_FROM_LOOPTRI, 2);
-    BLI_SCOPED_DEFER([&]() { free_bvhtree_from_mesh(&surface_bvh_eval_); });
-
-    surface_looptris_eval_ = {BKE_mesh_runtime_looptri_ensure(surface_eval_),
-                              BKE_mesh_runtime_looptri_len(surface_eval_)};
 
     /* Sample points on the surface using one of multiple strategies. */
     Vector<float2> sampled_uvs;
@@ -283,7 +285,7 @@ struct AddOperationExecutor {
     const MLoopTri &looptri = surface_looptris_eval_[looptri_index];
     const float3 brush_pos_su = ray_hit.co;
     const float3 bary_coords = bke::mesh_surface_sample::compute_bary_coord_in_triangle(
-        *surface_eval_, looptri, brush_pos_su);
+        surface_vertices_eval_, surface_loops_eval_, looptri, brush_pos_su);
 
     const float2 uv = bke::mesh_surface_sample::sample_corner_attrribute_with_bary_coords(
         bary_coords, looptri, surface_uv_map_eval_);
@@ -408,9 +410,9 @@ struct AddOperationExecutor {
           brush_radius_su,
           [&](const int index, const float3 &UNUSED(co), const float UNUSED(dist_sq)) {
             const MLoopTri &looptri = surface_looptris_eval_[index];
-            const float3 v0_su = surface_eval_->mvert[surface_eval_->mloop[looptri.tri[0]].v].co;
-            const float3 v1_su = surface_eval_->mvert[surface_eval_->mloop[looptri.tri[1]].v].co;
-            const float3 v2_su = surface_eval_->mvert[surface_eval_->mloop[looptri.tri[2]].v].co;
+            const float3 v0_su = surface_vertices_eval_[surface_loops_eval_[looptri.tri[0]].v].co;
+            const float3 v1_su = surface_vertices_eval_[surface_loops_eval_[looptri.tri[1]].v].co;
+            const float3 v2_su = surface_vertices_eval_[surface_loops_eval_[looptri.tri[2]].v].co;
             float3 normal_su;
             normal_tri_v3(normal_su, v0_su, v1_su, v2_su);
             if (math::dot(normal_su, view_direction_su) >= 0.0f) {
