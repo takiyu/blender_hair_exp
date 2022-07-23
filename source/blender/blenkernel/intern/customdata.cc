@@ -2336,7 +2336,7 @@ static CustomData shallow_copy_remove_non_bmesh_attributes(const CustomData &src
 {
   Vector<CustomDataLayer> dst_layers;
   for (const CustomDataLayer &layer : Span<CustomDataLayer>{src.layers, src.totlayer}) {
-    if (attribute_stored_in_bmesh_flag(layer.name)) {
+    if (!attribute_stored_in_bmesh_flag(layer.name)) {
       dst_layers.append(layer);
     }
   }

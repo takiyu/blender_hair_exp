@@ -751,12 +751,12 @@ void BKE_mesh_flush_hidden_from_verts(Mesh *me)
   const Span<MPoly> polys(me->mpoly, me->totpoly);
   const Span<MLoop> loops(me->mloop, me->totloop);
 
-  /* Hide edges when both of their vertices are hidden. */
+  /* Hide edges when either of their vertices are hidden. */
   SpanAttributeWriter<bool> hide_edge = attributes.lookup_or_add_for_write_only_span<bool>(
       ".hide_edge", ATTR_DOMAIN_EDGE);
   for (const int i : edges.index_range()) {
     const MEdge &edge = edges[i];
-    hide_edge.span[i] = hide_vert_span[edge.v1] && hide_vert_span[edge.v2];
+    hide_edge.span[i] = hide_vert_span[edge.v1] || hide_vert_span[edge.v2];
   }
   hide_edge.finish();
 
