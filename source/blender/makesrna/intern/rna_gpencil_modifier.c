@@ -774,7 +774,7 @@ static bool dash_segment_name_exists_fn(void *arg, const char *name)
 {
   const DashGpencilModifierData *dmd = (const DashGpencilModifierData *)arg;
   for (int i = 0; i < dmd->segments_len; i++) {
-    if (STREQ(dmd->segments[i].name, name)) {
+    if (STREQ(dmd->segments[i].name, name) && dmd->segments[i].name != name) {
       return true;
     }
   }
@@ -3268,7 +3268,7 @@ static void rna_def_modifier_gpencillineart(BlenderRNA *brna)
                            "Crease Threshold",
                            "Angles smaller than this will be treated as creases. Crease angle "
                            "priority: object line art crease override > mesh auto smooth angle > "
-                           "line art default crease.");
+                           "line art default crease");
   RNA_def_property_update(prop, NC_SCENE, "rna_GpencilModifier_update");
 
   prop = RNA_def_property(srna, "split_angle", PROP_FLOAT, PROP_ANGLE);
@@ -3452,7 +3452,7 @@ static void rna_def_modifier_gpencillineart(BlenderRNA *brna)
   prop = RNA_def_property(srna, "use_shadow", PROP_BOOLEAN, PROP_NONE);
   RNA_def_property_boolean_sdna(prop, NULL, "edge_types", LRT_EDGE_FLAG_PROJECTED_SHADOW);
   RNA_def_property_ui_text(
-      prop, "Use Shadow", "Project contour lines using a light shource object");
+      prop, "Use Shadow", "Project contour lines using a light source object");
   RNA_def_property_update(prop, 0, "rna_GpencilModifier_update");
 
   prop = RNA_def_property(srna, "shadow_region_filtering", PROP_ENUM, PROP_NONE);
@@ -3464,7 +3464,7 @@ static void rna_def_modifier_gpencillineart(BlenderRNA *brna)
                            "affect cast shadow and light contour since they are at the border");
   RNA_def_property_update(prop, 0, "rna_GpencilModifier_dependency_update");
 
-  prop = RNA_def_property(srna, "shadow_enclosed_shapes", PROP_BOOLEAN, PROP_NONE);
+  prop = RNA_def_property(srna, "use_shadow_enclosed_shapes", PROP_BOOLEAN, PROP_NONE);
   RNA_def_property_boolean_sdna(prop, NULL, "calculation_flags", LRT_SHADOW_ENCLOSED_SHAPES);
   RNA_def_property_ui_text(prop,
                            "Shadow Enclosed Shapes",

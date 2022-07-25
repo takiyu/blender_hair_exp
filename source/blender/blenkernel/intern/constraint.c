@@ -116,7 +116,6 @@ void BKE_constraint_unique_name(bConstraint *con, ListBase *list)
 
 /* ----------------- Evaluation Loop Preparation --------------- */
 
-/* package an object/bone for use in constraint evaluation */
 bConstraintOb *BKE_constraints_make_evalob(
     Depsgraph *depsgraph, Scene *scene, Object *ob, void *subdata, short datatype)
 {
@@ -5845,9 +5844,12 @@ static bConstraint *add_new_constraint(Object *ob,
   return con;
 }
 
-bool BKE_constraint_target_uses_bbone(struct bConstraint *con,
-                                      struct bConstraintTarget *UNUSED(ct))
+bool BKE_constraint_target_uses_bbone(struct bConstraint *con, struct bConstraintTarget *ct)
 {
+  if (ct->flag & CONSTRAINT_TAR_CUSTOM_SPACE) {
+    return false;
+  }
+
   return (con->flag & CONSTRAINT_BBONE_SHAPE) || (con->type == CONSTRAINT_TYPE_ARMATURE);
 }
 
@@ -6260,6 +6262,9 @@ void BKE_constraint_target_matrix_get(struct Depsgraph *depsgraph,
       }
     }
 
+    /* Initialize the custom space for use in calculating the matrices. */
+    BKE_constraint_custom_object_space_init(cob, con);
+
     /* get targets - we only need the first one though (and there should only be one) */
     cti->get_constraint_targets(con, &targets);
 
@@ -6323,33 +6328,23 @@ void BKE_constraint_targets_for_solving_get(struct Depsgraph *depsgraph,
   }
 }
 
-void BKE_constraint_custom_object_space_get(float r_mat[4][4], bConstraint *con)
+void BKE_constraint_custom_object_space_init(bConstraintOb *cob, bConstraint *con)
 {
-  if (!con ||
-      (con->ownspace != CONSTRAINT_SPACE_CUSTOM && con->tarspace != CONSTRAINT_SPACE_CUSTOM)) {
-    return;
-  }
-  bConstraintTarget *ct;
-  ListBase target = {NULL, NULL};
-  SINGLETARGET_GET_TARS(con, con->space_object, con->space_subtarget, ct, &target);
-
-  /* Basically default_get_tarmat but without the unused parameters. */
-  if (VALID_CONS_TARGET(ct)) {
-    constraint_target_to_mat4(ct->tar,
-                              ct->subtarget,
+  if (con && con->space_object && is_custom_space_needed(con)) {
+    /* Basically default_get_tarmat but without the unused parameters. */
+    constraint_target_to_mat4(con->space_object,
+                              con->space_subtarget,
                               NULL,
-                              ct->matrix,
+                              cob->space_obj_world_matrix,
                               CONSTRAINT_SPACE_WORLD,
                               CONSTRAINT_SPACE_WORLD,
                               0,
                               0);
-    copy_m4_m4(r_mat, ct->matrix);
-  }
-  else {
-    unit_m4(r_mat);
+
+    return;
   }
 
-  SINGLETARGET_FLUSH_TARS(con, con->space_object, con->space_subtarget, ct, &target, true);
+  unit_m4(cob->space_obj_world_matrix);
 }
 
 /* ---------- Evaluation ----------- */
@@ -6394,8 +6389,8 @@ void BKE_constraints_solve(struct Depsgraph *depsgraph,
      */
     enf = con->enforce;
 
-    /* Get custom space matrix. */
-    BKE_constraint_custom_object_space_get(cob->space_obj_world_matrix, con);
+    /* Initialize the custom space for use in calculating the matrices. */
+    BKE_constraint_custom_object_space_init(cob, con);
 
     /* make copy of world-space matrix pre-constraint for use with blending later */
     copy_m4_m4(oldmat, cob->matrix);

@@ -693,7 +693,7 @@ class CyclesRenderSettings(bpy.types.PropertyGroup):
     debug_use_compact_bvh: BoolProperty(
         name="Use Compact BVH",
         description="Use compact BVH structure (uses less ram but renders slower)",
-        default=True,
+        default=False,
     )
     debug_bvh_time_steps: IntProperty(
         name="BVH Time Steps",
@@ -1560,7 +1560,7 @@ class CyclesPreferences(bpy.types.AddonPreferences):
                 if sys.platform.startswith("win"):
                     col.label(text="and Windows driver version 101.1660 or newer", icon='BLANK1')
                 elif sys.platform.startswith("linux"):
-                    col.label(text="and Linux driver version xx.xx.20066 or newer", icon='BLANK1')
+                    col.label(text="and Linux driver version xx.xx.23570 or newer", icon='BLANK1')
             elif device_type == 'METAL':
                 col.label(text="Requires Apple Silicon with macOS 12.2 or newer", icon='BLANK1')
                 col.label(text="or AMD with macOS 12.3 or newer", icon='BLANK1')
@@ -1568,11 +1568,12 @@ class CyclesPreferences(bpy.types.AddonPreferences):
 
         for device in devices:
             import unicodedata
-            box.prop(device, "use", text=device.name
-                    .replace('(TM)', unicodedata.lookup('TRADE MARK SIGN'))
-                    .replace('(R)', unicodedata.lookup('REGISTERED SIGN'))
-                    .replace('(C)', unicodedata.lookup('COPYRIGHT SIGN'))
-                    )
+            box.prop(
+                device, "use", text=device.name
+                .replace('(TM)', unicodedata.lookup('TRADE MARK SIGN'))
+                .replace('(R)', unicodedata.lookup('REGISTERED SIGN'))
+                .replace('(C)', unicodedata.lookup('COPYRIGHT SIGN'))
+            )
 
     def draw_impl(self, layout, context):
         row = layout.row()

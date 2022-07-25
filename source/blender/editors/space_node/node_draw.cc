@@ -940,6 +940,19 @@ static void create_inspection_string_for_geometry(const geo_log::GeometryValueLo
         ss << TIP_("\u2022 Volume") << line_end;
         break;
       }
+      case GEO_COMPONENT_TYPE_EDIT: {
+        if (value_log.edit_data_info.has_value()) {
+          const geo_log::GeometryValueLog::EditDataInfo &edit_info = *value_log.edit_data_info;
+          char line[256];
+          BLI_snprintf(line,
+                       sizeof(line),
+                       TIP_("\u2022 Edit Curves: %s, %s"),
+                       edit_info.has_deformed_positions ? TIP_("positions") : TIP_("no positions"),
+                       edit_info.has_deform_matrices ? TIP_("matrices") : TIP_("no matrices"));
+          ss << line << line_end;
+        }
+        break;
+      }
     }
   }
 
@@ -976,6 +989,9 @@ static void create_inspection_string_for_geometry(const geo_log::GeometryValueLo
       }
       case GEO_COMPONENT_TYPE_VOLUME: {
         ss << TIP_("Volume");
+        break;
+      }
+      case GEO_COMPONENT_TYPE_EDIT: {
         break;
       }
     }
@@ -1700,7 +1716,7 @@ static std::string node_get_execution_time_label(const SpaceNode &snode, const b
 {
   int node_count = 0;
   std::chrono::microseconds exec_time = node_get_execution_time(
-      *snode.nodetree, node, snode, node_count);
+      *snode.edittree, node, snode, node_count);
 
   if (node_count == 0) {
     return std::string("");

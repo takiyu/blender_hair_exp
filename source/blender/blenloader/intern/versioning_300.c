@@ -595,6 +595,39 @@ static bNodeTree *add_realize_node_tree(Main *bmain)
   return node_tree;
 }
 
+static void seq_speed_factor_fix_rna_path(Sequence *seq, ListBase *fcurves)
+{
+  char name_esc[(sizeof(seq->name) - 2) * 2];
+  BLI_str_escape(name_esc, seq->name + 2, sizeof(name_esc));
+  char *path = BLI_sprintfN("sequence_editor.sequences_all[\"%s\"].pitch", name_esc);
+  FCurve *fcu = BKE_fcurve_find(fcurves, path, 0);
+  if (fcu != NULL) {
+    MEM_freeN(fcu->rna_path);
+    fcu->rna_path = BLI_sprintfN("sequence_editor.sequences_all[\"%s\"].speed_factor", name_esc);
+  }
+  MEM_freeN(path);
+}
+
+static bool seq_speed_factor_set(Sequence *seq, void *user_data)
+{
+  const Scene *scene = user_data;
+  if (seq->type == SEQ_TYPE_SOUND_RAM) {
+    /* Move `pitch` animation to `speed_factor` */
+    if (scene->adt && scene->adt->action) {
+      seq_speed_factor_fix_rna_path(seq, &scene->adt->action->curves);
+    }
+    if (scene->adt && !BLI_listbase_is_empty(&scene->adt->drivers)) {
+      seq_speed_factor_fix_rna_path(seq, &scene->adt->drivers);
+    }
+
+    seq->speed_factor = seq->pitch;
+  }
+  else {
+    seq->speed_factor = 1.0f;
+  }
+  return true;
+}
+
 void do_versions_after_linking_300(Main *bmain, ReportList *UNUSED(reports))
 {
   if (MAIN_VERSION_ATLEAST(bmain, 300, 0) && !MAIN_VERSION_ATLEAST(bmain, 300, 1)) {
@@ -819,6 +852,17 @@ void do_versions_after_linking_300(Main *bmain, ReportList *UNUSED(reports))
       }
     }
   }
+
+  if (!MAIN_VERSION_ATLEAST(bmain, 303, 5)) {
+    LISTBASE_FOREACH (Scene *, scene, &bmain->scenes) {
+      Editing *ed = SEQ_editing_get(scene);
+      if (ed == NULL) {
+        continue;
+      }
+      SEQ_for_each_callback(&ed->seqbase, seq_speed_factor_set, scene);
+    }
+  }
+
   /**
    * Versioning code until next subversion bump goes here.
    *
@@ -1232,17 +1276,6 @@ static bool version_merge_still_offsets(Sequence *seq, void *UNUSED(user_data))
   seq->endofs -= seq->endstill;
   seq->startstill = 0;
   seq->endstill = 0;
-  return true;
-}
-
-static bool seq_speed_factor_set(Sequence *seq, void *UNUSED(user_data))
-{
-  if (seq->type == SEQ_TYPE_SOUND_RAM) {
-    seq->speed_factor = seq->pitch;
-  }
-  else {
-    seq->speed_factor = 1.0f;
-  }
   return true;
 }
 
@@ -1984,7 +2017,7 @@ void blo_do_versions_300(FileData *fd, Library *UNUSED(lib), Main *bmain)
   /* Font names were copied directly into ID names, see: T90417. */
   if (!MAIN_VERSION_ATLEAST(bmain, 300, 16)) {
     ListBase *lb = which_libbase(bmain, ID_VF);
-    BKE_main_id_repair_duplicate_names_listbase(lb);
+    BKE_main_id_repair_duplicate_names_listbase(bmain, lb);
   }
 
   if (!MAIN_VERSION_ATLEAST(bmain, 300, 17)) {
@@ -3164,6 +3197,17 @@ void blo_do_versions_300(FileData *fd, Library *UNUSED(lib), Main *bmain)
         }
       }
     }
+
+    LISTBASE_FOREACH (Scene *, scene, &bmain->scenes) {
+      ToolSettings *tool_settings = scene->toolsettings;
+      /* Zero isn't a valid value, use for versioning. */
+      if (tool_settings->snap_face_nearest_steps == 0) {
+        /* Minimum of snap steps for face nearest is 1. */
+        tool_settings->snap_face_nearest_steps = 1;
+        /* Set snap to edited and non-edited as default. */
+        tool_settings->snap_flag |= SCE_SNAP_TO_INCLUDE_EDITED | SCE_SNAP_TO_INCLUDE_NONEDITED;
+      }
+    }
   }
 
   if (!MAIN_VERSION_ATLEAST(bmain, 303, 4)) {
@@ -3212,14 +3256,6 @@ void blo_do_versions_300(FileData *fd, Library *UNUSED(lib), Main *bmain)
         }
       }
     }
-
-    LISTBASE_FOREACH (Scene *, scene, &bmain->scenes) {
-      Editing *ed = SEQ_editing_get(scene);
-      if (ed == NULL) {
-        continue;
-      }
-      SEQ_for_each_callback(&ed->seqbase, seq_speed_factor_set, NULL);
-    }
   }
   /**
    * Versioning code until next subversion bump goes here.
@@ -3232,5 +3268,21 @@ void blo_do_versions_300(FileData *fd, Library *UNUSED(lib), Main *bmain)
    */
   {
     /* Keep this block, even when empty. */
+
+    /* Initialize brush curves sculpt settings. */
+    LISTBASE_FOREACH (Brush *, brush, &bmain->brushes) {
+      if (brush->ob_mode != OB_MODE_SCULPT_CURVES) {
+        continue;
+      }
+      brush->curves_sculpt_settings->density_add_attempts = 100;
+    }
+
+    /* Disable 'show_bounds' option of curve objects. Option was set as there was no object mode
+     * outline implementation. See T95933. */
+    LISTBASE_FOREACH (Object *, ob, &bmain->objects) {
+      if (ob->type == OB_CURVES) {
+        ob->dtx &= ~OB_DRAWBOUNDOX;
+      }
+    }
   }
 }

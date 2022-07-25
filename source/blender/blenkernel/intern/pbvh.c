@@ -1316,9 +1316,14 @@ static void pbvh_update_draw_buffer_cb(void *__restrict userdata,
 
   if (node->flag & PBVH_RebuildDrawBuffers) {
     switch (pbvh->type) {
-      case PBVH_GRIDS:
-        node->draw_buffers = GPU_pbvh_grid_buffers_build(node->totprim, pbvh->grid_hidden);
+      case PBVH_GRIDS: {
+        bool smooth = node->totprim > 0 ?
+                          pbvh->grid_flag_mats[node->prim_indices[0]].flag & ME_SMOOTH :
+                          false;
+
+        node->draw_buffers = GPU_pbvh_grid_buffers_build(node->totprim, pbvh->grid_hidden, smooth);
         break;
+      }
       case PBVH_FACES:
         node->draw_buffers = GPU_pbvh_mesh_buffers_build(
             pbvh->mpoly,
@@ -2419,7 +2424,7 @@ static bool pbvh_grids_node_raycast(PBVH *pbvh,
             madd_v3_v3v3fl(location, ray_start, ray_normal, *depth);
 
             const int x_it[4] = {0, 1, 1, 0};
-            const int y_it[4] = {0, 0, 1, 1};
+            const int y_it[4] = {1, 1, 0, 0};
 
             for (int j = 0; j < 4; j++) {
               /* Always assign nearest_vertex_co in the first iteration to avoid comparison against

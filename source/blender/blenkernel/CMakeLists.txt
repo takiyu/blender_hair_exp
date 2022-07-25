@@ -88,7 +88,7 @@ set(SRC
   intern/blendfile_link_append.c
   intern/boids.c
   intern/bpath.c
-  intern/brush.c
+  intern/brush.cc
   intern/bvhutils.cc
   intern/cachefile.c
   intern/callbacks.c
@@ -101,7 +101,7 @@ set(SRC
   intern/colortools.c
   intern/constraint.c
   intern/context.c
-  intern/crazyspace.c
+  intern/crazyspace.cc
   intern/cryptomatte.cc
   intern/curve.cc
   intern/curve_bevel.c
@@ -140,6 +140,7 @@ set(SRC
   intern/geometry_cache.cc
   intern/geometry_component_curve.cc
   intern/geometry_component_curves.cc
+  intern/geometry_component_edit_data.cc
   intern/geometry_component_instances.cc
   intern/geometry_component_mesh.cc
   intern/geometry_component_pointcloud.cc
@@ -187,6 +188,7 @@ set(SRC
   intern/linestyle.c
   intern/main.c
   intern/main_idmap.c
+  intern/main_namemap.cc
   intern/mask.c
   intern/mask_evaluate.c
   intern/mask_rasterize.c
@@ -201,6 +203,7 @@ set(SRC
   intern/mesh_evaluate.cc
   intern/mesh_fair.cc
   intern/mesh_iterators.c
+  intern/mesh_legacy_convert.cc
   intern/mesh_mapping.c
   intern/mesh_merge.c
   intern/mesh_merge_customdata.cc
@@ -327,7 +330,7 @@ set(SRC
   BKE_asset_library.h
   BKE_asset_library.hh
   BKE_attribute.h
-  BKE_attribute_access.hh
+  BKE_attribute.hh
   BKE_attribute_math.hh
   BKE_autoexec.h
   BKE_blender.h
@@ -354,6 +357,7 @@ set(SRC
   BKE_constraint.h
   BKE_context.h
   BKE_crazyspace.h
+  BKE_crazyspace.hh
   BKE_cryptomatte.h
   BKE_cryptomatte.hh
   BKE_curve.h
@@ -416,6 +420,7 @@ set(SRC
   BKE_linestyle.h
   BKE_main.h
   BKE_main_idmap.h
+  BKE_main_namemap.h
   BKE_mask.h
   BKE_material.h
   BKE_mball.h
@@ -424,6 +429,7 @@ set(SRC
   BKE_mesh_boolean_convert.hh
   BKE_mesh_fair.h
   BKE_mesh_iterators.h
+  BKE_mesh_legacy_convert.h
   BKE_mesh_mapping.h
   BKE_mesh_mirror.h
   BKE_mesh_remap.h
