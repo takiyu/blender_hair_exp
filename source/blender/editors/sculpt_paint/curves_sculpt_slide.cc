@@ -168,8 +168,10 @@ struct SlideOperationExecutor {
 
     surface_ob_orig_ = curves_id_orig_->surface;
     surface_orig_ = static_cast<Mesh *>(surface_ob_orig_->data);
-    surface_looptris_orig_ = {BKE_mesh_runtime_looptri_ensure(surface_orig_),
-                              BKE_mesh_runtime_looptri_len(surface_orig_)};
+    if (surface_orig_->totpoly == 0) {
+      report_empty_original_surface(stroke_extension.reports);
+      return;
+    }
     surface_uv_map_orig_ =
         bke::mesh_attributes(*surface_orig_).lookup<float2>(uv_map_name, ATTR_DOMAIN_CORNER);
     if (surface_uv_map_orig_.is_empty()) {
@@ -195,6 +197,11 @@ struct SlideOperationExecutor {
                               BKE_mesh_runtime_looptri_len(surface_eval_)};
     surface_vertices_eval_ = bke::mesh_vertices(*surface_eval_);
     surface_loops_eval_ = bke::mesh_loops(*surface_eval_);
+    if (surface_eval_->totpoly == 0) {
+      report_empty_evaluated_surface(stroke_extension.reports);
+      return;
+    }
+
     surface_uv_map_eval_ =
         bke::mesh_attributes(*surface_eval_).lookup<float2>(uv_map_name, ATTR_DOMAIN_CORNER);
     if (surface_uv_map_eval_.is_empty()) {

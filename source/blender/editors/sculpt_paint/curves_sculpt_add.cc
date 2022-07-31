@@ -128,6 +128,10 @@ struct AddOperationExecutor {
 
     Object &surface_ob_orig = *curves_id_orig_->surface;
     Mesh &surface_orig = *static_cast<Mesh *>(surface_ob_orig.data);
+    if (surface_orig.totpoly == 0) {
+      report_empty_original_surface(stroke_extension.reports);
+      return;
+    }
 
     surface_ob_eval_ = DEG_get_evaluated_object(ctx_.depsgraph, &surface_ob_orig);
     if (surface_ob_eval_ == nullptr) {
@@ -140,6 +144,10 @@ struct AddOperationExecutor {
                               BKE_mesh_runtime_looptri_len(surface_eval_)};
     BKE_bvhtree_from_mesh_get(&surface_bvh_eval_, surface_eval_, BVHTREE_FROM_LOOPTRI, 2);
     BLI_SCOPED_DEFER([&]() { free_bvhtree_from_mesh(&surface_bvh_eval_); });
+    if (surface_eval_->totpoly == 0) {
+      report_empty_evaluated_surface(stroke_extension.reports);
+      return;
+    }
 
     curves_sculpt_ = ctx_.scene->toolsettings->curves_sculpt;
     brush_ = BKE_paint_brush_for_read(&curves_sculpt_->paint);
@@ -233,7 +241,12 @@ struct AddOperationExecutor {
       add_inputs.old_roots_kdtree = self_->curve_roots_kdtree_;
     }
 
-    geometry::add_curves_on_mesh(*curves_orig_, add_inputs);
+    const geometry::AddCurvesOnMeshOutputs add_outputs = geometry::add_curves_on_mesh(
+        *curves_orig_, add_inputs);
+
+    if (add_outputs.uv_error) {
+      report_invalid_uv_map(stroke_extension.reports);
+    }
 
     DEG_id_tag_update(&curves_id_orig_->id, ID_RECALC_GEOMETRY);
     WM_main_add_notifier(NC_GEOM | ND_DATA, &curves_id_orig_->id);

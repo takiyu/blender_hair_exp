@@ -183,6 +183,7 @@ Mesh *create_line_mesh(const float3 start, const float3 delta, const int count)
   MutableSpan<MEdge> edges = bke::mesh_edges_for_write(*mesh);
 
   threading::parallel_invoke(
+      1024 < count,
       [&]() {
         threading::parallel_for(vertices.index_range(), 4096, [&](IndexRange range) {
           for (const int i : range) {
