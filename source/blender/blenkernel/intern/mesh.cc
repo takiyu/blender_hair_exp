@@ -279,8 +279,14 @@ static void mesh_blend_read_data(BlendDataReader *reader, ID *id)
   Mesh *mesh = (Mesh *)id;
   BLO_read_pointer_array(reader, (void **)&mesh->mat);
 
+  /* Deprecated pointers to custom data layers are read here for backward compatibility
+   * with files where these were owning pointers rather than a view into custom data. */
+  BLO_read_data_address(reader, &mesh->mvert);
+  BLO_read_data_address(reader, &mesh->medge);
+  BLO_read_data_address(reader, &mesh->mface);
+  BLO_read_data_address(reader, &mesh->mtface);
+  BLO_read_data_address(reader, &mesh->dvert);
   BLO_read_data_address(reader, &mesh->tface);
-  /* Read mcol for compatibility with old files. */
   BLO_read_data_address(reader, &mesh->mcol);
 
   BLO_read_data_address(reader, &mesh->mselect);
@@ -291,8 +297,7 @@ static void mesh_blend_read_data(BlendDataReader *reader, ID *id)
 
   /* Normally BKE_defvert_blend_read should be called in CustomData_blend_read,
    * but for backwards compatibility in do_versions to work we do it here. */
-  // TODO: Reenable.
-  // BKE_defvert_blend_read(reader, mesh->totvert, mesh->dvert);
+  BKE_defvert_blend_read(reader, mesh->totvert, mesh->dvert);
   BLO_read_list(reader, &mesh->vertex_group_names);
 
   CustomData_blend_read(reader, &mesh->vdata, mesh->totvert);

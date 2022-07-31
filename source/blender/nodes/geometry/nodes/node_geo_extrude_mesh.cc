@@ -441,9 +441,9 @@ static void extrude_mesh_edges(MeshComponent &component,
               new_poly_range.size(),
               new_loop_range.size());
 
-  MutableSpan<MVert> new_verts = bke::mesh_vertices_for_write(mesh).slice(new_vert_range);
-  MutableSpan<MEdge> connect_edges = bke::mesh_edges_for_write(mesh).slice(connect_edge_range);
-  MutableSpan<MEdge> duplicate_edges = bke::mesh_edges_for_write(mesh).slice(duplicate_edge_range);
+  MutableSpan<MEdge> edges = bke::mesh_edges_for_write(mesh);
+  MutableSpan<MEdge> connect_edges = edges.slice(connect_edge_range);
+  MutableSpan<MEdge> duplicate_edges = edges.slice(duplicate_edge_range);
   MutableSpan<MPoly> polys = bke::mesh_polygons_for_write(mesh);
   MutableSpan<MPoly> new_polys = polys.slice(new_poly_range);
   MutableSpan<MLoop> loops = bke::mesh_loops_for_write(mesh);
@@ -454,7 +454,7 @@ static void extrude_mesh_edges(MeshComponent &component,
   }
 
   for (const int i : duplicate_edges.index_range()) {
-    const MEdge &orig_edge = orig_edges[edge_selection[i]];
+    const MEdge &orig_edge = edges[edge_selection[i]];
     const int i_new_vert_1 = new_vert_indices.index_of(orig_edge.v1);
     const int i_new_vert_2 = new_vert_indices.index_of(orig_edge.v2);
     duplicate_edges[i] = new_edge(new_vert_range[i_new_vert_1], new_vert_range[i_new_vert_2]);
@@ -609,6 +609,7 @@ static void extrude_mesh_edges(MeshComponent &component,
     return true;
   });
 
+  MutableSpan<MVert> new_verts = bke::mesh_vertices_for_write(mesh).slice(new_vert_range);
   if (edge_offsets.is_single()) {
     const float3 offset = edge_offsets.get_internal_single();
     threading::parallel_for(new_verts.index_range(), 1024, [&](const IndexRange range) {

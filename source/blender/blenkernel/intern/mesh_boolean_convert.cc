@@ -187,16 +187,17 @@ const MVert *MeshesToIMeshInfo::input_mvert_for_orig_index(int orig_index,
   int orig_mesh_index = input_mesh_for_imesh_vert(orig_index);
   BLI_assert(0 <= orig_mesh_index && orig_mesh_index < meshes.size());
   const Mesh *me = meshes[orig_mesh_index];
+  const Span<MVert> vertices = bke::mesh_vertices(*me);
   int index_in_mesh = orig_index - mesh_vert_offset[orig_mesh_index];
   BLI_assert(0 <= index_in_mesh && index_in_mesh < me->totvert);
-  const Span<MVert> vertices = bke::mesh_vertices(*me);
+  const MVert *mv = &vertices[index_in_mesh];
   if (r_orig_mesh) {
     *r_orig_mesh = me;
   }
   if (r_index_in_orig_mesh) {
     *r_index_in_orig_mesh = index_in_mesh;
   }
-  return &vertices[index_in_mesh];
+  return mv;
 }
 
 /* Similarly for edges. */
@@ -486,7 +487,7 @@ static int fill_orig_loops(const Face *f,
   if (f->size() != orig_mplen) {
     return 0;
   }
-  BLI_assert(r_orig_loops.size() == orig_loops.size());
+  BLI_assert(r_orig_loops.size() == orig_mplen);
   /* We'll look for the case where the first vertex in f has an original vertex
    * that is the same as one in orig_me (after correcting for offset in mim meshes).
    * Then see that loop and any subsequent ones have the same start and end vertex.
@@ -506,7 +507,7 @@ static int fill_orig_loops(const Face *f,
   BLI_assert(0 <= first_orig_v_in_orig_me && first_orig_v_in_orig_me < orig_me->totvert);
   /* Assume all vertices in an mpoly are unique. */
   int offset = -1;
-  for (const int i : orig_loops.index_range()) {
+  for (int i = 0; i < orig_mplen; ++i) {
     int loop_i = i + orig_mp->loopstart;
     if (orig_loops[loop_i].v == first_orig_v_in_orig_me) {
       offset = i;
@@ -558,13 +559,14 @@ static void get_poly2d_cos(const Mesh *me,
 {
   const Span<MVert> vertices = bke::mesh_vertices(*me);
   const Span<MLoop> loops = bke::mesh_loops(*me);
+  const Span<MLoop> poly_loops = loops.slice(mp->loopstart, mp->totloop);
 
   /* Project coordinates to 2d in cos_2d, using normal as projection axis. */
   float axis_dominant[3];
   BKE_mesh_calc_poly_normal(mp, &loops[mp->loopstart], vertices.data(), axis_dominant);
   axis_dominant_v3_to_m3(r_axis_mat, axis_dominant);
-  for (const int i : loops.index_range()) {
-    float3 co = vertices[loops[i].v].co;
+  for (const int i : poly_loops.index_range()) {
+    float3 co = vertices[poly_loops[i].v].co;
     co = trans_mat * co;
     mul_v2_m3v3(cos_2d[i], r_axis_mat, co);
   }
