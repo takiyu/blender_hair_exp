@@ -692,7 +692,7 @@ static void distribute_children_exec(ParticleTask *thread, ChildParticle *cpa, i
   }
 
   MFace *mfaces = (MFace *)CustomData_get_layer(&mesh->fdata, CD_MFACE);
-  mf = &mfaces[i];
+  mf = &mfaces[ctx->index[p]];
 
   randu = BLI_rng_get_float(thread->rng);
   randv = BLI_rng_get_float(thread->rng);

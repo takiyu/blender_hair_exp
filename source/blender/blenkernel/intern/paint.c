@@ -1908,7 +1908,7 @@ void BKE_sculpt_color_layer_create_if_needed(struct Object *object)
   CustomDataLayer *layer = orig_me->vdata.layers +
                            CustomData_get_layer_index(&orig_me->vdata, CD_PROP_COLOR);
 
-  BKE_mesh_update_customdata_pointers(orig_me, true);
+  BKE_mesh_tessface_clear(orig_me);
 
   BKE_id_attributes_active_color_set(&orig_me->id, layer);
   DEG_id_tag_update(&orig_me->id, ID_RECALC_GEOMETRY_ALL_MODES);
@@ -2218,7 +2218,7 @@ static PBVH *build_pbvh_from_regular_mesh(Object *ob, Mesh *me_eval_deform, bool
   BKE_pbvh_respect_hide_set(pbvh, respect_hide);
 
   MLoopTri *looptri = MEM_malloc_arrayN(looptris_num, sizeof(*looptri), __func__);
-  const MVert *vertices = BKE_mesh_vertices_for_write(me);
+  MVert *vertices = BKE_mesh_vertices_for_write(me);
   const MPoly *polygons = BKE_mesh_polygons(me);
   const MLoop *loops = BKE_mesh_loops(me);
 

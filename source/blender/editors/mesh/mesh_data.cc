@@ -425,7 +425,7 @@ int ED_mesh_color_add(
       CustomData_set_layer_active(&me->ldata, CD_PROP_BYTE_COLOR, layernum);
     }
 
-    BKE_mesh_update_customdata_pointers(me, true);
+    BKE_mesh_tessface_clear(me);
   }
 
   DEG_id_tag_update(&me->id, 0);
@@ -445,7 +445,7 @@ bool ED_mesh_color_ensure(Mesh *me, const char *name)
     layer = me->ldata.layers + CustomData_get_layer_index(&me->ldata, CD_PROP_BYTE_COLOR);
 
     BKE_id_attributes_active_color_set(&me->id, layer);
-    BKE_mesh_update_customdata_pointers(me, true);
+    BKE_mesh_tessface_clear(me);
   }
 
   DEG_id_tag_update(&me->id, 0);
@@ -572,7 +572,7 @@ int ED_mesh_sculpt_color_add(
       CustomData_set_layer_active(&me->vdata, CD_PROP_COLOR, layernum);
     }
 
-    BKE_mesh_update_customdata_pointers(me, true);
+    BKE_mesh_tessface_clear(me);
   }
 
   DEG_id_tag_update(&me->id, 0);

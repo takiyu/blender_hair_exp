@@ -1411,7 +1411,7 @@ void shrinkwrapModifier_deform(ShrinkwrapModifierData *smd,
 
   if (mesh != NULL && smd->shrinkType == MOD_SHRINKWRAP_PROJECT) {
     /* Setup arrays to get vertexs positions, normals and deform weights */
-    calc.vert = BKE_mesh_vertices(mesh);
+    calc.vert = BKE_mesh_vertices_for_write(mesh);
     calc.vert_normals = BKE_mesh_vertex_normals_ensure(mesh);
 
     /* Using vertexs positions/normals as if a subsurface was applied */

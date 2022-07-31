@@ -23,11 +23,8 @@ struct Key;
 struct MCol;
 struct MEdge;
 struct MFace;
-struct MLoop;
 struct MLoopCol;
 struct MLoopTri;
-struct MLoopUV;
-struct MPoly;
 struct MVert;
 struct Material;
 struct Mesh;
@@ -265,14 +262,26 @@ typedef struct Mesh {
   char subdivr DNA_DEPRECATED;
   char subsurftype DNA_DEPRECATED;
 
+  /** Deprecated array of mesh vertices, kept for reading old files, now stored in #CustomData. */
+  struct MVert *mvert DNA_DEPRECATED;
+  /** Deprecated array of mesh edges, kept for reading old files, now stored in #CustomData. */
+  struct MEdge *medge DNA_DEPRECATED;
+  /** Deprecated "Vertex group" data. Kept for reading old files, now stored in #CustomData.*/
+  struct MDeformVert *dvert DNA_DEPRECATED;
+  /** Deprecated runtime data for tessellation face UVs and texture, kept for reading old files. */
+  struct MTFace *mtface DNA_DEPRECATED;
   /** Deprecated, use mtface. */
   struct TFace *tface DNA_DEPRECATED;
-
-  /* Deprecated. Array of colors for the tessellated faces, must be number of tessellated
-   * faces * 4 in length. This is often stored in #fdata. */
+  /** Deprecated array of colors for the tessellated faces, kept for reading old files. */
   struct MCol *mcol DNA_DEPRECATED;
-
-  /* Deprecated storage of old faces (only triangles or quads). */
+  /** Deprecated face storage (quads & triangles only). Kept for reading old files. */
+  struct MFace *mface DNA_DEPRECATED;
+  /**
+   * Deprecated storage of old faces (only triangles or quads).
+   *
+   * \note This would be marked deprecated, however the particles still use this at run-time
+   * for placing particles on the mesh (something which should be eventually upgraded).
+   */
   CustomData fdata;
   /* Deprecated size of #fdata. */
   int totface;
@@ -286,7 +295,8 @@ typedef struct Mesh {
    * default and Face Sets can be used without affecting the color of the mesh. */
   int face_sets_color_default;
 
-  char _pad1[4];
+  char _pad[4];
+  void *_pad1;
 
   Mesh_Runtime runtime;
 } Mesh;

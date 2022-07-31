@@ -151,7 +151,6 @@ void BKE_mesh_copy_parameters_for_eval(struct Mesh *me_dst, const struct Mesh *m
  * when a new mesh is based on an existing mesh.
  */
 void BKE_mesh_copy_parameters(struct Mesh *me_dst, const struct Mesh *me_src);
-void BKE_mesh_update_customdata_pointers(struct Mesh *me, bool do_ensure_tess_cd);
 void BKE_mesh_ensure_skin_customdata(struct Mesh *me);
 
 struct Mesh *BKE_mesh_new_nomain(
@@ -1050,7 +1049,7 @@ BLI_INLINE MEdge *BKE_mesh_edges_for_write(Mesh *mesh)
 
 BLI_INLINE const MPoly *BKE_mesh_polygons(const Mesh *mesh)
 {
-  return (const MPoly *)CustomData_get_layer(&mesh->vdata, CD_MPOLY);
+  return (const MPoly *)CustomData_get_layer(&mesh->pdata, CD_MPOLY);
 }
 BLI_INLINE MPoly *BKE_mesh_polygons_for_write(Mesh *mesh)
 {
@@ -1060,7 +1059,7 @@ BLI_INLINE MPoly *BKE_mesh_polygons_for_write(Mesh *mesh)
 
 BLI_INLINE const MLoop *BKE_mesh_loops(const Mesh *mesh)
 {
-  return (const MLoop *)CustomData_get_layer(&mesh->vdata, CD_MLOOP);
+  return (const MLoop *)CustomData_get_layer(&mesh->ldata, CD_MLOOP);
 }
 BLI_INLINE MLoop *BKE_mesh_loops_for_write(Mesh *mesh)
 {
@@ -1075,7 +1074,7 @@ BLI_INLINE const MDeformVert *BKE_mesh_deform_verts(const Mesh *mesh)
 BLI_INLINE MDeformVert *BKE_mesh_deform_verts_for_write(Mesh *mesh)
 {
   MDeformVert *dvert = (MDeformVert *)CustomData_duplicate_referenced_layer(
-      &mesh->ldata, CD_MDEFORMVERT, mesh->totvert);
+      &mesh->vdata, CD_MDEFORMVERT, mesh->totvert);
   if (dvert) {
     return dvert;
   }

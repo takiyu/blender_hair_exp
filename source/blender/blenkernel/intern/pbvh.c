@@ -3227,13 +3227,13 @@ const float (*BKE_pbvh_get_vert_normals(const PBVH *pbvh))[3]
 
 const bool *BKE_pbvh_get_vert_hide(const PBVH *pbvh)
 {
-  BLI_assert(pbvh->type == PBVH_FACES);
+  BLI_assert(pbvh->header.type == PBVH_FACES);
   return pbvh->hide_vert;
 }
 
 bool *BKE_pbvh_get_vert_hide_for_write(PBVH *pbvh)
 {
-  BLI_assert(pbvh->type == PBVH_FACES);
+  BLI_assert(pbvh->header.type == PBVH_FACES);
   if (pbvh->hide_vert) {
     return pbvh->hide_vert;
   }

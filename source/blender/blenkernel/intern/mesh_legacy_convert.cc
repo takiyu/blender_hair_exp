@@ -23,6 +23,7 @@
 
 #include "BKE_attribute.hh"
 #include "BKE_customdata.h"
+#include "BKE_global.h"
 #include "BKE_mesh.h"
 #include "BKE_mesh_legacy_convert.h"
 #include "BKE_multires.h"
@@ -270,6 +271,47 @@ static void convert_mfaces_to_mpolys(ID *id,
 #undef ME_FGON
 }
 
+static void mesh_ensure_tessellation_customdata(Mesh *me)
+{
+  if (UNLIKELY((me->totface != 0) && (me->totpoly == 0))) {
+    /* Pass, otherwise this function  clears 'mface' before
+     * versioning 'mface -> mpoly' code kicks in T30583.
+     *
+     * Callers could also check but safer to do here - campbell */
+  }
+  else {
+    const int tottex_original = CustomData_number_of_layers(&me->ldata, CD_MLOOPUV);
+    const int totcol_original = CustomData_number_of_layers(&me->ldata, CD_PROP_BYTE_COLOR);
+
+    const int tottex_tessface = CustomData_number_of_layers(&me->fdata, CD_MTFACE);
+    const int totcol_tessface = CustomData_number_of_layers(&me->fdata, CD_MCOL);
+
+    if (tottex_tessface != tottex_original || totcol_tessface != totcol_original) {
+      BKE_mesh_tessface_clear(me);
+
+      BKE_mesh_add_mface_layers(&me->fdata, &me->ldata, me->totface);
+
+      /* TODO: add some `--debug-mesh` option. */
+      if (G.debug & G_DEBUG) {
+        /* NOTE(campbell): this warning may be un-called for if we are initializing the mesh for
+         * the first time from #BMesh, rather than giving a warning about this we could be smarter
+         * and check if there was any data to begin with, for now just print the warning with
+         * some info to help troubleshoot what's going on. */
+        printf(
+            "%s: warning! Tessellation uvs or vcol data got out of sync, "
+            "had to reset!\n    CD_MTFACE: %d != CD_MLOOPUV: %d || CD_MCOL: %d != "
+            "CD_PROP_BYTE_COLOR: "
+            "%d\n",
+            __func__,
+            tottex_tessface,
+            tottex_original,
+            totcol_tessface,
+            totcol_original);
+      }
+    }
+  }
+}
+
 void BKE_mesh_convert_mfaces_to_mpolys(Mesh *mesh)
 {
   convert_mfaces_to_mpolys(&mesh->id,
@@ -285,7 +327,7 @@ void BKE_mesh_convert_mfaces_to_mpolys(Mesh *mesh)
                            &mesh->totloop,
                            &mesh->totpoly);
 
-  BKE_mesh_update_customdata_pointers(mesh, true);
+  mesh_ensure_tessellation_customdata(mesh);
 }
 
 /**
@@ -344,7 +386,7 @@ void BKE_mesh_do_versions_convert_mfaces_to_mpolys(Mesh *mesh)
 
   CustomData_bmesh_do_versions_update_active_layers(&mesh->fdata, &mesh->ldata);
 
-  BKE_mesh_update_customdata_pointers(mesh, true);
+  mesh_ensure_tessellation_customdata(mesh);
 }
 
 /** \} */
@@ -779,7 +821,7 @@ void BKE_mesh_tessface_calc(Mesh *mesh)
                                      mesh->totloop,
                                      mesh->totpoly);
 
-  BKE_mesh_update_customdata_pointers(mesh, true);
+  mesh_ensure_tessellation_customdata(mesh);
 }
 
 void BKE_mesh_tessface_ensure(struct Mesh *mesh)
