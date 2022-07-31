@@ -16,6 +16,7 @@
 #include "BLI_utildefines.h"
 
 #include "BKE_customdata.h"
+#include "BKE_mesh.h"
 #include "BKE_subdiv.h"
 
 #include "MEM_guardedalloc.h"
@@ -138,7 +139,6 @@ static void set_face_varying_data_from_uv_task(void *__restrict userdata,
   FaceVaryingDataFromUVContext *ctx = userdata;
   OpenSubdiv_TopologyRefiner *topology_refiner = ctx->topology_refiner;
   const int layer_index = ctx->layer_index;
-  const Mesh *mesh = ctx->mesh;
   const MPoly *mpoly = &ctx->polygons[face_index];
   const MLoopUV *mluv = &ctx->mloopuv[mpoly->loopstart];
 

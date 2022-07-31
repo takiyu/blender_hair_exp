@@ -34,7 +34,7 @@ typedef struct MultiresReshapeContext {
   /* Base mesh from original object.
    * NOTE: Does NOT include any leading modifiers in it. */
   struct Mesh *base_mesh;
-  struct MVert *base_vertices;
+  const struct MVert *base_vertices;
   const struct MEdge *base_edges;
   const struct MPoly *base_polygons;
   const struct MLoop *base_loops;

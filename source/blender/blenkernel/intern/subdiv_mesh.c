@@ -74,9 +74,9 @@ static void subdiv_mesh_ctx_cache_custom_data_layers(SubdivMeshContext *ctx)
 {
   Mesh *subdiv_mesh = ctx->subdiv_mesh;
   ctx->subdiv_vertices = BKE_mesh_vertices_for_write(subdiv_mesh);
-  ctx->subdiv_edges = BKE_mesh_vertices_for_write(subdiv_mesh);
-  ctx->subdiv_polygons = BKE_mesh_vertices_for_write(subdiv_mesh);
-  ctx->subdiv_loops = BKE_mesh_vertices_for_write(subdiv_mesh);
+  ctx->subdiv_edges = BKE_mesh_edges_for_write(subdiv_mesh);
+  ctx->subdiv_polygons = BKE_mesh_polygons_for_write(subdiv_mesh);
+  ctx->subdiv_loops = BKE_mesh_loops_for_write(subdiv_mesh);
   /* Pointers to original indices layers. */
   ctx->vert_origindex = CustomData_get_layer(&subdiv_mesh->vdata, CD_ORIGINDEX);
   ctx->edge_origindex = CustomData_get_layer(&subdiv_mesh->edata, CD_ORIGINDEX);
@@ -232,7 +232,6 @@ static void vertex_interpolation_from_corner(const SubdivMeshContext *ctx,
   }
   else {
     const CustomData *vertex_data = &ctx->coarse_mesh->vdata;
-    const Mesh *coarse_mesh = ctx->coarse_mesh;
     const MLoop *coarse_mloop = ctx->coarse_loops;
     LoopsOfPtex loops_of_ptex;
     loops_of_ptex_get(ctx, &loops_of_ptex, coarse_poly, corner);
@@ -366,7 +365,6 @@ static void loop_interpolation_from_corner(const SubdivMeshContext *ctx,
   }
   else {
     const CustomData *loop_data = &ctx->coarse_mesh->ldata;
-    const Mesh *coarse_mesh = ctx->coarse_mesh;
     const MLoop *coarse_mloop = ctx->coarse_loops;
     LoopsOfPtex loops_of_ptex;
     loops_of_ptex_get(ctx, &loops_of_ptex, coarse_poly, corner);
@@ -528,7 +526,6 @@ static void subdiv_vertex_data_copy(const SubdivMeshContext *ctx,
                                     MVert *subdiv_vertex)
 {
   const Mesh *coarse_mesh = ctx->coarse_mesh;
-  Mesh *subdiv_mesh = ctx->subdiv_mesh;
   const int coarse_vertex_index = coarse_vertex - ctx->coarse_vertices;
   const int subdiv_vertex_index = subdiv_vertex - ctx->subdiv_vertices;
   CustomData_copy_data(
@@ -753,7 +750,6 @@ static void subdiv_mesh_vertex_inner(const SubdivForeachContext *foreach_context
   SubdivMeshContext *ctx = foreach_context->user_data;
   SubdivMeshTLS *tls = tls_v;
   Subdiv *subdiv = ctx->subdiv;
-  const Mesh *coarse_mesh = ctx->coarse_mesh;
   const MPoly *coarse_mpoly = ctx->coarse_polygons;
   const MPoly *coarse_poly = &coarse_mpoly[coarse_poly_index];
   Mesh *subdiv_mesh = ctx->subdiv_mesh;
@@ -804,12 +800,10 @@ static void subdiv_mesh_edge(const SubdivForeachContext *foreach_context,
                              const int subdiv_v2)
 {
   SubdivMeshContext *ctx = foreach_context->user_data;
-  Mesh *subdiv_mesh = ctx->subdiv_mesh;
   MEdge *subdiv_medge = ctx->subdiv_edges;
   MEdge *subdiv_edge = &subdiv_medge[subdiv_edge_index];
   const MEdge *coarse_edge = NULL;
   if (coarse_edge_index != ORIGINDEX_NONE) {
-    const Mesh *coarse_mesh = ctx->coarse_mesh;
     const MEdge *coarse_medge = ctx->coarse_edges;
     coarse_edge = &coarse_medge[coarse_edge_index];
   }
@@ -901,7 +895,6 @@ static void subdiv_mesh_loop(const SubdivForeachContext *foreach_context,
 {
   SubdivMeshContext *ctx = foreach_context->user_data;
   SubdivMeshTLS *tls = tls_v;
-  const Mesh *coarse_mesh = ctx->coarse_mesh;
   const MPoly *coarse_mpoly = ctx->coarse_polygons;
   const MPoly *coarse_poly = &coarse_mpoly[coarse_poly_index];
   MLoop *subdiv_loop = &ctx->subdiv_loops[subdiv_loop_index];

@@ -1671,7 +1671,7 @@ static void sculpt_update_object(Depsgraph *depsgraph,
     ss->totvert = me->totvert;
     ss->totpoly = me->totpoly;
     ss->totfaces = me->totpoly;
-    ss->mvert = BKE_mesh_vertices(me);
+    ss->mvert = BKE_mesh_vertices_for_write(me);
     ss->mpoly = BKE_mesh_polygons(me);
     ss->mloop = BKE_mesh_loops(me);
     ss->multires.active = false;

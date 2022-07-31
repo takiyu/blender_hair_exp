@@ -73,7 +73,7 @@ typedef struct WeightedNormalData {
 
   const MVert *mvert;
   const float (*vert_normals)[3];
-  const MEdge *medge;
+  MEdge *medge;
 
   const MLoop *mloop;
   short (*clnors)[2];
@@ -187,7 +187,7 @@ static void apply_weights_vertex_normal(WeightedNormalModifierData *wnmd,
   const int polys_num = wn_data->polys_num;
 
   const MVert *mvert = wn_data->mvert;
-  const MEdge *medge = wn_data->medge;
+  MEdge *medge = wn_data->medge;
 
   const MLoop *mloop = wn_data->mloop;
   short(*clnors)[2] = wn_data->clnors;
@@ -484,7 +484,7 @@ static void wn_corner_angle(WeightedNormalModifierData *wnmd, WeightedNormalData
   ModePair *corner_angle = MEM_malloc_arrayN((size_t)loops_num, sizeof(*corner_angle), __func__);
 
   for (mp_index = 0, mp = mpoly; mp_index < polys_num; mp_index++, mp++) {
-    MLoop *ml_start = &mloop[mp->loopstart];
+    const MLoop *ml_start = &mloop[mp->loopstart];
 
     float *index_angle = MEM_malloc_arrayN((size_t)mp->totloop, sizeof(*index_angle), __func__);
     BKE_mesh_calc_poly_angles(mp, ml_start, mvert, index_angle);
@@ -580,7 +580,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
   const int loops_num = result->totloop;
   const int polys_num = result->totpoly;
   const MVert *mvert = BKE_mesh_vertices(result);
-  const MEdge *medge = BKE_mesh_edges(result);
+  MEdge *medge = BKE_mesh_edges_for_write(result);
   const MPoly *mpoly = BKE_mesh_polygons(result);
   const MLoop *mloop = BKE_mesh_loops(result);
 

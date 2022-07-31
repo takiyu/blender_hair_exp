@@ -802,7 +802,7 @@ void BKE_mesh_remap_calc_edges_from_mesh(const int mode,
           k = vert_to_edge_src_map[vidx_src].count;
 
           for (; k--; eidx_src++) {
-            MEdge *e_src = &edges_src[*eidx_src];
+            const MEdge *e_src = &edges_src[*eidx_src];
             const float *other_co_src = vcos_src[BKE_mesh_edge_other_vert(e_src, vidx_src)];
             const float *other_co_dst =
                 verts_dst[BKE_mesh_edge_other_vert(e_dst, (int)vidx_dst)].co;

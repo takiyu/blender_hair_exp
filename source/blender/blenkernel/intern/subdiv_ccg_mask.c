@@ -17,6 +17,7 @@
 #include "BLI_utildefines.h"
 
 #include "BKE_customdata.h"
+#include "BKE_mesh.h"
 #include "BKE_subdiv.h"
 
 #include "MEM_guardedalloc.h"

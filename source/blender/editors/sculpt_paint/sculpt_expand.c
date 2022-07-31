@@ -690,7 +690,6 @@ static float *sculpt_expand_diagonals_falloff_create(Object *ob, const PBVHVertR
   }
 
   /* Propagate the falloff increasing the value by 1 each time a new vertex is visited. */
-  Mesh *mesh = ob->data;
   while (!BLI_gsqueue_is_empty(queue)) {
     PBVHVertRef v_next;
     BLI_gsqueue_pop(queue, &v_next);
@@ -698,7 +697,7 @@ static float *sculpt_expand_diagonals_falloff_create(Object *ob, const PBVHVertR
     int v_next_i = BKE_pbvh_vertex_to_index(ss->pbvh, v_next);
 
     for (int j = 0; j < ss->pmap[v_next_i].count; j++) {
-      MPoly *p = &ss->mpoly[ss->pmap[v_next_i].indices[j]];
+      const MPoly *p = &ss->mpoly[ss->pmap[v_next_i].indices[j]];
       for (int l = 0; l < p->totloop; l++) {
         const PBVHVertRef neighbor_v = BKE_pbvh_make_vref(ss->mloop[p->loopstart + l].v);
         if (BLI_BITMAP_TEST(visited_vertices, neighbor_v.i)) {
@@ -1096,10 +1095,10 @@ static void sculpt_expand_snap_initialize_from_enabled(SculptSession *ss,
   }
 
   for (int p = 0; p < totface; p++) {
-    MPoly *poly = &ss->mpoly[p];
+    const MPoly *poly = &ss->mpoly[p];
     bool any_disabled = false;
     for (int l = 0; l < poly->totloop; l++) {
-      MLoop *loop = &ss->mloop[l + poly->loopstart];
+      const MLoop *loop = &ss->mloop[l + poly->loopstart];
       if (!BLI_BITMAP_TEST(enabled_vertices, loop->v)) {
         any_disabled = true;
         break;

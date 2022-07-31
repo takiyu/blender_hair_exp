@@ -1277,7 +1277,6 @@ void BKE_mesh_strip_loose_polysloops(Mesh *me)
 void BKE_mesh_strip_loose_edges(Mesh *me)
 {
   MEdge *e;
-  MLoop *l;
   int a, b;
   uint *new_idx = (uint *)MEM_mallocN(sizeof(int) * me->totedge, __func__);
   MutableSpan<MEdge> edges = blender::bke::mesh_edges_for_write(*me);
@@ -1500,7 +1499,6 @@ void BKE_mesh_calc_edges_legacy(Mesh *me, const bool use_old)
   MEdge *medge;
   int totedge = 0;
   const Span<MVert> vertices = blender::bke::mesh_vertices(*me);
-  const Span<MEdge> edges = blender::bke::mesh_edges(*me);
   const Span<MPoly> polygons = blender::bke::mesh_polygons(*me);
   MutableSpan<MLoop> loops = blender::bke::mesh_loops_for_write(*me);
 
