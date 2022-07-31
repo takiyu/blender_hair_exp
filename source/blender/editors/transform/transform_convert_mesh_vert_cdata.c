@@ -60,7 +60,7 @@ static void tc_mesh_cdata_transdata_create(TransDataBasic *td,
   td->extra = eve;
 }
 
-void createTransMeshVertCData(TransInfo *t)
+static void createTransMeshVertCData(bContext *UNUSED(C), TransInfo *t)
 {
   BLI_assert(ELEM(t->mode, TFM_BWEIGHT, TFM_VERT_CREASE));
   FOREACH_TRANS_DATA_CONTAINER (t, tc) {
@@ -271,7 +271,7 @@ static void tc_mesh_cdata_apply_to_mirror(TransInfo *t)
   }
 }
 
-void recalcData_mesh_cdata(TransInfo *t)
+static void recalcData_mesh_cdata(TransInfo *t)
 {
   bool is_canceling = t->state == TRANS_CANCEL;
   /* mirror modifier clipping? */
@@ -289,3 +289,10 @@ void recalcData_mesh_cdata(TransInfo *t)
 }
 
 /** \} */
+
+TransConvertTypeInfo TransConvertType_MeshVertCData = {
+    /* flags */ (T_EDIT | T_POINTS),
+    /* createTransData */ createTransMeshVertCData,
+    /* recalcData */ recalcData_mesh_cdata,
+    /* special_aftertrans_update */ NULL,
+};
