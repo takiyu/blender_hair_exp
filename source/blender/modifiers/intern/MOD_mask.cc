@@ -467,7 +467,7 @@ static void copy_masked_polys_to_new_mesh(const Mesh &src_mesh,
                                           int polys_masked_num)
 {
   const Span<MPoly> src_polygons = blender::bke::mesh_polygons(src_mesh);
-  const Span<MLoop> src_loops = blender::bke::mesh_loops(dst_mesh);
+  const Span<MLoop> src_loops = blender::bke::mesh_loops(src_mesh);
   MutableSpan<MPoly> dst_polygons = blender::bke::mesh_polygons_for_write(dst_mesh);
   MutableSpan<MLoop> dst_loops = blender::bke::mesh_loops_for_write(dst_mesh);
 
@@ -508,7 +508,7 @@ static void add_interpolated_polys_to_new_mesh(const Mesh &src_mesh,
                                                int edges_add_num)
 {
   const Span<MPoly> src_polygons = blender::bke::mesh_polygons(src_mesh);
-  const Span<MLoop> src_loops = blender::bke::mesh_loops(dst_mesh);
+  const Span<MLoop> src_loops = blender::bke::mesh_loops(src_mesh);
   MutableSpan<MEdge> dst_edges = blender::bke::mesh_edges_for_write(dst_mesh);
   MutableSpan<MPoly> dst_polygons = blender::bke::mesh_polygons_for_write(dst_mesh);
   MutableSpan<MLoop> dst_loops = blender::bke::mesh_loops_for_write(dst_mesh);

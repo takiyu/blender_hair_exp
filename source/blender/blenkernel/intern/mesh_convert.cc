@@ -512,7 +512,7 @@ Mesh *BKE_mesh_new_nomain_from_curve_displist(const Object *ob, const ListBase *
 
   blender::bke::mesh_vertices_for_write(*mesh).copy_from({allvert, totvert});
   blender::bke::mesh_edges_for_write(*mesh).copy_from({alledge, totedge});
-  blender::bke::mesh_polygons_for_write(*mesh).copy_from({allpoly, totloop});
+  blender::bke::mesh_polygons_for_write(*mesh).copy_from({allpoly, totpoly});
   blender::bke::mesh_loops_for_write(*mesh).copy_from({allloop, totloop});
 
   if (alluv) {

@@ -919,7 +919,10 @@ static Mesh *subdivide_base(const Mesh *orig)
   MVert *outvert = BKE_mesh_vertices_for_write(result);
   MEdge *outedge = BKE_mesh_edges_for_write(result);
   MVertSkin *outnode = CustomData_get_layer(&result->vdata, CD_MVERT_SKIN);
-  MDeformVert *outdvert = BKE_mesh_deform_verts_for_write(result);
+  MDeformVert *outdvert = NULL;
+  if (origdvert) {
+    outdvert = BKE_mesh_deform_verts_for_write(result);
+  }
 
   /* Copy original vertex data */
   CustomData_copy_data(&orig->vdata, &result->vdata, 0, 0, orig_vert_num);
