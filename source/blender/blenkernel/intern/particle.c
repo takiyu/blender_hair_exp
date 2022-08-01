@@ -2063,7 +2063,8 @@ static int psys_map_index_on_dm(Mesh *mesh,
       /* modify the original weights to become
        * weights for the derived mesh face */
       OrigSpaceFace *osface = CustomData_get_layer(&mesh->fdata, CD_ORIGSPACE);
-      const MFace *mface = &CustomData_get_layer(&mesh->fdata, CD_MFACE)[i];
+      const MFace *mfaces = CustomData_get_layer(&mesh->fdata, CD_MFACE);
+      const MFace *mface = &mfaces[i];
 
       if (osface == NULL) {
         mapfw[0] = mapfw[1] = mapfw[2] = mapfw[3] = 0.0f;
