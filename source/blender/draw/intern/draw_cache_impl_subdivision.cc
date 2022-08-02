@@ -2021,6 +2021,7 @@ static bool draw_subdiv_create_requested_buffers(Object *ob,
                                                  const float obmat[4][4],
                                                  const bool do_final,
                                                  const bool do_uvedit,
+                                                 const bool do_cage,
                                                  const ToolSettings *ts,
                                                  const bool use_hide,
                                                  OpenSubdiv_EvaluatorCache *evaluator_cache)
@@ -2064,9 +2065,8 @@ static bool draw_subdiv_create_requested_buffers(Object *ob,
     return false;
   }
 
-  /* Edges which do not come from coarse edges should not be drawn in edit mode, only in object
-   * mode when optimal display in turned off. */
-  const bool optimal_display = runtime_data->use_optimal_display || is_editmode;
+  /* Edges which do not come from coarse edges should not be drawn in edit cage mode. */
+  const bool optimal_display = runtime_data->use_optimal_display || (is_editmode && !do_cage);
 
   draw_cache->bm = bm;
   draw_cache->mesh = mesh_eval;
@@ -2218,6 +2218,7 @@ void DRW_create_subdivision(Object *ob,
                             const float obmat[4][4],
                             const bool do_final,
                             const bool do_uvedit,
+                            const bool do_cage,
                             const ToolSettings *ts,
                             const bool use_hide)
 {
@@ -2241,6 +2242,7 @@ void DRW_create_subdivision(Object *ob,
                                             obmat,
                                             do_final,
                                             do_uvedit,
+                                            do_cage,
                                             ts,
                                             use_hide,
                                             g_evaluator_cache)) {

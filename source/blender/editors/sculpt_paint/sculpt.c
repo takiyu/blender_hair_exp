@@ -347,7 +347,6 @@ void SCULPT_vertex_visible_set(SculptSession *ss, PBVHVertRef vertex, bool visib
     case PBVH_FACES: {
       bool *hide_vert = BKE_pbvh_get_vert_hide_for_write(ss->pbvh);
       hide_vert[vertex.i] = visible;
-      BKE_pbvh_vert_mark_update(ss->pbvh, vertex);
       break;
     }
     case PBVH_BMESH: {
@@ -595,7 +594,6 @@ static void UNUSED_FUNCTION(sculpt_visibility_sync_vertex_to_face_sets)(SculptSe
       ss->face_sets[vert_map->indices[i]] = -abs(ss->face_sets[vert_map->indices[i]]);
     }
   }
-  BKE_pbvh_vert_mark_update(ss->pbvh, vertex);
 }
 
 void SCULPT_visibility_sync_all_vertex_to_face_sets(SculptSession *ss)
@@ -1448,16 +1446,15 @@ static void paint_mesh_restore_co_task_cb(void *__restrict userdata,
       else {
         copy_v3_v3(vd.fno, orig_data.no);
       }
+      if (vd.mvert) {
+        BKE_pbvh_vert_tag_update_normal(ss->pbvh, vd.vertex);
+      }
     }
     else if (orig_data.unode->type == SCULPT_UNDO_MASK) {
       *vd.mask = orig_data.mask;
     }
     else if (orig_data.unode->type == SCULPT_UNDO_COLOR) {
       SCULPT_vertex_color_set(ss, vd.vertex, orig_data.col);
-    }
-
-    if (vd.mvert) {
-      BKE_pbvh_vert_mark_update(ss->pbvh, vd.vertex);
     }
   }
   BKE_pbvh_vertex_iter_end;
@@ -3085,7 +3082,7 @@ static void do_gravity_task_cb_ex(void *__restrict userdata,
     mul_v3_v3fl(proxy[vd.i], offset, fade);
 
     if (vd.mvert) {
-      BKE_pbvh_vert_mark_update(ss->pbvh, vd.vertex);
+      BKE_pbvh_vert_tag_update_normal(ss->pbvh, vd.vertex);
     }
   }
   BKE_pbvh_vertex_iter_end;
