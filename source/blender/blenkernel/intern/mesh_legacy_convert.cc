@@ -925,9 +925,9 @@ void BKE_mesh_legacy_bevel_weight_to_layers(Mesh *mesh)
   const Span<MEdge> edges(mesh->medge, mesh->totedge);
   if (mesh->cd_flag & ME_CDFLAG_EDGE_BWEIGHT) {
     float *weights = (float *)CustomData_add_layer(
-        &mesh->vdata, CD_BWEIGHT, CD_DEFAULT, nullptr, vertices.size());
+        &mesh->edata, CD_BWEIGHT, CD_DEFAULT, nullptr, edges.size());
     for (const int i : vertices.index_range()) {
-      weights[i] = vertices[i].bweight / 255.0f;
+      weights[i] = edges[i].bweight / 255.0f;
     }
   }
 }
