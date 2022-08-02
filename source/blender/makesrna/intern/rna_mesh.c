@@ -352,6 +352,9 @@ static void rna_Mesh_update_positions_tag(Main *bmain, Scene *scene, PointerRNA 
 /** \name Property get/set Callbacks
  * \{ */
 
+static int rna_MeshVertex_index_get(PointerRNA *ptr);
+static int rna_MeshEdge_index_get(PointerRNA *ptr);
+
 static void rna_MeshVertex_normal_get(PointerRNA *ptr, float *value)
 {
   Mesh *mesh = rna_mesh(ptr);
@@ -367,33 +370,33 @@ static void rna_MeshVertex_normal_get(PointerRNA *ptr, float *value)
 static float rna_MeshVertex_bevel_weight_get(PointerRNA *ptr)
 {
   const Mesh *mesh = rna_mesh(ptr);
-  const MVert *vert = (const MVert *)ptr->data;
+  const int index = rna_MeshVertex_index_get(ptr);
   const float *values = CustomData_get_layer(&mesh->vdata, CD_BWEIGHT);
-  return values[vert - mesh->mvert];
+  return values == NULL ? 0.0f : values[index];
 }
 
 static void rna_MeshVertex_bevel_weight_set(PointerRNA *ptr, float value)
 {
-  const Mesh *mesh = rna_mesh(ptr);
-  MVert *vert = (MVert *)ptr->data;
-  float *values = CustomData_get_layer(&mesh->vdata, CD_BWEIGHT);
-  values[vert - mesh->mvert] = clamp_f(value, 0.0f, 1.0f);
+  Mesh *mesh = rna_mesh(ptr);
+  const int index = rna_MeshVertex_index_get(ptr);
+  float *values = CustomData_add_layer(&mesh->vdata, CD_BWEIGHT, CD_CALLOC, NULL, mesh->totvert);
+  values[index] = clamp_f(value, 0.0f, 1.0f);
 }
 
 static float rna_MEdge_bevel_weight_get(PointerRNA *ptr)
 {
   const Mesh *mesh = rna_mesh(ptr);
-  const MEdge *edge = (const MEdge *)ptr->data;
+  const int index = rna_MeshEdge_index_get(ptr);
   const float *values = CustomData_get_layer(&mesh->edata, CD_BWEIGHT);
-  return values[edge - mesh->medge];
+  return values == NULL ? 0.0f : values[index];
 }
 
 static void rna_MEdge_bevel_weight_set(PointerRNA *ptr, float value)
 {
   Mesh *mesh = rna_mesh(ptr);
-  const MEdge *edge = (const MEdge *)ptr->data;
-  float *values = CustomData_get_layer(&mesh->edata, CD_BWEIGHT);
-  values[edge - mesh->medge] = clamp_f(value, 0.0f, 1.0f);
+  const int index = rna_MeshEdge_index_get(ptr);
+  float *values = CustomData_add_layer(&mesh->edata, CD_BWEIGHT, CD_CALLOC, NULL, mesh->totedge);
+  values[index] = clamp_f(value, 0.0f, 1.0f);
 }
 
 static float rna_MEdge_crease_get(PointerRNA *ptr)
