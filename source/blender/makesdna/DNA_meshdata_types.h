@@ -26,6 +26,9 @@ extern "C" {
 typedef struct MVert {
   float co[3];
   char flag;
+  /**
+   * Deprecated bevel weight storage, now located in #CD_BWEIGHT, except for file read and write.
+   */
   char bweight DNA_DEPRECATED;
   char _pad[2];
 } MVert;
@@ -45,6 +48,9 @@ typedef struct MEdge {
   /** Un-ordered vertex indices (cannot match). */
   unsigned int v1, v2;
   char crease;
+  /**
+   * Deprecated bevel weight storage, now located in #CD_BWEIGHT, except for file read and write.
+   */
   char bweight DNA_DEPRECATED;
   short flag;
 } MEdge;
