@@ -1304,17 +1304,6 @@ static void pbvh_update_draw_buffer_cb(void *__restrict userdata,
   PBVH *pbvh = data->pbvh;
   PBVHNode *node = data->nodes[n];
 
-  CustomData *vdata, *ldata;
-
-  if (!pbvh->header.bm) {
-    vdata = pbvh->vdata;
-    ldata = pbvh->ldata;
-  }
-  else {
-    vdata = &pbvh->header.bm->vdata;
-    ldata = &pbvh->header.bm->ldata;
-  }
-
   if (node->flag & PBVH_RebuildDrawBuffers) {
     switch (pbvh->header.type) {
       case PBVH_GRIDS: {
@@ -1327,14 +1316,12 @@ static void pbvh_update_draw_buffer_cb(void *__restrict userdata,
       }
       case PBVH_FACES:
         node->draw_buffers = GPU_pbvh_mesh_buffers_build(
-            pbvh->mpoly,
-            pbvh->mloop,
+            pbvh->mesh,
+            pbvh->verts,
             pbvh->looptri,
-            pbvh->hide_vert,
-            node->prim_indices,
             CustomData_get_layer(pbvh->pdata, CD_SCULPT_FACE_SETS),
-            node->totprim,
-            pbvh->mesh);
+            node->prim_indices,
+            node->totprim);
         break;
       case PBVH_BMESH:
         node->draw_buffers = GPU_pbvh_bmesh_buffers_build(pbvh->flags &
@@ -1361,13 +1348,12 @@ static void pbvh_update_draw_buffer_cb(void *__restrict userdata,
                                      update_flags);
         break;
       case PBVH_FACES: {
+        /* Pass vertices separately because they may be not be the same as the mesh's vertices,
+         * and pass normals separately because they are managed by the PBVH. */
         GPU_pbvh_mesh_buffers_update(pbvh->vbo_id,
                                      node->draw_buffers,
+                                     pbvh->mesh,
                                      pbvh->verts,
-                                     pbvh->vert_normals,
-                                     pbvh->hide_vert,
-                                     vdata,
-                                     ldata,
                                      CustomData_get_layer(pbvh->vdata, CD_PAINT_MASK),
                                      CustomData_get_layer(pbvh->pdata, CD_SCULPT_FACE_SETS),
                                      pbvh->face_sets_color_seed,
@@ -3227,13 +3213,13 @@ const float (*BKE_pbvh_get_vert_normals(const PBVH *pbvh))[3]
 
 const bool *BKE_pbvh_get_vert_hide(const PBVH *pbvh)
 {
-  BLI_assert(pbvh->type == PBVH_FACES);
+  BLI_assert(pbvh->header.type == PBVH_FACES);
   return pbvh->hide_vert;
 }
 
 bool *BKE_pbvh_get_vert_hide_for_write(PBVH *pbvh)
 {
-  BLI_assert(pbvh->type == PBVH_FACES);
+  BLI_assert(pbvh->header.type == PBVH_FACES);
   if (pbvh->hide_vert) {
     return pbvh->hide_vert;
   }
