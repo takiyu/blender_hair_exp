@@ -1358,7 +1358,8 @@ static void pbvh_update_draw_buffer_cb(void *__restrict userdata,
                                      CustomData_get_layer(pbvh->pdata, CD_SCULPT_FACE_SETS),
                                      pbvh->face_sets_color_seed,
                                      pbvh->face_sets_color_default,
-                                     update_flags);
+                                     update_flags,
+                                     pbvh->vert_normals);
         break;
       }
       case PBVH_BMESH:

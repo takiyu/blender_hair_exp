@@ -96,7 +96,8 @@ void GPU_pbvh_mesh_buffers_update(PBVHGPUFormat *vbo_id,
                                   const int *sculpt_face_sets,
                                   const int face_sets_color_seed,
                                   const int face_sets_color_default,
-                                  const int update_flags);
+                                  const int update_flags,
+                                  const float (*vert_normals)[3]);
 
 bool GPU_pbvh_attribute_names_update(PBVHType pbvh_type,
                                      PBVHGPUFormat *vbo_id,

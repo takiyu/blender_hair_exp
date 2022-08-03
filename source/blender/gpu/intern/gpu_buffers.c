@@ -227,7 +227,8 @@ void GPU_pbvh_mesh_buffers_update(PBVHGPUFormat *vbo_id,
                                   const int *sculpt_face_sets,
                                   int face_sets_color_seed,
                                   int face_sets_color_default,
-                                  int update_flags)
+                                  int update_flags,
+                                  const float (*vert_normals)[3])
 {
   GPUAttrRef vcol_refs[MAX_GPU_ATTR];
   GPUAttrRef cd_uvs[MAX_GPU_ATTR];
