@@ -364,7 +364,6 @@ static bool edbm_backbuf_check_and_select_faces_obmode(Mesh *me,
                                                        const eSelectOp sel_op)
 {
   MPoly *mpoly = me->mpoly;
-  uint index;
   bool changed = false;
 
   const BLI_bitmap *select_bitmap = esel->select_bitmap;
