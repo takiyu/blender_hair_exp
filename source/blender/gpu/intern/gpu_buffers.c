@@ -457,7 +457,6 @@ void GPU_pbvh_mesh_buffers_update(PBVHGPUFormat *vbo_id,
 }
 
 GPU_PBVH_Buffers *GPU_pbvh_mesh_buffers_build(const Mesh *mesh,
-                                              const MVert *vertices,
                                               const MLoopTri *looptri,
                                               const int *sculpt_face_sets,
                                               const int *face_indices,
