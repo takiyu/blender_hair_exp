@@ -937,17 +937,16 @@ static void p_split_vert(ParamHandle *handle, PChart *chart, PEdge *e)
 
 static PChart **p_split_charts(ParamHandle *handle, PChart *chart, int ncharts)
 {
-  PChart **charts = MEM_mallocN(sizeof(*charts) * ncharts, "PCharts");
-  PFace *f, *nextf;
+  PChart **charts = (PChart **)MEM_callocN(sizeof(*charts) * ncharts, "PCharts");
 
   for (int i = 0; i < ncharts; i++) {
     charts[i] = (PChart *)MEM_callocN(sizeof(*chart), "PChart");
   }
 
-  f = chart->faces;
+  PFace *f = chart->faces;
   while (f) {
     PEdge *e1 = f->edge, *e2 = e1->next, *e3 = e2->next;
-    nextf = f->nextlink;
+    PFace *nextf = f->nextlink;
 
     PChart *nchart = charts[f->u.chart];
 
@@ -2288,7 +2287,7 @@ static void p_abf_setup_system(PAbfSystem *sys)
   sys->lambdaPlanar = (float *)MEM_callocN(sizeof(float) * sys->ninterior, "ABFlamdaplane");
   sys->lambdaLength = (float *)MEM_mallocN(sizeof(float) * sys->ninterior, "ABFlambdalen");
 
-  sys->J2dt = MEM_mallocN(sizeof(float) * sys->nangles * 3, "ABFj2dt");
+  sys->J2dt = static_cast<float(*)[3]>(MEM_mallocN(sizeof(float) * sys->nangles * 3, "ABFj2dt"));
   sys->bstar = (float *)MEM_mallocN(sizeof(float) * sys->nfaces, "ABFbstar");
   sys->dstar = (float *)MEM_mallocN(sizeof(float) * sys->nfaces, "ABFdstar");
 
@@ -3667,7 +3666,8 @@ static void p_chart_rotate_minimum_area(PChart *chart)
 
 static void p_chart_rotate_fit_aabb(PChart *chart)
 {
-  float(*points)[2] = MEM_mallocN(sizeof(*points) * chart->nverts, __func__);
+  float(*points)[2] = static_cast<float(*)[2]>(
+      MEM_mallocN(sizeof(*points) * chart->nverts, __func__));
 
   p_chart_uv_to_array(chart, points);
 
@@ -3759,7 +3759,8 @@ ParamKey GEO_uv_find_pin_index(ParamHandle *handle, const int bmvertindex, const
     return bmvertindex; /* No verts pinned. */
   }
 
-  GeoUVPinIndex *pinuvlist = BLI_ghash_lookup(handle->pin_hash, POINTER_FROM_INT(bmvertindex));
+  const GeoUVPinIndex *pinuvlist = (const GeoUVPinIndex *)BLI_ghash_lookup(
+      handle->pin_hash, POINTER_FROM_INT(bmvertindex));
   if (!pinuvlist) {
     return bmvertindex; /* Vert not pinned. */
   }
@@ -3781,7 +3782,7 @@ ParamKey GEO_uv_find_pin_index(ParamHandle *handle, const int bmvertindex, const
 
 static GeoUVPinIndex *new_geo_uv_pinindex(ParamHandle *handle, const float uv[2])
 {
-  GeoUVPinIndex *pinuv = BLI_memarena_alloc(handle->arena, sizeof(*pinuv));
+  GeoUVPinIndex *pinuv = (GeoUVPinIndex *)BLI_memarena_alloc(handle->arena, sizeof(*pinuv));
   pinuv->next = NULL;
   copy_v2_v2(pinuv->uv, uv);
   pinuv->reindex = PARAM_KEY_MAX - (handle->unique_pin_count++);
@@ -3794,7 +3795,8 @@ void GEO_uv_prepare_pin_index(ParamHandle *handle, const int bmvertindex, const 
     handle->pin_hash = BLI_ghash_int_new("uv pin reindex");
   }
 
-  GeoUVPinIndex *pinuvlist = BLI_ghash_lookup(handle->pin_hash, POINTER_FROM_INT(bmvertindex));
+  GeoUVPinIndex *pinuvlist = (GeoUVPinIndex *)BLI_ghash_lookup(handle->pin_hash,
+                                                               POINTER_FROM_INT(bmvertindex));
   if (!pinuvlist) {
     BLI_ghash_insert(
         handle->pin_hash, POINTER_FROM_INT(bmvertindex), new_geo_uv_pinindex(handle, uv));
@@ -3826,8 +3828,10 @@ static void p_add_ngon(ParamHandle *handle,
   MemArena *arena = handle->polyfill_arena;
   Heap *heap = handle->polyfill_heap;
   uint nfilltri = nverts - 2;
-  uint(*tris)[3] = BLI_memarena_alloc(arena, sizeof(*tris) * (size_t)nfilltri);
-  float(*projverts)[2] = BLI_memarena_alloc(arena, sizeof(*projverts) * (size_t)nverts);
+  uint(*tris)[3] = static_cast<uint(*)[3]>(
+      BLI_memarena_alloc(arena, sizeof(*tris) * (size_t)nfilltri));
+  float(*projverts)[2] = static_cast<float(*)[2]>(
+      BLI_memarena_alloc(arena, sizeof(*projverts) * (size_t)nverts));
 
   /* Calc normal, flipped: to get a positive 2d cross product. */
   float normal[3];
