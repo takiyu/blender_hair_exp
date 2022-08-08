@@ -472,7 +472,7 @@ static void subdiv_accumulate_vertex_displacement(SubdivMeshContext *ctx,
 {
   /* Accumulate displacement. */
   Subdiv *subdiv = ctx->subdiv;
-  const int subdiv_vertex_index = subdiv_vert - ctx->coarse_vertices;
+  const int subdiv_vertex_index = subdiv_vert - ctx->subdiv_vertices;
   float dummy_P[3], dPdu[3], dPdv[3], D[3];
   BKE_subdiv_eval_limit_point_and_derivatives(subdiv, ptex_face_index, u, v, dummy_P, dPdu, dPdv);
 
@@ -750,11 +750,9 @@ static void subdiv_mesh_vertex_inner(const SubdivForeachContext *foreach_context
   SubdivMeshContext *ctx = foreach_context->user_data;
   SubdivMeshTLS *tls = tls_v;
   Subdiv *subdiv = ctx->subdiv;
-  const MPoly *coarse_mpoly = ctx->coarse_polygons;
-  const MPoly *coarse_poly = &coarse_mpoly[coarse_poly_index];
+  const MPoly *coarse_poly = &ctx->coarse_polygons[coarse_poly_index];
   Mesh *subdiv_mesh = ctx->subdiv_mesh;
-  MVert *subdiv_mvert = ctx->subdiv_vertices;
-  MVert *subdiv_vert = &subdiv_mvert[subdiv_vertex_index];
+  MVert *subdiv_vert = &ctx->subdiv_vertices[subdiv_vertex_index];
   subdiv_mesh_ensure_vertex_interpolation(ctx, tls, coarse_poly, coarse_corner);
   subdiv_vertex_data_interpolate(ctx, subdiv_vert, &tls->vertex_interpolation, u, v);
   BKE_subdiv_eval_final_point(subdiv, ptex_face_index, u, v, subdiv_vert->co);
