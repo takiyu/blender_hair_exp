@@ -1561,7 +1561,7 @@ static void followpath_evaluate(bConstraint *con, bConstraintOb *cob, ListBase *
 
     /* un-apply scaling caused by path */
     if ((data->followflag & FOLLOWPATH_RADIUS) == 0) {
-      /* XXX(campbell): Assume that scale correction means that radius
+      /* XXX(@campbellbarton): Assume that scale correction means that radius
        * will have some scale error in it. */
       float obsize[3];
 
