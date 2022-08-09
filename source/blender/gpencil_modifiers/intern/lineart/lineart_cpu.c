@@ -1926,7 +1926,7 @@ static void lineart_edge_neighbor_init_task(void *__restrict userdata,
 {
   EdgeNeighborData *en_data = (EdgeNeighborData *)userdata;
   LineartAdjacentEdge *adj_e = &en_data->adj_e[i];
-  MLoopTri *looptri = &en_data->mlooptri[i / 3];
+  const MLoopTri *looptri = &en_data->mlooptri[i / 3];
   LineartEdgeNeighbor *edge_nabr = &en_data->edge_nabr[i];
   const MLoop *mloop = en_data->mloop;
 
