@@ -588,13 +588,13 @@ void BlenderStrokeRenderer::GenerateStrokeMesh(StrokeGroup *group, bool hasTex)
 
   if (hasTex) {
     // First UV layer
-    loopsuv[0] = CustomData_add_layer_named(
-        &mesh->ldata, CD_MLOOPUV, CD_CALLOC, nullptr, mesh->totloop, uvNames[0]);
+    loopsuv[0] = static_cast<MLoopUV *>(CustomData_add_layer_named(
+        &mesh->ldata, CD_MLOOPUV, CD_CALLOC, nullptr, mesh->totloop, uvNames[0]));
     CustomData_set_layer_active(&mesh->ldata, CD_MLOOPUV, 0);
 
     // Second UV layer
-    loopsuv[1] = CustomData_add_layer_named(
-        &mesh->ldata, CD_MLOOPUV, CD_CALLOC, nullptr, mesh->totloop, uvNames[1]);
+    loopsuv[1] = static_cast<MLoopUV *>(CustomData_add_layer_named(
+        &mesh->ldata, CD_MLOOPUV, CD_CALLOC, nullptr, mesh->totloop, uvNames[1]));
     CustomData_set_layer_active(&mesh->ldata, CD_MLOOPUV, 1);
   }
 
