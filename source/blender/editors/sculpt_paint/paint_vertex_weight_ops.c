@@ -348,7 +348,7 @@ static const EnumPropertyItem *weight_paint_sample_enum_itemf(bContext *C,
             uint fidx = mp->totloop - 1;
 
             do {
-              const MDeformVert *dvert = &dvert[loops[mp->loopstart + fidx].v];
+              const MDeformVert *dvert = &dverts[loops[mp->loopstart + fidx].v];
               found |= weight_paint_sample_enum_itemf__helper(dvert, defbase_tot, groups);
             } while (fidx--);
           }

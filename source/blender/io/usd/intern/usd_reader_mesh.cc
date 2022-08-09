@@ -907,7 +907,7 @@ Mesh *USDMeshReader::read_mesh(Mesh *existing_mesh,
      * the material slots that were created when the object was loaded from
      * USD are still valid now. */
     MutableSpan<MPoly> polygons = bke::mesh_polygons_for_write(*active_mesh);
-    if (!polygons.is_empty() > 0 && import_params_.import_materials) {
+    if (!polygons.is_empty() && import_params_.import_materials) {
       std::map<pxr::SdfPath, int> mat_map;
       assign_facesets_to_mpoly(motionSampleTime, polygons, &mat_map);
     }

@@ -1712,16 +1712,16 @@ static void lineart_identify_mlooptri_feature_edges(void *__restrict userdata,
 typedef struct LooseEdgeData {
   int loose_count;
   int loose_max;
-  const MEdge **loose_array;
+  MEdge const **loose_array;
   Mesh *me;
 } LooseEdgeData;
 
 static void lineart_loose_data_reallocate(LooseEdgeData *loose_data, int count)
 {
-  const MEdge **new_arr = MEM_callocN(sizeof(MEdge *) * count, "loose edge array");
+  MEdge **new_arr = MEM_callocN(sizeof(MEdge *) * count, "loose edge array");
   if (loose_data->loose_array) {
     memcpy(new_arr, loose_data->loose_array, sizeof(MEdge *) * loose_data->loose_max);
-    MEM_freeN(loose_data->loose_array);
+    MEM_SAFE_FREE(loose_data->loose_array);
   }
   loose_data->loose_max = count;
   loose_data->loose_array = new_arr;
@@ -2286,7 +2286,7 @@ static void lineart_geometry_object_load(LineartObjectInfo *ob_info,
       la_edge++;
       la_seg++;
     }
-    MEM_freeN(loose_data.loose_array);
+    MEM_SAFE_FREE(loose_data.loose_array);
   }
 
   MEM_freeN(edge_feat_data.edge_nabr);
