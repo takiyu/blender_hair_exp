@@ -11,7 +11,9 @@
 #include "BLI_sys_types.h"
 #include "BLI_utildefines.h"
 #ifdef __cplusplus
+#  include "BLI_set.hh"
 #  include "BLI_span.hh"
+#  include "BLI_string_ref.hh"
 #  include "BLI_vector.hh"
 #endif
 
@@ -715,7 +717,8 @@ void CustomData_data_transfer(const struct MeshPairRemap *me_remap,
  * the struct.
  */
 void CustomData_blend_write_prepare(CustomData &data,
-                                    blender::Vector<CustomDataLayer, 16> &layers_to_write);
+                                    blender::Vector<CustomDataLayer, 16> &layers_to_write,
+                                    const blender::Set<blender::StringRef> &skip_names = {});
 
 /**
  * \param layers_to_write: Layers created by #CustomData_blend_write_prepare.
