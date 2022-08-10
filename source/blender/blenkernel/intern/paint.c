@@ -2071,7 +2071,7 @@ void BKE_sculpt_face_sets_ensure_from_base_mesh_visibility(Mesh *mesh)
 
   int *face_sets = CustomData_get_layer(&mesh->pdata, CD_SCULPT_FACE_SETS);
   const bool *hide_face = (const bool *)CustomData_get_layer_named(
-      &mesh->pdata, CD_PROP_BOOL, ".hide_face");
+      &mesh->pdata, CD_PROP_BOOL, ".hide_poly");
 
   for (int i = 0; i < mesh->totpoly; i++) {
     if (!(hide_face && hide_face[i])) {
@@ -2099,7 +2099,7 @@ void BKE_sculpt_sync_face_sets_visibility_to_base_mesh(Mesh *mesh)
     return;
   }
 
-  bool *hide_face = (bool *)CustomData_get_layer_named(&mesh->pdata, CD_PROP_BOOL, ".hide_face");
+  bool *hide_face = (bool *)CustomData_get_layer_named(&mesh->pdata, CD_PROP_BOOL, ".hide_poly");
   if (!hide_face) {
     return;
   }

@@ -361,7 +361,7 @@ void BM_mesh_bm_from_me(BMesh *bm, const Mesh *me, const struct BMeshFromMeshPar
   const bool *hide_edge = (const bool *)CustomData_get_layer_named(
       &me->edata, CD_PROP_BOOL, ".hide_edge");
   const bool *hide_face = (const bool *)CustomData_get_layer_named(
-      &me->pdata, CD_PROP_BOOL, ".hide_face");
+      &me->pdata, CD_PROP_BOOL, ".hide_poly");
 
   Span<MVert> mvert{me->mvert, me->totvert};
   Array<BMVert *> vtable(me->totvert);
@@ -972,7 +972,7 @@ static void convert_bmesh_hide_flags_to_mesh_attributes(BMesh &bm,
         return BM_elem_flag_test(BM_edge_at_index(&bm, i), BM_ELEM_HIDDEN);
       });
   write_elem_flag_to_attribute(
-      attributes, ".hide_face", ATTR_DOMAIN_FACE, need_hide_face, [&](const int i) {
+      attributes, ".hide_poly", ATTR_DOMAIN_FACE, need_hide_face, [&](const int i) {
         return BM_elem_flag_test(BM_face_at_index(&bm, i), BM_ELEM_HIDDEN);
       });
 }

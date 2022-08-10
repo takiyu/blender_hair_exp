@@ -744,7 +744,7 @@ void BKE_mesh_flush_hidden_from_verts(Mesh *me)
       ".hide_vert", ATTR_DOMAIN_POINT, false);
   if (hide_vert.is_single() && !hide_vert.get_internal_single()) {
     attributes.remove(".hide_edge");
-    attributes.remove(".hide_face");
+    attributes.remove(".hide_poly");
     return;
   }
   const VArraySpan<bool> hide_vert_span{hide_vert};
@@ -763,7 +763,7 @@ void BKE_mesh_flush_hidden_from_verts(Mesh *me)
 
   /* Hide faces when any of their vertices are hidden. */
   SpanAttributeWriter<bool> hide_face = attributes.lookup_or_add_for_write_only_span<bool>(
-      ".hide_face", ATTR_DOMAIN_FACE);
+      ".hide_poly", ATTR_DOMAIN_FACE);
   for (const int i : polys.index_range()) {
     const MPoly &poly = polys[i];
     const Span<MLoop> loops = loops.slice(poly.loopstart, poly.totloop);
@@ -780,7 +780,7 @@ void BKE_mesh_flush_hidden_from_polys(Mesh *me)
   MutableAttributeAccessor attributes = mesh_attributes_for_write(*me);
 
   const VArray<bool> hide_face = attributes.lookup_or_default<bool>(
-      ".hide_face", ATTR_DOMAIN_FACE, false);
+      ".hide_poly", ATTR_DOMAIN_FACE, false);
   if (hide_face.is_single() && !hide_face.get_internal_single()) {
     attributes.remove(".hide_vert");
     attributes.remove(".hide_edge");
@@ -908,7 +908,7 @@ void BKE_mesh_flush_select_from_verts(Mesh *me)
       {me->mvert, me->totvert},
       {me->mloop, me->totloop},
       attributes.lookup_or_default<bool>(".hide_edge", ATTR_DOMAIN_EDGE, false),
-      attributes.lookup_or_default<bool>(".hide_face", ATTR_DOMAIN_FACE, false),
+      attributes.lookup_or_default<bool>(".hide_poly", ATTR_DOMAIN_FACE, false),
       {me->medge, me->totedge},
       {me->mpoly, me->totpoly});
 }

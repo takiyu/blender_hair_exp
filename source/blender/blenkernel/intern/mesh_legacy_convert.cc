@@ -907,7 +907,7 @@ void BKE_mesh_legacy_convert_hide_layers_to_flags(Mesh *mesh)
 
   MutableSpan<MPoly> polygons(mesh->mpoly, mesh->totpoly);
   const VArray<bool> hide_face = attributes.lookup_or_default<bool>(
-      ".hide_face", ATTR_DOMAIN_FACE, false);
+      ".hide_poly", ATTR_DOMAIN_FACE, false);
   threading::parallel_for(polygons.index_range(), 4096, [&](IndexRange range) {
     for (const int i : range) {
       SET_FLAG_FROM_TEST(polygons[i].flag, hide_face[i], ME_HIDE);
@@ -953,7 +953,7 @@ void BKE_mesh_legacy_convert_flags_to_hide_layers(Mesh *mesh)
         return poly.flag & ME_HIDE;
       })) {
     SpanAttributeWriter<bool> hide_face = attributes.lookup_or_add_for_write_only_span<bool>(
-        ".hide_face", ATTR_DOMAIN_FACE);
+        ".hide_poly", ATTR_DOMAIN_FACE);
     threading::parallel_for(polygons.index_range(), 4096, [&](IndexRange range) {
       for (const int i : range) {
         hide_face.span[i] = polygons[i].flag & ME_HIDE;

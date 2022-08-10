@@ -489,7 +489,7 @@ static bool rna_MeshPolygon_hide_get(PointerRNA *ptr)
 {
   const Mesh *mesh = rna_mesh(ptr);
   const bool *hide_face = (const bool *)CustomData_get_layer_named(
-      &mesh->pdata, CD_PROP_BOOL, ".hide_face");
+      &mesh->pdata, CD_PROP_BOOL, ".hide_poly");
   const int index = (const MPoly *)ptr->data - mesh->mpoly;
   BLI_assert(index >= 0);
   BLI_assert(index < mesh->totpoly);
@@ -499,7 +499,7 @@ static bool rna_MeshPolygon_hide_get(PointerRNA *ptr)
 static void rna_MeshPolygon_hide_set(PointerRNA *ptr, bool value)
 {
   Mesh *mesh = rna_mesh(ptr);
-  bool *hide_face = (bool *)CustomData_get_layer_named(&mesh->pdata, CD_PROP_BOOL, ".hide_face");
+  bool *hide_face = (bool *)CustomData_get_layer_named(&mesh->pdata, CD_PROP_BOOL, ".hide_poly");
   const int index = (const MPoly *)ptr->data - mesh->mpoly;
   BLI_assert(index >= 0);
   BLI_assert(index < mesh->totpoly);

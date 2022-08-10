@@ -584,7 +584,7 @@ MeshRenderData *mesh_render_data_create(Object *object,
     mr->hide_edge = static_cast<const bool *>(
         CustomData_get_layer_named(&me->edata, CD_PROP_BOOL, ".hide_edge"));
     mr->hide_face = static_cast<const bool *>(
-        CustomData_get_layer_named(&me->pdata, CD_PROP_BOOL, ".hide_face"));
+        CustomData_get_layer_named(&me->pdata, CD_PROP_BOOL, ".hide_poly"));
   }
   else {
     /* #BMesh */

@@ -83,9 +83,9 @@ void paintface_flush_flags(bContext *C,
     }
     if (flush_hidden) {
       const VArray<bool> hide_face_me = attributes_me.lookup_or_default<bool>(
-          ".hide_face", ATTR_DOMAIN_FACE, false);
+          ".hide_poly", ATTR_DOMAIN_FACE, false);
       bke::SpanAttributeWriter<bool> hide_face_orig =
-          attributes_orig.lookup_or_add_for_write_only_span<bool>(".hide_face", ATTR_DOMAIN_FACE);
+          attributes_orig.lookup_or_add_for_write_only_span<bool>(".hide_poly", ATTR_DOMAIN_FACE);
       hide_face_me.materialize(hide_face_orig.span);
       hide_face_orig.finish();
     }
@@ -104,9 +104,9 @@ void paintface_flush_flags(bContext *C,
         }
       }
       const VArray<bool> hide_face_orig = attributes_orig.lookup_or_default<bool>(
-          ".hide_face", ATTR_DOMAIN_FACE, false);
+          ".hide_poly", ATTR_DOMAIN_FACE, false);
       bke::SpanAttributeWriter<bool> hide_face_eval =
-          attributes_eval.lookup_or_add_for_write_only_span<bool>(".hide_face", ATTR_DOMAIN_FACE);
+          attributes_eval.lookup_or_add_for_write_only_span<bool>(".hide_poly", ATTR_DOMAIN_FACE);
       for (const int i : IndexRange(me_eval->totpoly)) {
         const int orig_face_index = index_array[i];
         if (orig_face_index != ORIGINDEX_NONE) {
@@ -146,7 +146,7 @@ void paintface_hide(bContext *C, Object *ob, const bool unselected)
 
   bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*me);
   bke::SpanAttributeWriter<bool> hide_face = attributes.lookup_or_add_for_write_span<bool>(
-      ".hide_face", ATTR_DOMAIN_FACE);
+      ".hide_poly", ATTR_DOMAIN_FACE);
 
   for (int i = 0; i < me->totpoly; i++) {
     MPoly *mpoly = &me->mpoly[i];
@@ -180,7 +180,7 @@ void paintface_reveal(bContext *C, Object *ob, const bool select)
 
   if (select) {
     const VArray<bool> hide_face = attributes.lookup_or_default<bool>(
-        ".hide_face", ATTR_DOMAIN_FACE, false);
+        ".hide_poly", ATTR_DOMAIN_FACE, false);
     for (int i = 0; i < me->totpoly; i++) {
       MPoly *mpoly = &me->mpoly[i];
       if (hide_face[i]) {
@@ -189,7 +189,7 @@ void paintface_reveal(bContext *C, Object *ob, const bool select)
     }
   }
 
-  attributes.remove(".hide_face");
+  attributes.remove(".hide_poly");
 
   BKE_mesh_flush_hidden_from_polys(me);
 
@@ -209,7 +209,7 @@ static void select_linked_tfaces_with_seams(Mesh *me, const uint index, const bo
 
   bke::AttributeAccessor attributes = bke::mesh_attributes(*me);
   const VArray<bool> hide_face = attributes.lookup_or_default<bool>(
-      ".hide_face", ATTR_DOMAIN_FACE, false);
+      ".hide_poly", ATTR_DOMAIN_FACE, false);
 
   if (index != (uint)-1) {
     /* only put face under cursor in array */
@@ -305,7 +305,7 @@ bool paintface_deselect_all_visible(bContext *C, Object *ob, int action, bool fl
 
   bke::AttributeAccessor attributes = bke::mesh_attributes(*me);
   const VArray<bool> hide_face = attributes.lookup_or_default<bool>(
-      ".hide_face", ATTR_DOMAIN_FACE, false);
+      ".hide_poly", ATTR_DOMAIN_FACE, false);
 
   if (action == SEL_TOGGLE) {
     action = SEL_SELECT;
@@ -369,7 +369,7 @@ bool paintface_minmax(Object *ob, float r_min[3], float r_max[3])
 
   bke::AttributeAccessor attributes = bke::mesh_attributes(*me);
   const VArray<bool> hide_face = attributes.lookup_or_default<bool>(
-      ".hide_face", ATTR_DOMAIN_FACE, false);
+      ".hide_poly", ATTR_DOMAIN_FACE, false);
 
   for (int i = 0; i < me->totpoly; i++) {
     MPoly *mp = &me->mpoly[i];
@@ -406,7 +406,7 @@ bool paintface_mouse_select(bContext *C,
 
   bke::AttributeAccessor attributes = bke::mesh_attributes(*me);
   const VArray<bool> hide_face = attributes.lookup_or_default<bool>(
-      ".hide_face", ATTR_DOMAIN_FACE, false);
+      ".hide_poly", ATTR_DOMAIN_FACE, false);
 
   if (ED_mesh_pick_face(C, ob, mval, ED_MESH_PICK_DEFAULT_FACE_DIST, &index)) {
     if (index < me->totpoly) {
@@ -531,7 +531,7 @@ bool paintvert_deselect_all_visible(Object *ob, int action, bool flush_flags)
   const VArray<bool> hide_vert = attributes.lookup_or_default<bool>(
       ".hide_vert", ATTR_DOMAIN_POINT, false);
   const VArray<bool> hide_face = attributes.lookup_or_default<bool>(
-      ".hide_face", ATTR_DOMAIN_FACE, false);
+      ".hide_poly", ATTR_DOMAIN_FACE, false);
 
   if (action == SEL_TOGGLE) {
     action = SEL_SELECT;
@@ -604,7 +604,7 @@ void paintvert_select_ungrouped(Object *ob, bool extend, bool flush_flags)
 
   bke::AttributeAccessor attributes = bke::mesh_attributes(*me);
   const VArray<bool> hide_face = attributes.lookup_or_default<bool>(
-      ".hide_face", ATTR_DOMAIN_FACE, false);
+      ".hide_poly", ATTR_DOMAIN_FACE, false);
 
   for (int i = 0; i < me->totvert; i++) {
     MVert *mv = &me->mvert[i];
