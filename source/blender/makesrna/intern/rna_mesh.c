@@ -488,22 +488,22 @@ static void rna_MeshPolygon_normal_get(PointerRNA *ptr, float *values)
 static bool rna_MeshPolygon_hide_get(PointerRNA *ptr)
 {
   const Mesh *mesh = rna_mesh(ptr);
-  const bool *hide_face = (const bool *)CustomData_get_layer_named(
+  const bool *hide_poly = (const bool *)CustomData_get_layer_named(
       &mesh->pdata, CD_PROP_BOOL, ".hide_poly");
   const int index = (const MPoly *)ptr->data - mesh->mpoly;
   BLI_assert(index >= 0);
   BLI_assert(index < mesh->totpoly);
-  return hide_face[index];
+  return hide_poly[index];
 }
 
 static void rna_MeshPolygon_hide_set(PointerRNA *ptr, bool value)
 {
   Mesh *mesh = rna_mesh(ptr);
-  bool *hide_face = (bool *)CustomData_get_layer_named(&mesh->pdata, CD_PROP_BOOL, ".hide_poly");
+  bool *hide_poly = (bool *)CustomData_get_layer_named(&mesh->pdata, CD_PROP_BOOL, ".hide_poly");
   const int index = (const MPoly *)ptr->data - mesh->mpoly;
   BLI_assert(index >= 0);
   BLI_assert(index < mesh->totpoly);
-  hide_face[index] = value;
+  hide_poly[index] = value;
 }
 
 static void rna_MeshPolygon_center_get(PointerRNA *ptr, float *values)

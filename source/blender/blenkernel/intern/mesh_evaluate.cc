@@ -762,15 +762,15 @@ void BKE_mesh_flush_hidden_from_verts(Mesh *me)
   hide_edge.finish();
 
   /* Hide faces when any of their vertices are hidden. */
-  SpanAttributeWriter<bool> hide_face = attributes.lookup_or_add_for_write_only_span<bool>(
+  SpanAttributeWriter<bool> hide_poly = attributes.lookup_or_add_for_write_only_span<bool>(
       ".hide_poly", ATTR_DOMAIN_FACE);
   for (const int i : polys.index_range()) {
     const MPoly &poly = polys[i];
     const Span<MLoop> loops = loops.slice(poly.loopstart, poly.totloop);
-    hide_face.span[i] = std::any_of(
+    hide_poly.span[i] = std::any_of(
         loops.begin(), loops.end(), [&](const MLoop &loop) { return hide_vert_span[loop.v]; });
   }
-  hide_face.finish();
+  hide_poly.finish();
 }
 
 void BKE_mesh_flush_hidden_from_polys(Mesh *me)
@@ -779,14 +779,14 @@ void BKE_mesh_flush_hidden_from_polys(Mesh *me)
   using namespace blender::bke;
   MutableAttributeAccessor attributes = mesh_attributes_for_write(*me);
 
-  const VArray<bool> hide_face = attributes.lookup_or_default<bool>(
+  const VArray<bool> hide_poly = attributes.lookup_or_default<bool>(
       ".hide_poly", ATTR_DOMAIN_FACE, false);
-  if (hide_face.is_single() && !hide_face.get_internal_single()) {
+  if (hide_poly.is_single() && !hide_poly.get_internal_single()) {
     attributes.remove(".hide_vert");
     attributes.remove(".hide_edge");
     return;
   }
-  const VArraySpan<bool> hide_face_span{hide_face};
+  const VArraySpan<bool> hide_face_span{hide_poly};
   const Span<MPoly> polys(me->mpoly, me->totpoly);
   const Span<MLoop> loops(me->mloop, me->totloop);
   SpanAttributeWriter<bool> hide_vert = attributes.lookup_or_add_for_write_only_span<bool>(
@@ -865,7 +865,7 @@ void BKE_mesh_flush_select_from_polys(Mesh *me)
 static void mesh_flush_select_from_verts(const Span<MVert> verts,
                                          const Span<MLoop> loops,
                                          const VArray<bool> &hide_edge,
-                                         const VArray<bool> &hide_face,
+                                         const VArray<bool> &hide_poly,
                                          MutableSpan<MEdge> edges,
                                          MutableSpan<MPoly> polys)
 {
@@ -882,7 +882,7 @@ static void mesh_flush_select_from_verts(const Span<MVert> verts,
   }
 
   for (const int i : polys.index_range()) {
-    if (hide_face[i]) {
+    if (hide_poly[i]) {
       continue;
     }
     MPoly &poly = polys[i];

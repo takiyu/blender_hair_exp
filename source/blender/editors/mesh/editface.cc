@@ -145,23 +145,23 @@ void paintface_hide(bContext *C, Object *ob, const bool unselected)
   }
 
   bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*me);
-  bke::SpanAttributeWriter<bool> hide_face = attributes.lookup_or_add_for_write_span<bool>(
+  bke::SpanAttributeWriter<bool> hide_poly = attributes.lookup_or_add_for_write_span<bool>(
       ".hide_poly", ATTR_DOMAIN_FACE);
 
   for (int i = 0; i < me->totpoly; i++) {
     MPoly *mpoly = &me->mpoly[i];
-    if (!hide_face.span[i]) {
+    if (!hide_poly.span[i]) {
       if (((mpoly->flag & ME_FACE_SEL) == 0) == unselected) {
-        hide_face.span[i] = true;
+        hide_poly.span[i] = true;
       }
     }
 
-    if (hide_face.span[i]) {
+    if (hide_poly.span[i]) {
       mpoly->flag &= ~ME_FACE_SEL;
     }
   }
 
-  hide_face.finish();
+  hide_poly.finish();
 
   BKE_mesh_flush_hidden_from_polys(me);
 
@@ -179,11 +179,11 @@ void paintface_reveal(bContext *C, Object *ob, const bool select)
   bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*me);
 
   if (select) {
-    const VArray<bool> hide_face = attributes.lookup_or_default<bool>(
+    const VArray<bool> hide_poly = attributes.lookup_or_default<bool>(
         ".hide_poly", ATTR_DOMAIN_FACE, false);
     for (int i = 0; i < me->totpoly; i++) {
       MPoly *mpoly = &me->mpoly[i];
-      if (hide_face[i]) {
+      if (hide_poly[i]) {
         mpoly->flag |= ME_FACE_SEL;
       }
     }
@@ -208,7 +208,7 @@ static void select_linked_tfaces_with_seams(Mesh *me, const uint index, const bo
   BLI_bitmap *poly_tag = BLI_BITMAP_NEW(me->totpoly, __func__);
 
   bke::AttributeAccessor attributes = bke::mesh_attributes(*me);
-  const VArray<bool> hide_face = attributes.lookup_or_default<bool>(
+  const VArray<bool> hide_poly = attributes.lookup_or_default<bool>(
       ".hide_poly", ATTR_DOMAIN_FACE, false);
 
   if (index != (uint)-1) {
@@ -221,7 +221,7 @@ static void select_linked_tfaces_with_seams(Mesh *me, const uint index, const bo
     /* fill array by selection */
     for (int i = 0; i < me->totpoly; i++) {
       MPoly *mp = &me->mpoly[i];
-      if (hide_face[i]) {
+      if (hide_poly[i]) {
         /* pass */
       }
       else if (mp->flag & ME_FACE_SEL) {
@@ -237,7 +237,7 @@ static void select_linked_tfaces_with_seams(Mesh *me, const uint index, const bo
     /* expand selection */
     for (int i = 0; i < me->totpoly; i++) {
       MPoly *mp = &me->mpoly[i];
-      if (hide_face[i]) {
+      if (hide_poly[i]) {
         continue;
       }
 
@@ -304,7 +304,7 @@ bool paintface_deselect_all_visible(bContext *C, Object *ob, int action, bool fl
   }
 
   bke::AttributeAccessor attributes = bke::mesh_attributes(*me);
-  const VArray<bool> hide_face = attributes.lookup_or_default<bool>(
+  const VArray<bool> hide_poly = attributes.lookup_or_default<bool>(
       ".hide_poly", ATTR_DOMAIN_FACE, false);
 
   if (action == SEL_TOGGLE) {
@@ -312,7 +312,7 @@ bool paintface_deselect_all_visible(bContext *C, Object *ob, int action, bool fl
 
     for (int i = 0; i < me->totpoly; i++) {
       MPoly *mpoly = &me->mpoly[i];
-      if (!hide_face[i] && mpoly->flag & ME_FACE_SEL) {
+      if (!hide_poly[i] && mpoly->flag & ME_FACE_SEL) {
         action = SEL_DESELECT;
         break;
       }
@@ -323,7 +323,7 @@ bool paintface_deselect_all_visible(bContext *C, Object *ob, int action, bool fl
 
   for (int i = 0; i < me->totpoly; i++) {
     MPoly *mpoly = &me->mpoly[i];
-    if (!hide_face[i]) {
+    if (!hide_poly[i]) {
       switch (action) {
         case SEL_SELECT:
           if ((mpoly->flag & ME_FACE_SEL) == 0) {
@@ -368,12 +368,12 @@ bool paintface_minmax(Object *ob, float r_min[3], float r_max[3])
   copy_m3_m4(bmat, ob->obmat);
 
   bke::AttributeAccessor attributes = bke::mesh_attributes(*me);
-  const VArray<bool> hide_face = attributes.lookup_or_default<bool>(
+  const VArray<bool> hide_poly = attributes.lookup_or_default<bool>(
       ".hide_poly", ATTR_DOMAIN_FACE, false);
 
   for (int i = 0; i < me->totpoly; i++) {
     MPoly *mp = &me->mpoly[i];
-    if (hide_face[i] || !(mp->flag & ME_FACE_SEL)) {
+    if (hide_poly[i] || !(mp->flag & ME_FACE_SEL)) {
       continue;
     }
 
@@ -405,13 +405,13 @@ bool paintface_mouse_select(bContext *C,
   Mesh *me = BKE_mesh_from_object(ob);
 
   bke::AttributeAccessor attributes = bke::mesh_attributes(*me);
-  const VArray<bool> hide_face = attributes.lookup_or_default<bool>(
+  const VArray<bool> hide_poly = attributes.lookup_or_default<bool>(
       ".hide_poly", ATTR_DOMAIN_FACE, false);
 
   if (ED_mesh_pick_face(C, ob, mval, ED_MESH_PICK_DEFAULT_FACE_DIST, &index)) {
     if (index < me->totpoly) {
       mpoly_sel = me->mpoly + index;
-      if (!hide_face[index]) {
+      if (!hide_poly[index]) {
         found = true;
       }
     }
@@ -530,7 +530,7 @@ bool paintvert_deselect_all_visible(Object *ob, int action, bool flush_flags)
   bke::AttributeAccessor attributes = bke::mesh_attributes(*me);
   const VArray<bool> hide_vert = attributes.lookup_or_default<bool>(
       ".hide_vert", ATTR_DOMAIN_POINT, false);
-  const VArray<bool> hide_face = attributes.lookup_or_default<bool>(
+  const VArray<bool> hide_poly = attributes.lookup_or_default<bool>(
       ".hide_poly", ATTR_DOMAIN_FACE, false);
 
   if (action == SEL_TOGGLE) {
@@ -538,7 +538,7 @@ bool paintvert_deselect_all_visible(Object *ob, int action, bool flush_flags)
 
     for (int i = 0; i < me->totvert; i++) {
       MVert *mvert = &me->mvert[i];
-      if (!hide_face[i] && mvert->flag & SELECT) {
+      if (!hide_poly[i] && mvert->flag & SELECT) {
         action = SEL_DESELECT;
         break;
       }
@@ -603,13 +603,13 @@ void paintvert_select_ungrouped(Object *ob, bool extend, bool flush_flags)
   }
 
   bke::AttributeAccessor attributes = bke::mesh_attributes(*me);
-  const VArray<bool> hide_face = attributes.lookup_or_default<bool>(
+  const VArray<bool> hide_poly = attributes.lookup_or_default<bool>(
       ".hide_poly", ATTR_DOMAIN_FACE, false);
 
   for (int i = 0; i < me->totvert; i++) {
     MVert *mv = &me->mvert[i];
     MDeformVert *dv = &me->dvert[i];
-    if (!hide_face[i]) {
+    if (!hide_poly[i]) {
       if (dv->dw == nullptr) {
         /* if null weight then not grouped */
         mv->flag |= SELECT;

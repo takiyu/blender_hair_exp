@@ -87,7 +87,7 @@ static void extract_pos_nor_iter_poly_mesh(const MeshRenderData *mr,
                                            void *_data)
 {
   MeshExtract_PosNor_Data *data = static_cast<MeshExtract_PosNor_Data *>(_data);
-  const bool face_hidden = mr->hide_face && mr->hide_face[mp_index];
+  const bool face_hidden = mr->hide_poly && mr->hide_poly[mp_index];
 
   const MLoop *mloop = mr->mloop;
   const int ml_index_end = mp->loopstart + mp->totloop;
@@ -434,7 +434,7 @@ static void extract_pos_nor_hq_iter_poly_mesh(const MeshRenderData *mr,
                                               void *_data)
 {
   MeshExtract_PosNorHQ_Data *data = static_cast<MeshExtract_PosNorHQ_Data *>(_data);
-  const bool face_hidden = mr->hide_face && mr->hide_face[mp - mr->mpoly];
+  const bool face_hidden = mr->hide_poly && mr->hide_poly[mp - mr->mpoly];
 
   const MLoop *mloop = mr->mloop;
   const int ml_index_end = mp->loopstart + mp->totloop;

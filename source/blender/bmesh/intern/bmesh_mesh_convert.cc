@@ -361,7 +361,7 @@ void BM_mesh_bm_from_me(BMesh *bm, const Mesh *me, const struct BMeshFromMeshPar
       &me->vdata, CD_PROP_BOOL, ".hide_vert");
   const bool *hide_edge = (const bool *)CustomData_get_layer_named(
       &me->edata, CD_PROP_BOOL, ".hide_edge");
-  const bool *hide_face = (const bool *)CustomData_get_layer_named(
+  const bool *hide_poly = (const bool *)CustomData_get_layer_named(
       &me->pdata, CD_PROP_BOOL, ".hide_poly");
 
   Span<MVert> mvert{me->mvert, me->totvert};
@@ -475,7 +475,7 @@ void BM_mesh_bm_from_me(BMesh *bm, const Mesh *me, const struct BMeshFromMeshPar
 
     /* Transfer flag. */
     f->head.hflag = BM_face_flag_from_mflag(mpoly[i].flag & ~ME_FACE_SEL);
-    if (hide_face && hide_face[i]) {
+    if (hide_poly && hide_poly[i]) {
       BM_elem_flag_enable(f, BM_ELEM_HIDDEN);
     }
 

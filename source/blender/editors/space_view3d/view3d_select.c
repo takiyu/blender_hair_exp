@@ -369,11 +369,11 @@ static bool edbm_backbuf_check_and_select_faces_obmode(Mesh *me,
   const BLI_bitmap *select_bitmap = esel->select_bitmap;
 
   if (mpoly) {
-    const bool *hide_face = (const bool *)CustomData_get_layer_named(
+    const bool *hide_poly = (const bool *)CustomData_get_layer_named(
         &me->vdata, CD_PROP_BOOL, ".hide_poly");
 
     for (int index = 0; index < me->totpoly; index++, mpoly++) {
-      if (!(hide_face && hide_face[index])) {
+      if (!(hide_poly && hide_poly[index])) {
         const bool is_select = mpoly->flag & ME_FACE_SEL;
         const bool is_inside = BLI_BITMAP_TEST_BOOL(select_bitmap, index);
         const int sel_op_result = ED_select_op_action_deselected(sel_op, is_select, is_inside);
