@@ -302,6 +302,9 @@ static void imapaint_pick_uv(
   minabsw = 1e10;
   uv[0] = uv[1] = 0.0;
 
+  const int *material_indices = (const int *)CustomData_get_layer_named(
+      &me_eval->pdata, CD_PROP_INT32, "material_index");
+
   /* test all faces in the derivedmesh with the original index of the picked face */
   /* face means poly here, not triangle, indeed */
   for (i = 0; i < tottri; i++, lt++) {
@@ -321,7 +324,8 @@ static void imapaint_pick_uv(
         const Material *ma;
         const TexPaintSlot *slot;
 
-        ma = BKE_object_material_get(ob_eval, mp->mat_nr + 1);
+        ma = BKE_object_material_get(
+            ob_eval, material_indices == NULL ? 1 : material_indices[lt->poly] + 1);
         slot = &ma->texpaintslot[ma->paint_active_slot];
 
         if (!(slot && slot->uvname &&
@@ -397,6 +401,9 @@ void paint_sample_color(
   SpaceImage *sima = CTX_wm_space_image(C);
   const View3D *v3d = CTX_wm_view3d(C);
 
+  const int *material_indices = (const int *)CustomData_get_layer_named(
+      &me_eval->pdata, CD_PROP_INT32, "material_index");
+
   if (v3d && texpaint_proj) {
     /* first try getting a color directly from the mesh faces if possible */
     ViewLayer *view_layer = CTX_data_view_layer(C);
@@ -428,7 +435,8 @@ void paint_sample_color(
           if (use_material) {
             /* Image and texture interpolation from material. */
             MPoly *mp = me_eval->mpoly + faceindex;
-            Material *ma = BKE_object_material_get(ob_eval, mp->mat_nr + 1);
+            Material *ma = BKE_object_material_get(
+                ob_eval, material_indices == NULL ? 1 : material_indices[faceindex] + 1);
 
             /* Force refresh since paint slots are not updated when changing interpolation. */
             BKE_texpaint_slot_refresh_cache(scene, ma, ob);

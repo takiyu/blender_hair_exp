@@ -249,6 +249,7 @@ static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispba
   MEdge *medge = edges.data();
   MPoly *mpoly = polys.data();
   MLoop *mloop = loops.data();
+  int *material_indices = BKE_mesh_material_indices_for_write(mesh);
   MLoopUV *mloopuv = static_cast<MLoopUV *>(CustomData_add_layer_named(
       &mesh->ldata, CD_MLOOPUV, CD_CALLOC, nullptr, mesh->totloop, "UVMap"));
 
@@ -327,7 +328,7 @@ static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispba
         mloop[2].v = startvert + index[1];
         mpoly->loopstart = (int)(mloop - loops.data());
         mpoly->totloop = 3;
-        mpoly->mat_nr = dl->col;
+        material_indices[mpoly - polygons.data()] = dl->col;
 
         if (mloopuv) {
           for (int i = 0; i < 3; i++, mloopuv++) {
@@ -387,7 +388,7 @@ static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispba
           mloop[3].v = p2;
           mpoly->loopstart = (int)(mloop - loops.data());
           mpoly->totloop = 4;
-          mpoly->mat_nr = dl->col;
+          material_indices[mpoly - polygons.data()] = dl->col;
 
           if (mloopuv) {
             int orco_sizeu = dl->nr - 1;

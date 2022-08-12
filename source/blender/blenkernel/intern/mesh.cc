@@ -33,6 +33,7 @@
 #include "BLI_task.hh"
 #include "BLI_utildefines.h"
 #include "BLI_vector.hh"
+#include "BLI_virtual_array.hh"
 
 #include "BLT_translation.h"
 
@@ -1408,61 +1409,53 @@ void BKE_mesh_assign_object(Main *bmain, Object *ob, Mesh *me)
 
 void BKE_mesh_material_index_remove(Mesh *me, short index)
 {
-  MPoly *mp;
-  MFace *mf;
-  int i;
-
-  for (mp = me->mpoly, i = 0; i < me->totpoly; i++, mp++) {
-    if (mp->mat_nr && mp->mat_nr >= index) {
-      mp->mat_nr--;
+  using namespace blender;
+  using namespace blender::bke;
+  MutableAttributeAccessor attributes = mesh_attributes(*me);
+  AttributeWriter<int> material_indices = attributes.lookup_for_write<int>("material_index");
+  if (!material_indices) {
+    return;
+  }
+  MutableVArraySpan<int> indices_span(material_indices.varray);
+  for (const int i : indices_span.index_range()) {
+    if (indices_span[i] > 0 && indices_span[i] > index) {
+      indices_span[i]--;
     }
   }
+  indices_span.save();
+  material_indices.finish();
 
-  for (mf = me->mface, i = 0; i < me->totface; i++, mf++) {
-    if (mf->mat_nr && mf->mat_nr >= index) {
-      mf->mat_nr--;
-    }
-  }
+  BKE_mesh_tessface_clear(me);
 }
 
 bool BKE_mesh_material_index_used(Mesh *me, short index)
 {
-  MPoly *mp;
-  MFace *mf;
-  int i;
-
-  for (mp = me->mpoly, i = 0; i < me->totpoly; i++, mp++) {
-    if (mp->mat_nr == index) {
-      return true;
-    }
+  using namespace blender;
+  using namespace blender::bke;
+  const AttributeAccessor attributes = mesh_attributes(*me);
+  const VArray<int> material_indices = attributes.lookup_or_default<int>(
+      "material_index", ATTR_DOMAIN_POINT, 0);
+  if (material_indices.is_single()) {
+    return material_indices.get_internal_single() == index;
   }
-
-  for (mf = me->mface, i = 0; i < me->totface; i++, mf++) {
-    if (mf->mat_nr == index) {
-      return true;
-    }
-  }
-
-  return false;
+  const VArraySpan<int> indices_span(material_indices);
+  return indices_span.contains(index);
 }
 
 void BKE_mesh_material_index_clear(Mesh *me)
 {
-  MPoly *mp;
-  MFace *mf;
-  int i;
+  using namespace blender;
+  using namespace blender::bke;
+  MutableAttributeAccessor attributes = mesh_attributes(*me);
+  attributes.remove("material_index");
 
-  for (mp = me->mpoly, i = 0; i < me->totpoly; i++, mp++) {
-    mp->mat_nr = 0;
-  }
-
-  for (mf = me->mface, i = 0; i < me->totface; i++, mf++) {
-    mf->mat_nr = 0;
-  }
+  BKE_mesh_tessface_clear(me);
 }
 
 void BKE_mesh_material_remap(Mesh *me, const uint *remap, uint remap_len)
 {
+  using namespace blender;
+  using namespace blender::bke;
   const short remap_len_short = (short)remap_len;
 
 #define MAT_NR_REMAP(n) \
@@ -1482,10 +1475,17 @@ void BKE_mesh_material_remap(Mesh *me, const uint *remap, uint remap_len)
     }
   }
   else {
-    int i;
-    for (i = 0; i < me->totpoly; i++) {
-      MAT_NR_REMAP(me->mpoly[i].mat_nr);
+    MutableAttributeAccessor attributes = mesh_attributes(*me);
+    AttributeWriter<int> material_indices = attributes.lookup_for_write<int>("material_index");
+    if (!material_indices) {
+      return;
     }
+    MutableVArraySpan<int> indices_span(material_indices.varray);
+    for (const int i : indices_span.index_range()) {
+      MAT_NR_REMAP(indices_span[i]);
+    }
+    indices_span.save();
+    material_indices.finish();
   }
 
 #undef MAT_NR_REMAP

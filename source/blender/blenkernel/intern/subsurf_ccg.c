@@ -1141,7 +1141,8 @@ static void ccgDM_copyFinalPolyArray(DerivedMesh *dm, MPoly *mpoly)
         for (x = 0; x < gridSize - 1; x++) {
           MPoly *mp = &mpoly[i];
 
-          mp->mat_nr = mat_nr;
+          /* TODO: Unbreak multires materials :( */
+          // mp->mat_nr = mat_nr;
           mp->flag = flag;
           mp->loopstart = k;
           mp->totloop = 4;
@@ -1607,6 +1608,8 @@ static void set_ccgdm_all_geometry(CCGDerivedMesh *ccgdm,
   medge = dm->getEdgeArray(dm);
 
   const MPoly *mpoly = CustomData_get_layer(&dm->polyData, CD_MPOLY);
+  const int *material_indices = CustomData_get_layer_named(
+      &dm->polyData, CD_MPOLY, "material_index");
   const int *base_polyOrigIndex = CustomData_get_layer(&dm->polyData, CD_ORIGINDEX);
 
   int *vertOrigIndex = DM_get_vert_data_layer(&ccgdm->dm, CD_ORIGINDEX);
@@ -1635,7 +1638,7 @@ static void set_ccgdm_all_geometry(CCGDerivedMesh *ccgdm,
     ccgdm->faceMap[index].startFace = faceNum;
 
     faceFlags->flag = mpoly ? mpoly[origIndex].flag : 0;
-    faceFlags->mat_nr = mpoly ? mpoly[origIndex].mat_nr : 0;
+    faceFlags->mat_nr = material_indices ? material_indices[origIndex] : 0;
     faceFlags++;
 
     /* set the face base vert */

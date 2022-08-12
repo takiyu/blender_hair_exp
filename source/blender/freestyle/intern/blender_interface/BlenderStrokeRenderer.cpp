@@ -583,7 +583,8 @@ void BlenderStrokeRenderer::GenerateStrokeMesh(StrokeGroup *group, bool hasTex)
       &mesh->pdata, CD_MPOLY, CD_CALLOC, nullptr, mesh->totpoly);
   mesh->mloop = (MLoop *)CustomData_add_layer(
       &mesh->ldata, CD_MLOOP, CD_CALLOC, nullptr, mesh->totloop);
-
+  int *material_indices = (int *)CustomData_add_layer_named(
+      &mesh->pdata, CD_PROP_INT32, CD_DEFAULT, nullptr, mesh->totpoly, "material_index");
   MVert *vertices = mesh->mvert;
   MEdge *edges = mesh->medge;
   MPoly *polys = mesh->mpoly;
@@ -713,7 +714,8 @@ void BlenderStrokeRenderer::GenerateStrokeMesh(StrokeGroup *group, bool hasTex)
           // poly
           polys->loopstart = loop_index;
           polys->totloop = 3;
-          polys->mat_nr = matnr;
+          *material_indices = matnr;
+          ++material_indices;
           ++polys;
 
           // Even and odd loops connect triangles vertices differently
