@@ -18,7 +18,6 @@ struct Mesh;
 struct MFace;
 
 /**
-<<<<<<< HEAD
  * Copy bevel weights from separate layers into vertices and edges.
  */
 void BKE_mesh_legacy_bevel_weight_from_layers(struct Mesh *mesh);
@@ -26,7 +25,8 @@ void BKE_mesh_legacy_bevel_weight_from_layers(struct Mesh *mesh);
  * Copy bevel weights from vertices and edges to separate layers.
  */
 void BKE_mesh_legacy_bevel_weight_to_layers(struct Mesh *mesh);
-=======
+
+/**
  * Convert the hidden element attributes to the old flag format for writing.
  */
 void BKE_mesh_legacy_convert_hide_layers_to_flags(struct Mesh *mesh);
@@ -35,7 +35,6 @@ void BKE_mesh_legacy_convert_hide_layers_to_flags(struct Mesh *mesh);
  * Only add the attributes when there are any elements in each domain hidden.
  */
 void BKE_mesh_legacy_convert_flags_to_hide_layers(struct Mesh *mesh);
->>>>>>> master
 
 /**
  * Recreate #MFace Tessellation.

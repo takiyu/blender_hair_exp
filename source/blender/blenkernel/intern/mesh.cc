@@ -5,8 +5,6 @@
  * \ingroup bke
  */
 
-#include <algorithm>
-
 #include "MEM_guardedalloc.h"
 
 /* Allow using deprecated functionality for .blend file I/O. */
@@ -66,13 +64,8 @@
 #include "BLO_read_write.h"
 
 using blender::float3;
-<<<<<<< HEAD
-using blender::IndexRange;
-using blender::MutableSpan;
-=======
 using blender::MutableSpan;
 using blender::VArray;
->>>>>>> master
 using blender::Vector;
 
 static void mesh_clear_geometry(Mesh *mesh);
@@ -254,16 +247,13 @@ static void mesh_blend_write(BlendWriter *writer, ID *id, const void *id_address
   else {
     if (!BLO_write_is_undo(writer)) {
       BKE_mesh_legacy_convert_hide_layers_to_flags(mesh);
+      BKE_mesh_legacy_bevel_weight_from_layers(mesh);
     }
 
     CustomData_blend_write_prepare(mesh->vdata, vert_layers, {".hide_vert"});
     CustomData_blend_write_prepare(mesh->edata, edge_layers, {".hide_edge"});
     CustomData_blend_write_prepare(mesh->ldata, loop_layers);
     CustomData_blend_write_prepare(mesh->pdata, poly_layers, {".hide_poly"});
-  }
-
-  if (!BLO_write_is_undo(writer)) {
-    BKE_mesh_legacy_bevel_weight_from_layers(mesh);
   }
 
   BLO_write_id_struct(writer, Mesh, id_address, &mesh->id);
@@ -343,11 +333,8 @@ static void mesh_blend_read_data(BlendDataReader *reader, ID *id)
   }
 
   if (!BLO_read_data_is_undo(reader)) {
-<<<<<<< HEAD
-    BKE_mesh_legacy_bevel_weight_to_layers(mesh);
-=======
     BKE_mesh_legacy_convert_flags_to_hide_layers(mesh);
->>>>>>> master
+    BKE_mesh_legacy_bevel_weight_to_layers(mesh);
   }
 
   /* We don't expect to load normals from files, since they are derived data. */

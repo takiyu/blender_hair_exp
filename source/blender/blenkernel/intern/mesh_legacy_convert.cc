@@ -878,7 +878,6 @@ void BKE_mesh_add_mface_layers(CustomData *fdata, CustomData *ldata, int total)
 /** \} */
 
 /* -------------------------------------------------------------------- */
-<<<<<<< HEAD
 /** \name Bevel Weight Conversion
  * \{ */
 
@@ -932,7 +931,12 @@ void BKE_mesh_legacy_bevel_weight_to_layers(Mesh *mesh)
     for (const int i : edges.index_range()) {
       weights[i] = edges[i].bweight / 255.0f;
     }
-=======
+  }
+}
+
+/** \} */
+
+/* -------------------------------------------------------------------- */
 /** \name Hide Attribute and Legacy Flag Conversion
  * \{ */
 
@@ -1013,7 +1017,6 @@ void BKE_mesh_legacy_convert_flags_to_hide_layers(Mesh *mesh)
       }
     });
     hide_poly.finish();
->>>>>>> master
   }
 }
 

@@ -352,10 +352,6 @@ static void rna_Mesh_update_positions_tag(Main *bmain, Scene *scene, PointerRNA 
 /** \name Property get/set Callbacks
  * \{ */
 
-<<<<<<< HEAD
-static int rna_MeshVertex_index_get(PointerRNA *ptr);
-static int rna_MeshEdge_index_get(PointerRNA *ptr);
-=======
 static int rna_MeshVertex_index_get(PointerRNA *ptr)
 {
   const Mesh *mesh = rna_mesh(ptr);
@@ -405,7 +401,6 @@ static int rna_MeshLoopTriangle_index_get(PointerRNA *ptr)
   BLI_assert(index < mesh->runtime.looptris.len);
   return index;
 }
->>>>>>> master
 
 static void rna_MeshVertex_normal_get(PointerRNA *ptr, float *value)
 {
