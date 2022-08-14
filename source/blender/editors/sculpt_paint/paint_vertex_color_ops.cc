@@ -165,23 +165,16 @@ static IndexMask get_selected_indices(const Mesh &mesh,
   bke::AttributeAccessor attributes = bke::mesh_attributes(mesh);
 
   if (mesh.editflag & ME_EDIT_PAINT_FACE_SEL) {
-    const VArray<bool> selection = attributes.adapt_domain(
-        VArray<bool>::ForFunc(faces.size(),
-                              [&](const int i) { return faces[i].flag & ME_FACE_SEL; }),
-        ATTR_DOMAIN_FACE,
-        domain);
-
+    const VArray<bool> selection = attributes.lookup_or_default<bool>(
+        ".selection_poly", ATTR_DOMAIN_FACE, false);
     return index_mask_ops::find_indices_from_virtual_array(
-        IndexMask(attributes.domain_size(domain)), selection, 4096, indices);
+        selection.index_range(), selection, 4096, indices);
   }
   if (mesh.editflag & ME_EDIT_PAINT_VERT_SEL) {
-    const VArray<bool> selection = attributes.adapt_domain(
-        VArray<bool>::ForFunc(verts.size(), [&](const int i) { return verts[i].flag & SELECT; }),
-        ATTR_DOMAIN_POINT,
-        domain);
-
+    const VArray<bool> selection = attributes.lookup_or_default<bool>(
+        ".selection_vert", ATTR_DOMAIN_POINT, false);
     return index_mask_ops::find_indices_from_virtual_array(
-        IndexMask(attributes.domain_size(domain)), selection, 4096, indices);
+        selection.index_range(), selection, 4096, indices);
   }
   return IndexMask(attributes.domain_size(domain));
 }

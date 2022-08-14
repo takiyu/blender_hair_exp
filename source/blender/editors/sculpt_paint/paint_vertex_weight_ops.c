@@ -455,10 +455,15 @@ static bool weight_paint_set(Object *ob, float paintweight)
   struct WPaintPrev wpp;
   wpaint_prev_create(&wpp, me->dvert, me->totvert);
 
+  const bool *selection_vert = (const bool *)CustomData_get_layer_named(
+      &me->vdata, CD_PROP_BOOL, ".selection_vert");
+  const bool *selection_poly = (const bool *)CustomData_get_layer_named(
+      &me->pdata, CD_PROP_BOOL, ".selection_poly");
+
   for (index = 0, mp = me->mpoly; index < me->totpoly; index++, mp++) {
     uint fidx = mp->totloop - 1;
 
-    if ((paint_selmode == SCE_SELECT_FACE) && !(mp->flag & ME_FACE_SEL)) {
+    if ((paint_selmode == SCE_SELECT_FACE) && !(selection_poly && selection_poly[index])) {
       continue;
     }
 
@@ -466,7 +471,7 @@ static bool weight_paint_set(Object *ob, float paintweight)
       uint vidx = me->mloop[mp->loopstart + fidx].v;
 
       if (!me->dvert[vidx].flag) {
-        if ((paint_selmode == SCE_SELECT_VERTEX) && !(me->mvert[vidx].flag & SELECT)) {
+        if ((paint_selmode == SCE_SELECT_VERTEX) && !(selection_vert && selection_vert[vidx])) {
           continue;
         }
 
@@ -574,6 +579,7 @@ typedef struct WPGradient_userData {
   struct ARegion *region;
   Scene *scene;
   Mesh *me;
+  const bool *selection_vert;
   Brush *brush;
   const float *sco_start; /* [2] */
   const float *sco_end;   /* [2] */
@@ -672,7 +678,7 @@ static void gradientVertInit__mapFunc(void *userData,
   Mesh *me = grad_data->me;
   WPGradient_vertStore *vs = &grad_data->vert_cache->elem[index];
 
-  if (grad_data->use_select && !(me->mvert[index].flag & SELECT)) {
+  if (grad_data->use_select && !(grad_data->selection_vert && grad_data->selection_vert[index])) {
     copy_v2_fl(vs->sco, FLT_MAX);
     return;
   }
@@ -797,6 +803,8 @@ static int paint_weight_gradient_exec(bContext *C, wmOperator *op)
   data.region = region;
   data.scene = scene;
   data.me = ob->data;
+  data.selection_vert = (const bool *)CustomData_get_layer_named(
+      &me->vdata, CD_PROP_BOOL, ".selection_vert");
   data.sco_start = sco_start;
   data.sco_end = sco_end;
   data.sco_line_div = 1.0f / len_v2v2(sco_start, sco_end);

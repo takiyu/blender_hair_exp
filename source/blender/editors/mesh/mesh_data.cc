@@ -17,7 +17,7 @@
 #include "BLI_math.h"
 #include "BLI_utildefines.h"
 
-#include "BKE_attribute.h"
+#include "BKE_attribute.hh"
 #include "BKE_context.h"
 #include "BKE_customdata.h"
 #include "BKE_editmesh.h"
@@ -888,16 +888,13 @@ static void mesh_add_verts(Mesh *mesh, int len)
 
   BKE_mesh_runtime_clear_cache(mesh);
 
-  /* scan the input list and insert the new vertices */
-
-  /* set default flags */
-  MVert *mvert = &mesh->mvert[mesh->totvert];
-  for (int i = 0; i < len; i++, mvert++) {
-    mvert->flag |= SELECT;
-  }
-
-  /* set final vertex list size */
   mesh->totvert = totvert;
+
+  const bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*mesh);
+  const bke::SpanAttributeWriter<bool> selection_vert =
+      attributes.lookup_or_add_for_write_span<bool>(".selection_vert", ATTR_DOMAIN_POINT);
+  selection_vert.span.take_back(len).fill(true);
+  selection_vert.finish();
 }
 
 static void mesh_add_edges(Mesh *mesh, int len)
@@ -929,10 +926,16 @@ static void mesh_add_edges(Mesh *mesh, int len)
   /* set default flags */
   medge = &mesh->medge[mesh->totedge];
   for (i = 0; i < len; i++, medge++) {
-    medge->flag = ME_EDGEDRAW | ME_EDGERENDER | SELECT;
+    medge->flag = ME_EDGEDRAW | ME_EDGERENDER;
   }
 
   mesh->totedge = totedge;
+
+  const bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*mesh);
+  const bke::SpanAttributeWriter<bool> selection_edge =
+      attributes.lookup_or_add_for_write_span<bool>(".selection_edge", ATTR_DOMAIN_EDGE);
+  selection_edge.span.take_back(len).fill(true);
+  selection_edge.finish();
 }
 
 static void mesh_add_loops(Mesh *mesh, int len)
@@ -965,6 +968,7 @@ static void mesh_add_loops(Mesh *mesh, int len)
 
 static void mesh_add_polys(Mesh *mesh, int len)
 {
+  using namespace blender;
   CustomData pdata;
   MPoly *mpoly;
   int i, totpoly;
@@ -989,13 +993,14 @@ static void mesh_add_polys(Mesh *mesh, int len)
 
   BKE_mesh_runtime_clear_cache(mesh);
 
-  /* set default flags */
-  mpoly = &mesh->mpoly[mesh->totpoly];
-  for (i = 0; i < len; i++, mpoly++) {
-    mpoly->flag = ME_FACE_SEL;
-  }
-
   mesh->totpoly = totpoly;
+
+  /* TODO: Make selection optional. */
+  const bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*mesh);
+  const bke::SpanAttributeWriter<bool> selection_poly =
+      attributes.lookup_or_add_for_write_span<bool>(".selection_poly", ATTR_DOMAIN_FACE);
+  selection_poly.span.take_back(len).fill(true);
+  selection_poly.finish();
 }
 
 /* -------------------------------------------------------------------- */

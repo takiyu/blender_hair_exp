@@ -86,7 +86,7 @@ static void extract_lnor_iter_poly_mesh(const MeshRenderData *mr,
                    mr->v_origindex[ml->v] == ORIGINDEX_NONE)) {
       lnor_data->w = -1;
     }
-    else if (mp->flag & ME_FACE_SEL) {
+    else if (mr->selection_poly && mr->selection_poly[mp_index]) {
       lnor_data->w = 1;
     }
     else {
@@ -211,7 +211,7 @@ static void extract_lnor_hq_iter_poly_mesh(const MeshRenderData *mr,
                    mr->v_origindex[ml->v] == ORIGINDEX_NONE)) {
       lnor_data->w = -1;
     }
-    else if (mp->flag & ME_FACE_SEL) {
+    else if (mr->selection_poly && mr->selection_poly[mp_index]) {
       lnor_data->w = 1;
     }
     else {

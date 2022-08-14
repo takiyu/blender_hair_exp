@@ -32,6 +32,7 @@
 #include "RNA_prototypes.h"
 
 #include "BKE_attribute.h"
+#include "BKE_attribute.hh"
 #include "BKE_brush.h"
 #include "BKE_colortools.h"
 #include "BKE_context.h"
@@ -1954,6 +1955,10 @@ static void do_wpaint_brush_blur_task_cb_ex(void *__restrict userdata,
   const float *sculpt_normal_frontface = SCULPT_brush_frontface_normal_from_falloff_shape(
       ss, data->brush->falloff_shape);
 
+  const blender::bke::AttributeAccessor attributes = blender::bke::mesh_attributes(*data->me);
+  const blender::VArray<bool> selection_vert = attributes.lookup_or_default<bool>(
+      ".selection_vert", ATTR_DOMAIN_POINT, false);
+
   /* For each vertex */
   PBVHVertexIter vd;
   BKE_pbvh_vertex_iter_begin (ss->pbvh, data->nodes[n], vd, PBVH_ITER_UNIQUE) {
@@ -1964,9 +1969,8 @@ static void do_wpaint_brush_blur_task_cb_ex(void *__restrict userdata,
       const int v_index = has_grids ? data->me->mloop[vd.grid_indices[vd.g]].v :
                                       vd.vert_indices[vd.i];
       const float grid_alpha = has_grids ? 1.0f / vd.gridsize : 1.0f;
-      const char v_flag = data->me->mvert[v_index].flag;
       /* If the vertex is selected */
-      if (!(use_face_sel || use_vert_sel) || v_flag & SELECT) {
+      if (!(use_face_sel || use_vert_sel) || selection_vert[v_index]) {
         /* Get the average poly weight */
         int total_hit_loops = 0;
         float weight_final = 0.0f;
@@ -2042,6 +2046,10 @@ static void do_wpaint_brush_smear_task_cb_ex(void *__restrict userdata,
   sub_v3_v3v3(brush_dir, cache->location, cache->last_location);
   project_plane_v3_v3v3(brush_dir, brush_dir, cache->view_normal);
 
+  const blender::bke::AttributeAccessor attributes = blender::bke::mesh_attributes(*data->me);
+  const blender::VArray<bool> selection_vert = attributes.lookup_or_default<bool>(
+      ".selection_vert", ATTR_DOMAIN_POINT, false);
+
   if (cache->is_last_valid && (normalize_v3(brush_dir) != 0.0f)) {
 
     SculptBrushTest test;
@@ -2063,7 +2071,7 @@ static void do_wpaint_brush_smear_task_cb_ex(void *__restrict userdata,
         const MVert *mv_curr = &data->me->mvert[v_index];
 
         /* If the vertex is selected */
-        if (!(use_face_sel || use_vert_sel) || mv_curr->flag & SELECT) {
+        if (!(use_face_sel || use_vert_sel) || selection_vert[v_index]) {
           float brush_strength = cache->bstrength;
           const float angle_cos = (use_normal && vd.no) ?
                                       dot_v3v3(sculpt_normal_frontface, vd.no) :
@@ -2156,6 +2164,10 @@ static void do_wpaint_brush_draw_task_cb_ex(void *__restrict userdata,
   const float *sculpt_normal_frontface = SCULPT_brush_frontface_normal_from_falloff_shape(
       ss, data->brush->falloff_shape);
 
+  const blender::bke::AttributeAccessor attributes = blender::bke::mesh_attributes(*data->me);
+  const blender::VArray<bool> selection_vert = attributes.lookup_or_default<bool>(
+      ".selection_vert", ATTR_DOMAIN_POINT, false);
+
   /* For each vertex */
   PBVHVertexIter vd;
   BKE_pbvh_vertex_iter_begin (ss->pbvh, data->nodes[n], vd, PBVH_ITER_UNIQUE) {
@@ -2168,9 +2180,8 @@ static void do_wpaint_brush_draw_task_cb_ex(void *__restrict userdata,
                                       vd.vert_indices[vd.i];
       const float grid_alpha = has_grids ? 1.0f / vd.gridsize : 1.0f;
 
-      const char v_flag = data->me->mvert[v_index].flag;
       /* If the vertex is selected */
-      if (!(use_face_sel || use_vert_sel) || v_flag & SELECT) {
+      if (!(use_face_sel || use_vert_sel) || selection_vert[v_index]) {
         float brush_strength = cache->bstrength;
         const float angle_cos = (use_normal && vd.no) ? dot_v3v3(sculpt_normal_frontface, vd.no) :
                                                         1.0f;
@@ -2223,6 +2234,10 @@ static void do_wpaint_brush_calc_average_weight_cb_ex(
   const float *sculpt_normal_frontface = SCULPT_brush_frontface_normal_from_falloff_shape(
       ss, data->brush->falloff_shape);
 
+  const blender::bke::AttributeAccessor attributes = blender::bke::mesh_attributes(*data->me);
+  const blender::VArray<bool> selection_vert = attributes.lookup_or_default<bool>(
+      ".selection_vert", ATTR_DOMAIN_POINT, false);
+
   /* For each vertex */
   PBVHVertexIter vd;
   BKE_pbvh_vertex_iter_begin (ss->pbvh, data->nodes[n], vd, PBVH_ITER_UNIQUE) {
@@ -2234,10 +2249,9 @@ static void do_wpaint_brush_calc_average_weight_cb_ex(
           BKE_brush_curve_strength(data->brush, sqrtf(test.dist), cache->radius) > 0.0) {
         const int v_index = has_grids ? data->me->mloop[vd.grid_indices[vd.g]].v :
                                         vd.vert_indices[vd.i];
-        const char v_flag = data->me->mvert[v_index].flag;
 
         /* If the vertex is selected. */
-        if (!(use_face_sel || use_vert_sel) || v_flag & SELECT) {
+        if (!(use_face_sel || use_vert_sel) || selection_vert[v_index]) {
           const MDeformVert *dv = &data->me->dvert[v_index];
           accum->len += 1;
           accum->value += wpaint_get_active_weight(dv, data->wpi);
@@ -2952,6 +2966,11 @@ static void do_vpaint_brush_blur_loops(bContext *C,
 
   Color *previous_color = static_cast<Color *>(ss->cache->prev_colors_vpaint);
 
+  const blender::VArray<bool> selection_vert = bke::mesh_attributes(*me).lookup_or_default<bool>(
+      ".selection_vert", ATTR_DOMAIN_POINT, false);
+  const blender::VArray<bool> selection_poly = bke::mesh_attributes(*me).lookup_or_default<bool>(
+      ".selection_poly", ATTR_DOMAIN_FACE, false);
+
   blender::threading::parallel_for(IndexRange(totnode), 1LL, [&](IndexRange range) {
     for (int n : range) {
       const PBVHType pbvh_type = BKE_pbvh_type(ss->pbvh);
@@ -2983,10 +3002,9 @@ static void do_vpaint_brush_blur_loops(bContext *C,
           const int v_index = has_grids ? me->mloop[vd.grid_indices[vd.g]].v :
                                           vd.vert_indices[vd.i];
           const float grid_alpha = has_grids ? 1.0f / vd.gridsize : 1.0f;
-          const MVert *mv = &me->mvert[v_index];
 
           /* If the vertex is selected for painting. */
-          if (!use_vert_sel || mv->flag & SELECT) {
+          if (!use_vert_sel || selection_vert[v_index]) {
             float brush_strength = cache->bstrength;
             const float angle_cos = (use_normal && vd.no) ?
                                         dot_v3v3(sculpt_normal_frontface, vd.no) :
@@ -3007,7 +3025,7 @@ static void do_vpaint_brush_blur_loops(bContext *C,
               for (int j = 0; j < gmap->vert_to_poly[v_index].count; j++) {
                 int p_index = gmap->vert_to_poly[v_index].indices[j];
                 const MPoly *mp = &me->mpoly[p_index];
-                if (!use_face_sel || mp->flag & ME_FACE_SEL) {
+                if (!use_face_sel || selection_poly[p_index]) {
                   total_hit_loops += mp->totloop;
                   for (int k = 0; k < mp->totloop; k++) {
                     const uint l_index = mp->loopstart + k;
@@ -3042,7 +3060,7 @@ static void do_vpaint_brush_blur_loops(bContext *C,
                   const int l_index = gmap->vert_to_loop[v_index].indices[j];
                   BLI_assert(me->mloop[l_index].v == v_index);
                   const MPoly *mp = &me->mpoly[p_index];
-                  if (!use_face_sel || mp->flag & ME_FACE_SEL) {
+                  if (!use_face_sel || selection_poly[p_index]) {
                     Color color_orig(0, 0, 0, 0); /* unused when array is nullptr */
 
                     if (previous_color != nullptr) {
@@ -3094,6 +3112,11 @@ static void do_vpaint_brush_blur_verts(bContext *C,
 
   Color *previous_color = static_cast<Color *>(ss->cache->prev_colors_vpaint);
 
+  const blender::VArray<bool> selection_vert = bke::mesh_attributes(*me).lookup_or_default<bool>(
+      ".selection_vert", ATTR_DOMAIN_POINT, false);
+  const blender::VArray<bool> selection_poly = bke::mesh_attributes(*me).lookup_or_default<bool>(
+      ".selection_poly", ATTR_DOMAIN_FACE, false);
+
   blender::threading::parallel_for(IndexRange(totnode), 1LL, [&](IndexRange range) {
     for (int n : range) {
       const PBVHType pbvh_type = BKE_pbvh_type(ss->pbvh);
@@ -3125,10 +3148,9 @@ static void do_vpaint_brush_blur_verts(bContext *C,
           const int v_index = has_grids ? me->mloop[vd.grid_indices[vd.g]].v :
                                           vd.vert_indices[vd.i];
           const float grid_alpha = has_grids ? 1.0f / vd.gridsize : 1.0f;
-          const MVert *mv = &me->mvert[v_index];
 
           /* If the vertex is selected for painting. */
-          if (!use_vert_sel || mv->flag & SELECT) {
+          if (!use_vert_sel || selection_vert[v_index]) {
             float brush_strength = cache->bstrength;
             const float angle_cos = (use_normal && vd.no) ?
                                         dot_v3v3(sculpt_normal_frontface, vd.no) :
@@ -3149,7 +3171,7 @@ static void do_vpaint_brush_blur_verts(bContext *C,
               for (int j = 0; j < gmap->vert_to_poly[v_index].count; j++) {
                 int p_index = gmap->vert_to_poly[v_index].indices[j];
                 const MPoly *mp = &me->mpoly[p_index];
-                if (!use_face_sel || mp->flag & ME_FACE_SEL) {
+                if (!use_face_sel || selection_poly[p_index]) {
                   total_hit_loops += mp->totloop;
                   for (int k = 0; k < mp->totloop; k++) {
                     const uint l_index = mp->loopstart + k;
@@ -3187,7 +3209,7 @@ static void do_vpaint_brush_blur_verts(bContext *C,
                   BLI_assert(me->mloop[gmap->vert_to_loop[v_index].indices[j]].v == v_index);
 
                   const MPoly *mp = &me->mpoly[p_index];
-                  if (!use_face_sel || mp->flag & ME_FACE_SEL) {
+                  if (!use_face_sel || selection_poly[p_index]) {
                     Color color_orig(0, 0, 0, 0); /* unused when array is nullptr */
 
                     if (previous_color != nullptr) {
@@ -3243,6 +3265,11 @@ static void do_vpaint_brush_smear(bContext *C,
   Color *color_prev_smear = static_cast<Color *>(vpd->smear.color_prev);
   Color *color_prev = reinterpret_cast<Color *>(ss->cache->prev_colors_vpaint);
 
+  const blender::VArray<bool> selection_vert = bke::mesh_attributes(*me).lookup_or_default<bool>(
+      ".selection_vert", ATTR_DOMAIN_POINT, false);
+  const blender::VArray<bool> selection_poly = bke::mesh_attributes(*me).lookup_or_default<bool>(
+      ".selection_poly", ATTR_DOMAIN_FACE, false);
+
   blender::threading::parallel_for(IndexRange(totnode), 1LL, [&](IndexRange range) {
     for (int n : range) {
       float brush_size_pressure, brush_alpha_value, brush_alpha_pressure;
@@ -3279,7 +3306,7 @@ static void do_vpaint_brush_smear(bContext *C,
             const MVert *mv_curr = &me->mvert[v_index];
 
             /* if the vertex is selected for painting. */
-            if (!use_vert_sel || mv_curr->flag & SELECT) {
+            if (!use_vert_sel || selection_vert[v_index]) {
               /* Calc the dot prod. between ray norm on surf and current vert
                * (ie splash prevention factor), and only paint front facing verts. */
               float brush_strength = cache->bstrength;
@@ -3308,7 +3335,7 @@ static void do_vpaint_brush_smear(bContext *C,
                   BLI_assert(me->mloop[l_index].v == v_index);
                   UNUSED_VARS_NDEBUG(l_index);
                   const MPoly *mp = &me->mpoly[p_index];
-                  if (!use_face_sel || mp->flag & ME_FACE_SEL) {
+                  if (!use_face_sel || selection_poly[p_index]) {
                     const MLoop *ml_other = &me->mloop[mp->loopstart];
                     for (int k = 0; k < mp->totloop; k++, ml_other++) {
                       const uint v_other_index = ml_other->v;
@@ -3363,7 +3390,7 @@ static void do_vpaint_brush_smear(bContext *C,
                     }
 
                     const MPoly *mp = &me->mpoly[p_index];
-                    if (!use_face_sel || mp->flag & ME_FACE_SEL) {
+                    if (!use_face_sel || selection_poly[p_index]) {
                       /* Get the previous element color */
                       Color color_orig(0, 0, 0, 0); /* unused when array is nullptr */
 
@@ -3409,6 +3436,9 @@ static void calculate_average_color(VPaintData<Color, Traits, domain> *vpd,
 {
   using Blend = typename Traits::BlendType;
 
+  const blender::VArray<bool> selection_vert = bke::mesh_attributes(*me).lookup_or_default<bool>(
+      ".selection_vert", ATTR_DOMAIN_POINT, false);
+
   VPaintAverageAccum<Blend> *accum = (VPaintAverageAccum<Blend> *)MEM_mallocN(
       sizeof(*accum) * totnode, __func__);
   blender::threading::parallel_for(IndexRange(totnode), 1LL, [&](IndexRange range) {
@@ -3439,8 +3469,7 @@ static void calculate_average_color(VPaintData<Color, Traits, domain> *vpd,
                                           vd.vert_indices[vd.i];
           if (BKE_brush_curve_strength(brush, 0.0, cache->radius) > 0.0) {
             /* If the vertex is selected for painting. */
-            const MVert *mv = &me->mvert[v_index];
-            if (!use_vert_sel || mv->flag & SELECT) {
+            if (!use_vert_sel || selection_vert[v_index]) {
               accum2->len += gmap->vert_to_loop[v_index].count;
               /* if a vertex is within the brush region, then add its color to the blend. */
               for (int j = 0; j < gmap->vert_to_loop[v_index].count; j++) {
@@ -3525,6 +3554,11 @@ static void vpaint_do_draw(bContext *C,
 
   Color *previous_color = static_cast<Color *>(ss->cache->prev_colors_vpaint);
 
+  const blender::VArray<bool> selection_vert = bke::mesh_attributes(*me).lookup_or_default<bool>(
+      ".selection_vert", ATTR_DOMAIN_POINT, false);
+  const blender::VArray<bool> selection_poly = bke::mesh_attributes(*me).lookup_or_default<bool>(
+      ".selection_poly", ATTR_DOMAIN_FACE, false);
+
   blender::threading::parallel_for(IndexRange(totnode), 1LL, [&](IndexRange range) {
     for (int n : range) {
       const bool has_grids = (pbvh_type == PBVH_GRIDS);
@@ -3558,10 +3592,9 @@ static void vpaint_do_draw(bContext *C,
           const int v_index = has_grids ? me->mloop[vd.grid_indices[vd.g]].v :
                                           vd.vert_indices[vd.i];
           const float grid_alpha = has_grids ? 1.0f / vd.gridsize : 1.0f;
-          const MVert *mv = &me->mvert[v_index];
 
           /* If the vertex is selected for painting. */
-          if (!use_vert_sel || mv->flag & SELECT) {
+          if (!use_vert_sel || selection_vert[v_index]) {
             /* Calc the dot prod. between ray norm on surf and current vert
              * (ie splash prevention factor), and only paint front facing verts. */
             float brush_strength = cache->bstrength;
@@ -3614,7 +3647,7 @@ static void vpaint_do_draw(bContext *C,
                   const int l_index = gmap->vert_to_loop[v_index].indices[j];
                   BLI_assert(me->mloop[l_index].v == v_index);
                   const MPoly *mp = &me->mpoly[p_index];
-                  if (!use_face_sel || mp->flag & ME_FACE_SEL) {
+                  if (!use_face_sel || selection_poly[p_index]) {
                     Color color_orig = Color(0, 0, 0, 0); /* unused when array is nullptr */
 
                     if (previous_color != nullptr) {
@@ -4041,6 +4074,11 @@ static bool vertex_color_set(Object *ob, ColorPaint4f paintcol_in, CustomDataLay
     return false;
   }
 
+  const blender::VArray<bool> selection_vert = bke::mesh_attributes(*me).lookup_or_default<bool>(
+      ".selection_vert", ATTR_DOMAIN_POINT, false);
+  const blender::VArray<bool> selection_poly = bke::mesh_attributes(*me).lookup_or_default<bool>(
+      ".selection_poly", ATTR_DOMAIN_FACE, false);
+
   Color paintcol = fromFloat<Color>(paintcol_in);
 
   const bool use_face_sel = (me->editflag & ME_EDIT_PAINT_FACE_SEL) != 0;
@@ -4087,7 +4125,7 @@ static bool vertex_color_set(Object *ob, ColorPaint4f paintcol_in, CustomDataLay
 
     const MPoly *mp = me->mpoly;
     for (int i = 0; i < me->totpoly; i++, mp++) {
-      if (use_face_sel && !(mp->flag & ME_FACE_SEL)) {
+      if (use_face_sel && !selection_poly[i]) {
         continue;
       }
 
@@ -4095,7 +4133,7 @@ static bool vertex_color_set(Object *ob, ColorPaint4f paintcol_in, CustomDataLay
       do {
         uint vidx = me->mloop[mp->loopstart + j].v;
 
-        if (!(use_vert_sel && !(me->mvert[vidx].flag & SELECT))) {
+        if (!(use_vert_sel && !(selection_vert[vidx]))) {
           if constexpr (domain == ATTR_DOMAIN_CORNER) {
             color_layer[mp->loopstart + j] = paintcol;
           }
