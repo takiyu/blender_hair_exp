@@ -4062,7 +4062,7 @@ static bool proj_paint_state_mesh_eval_init(const bContext *C, ProjPaintState *p
   ps->mloop_eval = ps->me_eval->mloop;
   ps->mpoly_eval = ps->me_eval->mpoly;
   ps->material_indices = (const int *)CustomData_get_layer_named(
-      &me_eval->pdata, CD_PROP_INT32, "material_index");
+      &ps->me_eval->pdata, CD_PROP_INT32, "material_index");
 
   ps->totvert_eval = ps->me_eval->totvert;
   ps->totedge_eval = ps->me_eval->totedge;

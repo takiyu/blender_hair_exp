@@ -926,7 +926,7 @@ BLI_INLINE void bmesh_quick_edgedraw_flag(MEdge *med, BMEdge *e)
 }
 
 template<typename T, typename GetFn>
-static void write_fn_to_attribute(blender::bke::MutableAttributeAccessor &attributes,
+static void write_fn_to_attribute(blender::bke::MutableAttributeAccessor attributes,
                                   const StringRef attribute_name,
                                   const eAttrDomain domain,
                                   const bool do_write,

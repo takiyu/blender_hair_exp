@@ -3359,12 +3359,12 @@ static Mesh *create_liquid_geometry(FluidDomainSettings *fds,
     }
   }
 
-  int *orig_material_indices = BKE_mesh_material_indices_for_write(me);
+  int *material_indices = BKE_mesh_material_indices_for_write(me);
 
   /* Loop for triangles. */
   for (i = 0; i < num_faces; i++, mpolys++, mloops += 3) {
     /* Initialize from existing face. */
-    orig_material_indices[i] = mp_mat_nr;
+    material_indices[i] = mp_mat_nr;
     mpolys->flag = mp_flag;
 
     mpolys->loopstart = i * 3;

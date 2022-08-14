@@ -72,7 +72,7 @@ typedef struct MPoly {
   int loopstart;
   /** Keep signed since we need to subtract when getting the previous loop. */
   int totloop;
-  // short mat_nr;
+  short mat_nr DNA_DEPRECATED;
   char flag, _pad;
 } MPoly;
 

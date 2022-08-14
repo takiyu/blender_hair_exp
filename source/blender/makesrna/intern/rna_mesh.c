@@ -572,10 +572,10 @@ static bool rna_MeshPolygon_material_index_get(PointerRNA *ptr)
 
 static void rna_MeshPolygon_material_index_set(PointerRNA *ptr, int value)
 {
-  const Mesh *mesh = rna_mesh(ptr);
+  Mesh *mesh = rna_mesh(ptr);
   int *material_indices = BKE_mesh_material_indices_for_write(mesh);
   const int index = rna_MeshPolygon_index_get(ptr);
-  return material_indices[index] = value;
+  material_indices[index] = value;
 }
 
 static void rna_MeshPolygon_center_get(PointerRNA *ptr, float *values)
@@ -2212,8 +2212,8 @@ static void rna_def_mpolygon(BlenderRNA *brna)
   RNA_def_property_ui_text(prop, "Loop Total", "Number of loops used by this polygon");
 
   prop = RNA_def_property(srna, "material_index", PROP_INT, PROP_UNSIGNED);
-  RNA_def_property_boolean_funcs(
-      prop, "rna_MeshPolygon_material_index_get", "rna_MeshPolygon_material_index_set");
+  RNA_def_property_int_funcs(
+      prop, "rna_MeshPolygon_material_index_get", "rna_MeshPolygon_material_index_set", false);
   RNA_def_property_ui_text(prop, "Material Index", "Material slot index of this polygon");
 #  if 0
   RNA_def_property_int_funcs(prop, NULL, NULL, "rna_MeshPoly_material_index_range");

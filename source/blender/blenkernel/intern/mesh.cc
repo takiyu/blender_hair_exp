@@ -248,6 +248,7 @@ static void mesh_blend_write(BlendWriter *writer, ID *id, const void *id_address
   else {
     if (!BLO_write_is_undo(writer)) {
       BKE_mesh_legacy_convert_hide_layers_to_flags(mesh);
+      BKE_mesh_legacy_convert_material_indices_to_mpoly(mesh);
     }
 
     CustomData_blend_write_prepare(mesh->vdata, vert_layers, {".hide_vert"});
@@ -334,6 +335,7 @@ static void mesh_blend_read_data(BlendDataReader *reader, ID *id)
 
   if (!BLO_read_data_is_undo(reader)) {
     BKE_mesh_legacy_convert_flags_to_hide_layers(mesh);
+    BKE_mesh_legacy_convert_mpoly_to_material_indices(mesh);
   }
 
   /* We don't expect to load normals from files, since they are derived data. */
@@ -1411,7 +1413,7 @@ void BKE_mesh_material_index_remove(Mesh *me, short index)
 {
   using namespace blender;
   using namespace blender::bke;
-  MutableAttributeAccessor attributes = mesh_attributes(*me);
+  MutableAttributeAccessor attributes = mesh_attributes_for_write(*me);
   AttributeWriter<int> material_indices = attributes.lookup_for_write<int>("material_index");
   if (!material_indices) {
     return;
@@ -1446,7 +1448,7 @@ void BKE_mesh_material_index_clear(Mesh *me)
 {
   using namespace blender;
   using namespace blender::bke;
-  MutableAttributeAccessor attributes = mesh_attributes(*me);
+  MutableAttributeAccessor attributes = mesh_attributes_for_write(*me);
   attributes.remove("material_index");
 
   BKE_mesh_tessface_clear(me);
@@ -1475,7 +1477,7 @@ void BKE_mesh_material_remap(Mesh *me, const uint *remap, uint remap_len)
     }
   }
   else {
-    MutableAttributeAccessor attributes = mesh_attributes(*me);
+    MutableAttributeAccessor attributes = mesh_attributes_for_write(*me);
     AttributeWriter<int> material_indices = attributes.lookup_for_write<int>("material_index");
     if (!material_indices) {
       return;

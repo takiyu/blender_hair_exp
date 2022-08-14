@@ -328,7 +328,7 @@ static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispba
         mloop[2].v = startvert + index[1];
         mpoly->loopstart = (int)(mloop - loops.data());
         mpoly->totloop = 3;
-        material_indices[mpoly - polygons.data()] = dl->col;
+        material_indices[mpoly - polys.data()] = dl->col;
 
         if (mloopuv) {
           for (int i = 0; i < 3; i++, mloopuv++) {
@@ -388,7 +388,7 @@ static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispba
           mloop[3].v = p2;
           mpoly->loopstart = (int)(mloop - loops.data());
           mpoly->totloop = 4;
-          material_indices[mpoly - polygons.data()] = dl->col;
+          material_indices[mpoly - polys.data()] = dl->col;
 
           if (mloopuv) {
             int orco_sizeu = dl->nr - 1;

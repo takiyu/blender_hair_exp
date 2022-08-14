@@ -8,6 +8,7 @@
 
 #include "DNA_mesh_types.h"
 
+#include "BKE_customdata.h"
 #include "BKE_mesh_types.h"
 #include "BLI_compiler_attrs.h"
 #include "BLI_utildefines.h"
@@ -1035,7 +1036,7 @@ BLI_INLINE const int *BKE_mesh_material_indices(const Mesh *mesh)
  */
 BLI_INLINE int *BKE_mesh_material_indices_for_write(Mesh *mesh)
 {
-  int *indices = (int *)CustomData_duplicate_referenced_layer(
+  int *indices = (int *)CustomData_duplicate_referenced_layer_named(
       &mesh->pdata, CD_PROP_INT32, "material_index", mesh->totpoly);
   if (indices) {
     return indices;

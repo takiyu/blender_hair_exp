@@ -962,7 +962,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
     };
     const bool has_mloop_orig = mloop_index_orig[0] != UINT_MAX;
 
-    short mat_nr;
+    int mat_nr;
 
     /* for each edge, make a cylinder of quads */
     i1 = med_new_firstloop->v1;

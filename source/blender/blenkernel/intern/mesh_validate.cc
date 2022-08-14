@@ -1145,7 +1145,6 @@ bool BKE_mesh_is_valid(Mesh *me)
 bool BKE_mesh_validate_material_indices(Mesh *me)
 {
   const int mat_nr_max = max_ii(0, me->totcol - 1);
-  int i;
   bool is_valid = true;
 
   blender::bke::AttributeWriter<int> material_indices =

@@ -2339,7 +2339,7 @@ Mesh *MOD_solidify_nonmanifold_modifyMesh(ModifierData *md,
           continue;
         }
 
-        const int orig_face_index = (*new_edges)->faces[0]->index;
+        const uint orig_face_index = (*new_edges)->faces[0]->index;
         MPoly *face = &orig_mpoly[orig_face_index];
         CustomData_copy_data(
             &mesh->pdata, &result->pdata, (int)(*new_edges)->faces[0]->index, (int)poly_index, 1);
