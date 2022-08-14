@@ -25,14 +25,16 @@ extern "C" {
  */
 typedef struct MVert {
   float co[3];
-  char flag, bweight;
-  char _pad[2];
+  // char flag
+  char bweight;
+  char _pad[3];
 } MVert;
 
 /** #MVert.flag */
 
 #ifdef DNA_DEPRECATED_ALLOW
 enum {
+  /** Deprecated selection status. Now stored in ".selection_vert" attribute. */
   /*  SELECT = (1 << 0), */
   /** Deprecated hide status. Now stored in ".hide_vert" attribute. */
   ME_HIDE = (1 << 4),
@@ -53,6 +55,7 @@ typedef struct MEdge {
 
 /** #MEdge.flag */
 enum {
+  /** Deprecated selection status. Now stored in ".selection_edge" attribute. */
   /*  SELECT = (1 << 0), */
   ME_EDGEDRAW = (1 << 1),
   ME_SEAM = (1 << 2),
@@ -81,7 +84,10 @@ typedef struct MPoly {
 /** #MPoly.flag */
 enum {
   ME_SMOOTH = (1 << 0),
-  ME_FACE_SEL = (1 << 1),
+#ifdef DNA_DEPRECATED_ALLOW
+/** Deprecated selection status. Now stored in ".selection_poly" attribute. */
+// ME_FACE_SEL = (1 << 1),
+#endif
   /** Deprecated hide status. Now stored in ".hide_poly" attribute. */
   /* ME_HIDE = (1 << 4), */
 };
