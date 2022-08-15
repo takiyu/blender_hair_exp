@@ -2346,7 +2346,13 @@ bool CustomData_merge(const CustomData *source,
 
 static bool attribute_stored_in_bmesh_flag(const StringRef name)
 {
-  return ELEM(name, ".hide_vert", ".hide_edge", ".hide_poly");
+  return ELEM(name,
+              ".hide_vert",
+              ".hide_edge",
+              ".hide_poly",
+              ".selection_vert",
+              ".selection_edge",
+              ".selection_poly");
 }
 
 static CustomData shallow_copy_remove_non_bmesh_attributes(const CustomData &src)

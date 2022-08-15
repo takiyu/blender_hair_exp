@@ -1708,6 +1708,8 @@ void BKE_mesh_mselect_clear(Mesh *me)
 
 void BKE_mesh_mselect_validate(Mesh *me)
 {
+  using namespace blender;
+  using namespace blender::bke;
   MSelect *mselect_src, *mselect_dst;
   int i_src, i_dst;
 
@@ -1719,25 +1721,33 @@ void BKE_mesh_mselect_validate(Mesh *me)
   mselect_dst = (MSelect *)MEM_malloc_arrayN(
       (me->totselect), sizeof(MSelect), "Mesh selection history");
 
+  const AttributeAccessor attributes = mesh_attributes(*me);
+  const VArray<bool> selection_vert = attributes.lookup_or_default<bool>(
+      ".selection_vert", ATTR_DOMAIN_POINT, false);
+  const VArray<bool> selection_edge = attributes.lookup_or_default<bool>(
+      ".selection_edge", ATTR_DOMAIN_EDGE, false);
+  const VArray<bool> selection_poly = attributes.lookup_or_default<bool>(
+      ".selection_poly", ATTR_DOMAIN_FACE, false);
+
   for (i_src = 0, i_dst = 0; i_src < me->totselect; i_src++) {
     int index = mselect_src[i_src].index;
     switch (mselect_src[i_src].type) {
       case ME_VSEL: {
-        if (me->mvert[index].flag & SELECT) {
+        if (selection_vert[index]) {
           mselect_dst[i_dst] = mselect_src[i_src];
           i_dst++;
         }
         break;
       }
       case ME_ESEL: {
-        if (me->medge[index].flag & SELECT) {
+        if (selection_edge[index]) {
           mselect_dst[i_dst] = mselect_src[i_src];
           i_dst++;
         }
         break;
       }
       case ME_FSEL: {
-        if (me->mpoly[index].flag & SELECT) {
+        if (selection_poly[index]) {
           mselect_dst[i_dst] = mselect_src[i_src];
           i_dst++;
         }

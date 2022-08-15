@@ -13,6 +13,7 @@
 #include "BLI_threads.h"
 #include "BLI_timeit.hh"
 
+#include "BKE_attribute.hh"
 #include "BKE_customdata.h"
 #include "BKE_mesh.h"
 
@@ -117,9 +118,10 @@ static void add_polygon_edges_to_hash_maps(Mesh *mesh,
   });
 }
 
-static void serialize_and_initialize_deduplicated_edges(MutableSpan<EdgeMap> edge_maps,
+static void serialize_and_initialize_deduplicated_edges(Mesh &mesh,
+                                                        MutableSpan<EdgeMap> edge_maps,
                                                         MutableSpan<MEdge> new_edges,
-                                                        short new_edge_flag)
+                                                        const bool select_new_edges)
 {
   /* All edges are distributed in the hash tables now. They have to be serialized into a single
    * array below. To be able to parallelize this, we have to compute edge index offsets for each
@@ -145,12 +147,29 @@ static void serialize_and_initialize_deduplicated_edges(MutableSpan<EdgeMap> edg
         /* Initialize new edge. */
         new_edge.v1 = item.key.v_low;
         new_edge.v2 = item.key.v_high;
-        new_edge.flag = new_edge_flag;
+        new_edge.flag = (ME_EDGEDRAW | ME_EDGERENDER);
       }
       item.value.index = new_edge_index;
       new_edge_index++;
     }
   });
+
+  if (select_new_edges) {
+    SpanAttributeWriter<bool> selection_edge =
+        mesh_attributes_for_write(mesh).lookup_or_add_for_write_span<bool>(".selection_edge",
+                                                                           ATTR_DOMAIN_EDGE);
+    threading::parallel_for_each(edge_maps, [&](EdgeMap &edge_map) {
+      const int task_index = &edge_map - edge_maps.data();
+      int new_edge_index = edge_index_offsets[task_index];
+      for (EdgeMap::MutableItem item : edge_map.items()) {
+        if (item.value.original_edge == nullptr) {
+          selection_edge.span[new_edge_index] = true;
+        }
+        new_edge_index++;
+      }
+    });
+    selection_edge.finish();
+  }
 }
 
 static void update_edge_indices_in_poly_loops(Mesh *mesh,
@@ -233,8 +252,8 @@ void BKE_mesh_calc_edges(Mesh *mesh, bool keep_existing_edges, const bool select
   /* Create new edges. */
   MutableSpan<MEdge> new_edges{
       static_cast<MEdge *>(MEM_calloc_arrayN(new_totedge, sizeof(MEdge), __func__)), new_totedge};
-  const short new_edge_flag = (ME_EDGEDRAW | ME_EDGERENDER) | (select_new_edges ? SELECT : 0);
-  calc_edges::serialize_and_initialize_deduplicated_edges(edge_maps, new_edges, new_edge_flag);
+  calc_edges::serialize_and_initialize_deduplicated_edges(
+      *mesh, edge_maps, new_edges, select_new_edges);
   calc_edges::update_edge_indices_in_poly_loops(mesh, edge_maps, parallel_mask);
 
   /* Free old CustomData and assign new one. */

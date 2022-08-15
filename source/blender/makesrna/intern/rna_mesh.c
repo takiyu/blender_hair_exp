@@ -428,6 +428,32 @@ static void rna_MeshVertex_hide_set(PointerRNA *ptr, bool value)
   hide_vert[index] = value;
 }
 
+static bool rna_MeshVertex_select_get(PointerRNA *ptr)
+{
+  const Mesh *mesh = rna_mesh(ptr);
+  const bool *selection_vert = (const bool *)CustomData_get_layer_named(
+      &mesh->vdata, CD_PROP_BOOL, ".selection_vert");
+  const int index = rna_MeshVertex_index_get(ptr);
+  return selection_vert == NULL ? false : selection_vert[index];
+}
+
+static void rna_MeshVertex_select_set(PointerRNA *ptr, bool value)
+{
+  Mesh *mesh = rna_mesh(ptr);
+  bool *selection_vert = (bool *)CustomData_duplicate_referenced_layer_named(
+      &mesh->vdata, CD_PROP_BOOL, ".selection_vert", mesh->totvert);
+  if (!selection_vert) {
+    if (!value) {
+      /* Skip adding layer if it doesn't exist already anyway and we're not hiding an element. */
+      return;
+    }
+    selection_vert = (bool *)CustomData_add_layer_named(
+        &mesh->vdata, CD_PROP_BOOL, CD_CALLOC, NULL, mesh->totvert, ".selection_vert");
+  }
+  const int index = rna_MeshVertex_index_get(ptr);
+  selection_vert[index] = value;
+}
+
 static float rna_MeshVertex_bevel_weight_get(PointerRNA *ptr)
 {
   MVert *mvert = (MVert *)ptr->data;
@@ -560,6 +586,32 @@ static void rna_MeshPolygon_hide_set(PointerRNA *ptr, bool value)
   }
   const int index = rna_MeshPolygon_index_get(ptr);
   hide_poly[index] = value;
+}
+
+static bool rna_MeshPolygon_select_get(PointerRNA *ptr)
+{
+  const Mesh *mesh = rna_mesh(ptr);
+  const bool *selection_poly = (const bool *)CustomData_get_layer_named(
+      &mesh->pdata, CD_PROP_BOOL, ".selection_poly");
+  const int index = rna_MeshPolygon_index_get(ptr);
+  return selection_poly == NULL ? false : selection_poly[index];
+}
+
+static void rna_MeshPolygon_select_set(PointerRNA *ptr, bool value)
+{
+  Mesh *mesh = rna_mesh(ptr);
+  bool *selection_poly = (bool *)CustomData_duplicate_referenced_layer_named(
+      &mesh->pdata, CD_PROP_BOOL, ".selection_poly", mesh->totpoly);
+  if (!selection_poly) {
+    if (!value) {
+      /* Skip adding layer if it doesn't exist already anyway and we're not hiding an element. */
+      return;
+    }
+    selection_poly = (bool *)CustomData_add_layer_named(
+        &mesh->pdata, CD_PROP_BOOL, CD_CALLOC, NULL, mesh->totpoly, ".selection_poly");
+  }
+  const int index = rna_MeshPolygon_index_get(ptr);
+  selection_poly[index] = value;
 }
 
 static void rna_MeshPolygon_center_get(PointerRNA *ptr, float *values)
@@ -1298,6 +1350,32 @@ static void rna_MeshEdge_hide_set(PointerRNA *ptr, bool value)
   hide_edge[index] = value;
 }
 
+static bool rna_MeshEdge_select_get(PointerRNA *ptr)
+{
+  const Mesh *mesh = rna_mesh(ptr);
+  const bool *selection_edge = (const bool *)CustomData_get_layer_named(
+      &mesh->edata, CD_PROP_BOOL, ".selection_edge");
+  const int index = rna_MeshEdge_index_get(ptr);
+  return selection_edge == NULL ? false : selection_edge[index];
+}
+
+static void rna_MeshEdge_select_set(PointerRNA *ptr, bool value)
+{
+  Mesh *mesh = rna_mesh(ptr);
+  bool *selection_edge = (bool *)CustomData_duplicate_referenced_layer_named(
+      &mesh->edata, CD_PROP_BOOL, ".selection_edge", mesh->totedge);
+  if (!selection_edge) {
+    if (!value) {
+      /* Skip adding layer if it doesn't exist already anyway and we're not hiding an element. */
+      return;
+    }
+    selection_edge = (bool *)CustomData_add_layer_named(
+        &mesh->edata, CD_PROP_BOOL, CD_CALLOC, NULL, mesh->totedge, ".selection_edge");
+  }
+  const int index = rna_MeshEdge_index_get(ptr);
+  selection_edge[index] = value;
+}
+
 static int rna_MeshLoopTriangle_material_index_get(PointerRNA *ptr)
 {
   const Mesh *me = rna_mesh(ptr);
@@ -1914,7 +1992,7 @@ static void rna_def_mvert(BlenderRNA *brna)
   RNA_def_property_ui_text(prop, "Normal", "Vertex Normal");
 
   prop = RNA_def_property(srna, "select", PROP_BOOLEAN, PROP_NONE);
-  RNA_def_property_boolean_sdna(prop, NULL, "flag", SELECT);
+  RNA_def_property_boolean_funcs(prop, "rna_MeshVertex_select_get", "rna_MeshVertex_select_set");
   RNA_def_property_ui_text(prop, "Select", "");
   RNA_def_property_update(prop, 0, "rna_Mesh_update_select");
 
@@ -1990,7 +2068,7 @@ static void rna_def_medge(BlenderRNA *brna)
   RNA_def_property_update(prop, 0, "rna_Mesh_update_data_legacy_deg_tag_all");
 
   prop = RNA_def_property(srna, "select", PROP_BOOLEAN, PROP_NONE);
-  RNA_def_property_boolean_sdna(prop, NULL, "flag", SELECT);
+  RNA_def_property_boolean_funcs(prop, "rna_MeshEdge_select_get", "rna_MeshEdge_select_set");
   RNA_def_property_ui_text(prop, "Select", "");
   RNA_def_property_update(prop, 0, "rna_Mesh_update_select");
 
@@ -2203,7 +2281,7 @@ static void rna_def_mpolygon(BlenderRNA *brna)
   RNA_def_property_update(prop, 0, "rna_Mesh_update_data_legacy_deg_tag_all");
 
   prop = RNA_def_property(srna, "select", PROP_BOOLEAN, PROP_NONE);
-  RNA_def_property_boolean_sdna(prop, NULL, "flag", ME_FACE_SEL);
+  RNA_def_property_boolean_funcs(prop, "rna_MeshPolygon_select_get", "rna_MeshPolygon_select_set");
   RNA_def_property_ui_text(prop, "Select", "");
   RNA_def_property_update(prop, 0, "rna_Mesh_update_select");
 

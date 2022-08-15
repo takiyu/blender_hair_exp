@@ -677,7 +677,7 @@ static void draw_subdiv_cache_extra_coarse_face_data_mesh(const MeshRenderData *
     if ((mesh->mpoly[i].flag & ME_SMOOTH) != 0) {
       flag |= SUBDIV_COARSE_FACE_FLAG_SMOOTH;
     }
-    if ((mesh->mpoly[i].flag & ME_FACE_SEL) != 0) {
+    if (mr->selection_poly && mr->selection_poly[i]) {
       flag |= SUBDIV_COARSE_FACE_FLAG_SELECT;
     }
     if (mr->hide_poly && mr->hide_poly[i]) {

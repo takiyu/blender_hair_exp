@@ -414,6 +414,7 @@ typedef struct ProjPaintState {
   const float (*vert_normals)[3];
   const MEdge *medge_eval;
   const MPoly *mpoly_eval;
+  const bool *selection_poly_eval;
   const MLoop *mloop_eval;
   const MLoopTri *mlooptri_eval;
 
@@ -4060,6 +4061,8 @@ static bool proj_paint_state_mesh_eval_init(const bContext *C, ProjPaintState *p
   }
   ps->mloop_eval = ps->me_eval->mloop;
   ps->mpoly_eval = ps->me_eval->mpoly;
+  ps->selection_poly_eval = (const bool *)CustomData_get_layer_named(
+      &ps->me_eval->pdata, CD_PROP_BOOL, ".selection_poly");
 
   ps->totvert_eval = ps->me_eval->totvert;
   ps->totedge_eval = ps->me_eval->totedge;
@@ -4142,6 +4145,7 @@ static bool project_paint_clone_face_skip(ProjPaintState *ps,
 
 typedef struct {
   const MPoly *mpoly_orig;
+  const bool *selection_poly_orig;
 
   const int *index_mp_to_orig;
 } ProjPaintFaceLookup;
@@ -4150,8 +4154,11 @@ static void proj_paint_face_lookup_init(const ProjPaintState *ps, ProjPaintFaceL
 {
   memset(face_lookup, 0, sizeof(*face_lookup));
   if (ps->do_face_sel) {
+    Mesh *orig_mesh = (Mesh *)ps->ob->data;
     face_lookup->index_mp_to_orig = CustomData_get_layer(&ps->me_eval->pdata, CD_ORIGINDEX);
-    face_lookup->mpoly_orig = ((Mesh *)ps->ob->data)->mpoly;
+    face_lookup->mpoly_orig = orig_mesh->mpoly;
+    face_lookup->selection_poly_orig = CustomData_get_layer_named(
+        &orig_mesh->pdata, CD_PROP_BOOL, ".selection_poly");
   }
 }
 
@@ -4162,17 +4169,12 @@ static bool project_paint_check_face_sel(const ProjPaintState *ps,
 {
   if (ps->do_face_sel) {
     int orig_index;
-    const MPoly *mp;
 
     if ((face_lookup->index_mp_to_orig != NULL) &&
         (((orig_index = (face_lookup->index_mp_to_orig[lt->poly]))) != ORIGINDEX_NONE)) {
-      mp = &face_lookup->mpoly_orig[orig_index];
+      return face_lookup->selection_poly_orig && face_lookup->selection_poly_orig[orig_index];
     }
-    else {
-      mp = &ps->mpoly_eval[lt->poly];
-    }
-
-    return ((mp->flag & ME_FACE_SEL) != 0);
+    return ps->selection_poly_eval && ps->selection_poly_eval[lt->poly];
   }
   return true;
 }
