@@ -247,6 +247,7 @@ static void mesh_blend_write(BlendWriter *writer, ID *id, const void *id_address
   else {
     if (!BLO_write_is_undo(writer)) {
       BKE_mesh_legacy_convert_hide_layers_to_flags(mesh);
+      BKE_mesh_legacy_convert_uvs_to_struct(mesh);
     }
 
     CustomData_blend_write_prepare(mesh->vdata, vert_layers, {".hide_vert"});
@@ -333,6 +334,7 @@ static void mesh_blend_read_data(BlendDataReader *reader, ID *id)
 
   if (!BLO_read_data_is_undo(reader)) {
     BKE_mesh_legacy_convert_flags_to_hide_layers(mesh);
+    BKE_mesh_legacy_convert_uvs_to_generic(mesh);
   }
 
   /* We don't expect to load normals from files, since they are derived data. */

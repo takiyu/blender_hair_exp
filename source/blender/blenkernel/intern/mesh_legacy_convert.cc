@@ -966,3 +966,87 @@ void BKE_mesh_legacy_convert_flags_to_hide_layers(Mesh *mesh)
 }
 
 /** \} */
+
+/* -------------------------------------------------------------------- */
+/** \name Generic UV Map Conversion
+ * \{ */
+
+void BKE_mesh_legacy_convert_uvs_to_struct(const Mesh *mesh)
+{
+  using namespace blender;
+  using namespace blender::bke;
+  const AttributeAccessor attributes = mesh_attributes(*mesh);
+}
+
+void BKE_mesh_legacy_convert_uvs_to_generic(Mesh *mesh)
+{
+  using namespace blender;
+  using namespace blender::bke;
+  MutableAttributeAccessor attributes = mesh_attributes_for_write(*mesh);
+
+  int totloop = mesh->totloop;
+
+  /* Store layer names since they will be removed.
+   * Use intermediate #StringRef because the names can be null. */
+  const std::string active_uv = StringRef(
+      CustomData_get_active_layer_name(&mesh->ldata, CD_MLOOPUV));
+  const std::string default_uv = StringRef(
+      CustomData_get_render_layer_name(&mesh->ldata, CD_MLOOPUV));
+
+  const int uv_map_num = CustomData_number_of_layers(&mesh->ldata, CD_MLOOPUV);
+  for (const int uv_layer_i : IndexRange(uv_map_num)) {
+    int index = CustomData_get_layer_index_n(&mesh->ldata, CD_MLOOPUV, uv_layer_i);
+    const MLoopUV *luv = static_cast<const MLoopUV *>(
+        CustomData_get_layer_n(&mesh->ldata, CD_MLOOPUV, uv_layer_i));
+    if (!luv) {
+      continue;
+    }
+    uint32_t layerflags = 0;
+
+    const std::string name = CustomData_get_layer_name(&mesh->ldata, CD_MLOOPUV, n);
+    for (int i = 0; i < totloop; i++) {
+      layerflags |= luv[i].flag;
+    }
+
+    attributes.remove(name);
+
+    /* Remove the original name, so we can create an attribute with the same name. */
+    mesh->ldata.layers[index].name[0] = 0;
+
+    UVMap_Data data = BKE_id_attributes_create_uvmap_layers(
+        (ID *)mesh, name.c_str(), NULL, layerflags);
+    for (int i = 0; i < totloop; i++) {
+      copy_v2_v2(data.uv[i], luv[i].uv);
+    }
+
+    if (layerflags & MLOOPUV_VERTSEL) {
+      for (int i = 0; i < totloop; i++) {
+        data.vertsel[i] = luv[i].flag & MLOOPUV_VERTSEL;
+      }
+    }
+
+    if (layerflags & MLOOPUV_EDGESEL) {
+      for (int i = 0; i < totloop; i++) {
+        data.edgesel[i] = luv[i].flag & MLOOPUV_EDGESEL;
+      }
+    }
+
+    if (layerflags & MLOOPUV_PINNED) {
+      for (int i = 0; i < totloop; i++) {
+        data.pinned[i] = luv[i].flag & MLOOPUV_PINNED;
+      }
+    }
+  }
+
+  /* Take care to set the active and render layer before deleting the old layers,
+   * which would change the indices.
+   */
+  CustomData_set_layer_active_index(&mesh->ldata, CD_PROP_FLOAT2, active_index);
+  CustomData_set_layer_render_index(&mesh->ldata, CD_PROP_FLOAT2, render_index);
+
+  CustomData_free_layers(&mesh->ldata, CD_MLOOPUV, totloop);
+
+  mesh->mloopuv = CustomData_get_layer(&mesh->ldata, CD_PROP_FLOAT2);
+}
+
+/** \} */

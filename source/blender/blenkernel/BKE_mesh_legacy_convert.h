@@ -17,6 +17,9 @@ struct CustomData;
 struct Mesh;
 struct MFace;
 
+void BKE_mesh_legacy_convert_uvs_to_struct(const Mesh *mesh);
+void BKE_mesh_legacy_convert_uvs_to_generic(Mesh *mesh);
+
 /**
  * Convert the hidden element attributes to the old flag format for writing.
  */
