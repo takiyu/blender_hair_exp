@@ -20,8 +20,11 @@
 #include "DNA_pointcloud_types.h"
 
 #include "BLI_index_range.hh"
+#include "BLI_string.h"
 #include "BLI_string_utf8.h"
 #include "BLI_string_utils.h"
+
+#include "BLT_translation.h"
 
 #include "BKE_attribute.h"
 #include "BKE_attribute.hh"
@@ -221,7 +224,14 @@ bool BKE_id_attribute_calc_unique_name(ID *id, const char *name, char *outname)
 {
   AttrUniqueData data{id};
 
-  BLI_strncpy_utf8(outname, name, MAX_CUSTOMDATA_LAYER_NAME);
+  /* Set default name if none specified.
+   * NOTE: We only call IFACE_() if needed to avoid locale lookup overhead. */
+  if (!name || name[0] == '\0') {
+    BLI_strncpy(outname, IFACE_("Attribute"), MAX_CUSTOMDATA_LAYER_NAME);
+  }
+  else {
+    BLI_strncpy_utf8(outname, name, MAX_CUSTOMDATA_LAYER_NAME);
+  }
 
   return BLI_uniquename_cb(
       unique_name_cb, &data, nullptr, '.', outname, MAX_CUSTOMDATA_LAYER_NAME);
@@ -859,9 +869,9 @@ void BKE_id_attribute_copy_domains_temp(short id_type,
   *((short *)r_id->name) = id_type;
 }
 
-UVMap_Data BKE_id_attributes_create_uvmap_layers(struct ID *id,
+UVMap_Data BKE_id_attributes_create_uvmap_layers(ID *id,
                                                  char const *name,
-                                                 struct ReportList *reports,
+                                                 ReportList *reports,
                                                  uint32_t needed_layer_flags)
 {
   UVMap_Data data;
@@ -891,7 +901,6 @@ UVMap_Data BKE_id_attributes_create_uvmap_layers(struct ID *id,
   }
   else {
     data.vertsel = nullptr;
-    ;
   }
   if (neededgesel) {
     CustomDataLayer *layer = BKE_id_attribute_new(

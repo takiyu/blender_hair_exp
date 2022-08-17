@@ -318,6 +318,29 @@ void ED_uvedit_buttons_register(struct ARegionType *art);
 
 /* uvedit_islands.c */
 
+struct FaceIsland {
+  struct FaceIsland *next;
+  struct FaceIsland *prev;
+  struct BMFace **faces;
+  int faces_len;
+  rctf bounds_rect;
+  /**
+   * \note While this is duplicate information,
+   * it allows islands from multiple meshes to be stored in the same list.
+   */
+  UVMap_Offsets offsets;
+  float aspect_y;
+};
+
+int bm_mesh_calc_uv_islands(const Scene *scene,
+                            struct BMesh *bm,
+                            ListBase *island_list,
+                            const bool only_selected_faces,
+                            const bool only_selected_uvs,
+                            const bool use_seams,
+                            const float aspect_y,
+                            const UVMap_Offsets offsets);
+
 struct UVMapUDIM_Params {
   const struct Image *image;
   /** Copied from #SpaceImage.tile_grid_shape */

@@ -99,8 +99,8 @@ static void extract_edituv_stretch_angle_init(const MeshRenderData *mr,
     data->cd_ofs = CustomData_get_offset(&mr->bm->ldata, CD_PROP_FLOAT2);
   }
   else {
-    BLI_assert(ELEM(mr->extract_type, MR_EXTRACT_MAPPED, MR_EXTRACT_MESH));
-    data->uv = static_cast<const float2 *>(CustomData_get_layer(&mr->me->ldata, CD_PROP_FLOAT2));
+    BLI_assert(mr->extract_type == MR_EXTRACT_MESH);
+    data->uv = (const float2 *)CustomData_get_layer(&mr->me->ldata, CD_PROP_FLOAT2);
   }
 }
 

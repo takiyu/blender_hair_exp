@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
 ## Update and uncomment this in the release branch
-set(BLENDER_VERSION 3.3)
+# set(BLENDER_VERSION 3.1)
 
 function(download_source dep)
   set(TARGET_FILE ${${dep}_FILE})
@@ -36,7 +36,7 @@ download_source(BLOSC)
 download_source(PTHREADS)
 download_source(OPENEXR)
 download_source(FREETYPE)
-download_source(GLEW)
+download_source(EPOXY)
 download_source(FREEGLUT)
 download_source(ALEMBIC)
 download_source(OPENSUBDIV)

@@ -95,6 +95,19 @@ find_package_wrapper(JPEG REQUIRED)
 find_package_wrapper(PNG REQUIRED)
 find_package_wrapper(ZLIB REQUIRED)
 find_package_wrapper(Zstd REQUIRED)
+find_package_wrapper(Epoxy REQUIRED)
+
+function(check_freetype_for_brotli)
+  include(CheckSymbolExists)
+  set(CMAKE_REQUIRED_INCLUDES ${FREETYPE_INCLUDE_DIRS})
+  check_symbol_exists(FT_CONFIG_OPTION_USE_BROTLI
+  "freetype/config/ftconfig.h" HAVE_BROTLI)
+  if(NOT HAVE_BROTLI)
+    unset(HAVE_BROTLI CACHE)
+    message(FATAL_ERROR "Freetype needs to be compiled with brotli support!")
+  endif()
+  unset(HAVE_BROTLI CACHE)
+endfunction()
 
 if(NOT WITH_SYSTEM_FREETYPE)
   # FreeType compiled with Brotli compression for woff2.
@@ -110,6 +123,7 @@ if(NOT WITH_SYSTEM_FREETYPE)
     #   ${BROTLI_LIBRARIES}
     # )
   endif()
+  check_freetype_for_brotli()
 endif()
 
 if(WITH_PYTHON)
@@ -587,6 +601,7 @@ if(WITH_SYSTEM_FREETYPE)
   if(NOT FREETYPE_FOUND)
     message(FATAL_ERROR "Failed finding system FreeType version!")
   endif()
+  check_freetype_for_brotli()
 endif()
 
 if(WITH_LZO AND WITH_SYSTEM_LZO)
@@ -789,7 +804,8 @@ if(CMAKE_COMPILER_IS_GNUCC)
           "The mold linker could not find the directory containing the linker command "
           "(typically "
           "\"${MOLD_PREFIX}/libexec/mold/ld\") or "
-          "\"${MOLD_PREFIX}/lib/mold/ld\") using system linker.")
+          "\"${MOLD_PREFIX}/lib/mold/ld\") using system linker."
+        )
         set(WITH_LINKER_MOLD OFF)
       endif()
       unset(MOLD_PREFIX)
@@ -928,7 +944,8 @@ function(CONFIGURE_ATOMIC_LIB_IF_NEEDED)
       int main(int argc, char **argv) {
         std::atomic<uint64_t> uint64; uint64++;
         return 0;
-      }")
+      }"
+  )
 
   include(CheckCXXSourceCompiles)
   check_cxx_source_compiles("${_source}" ATOMIC_OPS_WITHOUT_LIBATOMIC)

@@ -259,9 +259,8 @@ static float uv_nearest_image_tile_distance(const Image *image,
                                             const float coords[2],
                                             float nearest_tile_co[2])
 {
-  if (BKE_image_find_nearest_tile_with_offset(image, coords, nearest_tile_co) == -1) {
-    zero_v2(nearest_tile_co);
-  }
+  BKE_image_find_nearest_tile_with_offset(image, coords, nearest_tile_co);
+
   /* Add 0.5 to get tile center coordinates. */
   float nearest_tile_center_co[2] = {nearest_tile_co[0], nearest_tile_co[1]};
   add_v2_fl(nearest_tile_center_co, 0.5f);
@@ -309,22 +308,7 @@ static float uv_nearest_grid_tile_distance(const int udim_grid[2],
 
 /* -------------------------------------------------------------------- */
 /** \name Calculate UV Islands
- *
- * \note Currently this is a private API/type, it could be made public.
  * \{ */
-
-struct FaceIsland {
-  struct FaceIsland *next, *prev;
-  BMFace **faces;
-  int faces_len;
-  rctf bounds_rect;
-  /**
-   * \note While this is duplicate information,
-   * it allows islands from multiple meshes to be stored in the same list.
-   */
-  UVMap_Offsets offsets;
-  float aspect_y;
-};
 
 struct SharedUVLoopData {
   UVMap_Offsets offsets;
@@ -347,20 +331,20 @@ static bool bm_loop_uv_shared_edge_check(const BMLoop *l_a, const BMLoop *l_b, v
 /**
  * Calculate islands and add them to \a island_list returning the number of items added.
  */
-static int bm_mesh_calc_uv_islands(const Scene *scene,
-                                   BMesh *bm,
-                                   ListBase *island_list,
-                                   const bool only_selected_faces,
-                                   const bool only_selected_uvs,
-                                   const bool use_seams,
-                                   const float aspect_y,
-                                   const UVMap_Offsets offsets)
+int bm_mesh_calc_uv_islands(const Scene *scene,
+                            BMesh *bm,
+                            ListBase *island_list,
+                            const bool only_selected_faces,
+                            const bool only_selected_uvs,
+                            const bool use_seams,
+                            const float aspect_y,
+                            const UVMap_Offsets uv_offsets)
 {
   int island_added = 0;
   BM_mesh_elem_table_ensure(bm, BM_FACE);
 
   struct SharedUVLoopData user_data = {
-      .offsets = offsets,
+      .offsets = uv_offsets,
       .use_seams = use_seams,
   };
 
@@ -376,7 +360,8 @@ static int bm_mesh_calc_uv_islands(const Scene *scene,
       BMIter iter;
       BM_ITER_MESH (f, &iter, bm, BM_FACES_OF_MESH) {
         bool value = false;
-        if (BM_elem_flag_test(f, BM_ELEM_SELECT) && uvedit_face_select_test(scene, f, offsets)) {
+        if (BM_elem_flag_test(f, BM_ELEM_SELECT) &&
+            uvedit_face_select_test(scene, f, uv_offsets)) {
           value = true;
         }
         BM_elem_flag_set(f, BM_ELEM_TAG, value);
@@ -412,7 +397,7 @@ static int bm_mesh_calc_uv_islands(const Scene *scene,
     struct FaceIsland *island = MEM_callocN(sizeof(*island), __func__);
     island->faces = faces;
     island->faces_len = faces_len;
-    island->offsets = offsets;
+    island->offsets = uv_offsets;
     island->aspect_y = aspect_y;
     BLI_addtail(island_list, island);
     island_added += 1;

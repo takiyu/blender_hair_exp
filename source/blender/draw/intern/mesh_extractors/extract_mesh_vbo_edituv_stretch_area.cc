@@ -5,6 +5,8 @@
  * \ingroup draw
  */
 
+#include "BLI_math_vec_types.hh"
+
 #include "MEM_guardedalloc.h"
 
 #include "BKE_mesh.h"
@@ -72,13 +74,12 @@ static void compute_area_ratio(const MeshRenderData *mr,
     }
   }
   else {
-    BLI_assert(ELEM(mr->extract_type, MR_EXTRACT_MAPPED, MR_EXTRACT_MESH));
-    const float(*uv_data)[2] = (const float(*)[2])CustomData_get_layer(&mr->me->ldata,
-                                                                       CD_PROP_FLOAT2);
+    BLI_assert(mr->extract_type == MR_EXTRACT_MESH);
+    const float2 *uv_data = (const float2 *)CustomData_get_layer(&mr->me->ldata, CD_PROP_FLOAT2);
     const MPoly *mp = mr->mpoly;
     for (int mp_index = 0; mp_index < mr->poly_len; mp_index++, mp++) {
       float area = BKE_mesh_calc_poly_area(mp, &mr->mloop[mp->loopstart], mr->mvert);
-      float uvarea = BKE_mesh_calc_poly_uv_area(mp, uv_data);
+      float uvarea = BKE_mesh_calc_poly_uv_area(mp, reinterpret_cast<const float(*)[2]>(uv_data));
       tot_area += area;
       tot_uv_area += uvarea;
       r_area_ratio[mp_index] = area_ratio_get(area, uvarea);
@@ -118,7 +119,7 @@ static void extract_edituv_stretch_area_finish(const MeshRenderData *mr,
     }
   }
   else {
-    BLI_assert(ELEM(mr->extract_type, MR_EXTRACT_MAPPED, MR_EXTRACT_MESH));
+    BLI_assert(mr->extract_type == MR_EXTRACT_MESH);
     const MPoly *mp = mr->mpoly;
     for (int mp_index = 0, l_index = 0; mp_index < mr->poly_len; mp_index++, mp++) {
       for (int i = 0; i < mp->totloop; i++, l_index++) {
