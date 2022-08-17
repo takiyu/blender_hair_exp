@@ -92,7 +92,7 @@ class MeshImporter : public MeshImporterBase {
   bool set_poly_indices(
       MPoly *mpoly, MLoop *mloop, int loop_index, const unsigned int *indices, int loop_count);
 
-  void set_face_uv(MLoopUV *mloopuv,
+  void set_face_uv(float (*mloopuv)[2],
                    UVDataWrapper &uvs,
                    int start_index,
                    COLLADAFW::IndexList &index_list,

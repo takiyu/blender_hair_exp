@@ -23,7 +23,7 @@ static void uv_aspect(const BMLoop *l,
                       const int cd_loop_uv_offset,
                       float r_uv[2])
 {
-  const float *uv = ((const MLoopUV *)BM_ELEM_CD_GET_VOID_P(l, cd_loop_uv_offset))->uv;
+  const float *uv = BM_ELEM_CD_GET_FLOAT_P(l, cd_loop_uv_offset);
   r_uv[0] = uv[0] * aspect[0];
   r_uv[1] = uv[1] * aspect[1];
 }
@@ -80,8 +80,8 @@ void BM_face_uv_calc_center_median(const BMFace *f, const int cd_loop_uv_offset,
   zero_v2(r_cent);
   l_iter = l_first = BM_FACE_FIRST_LOOP(f);
   do {
-    const MLoopUV *luv = BM_ELEM_CD_GET_VOID_P(l_iter, cd_loop_uv_offset);
-    add_v2_v2(r_cent, luv->uv);
+    const float *luv = BM_ELEM_CD_GET_FLOAT_P(l_iter, cd_loop_uv_offset);
+    add_v2_v2(r_cent, luv);
   } while ((l_iter = l_iter->next) != l_first);
 
   mul_v2_fl(r_cent, 1.0f / (float)f->len);
@@ -95,8 +95,8 @@ float BM_face_uv_calc_cross(const BMFace *f, const int cd_loop_uv_offset)
   int i = 0;
   l_iter = l_first = BM_FACE_FIRST_LOOP(f);
   do {
-    const MLoopUV *luv = BM_ELEM_CD_GET_VOID_P(l_iter, cd_loop_uv_offset);
-    copy_v2_v2(uvs[i++], luv->uv);
+    const float *luv = BM_ELEM_CD_GET_FLOAT_P(l_iter, cd_loop_uv_offset);
+    copy_v2_v2(uvs[i++], luv);
   } while ((l_iter = l_iter->next) != l_first);
   return cross_poly_v2(uvs, f->len);
 }
@@ -107,8 +107,8 @@ void BM_face_uv_minmax(const BMFace *f, float min[2], float max[2], const int cd
   const BMLoop *l_first;
   l_iter = l_first = BM_FACE_FIRST_LOOP(f);
   do {
-    const MLoopUV *luv = BM_ELEM_CD_GET_VOID_P(l_iter, cd_loop_uv_offset);
-    minmax_v2v2_v2(min, max, luv->uv);
+    const float *luv = BM_ELEM_CD_GET_FLOAT_P(l_iter, cd_loop_uv_offset);
+    minmax_v2v2_v2(min, max, luv);
   } while ((l_iter = l_iter->next) != l_first);
 }
 
@@ -118,31 +118,30 @@ void BM_face_uv_transform(BMFace *f, const float matrix[2][2], const int cd_loop
   BMLoop *l_first;
   l_iter = l_first = BM_FACE_FIRST_LOOP(f);
   do {
-    MLoopUV *luv = BM_ELEM_CD_GET_VOID_P(l_iter, cd_loop_uv_offset);
-    mul_m2_v2(matrix, luv->uv);
+    float *luv = BM_ELEM_CD_GET_FLOAT_P(l_iter, cd_loop_uv_offset);
+    mul_m2_v2(matrix, luv);
   } while ((l_iter = l_iter->next) != l_first);
 }
 
 bool BM_loop_uv_share_edge_check(BMLoop *l_a, BMLoop *l_b, const int cd_loop_uv_offset)
 {
   BLI_assert(l_a->e == l_b->e);
-  MLoopUV *luv_a_curr = BM_ELEM_CD_GET_VOID_P(l_a, cd_loop_uv_offset);
-  MLoopUV *luv_a_next = BM_ELEM_CD_GET_VOID_P(l_a->next, cd_loop_uv_offset);
-  MLoopUV *luv_b_curr = BM_ELEM_CD_GET_VOID_P(l_b, cd_loop_uv_offset);
-  MLoopUV *luv_b_next = BM_ELEM_CD_GET_VOID_P(l_b->next, cd_loop_uv_offset);
+  float *luv_a_curr = BM_ELEM_CD_GET_FLOAT_P(l_a, cd_loop_uv_offset);
+  float *luv_a_next = BM_ELEM_CD_GET_FLOAT_P(l_a->next, cd_loop_uv_offset);
+  float *luv_b_curr = BM_ELEM_CD_GET_FLOAT_P(l_b, cd_loop_uv_offset);
+  float *luv_b_next = BM_ELEM_CD_GET_FLOAT_P(l_b->next, cd_loop_uv_offset);
   if (l_a->v != l_b->v) {
-    SWAP(MLoopUV *, luv_b_curr, luv_b_next);
+    SWAP(float *, luv_b_curr, luv_b_next);
   }
-  return (equals_v2v2(luv_a_curr->uv, luv_b_curr->uv) &&
-          equals_v2v2(luv_a_next->uv, luv_b_next->uv));
+  return (equals_v2v2(luv_a_curr, luv_b_curr) && equals_v2v2(luv_a_next, luv_b_next));
 }
 
 bool BM_loop_uv_share_vert_check(BMLoop *l_a, BMLoop *l_b, const int cd_loop_uv_offset)
 {
   BLI_assert(l_a->v == l_b->v);
-  const MLoopUV *luv_a = BM_ELEM_CD_GET_VOID_P(l_a, cd_loop_uv_offset);
-  const MLoopUV *luv_b = BM_ELEM_CD_GET_VOID_P(l_b, cd_loop_uv_offset);
-  if (!equals_v2v2(luv_a->uv, luv_b->uv)) {
+  const float *luv_a = BM_ELEM_CD_GET_FLOAT_P(l_a, cd_loop_uv_offset);
+  const float *luv_b = BM_ELEM_CD_GET_FLOAT_P(l_b, cd_loop_uv_offset);
+  if (!equals_v2v2(luv_a, luv_b)) {
     return false;
   }
   return true;
@@ -160,9 +159,9 @@ bool BM_edge_uv_share_vert_check(BMEdge *e, BMLoop *l_a, BMLoop *l_b, const int 
   const BMLoop *l_other_b = BM_loop_other_vert_loop_by_edge(l_b, e);
 
   {
-    const MLoopUV *luv_other_a = BM_ELEM_CD_GET_VOID_P(l_other_a, cd_loop_uv_offset);
-    const MLoopUV *luv_other_b = BM_ELEM_CD_GET_VOID_P(l_other_b, cd_loop_uv_offset);
-    if (!equals_v2v2(luv_other_a->uv, luv_other_b->uv)) {
+    const float *luv_other_a = BM_ELEM_CD_GET_FLOAT_P(l_other_a, cd_loop_uv_offset);
+    const float *luv_other_b = BM_ELEM_CD_GET_FLOAT_P(l_other_b, cd_loop_uv_offset);
+    if (!equals_v2v2(luv_other_a, luv_other_b)) {
       return false;
     }
   }
@@ -180,7 +179,7 @@ bool BM_face_uv_point_inside_test(const BMFace *f, const float co[2], const int 
   BLI_assert(BM_face_is_normal_valid(f));
 
   for (i = 0, l_iter = BM_FACE_FIRST_LOOP(f); i < f->len; i++, l_iter = l_iter->next) {
-    copy_v2_v2(projverts[i], BM_ELEM_CD_GET_VOID_P(l_iter, cd_loop_uv_offset));
+    copy_v2_v2(projverts[i], BM_ELEM_CD_GET_FLOAT_P(l_iter, cd_loop_uv_offset));
   }
 
   return isect_point_poly_v2(co, projverts, f->len, false);

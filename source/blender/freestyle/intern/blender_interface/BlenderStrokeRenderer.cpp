@@ -588,20 +588,21 @@ void BlenderStrokeRenderer::GenerateStrokeMesh(StrokeGroup *group, bool hasTex)
   MEdge *edges = mesh->medge;
   MPoly *polys = mesh->mpoly;
   MLoop *loops = mesh->mloop;
-  MLoopUV *loopsuv[2] = {nullptr};
+  typedef float uvtype[2];
+  uvtype *loopsuv[2] = {nullptr};
 
   if (hasTex) {
     // First UV layer
     CustomData_add_layer_named(
-        &mesh->ldata, CD_MLOOPUV, CD_CALLOC, nullptr, mesh->totloop, uvNames[0]);
-    CustomData_set_layer_active(&mesh->ldata, CD_MLOOPUV, 0);
+        &mesh->ldata, CD_PROP_FLOAT2, CD_CALLOC, nullptr, mesh->totloop, uvNames[0]);
+    CustomData_set_layer_active(&mesh->ldata, CD_PROP_FLOAT2, 0);
     BKE_mesh_update_customdata_pointers(mesh, true);
     loopsuv[0] = mesh->mloopuv;
 
     // Second UV layer
     CustomData_add_layer_named(
-        &mesh->ldata, CD_MLOOPUV, CD_CALLOC, nullptr, mesh->totloop, uvNames[1]);
-    CustomData_set_layer_active(&mesh->ldata, CD_MLOOPUV, 1);
+        &mesh->ldata, CD_PROP_FLOAT2, CD_CALLOC, nullptr, mesh->totloop, uvNames[1]);
+    CustomData_set_layer_active(&mesh->ldata, CD_PROP_FLOAT2, 1);
     BKE_mesh_update_customdata_pointers(mesh, true);
     loopsuv[1] = mesh->mloopuv;
   }
@@ -748,24 +749,24 @@ void BlenderStrokeRenderer::GenerateStrokeMesh(StrokeGroup *group, bool hasTex)
             // Second UV layer (loopsuv[1]) has tips:  (texCoord(1)).
             for (int L = 0; L < 2; L++) {
               if (is_odd) {
-                loopsuv[L][0].uv[0] = svRep[2]->texCoord(L).x();
-                loopsuv[L][0].uv[1] = svRep[2]->texCoord(L).y();
+                loopsuv[L][0][0] = svRep[2]->texCoord(L).x();
+                loopsuv[L][0][1] = svRep[2]->texCoord(L).y();
 
-                loopsuv[L][1].uv[0] = svRep[0]->texCoord(L).x();
-                loopsuv[L][1].uv[1] = svRep[0]->texCoord(L).y();
+                loopsuv[L][1][0] = svRep[0]->texCoord(L).x();
+                loopsuv[L][1][1] = svRep[0]->texCoord(L).y();
 
-                loopsuv[L][2].uv[0] = svRep[1]->texCoord(L).x();
-                loopsuv[L][2].uv[1] = svRep[1]->texCoord(L).y();
+                loopsuv[L][2][0] = svRep[1]->texCoord(L).x();
+                loopsuv[L][2][1] = svRep[1]->texCoord(L).y();
               }
               else {
-                loopsuv[L][0].uv[0] = svRep[2]->texCoord(L).x();
-                loopsuv[L][0].uv[1] = svRep[2]->texCoord(L).y();
+                loopsuv[L][0][0] = svRep[2]->texCoord(L).x();
+                loopsuv[L][0][1] = svRep[2]->texCoord(L).y();
 
-                loopsuv[L][1].uv[0] = svRep[1]->texCoord(L).x();
-                loopsuv[L][1].uv[1] = svRep[1]->texCoord(L).y();
+                loopsuv[L][1][0] = svRep[1]->texCoord(L).x();
+                loopsuv[L][1][1] = svRep[1]->texCoord(L).y();
 
-                loopsuv[L][2].uv[0] = svRep[0]->texCoord(L).x();
-                loopsuv[L][2].uv[1] = svRep[0]->texCoord(L).y();
+                loopsuv[L][2][0] = svRep[0]->texCoord(L).x();
+                loopsuv[L][2][1] = svRep[0]->texCoord(L).y();
               }
               loopsuv[L] += 3;
             }

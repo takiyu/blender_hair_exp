@@ -397,7 +397,7 @@ void *CustomData_bmesh_get_n(const struct CustomData *data, void *block, int typ
  */
 void *CustomData_bmesh_get_layer_n(const struct CustomData *data, void *block, int n);
 
-bool CustomData_set_layer_name(const struct CustomData *data, int type, int n, const char *name);
+bool CustomData_set_layer_name(struct CustomData *data, int type, int n, const char *name);
 const char *CustomData_get_layer_name(const struct CustomData *data, int type, int n);
 
 /**
@@ -409,6 +409,7 @@ void *CustomData_get_layer_n(const struct CustomData *data, int type, int n);
 void *CustomData_get_layer_named(const struct CustomData *data, int type, const char *name);
 int CustomData_get_offset(const struct CustomData *data, int type);
 int CustomData_get_n_offset(const struct CustomData *data, int type, int n);
+int CustomData_get_named_offset(const struct CustomData *data, int type, const char *name);
 
 int CustomData_get_layer_index(const struct CustomData *data, int type);
 int CustomData_get_layer_index_n(const struct CustomData *data, int type, int n);
@@ -711,6 +712,45 @@ void CustomData_blend_write(BlendWriter *writer,
 #endif
 
 void CustomData_blend_read(struct BlendDataReader *reader, struct CustomData *data, int count);
+
+/* Uvmap related customdata offsets for BMesh.
+ */
+typedef struct UVMap_Offsets {
+  int uv;
+  int vertsel;
+  int edgesel;
+  int pinned;
+} UVMap_Offsets;
+
+/* UV related CustomData pointers.
+ * The data pointers point directly to the CustomData arrays.
+ * The uv_index is also stored for on-demand creation of the bool datalayers.
+ */
+typedef struct UVMap_Data {
+  int uv_index;
+  float (*uv)[2];
+  bool *vertsel;
+  bool *edgesel;
+  bool *pinned;
+} UVMap_Data;
+
+#define UV_VERTSEL_NAME "vs"
+#define UV_EDGESEL_NAME "es"
+#define UV_PINNED_NAME "pn"
+
+#ifdef __cplusplus
+
+std::string UV_sublayer_name(char const *layername, char const *prefix);
+
+#endif
+/* get a descriptor containing offsets for all needed layers for the uvmap
+ * \param name: Optional layer name. When name is NULL, the default layer is returned
+ * \param offsets: Output parameter that will be filled with the offsets
+
+ */
+UVMap_Offsets CustomData_get_uvmap_offsets(const struct CustomData *data, char const *name);
+UVMap_Data CustomData_get_uvmap_data(const struct CustomData *data, char const *name);
+UVMap_Data CustomData_get_uvmap_data_n(const struct CustomData *data, int n);
 
 #ifndef NDEBUG
 struct DynStr;

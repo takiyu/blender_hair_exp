@@ -1468,7 +1468,7 @@ typedef struct DynamicPaintSetInitColorData {
   const DynamicPaintSurface *surface;
 
   const MLoop *mloop;
-  const MLoopUV *mloopuv;
+  const float (*mloopuv)[2];
   const MLoopTri *mlooptri;
   const MLoopCol *mloopcol;
   struct ImagePool *pool;
@@ -1486,7 +1486,7 @@ static void dynamic_paint_set_init_color_tex_to_vcol_cb(
 
   const MLoop *mloop = data->mloop;
   const MLoopTri *mlooptri = data->mlooptri;
-  const MLoopUV *mloopuv = data->mloopuv;
+  const float(*mloopuv)[2] = data->mloopuv;
   struct ImagePool *pool = data->pool;
   Tex *tex = data->surface->init_texture;
 
@@ -1499,8 +1499,8 @@ static void dynamic_paint_set_init_color_tex_to_vcol_cb(
     const unsigned int vert = mloop[mlooptri[i].tri[j]].v;
 
     /* remap to [-1.0, 1.0] */
-    uv[0] = mloopuv[mlooptri[i].tri[j]].uv[0] * 2.0f - 1.0f;
-    uv[1] = mloopuv[mlooptri[i].tri[j]].uv[1] * 2.0f - 1.0f;
+    uv[0] = mloopuv[mlooptri[i].tri[j]][0] * 2.0f - 1.0f;
+    uv[1] = mloopuv[mlooptri[i].tri[j]][1] * 2.0f - 1.0f;
 
     multitex_ext_safe(tex, uv, &texres, pool, scene_color_manage, false);
 
@@ -1520,7 +1520,7 @@ static void dynamic_paint_set_init_color_tex_to_imseq_cb(
   PaintPoint *pPoint = (PaintPoint *)sData->type_data;
 
   const MLoopTri *mlooptri = data->mlooptri;
-  const MLoopUV *mloopuv = data->mloopuv;
+  const float(*mloopuv)[2] = data->mloopuv;
   Tex *tex = data->surface->init_texture;
   ImgSeqFormatData *f_data = (ImgSeqFormatData *)sData->format_data;
   const int samples = (data->surface->flags & MOD_DPAINT_ANTIALIAS) ? 5 : 1;
@@ -1534,7 +1534,7 @@ static void dynamic_paint_set_init_color_tex_to_imseq_cb(
 
   /* collect all uvs */
   for (int j = 3; j--;) {
-    copy_v2_v2(&uv[j * 3], mloopuv[mlooptri[f_data->uv_p[i].tri_index].tri[j]].uv);
+    copy_v2_v2(&uv[j * 3], mloopuv[mlooptri[f_data->uv_p[i].tri_index].tri[j]]);
   }
 
   /* interpolate final uv pos */
@@ -1615,8 +1615,9 @@ static void dynamicPaint_setInitialColor(const Scene *scene, DynamicPaintSurface
     }
 
     /* get uv map */
-    CustomData_validate_layer_name(&mesh->ldata, CD_MLOOPUV, surface->init_layername, uvname);
-    const MLoopUV *mloopuv = CustomData_get_layer_named(&mesh->ldata, CD_MLOOPUV, uvname);
+    CustomData_validate_layer_name(&mesh->ldata, CD_PROP_FLOAT2, surface->init_layername, uvname);
+    const float(*mloopuv)[2] = CustomData_get_layer_named(&mesh->ldata, CD_PROP_FLOAT2, uvname);
+
     if (!mloopuv) {
       return;
     }
@@ -2187,7 +2188,7 @@ typedef struct DynamicPaintCreateUVSurfaceData {
   Vec3f *tempWeights;
 
   const MLoopTri *mlooptri;
-  const MLoopUV *mloopuv;
+  const float (*mloopuv)[2];
   const MLoop *mloop;
   const int tottri;
 
@@ -2205,7 +2206,7 @@ static void dynamic_paint_create_uv_surface_direct_cb(
   Vec3f *tempWeights = data->tempWeights;
 
   const MLoopTri *mlooptri = data->mlooptri;
-  const MLoopUV *mloopuv = data->mloopuv;
+  const float(*mloopuv)[2] = data->mloopuv;
   const MLoop *mloop = data->mloop;
   const int tottri = data->tottri;
 
@@ -2258,9 +2259,9 @@ static void dynamic_paint_create_uv_surface_direct_cb(
           continue;
         }
 
-        const float *uv1 = mloopuv[mlooptri[i].tri[0]].uv;
-        const float *uv2 = mloopuv[mlooptri[i].tri[1]].uv;
-        const float *uv3 = mloopuv[mlooptri[i].tri[2]].uv;
+        const float *uv1 = mloopuv[mlooptri[i].tri[0]];
+        const float *uv2 = mloopuv[mlooptri[i].tri[1]];
+        const float *uv3 = mloopuv[mlooptri[i].tri[2]];
 
         /* If point is inside the face */
         if (isect_point_tri_v2(point[sample], uv1, uv2, uv3) != 0) {
@@ -2300,7 +2301,7 @@ static void dynamic_paint_create_uv_surface_neighbor_cb(
   Vec3f *tempWeights = data->tempWeights;
 
   const MLoopTri *mlooptri = data->mlooptri;
-  const MLoopUV *mloopuv = data->mloopuv;
+  const float(*mloopuv)[2] = data->mloopuv;
   const MLoop *mloop = data->mloop;
 
   uint32_t *active_points = data->active_points;
@@ -2341,9 +2342,9 @@ static void dynamic_paint_create_uv_surface_neighbor_cb(
             if (tempPoints[ind].neighbor_pixel == -1 && tempPoints[ind].tri_index != -1) {
               float uv[2];
               const int i = tempPoints[ind].tri_index;
-              const float *uv1 = mloopuv[mlooptri[i].tri[0]].uv;
-              const float *uv2 = mloopuv[mlooptri[i].tri[1]].uv;
-              const float *uv3 = mloopuv[mlooptri[i].tri[2]].uv;
+              const float *uv1 = mloopuv[mlooptri[i].tri[0]];
+              const float *uv2 = mloopuv[mlooptri[i].tri[1]];
+              const float *uv3 = mloopuv[mlooptri[i].tri[2]];
 
               /* tri index */
               /* There is a low possibility of actually having a neighbor point which tri is
@@ -2387,7 +2388,7 @@ static void dynamic_paint_create_uv_surface_neighbor_cb(
 #undef JITTER_SAMPLES
 
 static float dist_squared_to_looptri_uv_edges(const MLoopTri *mlooptri,
-                                              const MLoopUV *mloopuv,
+                                              const float (*mloopuv)[2],
                                               int tri_index,
                                               const float point[2])
 {
@@ -2398,8 +2399,8 @@ static float dist_squared_to_looptri_uv_edges(const MLoopTri *mlooptri,
   for (int i = 0; i < 3; i++) {
     const float dist_squared = dist_squared_to_line_segment_v2(
         point,
-        mloopuv[mlooptri[tri_index].tri[(i + 0)]].uv,
-        mloopuv[mlooptri[tri_index].tri[(i + 1) % 3]].uv);
+        mloopuv[mlooptri[tri_index].tri[(i + 0)]],
+        mloopuv[mlooptri[tri_index].tri[(i + 1) % 3]]);
 
     if (dist_squared < min_distance) {
       min_distance = dist_squared;
@@ -2512,7 +2513,7 @@ static void dynamic_paint_find_island_border(const DynamicPaintCreateUVSurfaceDa
 {
   const MLoop *mloop = data->mloop;
   const MLoopTri *mlooptri = data->mlooptri;
-  const MLoopUV *mloopuv = data->mloopuv;
+  const float(*mloopuv)[2] = data->mloopuv;
 
   const unsigned int *loop_idx = mlooptri[tri_index].tri;
 
@@ -2525,9 +2526,9 @@ static void dynamic_paint_find_island_border(const DynamicPaintCreateUVSurfaceDa
 
     float uv0[2], uv1[2], uv2[2];
 
-    copy_v2_v2(uv0, mloopuv[loop_idx[(edge_idx + 0)]].uv);
-    copy_v2_v2(uv1, mloopuv[loop_idx[(edge_idx + 1) % 3]].uv);
-    copy_v2_v2(uv2, mloopuv[loop_idx[(edge_idx + 2) % 3]].uv);
+    copy_v2_v2(uv0, mloopuv[loop_idx[(edge_idx + 0)]]);
+    copy_v2_v2(uv1, mloopuv[loop_idx[(edge_idx + 1) % 3]]);
+    copy_v2_v2(uv2, mloopuv[loop_idx[(edge_idx + 2) % 3]]);
 
     /* Verify the target point is on the opposite side of the edge from the third triangle
      * vertex, to ensure that we always move closer to the goal point. */
@@ -2578,13 +2579,13 @@ static void dynamic_paint_find_island_border(const DynamicPaintCreateUVSurfaceDa
         /* Allow for swapped vertex order */
         if (overt0 == vert0 && overt1 == vert1) {
           found_other = true;
-          copy_v2_v2(ouv0, mloopuv[other_loop_idx[(j + 0)]].uv);
-          copy_v2_v2(ouv1, mloopuv[other_loop_idx[(j + 1) % 3]].uv);
+          copy_v2_v2(ouv0, mloopuv[other_loop_idx[(j + 0)]]);
+          copy_v2_v2(ouv1, mloopuv[other_loop_idx[(j + 1) % 3]]);
         }
         else if (overt0 == vert1 && overt1 == vert0) {
           found_other = true;
-          copy_v2_v2(ouv1, mloopuv[other_loop_idx[(j + 0)]].uv);
-          copy_v2_v2(ouv0, mloopuv[other_loop_idx[(j + 1) % 3]].uv);
+          copy_v2_v2(ouv1, mloopuv[other_loop_idx[(j + 0)]]);
+          copy_v2_v2(ouv0, mloopuv[other_loop_idx[(j + 1) % 3]]);
         }
 
         if (found_other) {
@@ -2807,7 +2808,7 @@ int dynamicPaint_createUVSurface(Scene *scene,
   PaintUVPoint *tempPoints = NULL;
   Vec3f *tempWeights = NULL;
   const MLoopTri *mlooptri = NULL;
-  const MLoopUV *mloopuv = NULL;
+  const float(*mloopuv)[2] = NULL;
   const MLoop *mloop = NULL;
 
   Bounds2D *faceBB = NULL;
@@ -2828,9 +2829,9 @@ int dynamicPaint_createUVSurface(Scene *scene,
   const int tottri = BKE_mesh_runtime_looptri_len(mesh);
 
   /* get uv map */
-  if (CustomData_has_layer(&mesh->ldata, CD_MLOOPUV)) {
-    CustomData_validate_layer_name(&mesh->ldata, CD_MLOOPUV, surface->uvlayer_name, uvname);
-    mloopuv = CustomData_get_layer_named(&mesh->ldata, CD_MLOOPUV, uvname);
+  if (CustomData_has_layer(&mesh->ldata, CD_PROP_FLOAT2)) {
+    CustomData_validate_layer_name(&mesh->ldata, CD_PROP_FLOAT2, surface->uvlayer_name, uvname);
+    mloopuv = CustomData_get_layer_named(&mesh->ldata, CD_PROP_FLOAT2, uvname);
   }
 
   /* Check for validity */
@@ -2889,11 +2890,11 @@ int dynamicPaint_createUVSurface(Scene *scene,
 
   if (!error) {
     for (int i = 0; i < tottri; i++) {
-      copy_v2_v2(faceBB[i].min, mloopuv[mlooptri[i].tri[0]].uv);
-      copy_v2_v2(faceBB[i].max, mloopuv[mlooptri[i].tri[0]].uv);
+      copy_v2_v2(faceBB[i].min, mloopuv[mlooptri[i].tri[0]]);
+      copy_v2_v2(faceBB[i].max, mloopuv[mlooptri[i].tri[0]]);
 
       for (int j = 1; j < 3; j++) {
-        minmax_v2v2_v2(faceBB[i].min, faceBB[i].max, mloopuv[mlooptri[i].tri[j]].uv);
+        minmax_v2v2_v2(faceBB[i].min, faceBB[i].max, mloopuv[mlooptri[i].tri[j]]);
       }
     }
 

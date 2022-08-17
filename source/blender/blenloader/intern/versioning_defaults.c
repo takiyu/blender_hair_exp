@@ -349,7 +349,7 @@ static void blo_update_defaults_scene(Main *bmain, Scene *scene)
         {0.625, 0.75}, {0.375, 0.75}, {0.375, 0.25}, {0.625, 0.25}, {0.625, 0.50}, {0.375, 0.50},
     };
     for (int i = 0; i < ARRAY_SIZE(uv_values); i++) {
-      copy_v2_v2(me->mloopuv[i].uv, uv_values[i]);
+      copy_v2_v2(me->mloopuv[i], uv_values[i]);
     }
   }
 

@@ -163,9 +163,9 @@ enum {
  *
  * // access UV coordinates (works for all loop data, vertex colors... etc).
  * float *uvtri_co[3] = {
- *     mloopuv[lt->tri[0]].uv,
- *     mloopuv[lt->tri[1]].uv,
- *     mloopuv[lt->tri[2]].uv,
+ *     mloopuv[lt->tri[0]],
+ *     mloopuv[lt->tri[1]],
+ *     mloopuv[lt->tri[2]],
  * };
  * \endcode
  *
@@ -318,6 +318,8 @@ typedef enum eMVertSkinFlag {
 
 /**
  * UV coordinate for a polygon face & flag for selection & other options.
+ * Deprecated! Only kept to read old files.
+ * UV coordinates are now stored as CD_PROP_FLOAT2 layers
  */
 typedef struct MLoopUV {
   float uv[2];

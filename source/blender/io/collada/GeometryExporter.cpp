@@ -74,7 +74,7 @@ void GeometryExporter::operator()(Object *ob)
   /* writes <source> for normal coords */
   createNormalsSource(geom_id, me, nor);
 
-  bool has_uvs = (bool)CustomData_has_layer(&me->ldata, CD_MLOOPUV);
+  bool has_uvs = (bool)CustomData_has_layer(&me->ldata, CD_PROP_FLOAT2);
 
   /* writes <source> for uv coords if mesh has uv coords */
   if (has_uvs) {
@@ -156,7 +156,7 @@ void GeometryExporter::export_key_mesh(Object *ob, Mesh *me, KeyBlock *kb)
   /* writes <source> for normal coords */
   createNormalsSource(geom_id, me, nor);
 
-  bool has_uvs = (bool)CustomData_has_layer(&me->ldata, CD_MLOOPUV);
+  bool has_uvs = (bool)CustomData_has_layer(&me->ldata, CD_PROP_FLOAT2);
 
   /* writes <source> for uv coords if mesh has uv coords */
   if (has_uvs) {
@@ -361,13 +361,13 @@ void GeometryExporter::create_mesh_primitive_list(short material_index,
   til.push_back(normals_input);
 
   /* if mesh has uv coords writes <input> for TEXCOORD */
-  int num_layers = CustomData_number_of_layers(&me->ldata, CD_MLOOPUV);
-  int active_uv_index = CustomData_get_active_layer_index(&me->ldata, CD_MLOOPUV);
+  int num_layers = CustomData_number_of_layers(&me->ldata, CD_PROP_FLOAT2);
+  int active_uv_index = CustomData_get_active_layer_index(&me->ldata, CD_PROP_FLOAT2);
   for (int i = 0; i < num_layers; i++) {
-    int layer_index = CustomData_get_layer_index_n(&me->ldata, CD_MLOOPUV, i);
+    int layer_index = CustomData_get_layer_index_n(&me->ldata, CD_PROP_FLOAT2, i);
     if (!this->export_settings.get_active_uv_only() || layer_index == active_uv_index) {
 
-      // char *name = CustomData_get_layer_name(&me->ldata, CD_MLOOPUV, i);
+      // char *name = CustomData_get_layer_name(&me->ldata, CD_PROP_FLOAT2, i);
       COLLADASW::Input texcoord_input(
           COLLADASW::InputSemantic::TEXCOORD,
           makeUrl(makeTexcoordSourceId(geom_id, i, this->export_settings.get_active_uv_only())),
@@ -534,15 +534,15 @@ void GeometryExporter::createTexcoordsSource(std::string geom_id, Mesh *me)
   int totuv = me->totloop;
   MPoly *mpolys = me->mpoly;
 
-  int num_layers = CustomData_number_of_layers(&me->ldata, CD_MLOOPUV);
+  int num_layers = CustomData_number_of_layers(&me->ldata, CD_PROP_FLOAT2);
 
   /* write <source> for each layer
    * each <source> will get id like meshName + "map-channel-1" */
-  int active_uv_index = CustomData_get_active_layer_index(&me->ldata, CD_MLOOPUV);
+  int active_uv_index = CustomData_get_active_layer_index(&me->ldata, CD_PROP_FLOAT2);
   for (int a = 0; a < num_layers; a++) {
-    int layer_index = CustomData_get_layer_index_n(&me->ldata, CD_MLOOPUV, a);
+    int layer_index = CustomData_get_layer_index_n(&me->ldata, CD_PROP_FLOAT2, a);
     if (!this->export_settings.get_active_uv_only() || layer_index == active_uv_index) {
-      MLoopUV *mloops = (MLoopUV *)CustomData_get_layer_n(&me->ldata, CD_MLOOPUV, a);
+      float(*mloops)[2] = (float(*)[2])CustomData_get_layer_n(&me->ldata, CD_PROP_FLOAT2, a);
 
       COLLADASW::FloatSourceF source(mSW);
       std::string layer_id = makeTexcoordSourceId(
@@ -560,9 +560,9 @@ void GeometryExporter::createTexcoordsSource(std::string geom_id, Mesh *me)
 
       for (int index = 0; index < totpoly; index++) {
         MPoly *mpoly = mpolys + index;
-        MLoopUV *mloop = mloops + mpoly->loopstart;
+        float(*mloop)[2] = mloops + mpoly->loopstart;
         for (int j = 0; j < mpoly->totloop; j++) {
-          source.appendValues(mloop[j].uv[0], mloop[j].uv[1]);
+          source.appendValues(mloop[j][0], mloop[j][1]);
         }
       }
 

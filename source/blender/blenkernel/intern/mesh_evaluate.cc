@@ -20,6 +20,7 @@
 #include "BLI_edgehash.h"
 #include "BLI_index_range.hh"
 #include "BLI_math.h"
+#include "BLI_math_vec_types.hh"
 #include "BLI_span.hh"
 #include "BLI_utildefines.h"
 
@@ -219,22 +220,9 @@ float BKE_mesh_calc_area(const Mesh *me)
   return total_area;
 }
 
-float BKE_mesh_calc_poly_uv_area(const MPoly *mpoly, const MLoopUV *uv_array)
+float BKE_mesh_calc_poly_uv_area(const MPoly *mpoly, const float (*uv_array)[2])
 {
-
-  int i, l_iter = mpoly->loopstart;
-  float area;
-  float(*vertexcos)[2] = (float(*)[2])BLI_array_alloca(vertexcos, (size_t)mpoly->totloop);
-
-  /* pack vertex cos into an array for area_poly_v2 */
-  for (i = 0; i < mpoly->totloop; i++, l_iter++) {
-    copy_v2_v2(vertexcos[i], uv_array[l_iter].uv);
-  }
-
-  /* finally calculate the area */
-  area = area_poly_v2(vertexcos, (uint)mpoly->totloop);
-
-  return area;
+  return area_poly_v2(uv_array + mpoly->loopstart, (uint)mpoly->totloop);
 }
 
 static float UNUSED_FUNCTION(mesh_calc_poly_volume_centroid)(const MPoly *mpoly,

@@ -58,7 +58,7 @@ static void compute_area_ratio(const MeshRenderData *mr,
 
   if (mr->extract_type == MR_EXTRACT_BMESH) {
     CustomData *cd_ldata = &mr->bm->ldata;
-    int uv_ofs = CustomData_get_offset(cd_ldata, CD_MLOOPUV);
+    int uv_ofs = CustomData_get_offset(cd_ldata, CD_PROP_FLOAT2);
 
     BMFace *efa;
     BMIter f_iter;
@@ -73,7 +73,8 @@ static void compute_area_ratio(const MeshRenderData *mr,
   }
   else {
     BLI_assert(ELEM(mr->extract_type, MR_EXTRACT_MAPPED, MR_EXTRACT_MESH));
-    const MLoopUV *uv_data = (const MLoopUV *)CustomData_get_layer(&mr->me->ldata, CD_MLOOPUV);
+    const float(*uv_data)[2] = (const float(*)[2])CustomData_get_layer(&mr->me->ldata,
+                                                                       CD_PROP_FLOAT2);
     const MPoly *mp = mr->mpoly;
     for (int mp_index = 0; mp_index < mr->poly_len; mp_index++, mp++) {
       float area = BKE_mesh_calc_poly_area(mp, &mr->mloop[mp->loopstart], mr->mvert);

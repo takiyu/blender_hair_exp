@@ -580,7 +580,6 @@ class DATA_PT_mesh_attributes(MeshButtonsPanel, Panel):
                 # Built-in names.
                 {"position": None, "material_index": None, "shade_smooth": None, "normal": None, "crease": None},
                 mesh.attributes,
-                mesh.uv_layers,
                 ob.vertex_groups,
         ):
             for name in collection.keys():

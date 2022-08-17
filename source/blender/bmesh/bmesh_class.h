@@ -529,6 +529,9 @@ typedef bool (*BMLoopPairFilterFunc)(const BMLoop *, const BMLoop *, void *user_
 #define BM_ELEM_CD_GET_BOOL(ele, offset) \
   (BLI_assert(offset != -1), *((bool *)((char *)(ele)->head.data + (offset))))
 
+#define BM_ELEM_CD_GET_OPT_BOOL(ele, offset) \
+  (offset == -1 ? false : *((bool *)((char *)(ele)->head.data + (offset))))
+
 #if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 201112L)
 #  define BM_ELEM_CD_GET_VOID_P(ele, offset) \
     (BLI_assert(offset != -1), \

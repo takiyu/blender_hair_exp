@@ -160,7 +160,7 @@ typedef struct GenerateOceanGeometryData {
   MVert *mverts;
   MPoly *mpolys;
   MLoop *mloops;
-  MLoopUV *mloopuvs;
+  float (*mloopuvs)[2];
 
   int res_x, res_y;
   int rx, ry;
@@ -223,22 +223,22 @@ static void generate_ocean_geometry_uvs(void *__restrict userdata,
 
   for (x = 0; x < gogd->res_x; x++) {
     const int i = y * gogd->res_x + x;
-    MLoopUV *luv = &gogd->mloopuvs[i * 4];
+    float(*luv)[2] = &gogd->mloopuvs[i * 4];
 
-    luv->uv[0] = x * gogd->ix;
-    luv->uv[1] = y * gogd->iy;
+    (*luv)[0] = x * gogd->ix;
+    (*luv)[1] = y * gogd->iy;
     luv++;
 
-    luv->uv[0] = (x + 1) * gogd->ix;
-    luv->uv[1] = y * gogd->iy;
+    (*luv)[0] = (x + 1) * gogd->ix;
+    (*luv)[1] = y * gogd->iy;
     luv++;
 
-    luv->uv[0] = (x + 1) * gogd->ix;
-    luv->uv[1] = (y + 1) * gogd->iy;
+    (*luv)[0] = (x + 1) * gogd->ix;
+    (*luv)[1] = (y + 1) * gogd->iy;
     luv++;
 
-    luv->uv[0] = x * gogd->ix;
-    luv->uv[1] = (y + 1) * gogd->iy;
+    (*luv)[0] = x * gogd->ix;
+    (*luv)[1] = (y + 1) * gogd->iy;
     luv++;
   }
 }
@@ -290,9 +290,9 @@ static Mesh *generate_ocean_geometry(OceanModifierData *omd, Mesh *mesh_orig, co
   BKE_mesh_calc_edges(result, false, false);
 
   /* add uvs */
-  if (CustomData_number_of_layers(&result->ldata, CD_MLOOPUV) < MAX_MTFACE) {
+  if (CustomData_number_of_layers(&result->ldata, CD_PROP_FLOAT2) < MAX_MTFACE) {
     gogd.mloopuvs = CustomData_add_layer(
-        &result->ldata, CD_MLOOPUV, CD_CALLOC, NULL, polys_num * 4);
+        &result->ldata, CD_PROP_FLOAT2, CD_CALLOC, NULL, polys_num * 4);
 
     if (gogd.mloopuvs) { /* unlikely to fail */
       gogd.ix = 1.0 / gogd.rx;

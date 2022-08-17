@@ -287,8 +287,8 @@ void OBJMesh::store_uv_coords_and_indices()
   const MLoop *mloop = export_mesh_eval_->mloop;
   const int totpoly = export_mesh_eval_->totpoly;
   const int totvert = export_mesh_eval_->totvert;
-  const MLoopUV *mloopuv = static_cast<const MLoopUV *>(
-      CustomData_get_layer(&export_mesh_eval_->ldata, CD_MLOOPUV));
+  const float(*mloopuv)[2] = static_cast<float(*)[2]>(
+      CustomData_get_layer(&export_mesh_eval_->ldata, CD_PROP_FLOAT2));
   if (!mloopuv) {
     tot_uv_vertices_ = 0;
     return;
@@ -315,7 +315,7 @@ void OBJMesh::store_uv_coords_and_indices()
       /* Store UV vertex coordinates. */
       uv_coords_.resize(tot_uv_vertices_);
       const int loopstart = mpoly[uv_vert->poly_index].loopstart;
-      Span<float> vert_uv_coords(mloopuv[loopstart + uv_vert->loop_of_poly_index].uv, 2);
+      Span<float> vert_uv_coords(mloopuv[loopstart + uv_vert->loop_of_poly_index], 2);
       uv_coords_[tot_uv_vertices_ - 1] = float2(vert_uv_coords[0], vert_uv_coords[1]);
 
       /* Store UV vertex indices. */

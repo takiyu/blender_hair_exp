@@ -197,7 +197,7 @@ static void HC_relaxation_iteration_uv(BMEditMesh *em,
                                              tmp_uvdata[i].sum_b[1] / tmp_uvdata[i].ncounter));
 
       for (element = sculptdata->uv[i].element; element; element = element->next) {
-        MLoopUV *luv;
+        float(*luv)[2];
         BMLoop *l;
 
         if (element->separate && element != sculptdata->uv[i].element) {
@@ -205,8 +205,8 @@ static void HC_relaxation_iteration_uv(BMEditMesh *em,
         }
 
         l = element->l;
-        luv = CustomData_bmesh_get(&em->bm->ldata, l->head.data, CD_MLOOPUV);
-        copy_v2_v2(luv->uv, sculptdata->uv[i].uv);
+        luv = CustomData_bmesh_get(&em->bm->ldata, l->head.data, CD_PROP_FLOAT2);
+        copy_v2_v2(*luv, sculptdata->uv[i].uv);
       }
     }
   }
@@ -269,7 +269,7 @@ static void laplacian_relaxation_iteration_uv(BMEditMesh *em,
                                 strength * tmp_uvdata[i].p[1];
 
       for (element = sculptdata->uv[i].element; element; element = element->next) {
-        MLoopUV *luv;
+        float(*luv)[2];
         BMLoop *l;
 
         if (element->separate && element != sculptdata->uv[i].element) {
@@ -277,8 +277,8 @@ static void laplacian_relaxation_iteration_uv(BMEditMesh *em,
         }
 
         l = element->l;
-        luv = CustomData_bmesh_get(&em->bm->ldata, l->head.data, CD_MLOOPUV);
-        copy_v2_v2(luv->uv, sculptdata->uv[i].uv);
+        luv = CustomData_bmesh_get(&em->bm->ldata, l->head.data, CD_PROP_FLOAT2);
+        copy_v2_v2(*luv, sculptdata->uv[i].uv);
       }
     }
   }
@@ -347,7 +347,7 @@ static void uv_sculpt_stroke_apply(bContext *C,
         sculptdata->uv[i].uv[1] -= strength * diff[1] * 0.001f;
 
         for (element = sculptdata->uv[i].element; element; element = element->next) {
-          MLoopUV *luv;
+          float(*luv)[2];
           BMLoop *l;
 
           if (element->separate && element != sculptdata->uv[i].element) {
@@ -355,8 +355,8 @@ static void uv_sculpt_stroke_apply(bContext *C,
           }
 
           l = element->l;
-          luv = CustomData_bmesh_get(&em->bm->ldata, l->head.data, CD_MLOOPUV);
-          copy_v2_v2(luv->uv, sculptdata->uv[i].uv);
+          luv = CustomData_bmesh_get(&em->bm->ldata, l->head.data, CD_PROP_FLOAT2);
+          copy_v2_v2(*luv, sculptdata->uv[i].uv);
         }
       }
     }
@@ -393,7 +393,7 @@ static void uv_sculpt_stroke_apply(bContext *C,
           sculptdata->initial_stroke->initialSelection[i].initial_uv[1] + strength * diff[1];
 
       for (element = sculptdata->uv[uvindex].element; element; element = element->next) {
-        MLoopUV *luv;
+        float(*luv)[2];
         BMLoop *l;
 
         if (element->separate && element != sculptdata->uv[uvindex].element) {
@@ -401,8 +401,8 @@ static void uv_sculpt_stroke_apply(bContext *C,
         }
 
         l = element->l;
-        luv = CustomData_bmesh_get(&em->bm->ldata, l->head.data, CD_MLOOPUV);
-        copy_v2_v2(luv->uv, sculptdata->uv[uvindex].uv);
+        luv = CustomData_bmesh_get(&em->bm->ldata, l->head.data, CD_PROP_FLOAT2);
+        copy_v2_v2(*luv, sculptdata->uv[uvindex].uv);
       }
     }
   }
@@ -473,7 +473,7 @@ static UvSculptData *uv_sculpt_stroke_init(bContext *C, wmOperator *op, const wm
     ARegion *region = CTX_wm_region(C);
     float co[2];
     BMFace *efa;
-    MLoopUV *luv;
+    float(*luv)[2];
     BMLoop *l;
     BMIter iter, liter;
 
@@ -560,12 +560,12 @@ static UvSculptData *uv_sculpt_stroke_init(bContext *C, wmOperator *op, const wm
           }
 
           l = element->l;
-          luv = CustomData_bmesh_get(&em->bm->ldata, l->head.data, CD_MLOOPUV);
+          luv = CustomData_bmesh_get(&em->bm->ldata, l->head.data, CD_PROP_FLOAT2);
 
           counter++;
           data->uv[counter].element = element;
           data->uv[counter].flag = 0;
-          data->uv[counter].uv = luv->uv;
+          data->uv[counter].uv = *luv;
         }
         /* Pointer arithmetic to the rescue, as always :). */
         uniqueUv[element - data->elementMap->buf] = counter;

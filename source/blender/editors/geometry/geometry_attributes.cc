@@ -246,7 +246,6 @@ static int geometry_color_attribute_add_exec(bContext *C, wmOperator *op)
 
 enum class ConvertAttributeMode {
   Generic,
-  UVMap,
   VertexGroup,
 };
 
@@ -306,19 +305,6 @@ static int geometry_attribute_convert_exec(bContext *C, wmOperator *op)
       src_varray.materialize_to_uninitialized(new_data);
       attributes.remove(name);
       attributes.add(name, dst_domain, dst_type, blender::bke::AttributeInitMove(new_data));
-      break;
-    }
-    case ConvertAttributeMode::UVMap: {
-      MLoopUV *dst_uvs = static_cast<MLoopUV *>(
-          MEM_calloc_arrayN(mesh->totloop, sizeof(MLoopUV), __func__));
-      VArray<float2> src_varray = attributes.lookup_or_default<float2>(
-          name, ATTR_DOMAIN_CORNER, {0.0f, 0.0f});
-      for (const int i : IndexRange(mesh->totloop)) {
-        copy_v2_v2(dst_uvs[i].uv, src_varray[i]);
-      }
-      attributes.remove(name);
-      CustomData_add_layer_named(
-          &mesh->ldata, CD_MLOOPUV, CD_ASSIGN, dst_uvs, mesh->totloop, name.c_str());
       break;
     }
     case ConvertAttributeMode::VertexGroup: {
@@ -610,7 +596,6 @@ void GEOMETRY_OT_attribute_convert(wmOperatorType *ot)
 
   static EnumPropertyItem mode_items[] = {
       {int(ConvertAttributeMode::Generic), "GENERIC", 0, "Generic", ""},
-      {int(ConvertAttributeMode::UVMap), "UV_MAP", 0, "UV Map", ""},
       {int(ConvertAttributeMode::VertexGroup), "VERTEX_GROUP", 0, "Vertex Group", ""},
       {0, nullptr, 0, nullptr, nullptr},
   };

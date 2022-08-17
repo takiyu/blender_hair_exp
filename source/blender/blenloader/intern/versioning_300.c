@@ -33,6 +33,7 @@
 #include "DNA_mask_types.h"
 #include "DNA_material_types.h"
 #include "DNA_mesh_types.h"
+#include "DNA_meshdata_types.h"
 #include "DNA_modifier_types.h"
 #include "DNA_screen_types.h"
 #include "DNA_space_types.h"
@@ -3318,5 +3319,75 @@ void blo_do_versions_300(FileData *fd, Library *UNUSED(lib), Main *bmain)
    */
   {
     /* Keep this block, even when empty. */
+    LISTBASE_FOREACH (Mesh *, mesh, &bmain->meshes) {
+      int totloop = mesh->totloop;
+
+      const int active = CustomData_get_active_layer(&mesh->ldata, CD_MLOOPUV);
+      const int render = CustomData_get_render_layer(&mesh->ldata, CD_MLOOPUV);
+      int active_index = -1;
+      int render_index = -1;
+
+      int nr_mloopuv_layers = CustomData_number_of_layers(&mesh->ldata, CD_MLOOPUV);
+      for (int n = 0; n < nr_mloopuv_layers; n++) {
+        int index = CustomData_get_layer_index_n(&mesh->ldata, CD_MLOOPUV, n);
+        const MLoopUV *luv = CustomData_get_layer_n(&mesh->ldata, CD_MLOOPUV, n);
+        uint32_t layerflags = 0;
+
+        char name[MAX_CUSTOMDATA_LAYER_NAME];
+        BLI_strncpy(name,
+                    CustomData_get_layer_name(&mesh->ldata, CD_MLOOPUV, n),
+                    MAX_CUSTOMDATA_LAYER_NAME);
+        if (luv) {
+          for (int i = 0; i < totloop; i++) {
+            layerflags |= luv[i].flag;
+          }
+        }
+        /* Remove the original name, so we can create an attribute with the same name. */
+        mesh->ldata.layers[index].name[0] = 0;
+
+        UVMap_Data data = BKE_id_attributes_create_uvmap_layers(
+            (ID *)mesh, name, NULL, layerflags);
+
+        if (n == active) {
+          active_index = data.uv_index;
+        }
+        if (n == render) {
+          render_index = data.uv_index;
+        }
+
+        if (luv) {
+          for (int i = 0; i < totloop; i++) {
+            copy_v2_v2(data.uv[i], luv[i].uv);
+          }
+
+          if (layerflags & MLOOPUV_VERTSEL) {
+            for (int i = 0; i < totloop; i++) {
+              data.vertsel[i] = luv[i].flag & MLOOPUV_VERTSEL;
+            }
+          }
+
+          if (layerflags & MLOOPUV_EDGESEL) {
+            for (int i = 0; i < totloop; i++) {
+              data.edgesel[i] = luv[i].flag & MLOOPUV_EDGESEL;
+            }
+          }
+
+          if (layerflags & MLOOPUV_PINNED) {
+            for (int i = 0; i < totloop; i++) {
+              data.pinned[i] = luv[i].flag & MLOOPUV_PINNED;
+            }
+          }
+        }
+      }
+      /* Take care to set the active and render layer before deleting the old layers,
+       * which would change the indices.
+       */
+      CustomData_set_layer_active_index(&mesh->ldata, CD_PROP_FLOAT2, active_index);
+      CustomData_set_layer_render_index(&mesh->ldata, CD_PROP_FLOAT2, render_index);
+
+      CustomData_free_layers(&mesh->ldata, CD_MLOOPUV, totloop);
+
+      mesh->mloopuv = CustomData_get_layer(&mesh->ldata, CD_PROP_FLOAT2);
+    }
   }
 }

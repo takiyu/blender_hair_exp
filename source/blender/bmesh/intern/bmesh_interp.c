@@ -15,6 +15,7 @@
 #include "BLI_linklist.h"
 #include "BLI_math.h"
 #include "BLI_memarena.h"
+#include "BLI_string.h"
 #include "BLI_task.h"
 
 #include "BKE_customdata.h"
@@ -870,6 +871,23 @@ void BM_data_layer_add_named(BMesh *bm, CustomData *data, int type, const char *
   if (olddata.layers) {
     MEM_freeN(olddata.layers);
   }
+}
+
+void BM_data_layer_ensure_named(BMesh *bm, CustomData *data, int type, const char *name)
+{
+  if (CustomData_get_named_layer_index(data, type, name) == -1) {
+    BM_data_layer_add_named(bm, data, type, name);
+  }
+}
+
+void BM_uv_layer_ensure_sublayer(
+    BMesh *bm, CustomData *data, int type, int index_of_parent, const char *prefix)
+{
+  char name[MAX_CUSTOMDATA_LAYER_NAME];
+  /* If you change the naming scheme here, change it in UV_sublayer_name() as well. */
+  BLI_snprintf(
+      name, MAX_CUSTOMDATA_LAYER_NAME, ".%s.%s", prefix, data->layers[index_of_parent].name);
+  BM_data_layer_ensure_named(bm, data, type, name);
 }
 
 void BM_data_layer_free(BMesh *bm, CustomData *data, int type)

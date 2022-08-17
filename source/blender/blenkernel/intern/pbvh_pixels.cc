@@ -108,7 +108,7 @@ struct EncodePixelsUserData {
   ImageUser *image_user;
   PBVH *pbvh;
   Vector<PBVHNode *> *nodes;
-  const MLoopUV *ldata_uv;
+  const float2 *ldata_uv;
 };
 
 static void do_encode_pixels(void *__restrict userdata,
@@ -136,9 +136,9 @@ static void do_encode_pixels(void *__restrict userdata,
     for (int triangle_index = 0; triangle_index < triangles.size(); triangle_index++) {
       const MLoopTri *lt = &pbvh->looptri[node->prim_indices[triangle_index]];
       float2 uvs[3] = {
-          float2(data->ldata_uv[lt->tri[0]].uv) - tile_offset,
-          float2(data->ldata_uv[lt->tri[1]].uv) - tile_offset,
-          float2(data->ldata_uv[lt->tri[2]].uv) - tile_offset,
+          data->ldata_uv[lt->tri[0]] - tile_offset,
+          data->ldata_uv[lt->tri[1]] - tile_offset,
+          data->ldata_uv[lt->tri[2]] - tile_offset,
       };
 
       const float minv = clamp_f(min_fff(uvs[0].y, uvs[1].y, uvs[2].y), 0.0f, 1.0f);
@@ -283,8 +283,9 @@ static void update_pixels(PBVH *pbvh, Mesh *mesh, Image *image, ImageUser *image
     return;
   }
 
-  const MLoopUV *ldata_uv = static_cast<const MLoopUV *>(
-      CustomData_get_layer(&mesh->ldata, CD_MLOOPUV));
+  const float2 *ldata_uv = static_cast<float2 *>(
+      CustomData_get_layer(&mesh->ldata, CD_PROP_FLOAT2));
+
   if (ldata_uv == nullptr) {
     return;
   }

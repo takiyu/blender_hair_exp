@@ -364,7 +364,7 @@ void BKE_editmesh_loop_tangent_calc(BMEditMesh *em,
         /* NOTE: we assume we do have tessellated loop normals at this point
          * (in case it is object-enabled), have to check this is valid. */
         mesh2tangent->precomputedLoopNormals = loop_normals;
-        mesh2tangent->cd_loop_uv_offset = CustomData_get_n_offset(&bm->ldata, CD_MLOOPUV, n);
+        mesh2tangent->cd_loop_uv_offset = CustomData_get_n_offset(&bm->ldata, CD_PROP_FLOAT2, n);
 
         /* needed for indexing loop-tangents */
         int htype_index = BM_LOOP;
@@ -380,8 +380,8 @@ void BKE_editmesh_loop_tangent_calc(BMEditMesh *em,
         else {
           /* Fill the resulting tangent_mask */
           int uv_ind = CustomData_get_named_layer_index(
-              &bm->ldata, CD_MLOOPUV, loopdata_out->layers[index].name);
-          int uv_start = CustomData_get_layer_index(&bm->ldata, CD_MLOOPUV);
+              &bm->ldata, CD_PROP_FLOAT2, loopdata_out->layers[index].name);
+          int uv_start = CustomData_get_layer_index(&bm->ldata, CD_PROP_FLOAT2);
           BLI_assert(uv_ind != -1 && uv_start != -1);
           BLI_assert(uv_ind - uv_start < MAX_MTFACE);
           tangent_mask_curr |= 1 << (uv_ind - uv_start);
@@ -415,7 +415,7 @@ void BKE_editmesh_loop_tangent_calc(BMEditMesh *em,
 
   *tangent_mask_curr_p = tangent_mask_curr;
 
-  int act_uv_index = CustomData_get_layer_index_n(&bm->ldata, CD_MLOOPUV, act_uv_n);
+  int act_uv_index = CustomData_get_layer_index_n(&bm->ldata, CD_PROP_FLOAT2, act_uv_n);
   if (act_uv_index >= 0) {
     int tan_index = CustomData_get_named_layer_index(
         loopdata_out, CD_TANGENT, bm->ldata.layers[act_uv_index].name);
@@ -423,7 +423,7 @@ void BKE_editmesh_loop_tangent_calc(BMEditMesh *em,
   } /* else tangent has been built from orco */
 
   /* Update render layer index */
-  int ren_uv_index = CustomData_get_layer_index_n(&bm->ldata, CD_MLOOPUV, ren_uv_n);
+  int ren_uv_index = CustomData_get_layer_index_n(&bm->ldata, CD_PROP_FLOAT2, ren_uv_n);
   if (ren_uv_index >= 0) {
     int tan_index = CustomData_get_named_layer_index(
         loopdata_out, CD_TANGENT, bm->ldata.layers[ren_uv_index].name);

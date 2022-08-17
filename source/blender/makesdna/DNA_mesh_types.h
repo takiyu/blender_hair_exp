@@ -26,7 +26,6 @@ struct MFace;
 struct MLoop;
 struct MLoopCol;
 struct MLoopTri;
-struct MLoopUV;
 struct MPoly;
 struct MVert;
 struct Material;
@@ -218,9 +217,10 @@ typedef struct Mesh {
 
   /**
    * 2D vector data used for UVs. "UV" data can also be stored as generic attributes in #ldata.
-   * \note This pointer is for convenient access to the #CD_MLOOPUV layer in #ldata.
+   * \note This pointer is for convenient access to the #CD_PROP_FLOAT2 layer in #ldata.
    */
-  struct MLoopUV *mloopuv;
+  float (*mloopuv)[2];
+
   /**
    * The active vertex corner color layer, if it exists. Also called "Vertex Color" in Blender's
    * UI, even though it is stored per face corner.
@@ -396,9 +396,9 @@ enum {
 /* We can't have both flags enabled at once,
  * flags defined in DNA_scene_types.h */
 #define ME_EDIT_PAINT_SEL_MODE(_me) \
-  (((_me)->editflag & ME_EDIT_PAINT_FACE_SEL) ? SCE_SELECT_FACE : \
-   ((_me)->editflag & ME_EDIT_PAINT_VERT_SEL) ? SCE_SELECT_VERTEX : \
-                                                0)
+  (((_me)->editflag & ME_EDIT_PAINT_FACE_SEL) ? \
+       SCE_SELECT_FACE : \
+       ((_me)->editflag & ME_EDIT_PAINT_VERT_SEL) ? SCE_SELECT_VERTEX : 0)
 
 /** #Mesh.flag */
 enum {

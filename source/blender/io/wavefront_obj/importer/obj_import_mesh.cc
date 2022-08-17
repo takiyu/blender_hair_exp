@@ -257,8 +257,10 @@ void MeshFromGeometry::create_uv_verts(Mesh *mesh)
   if (global_vertices_.uv_vertices.size() <= 0) {
     return;
   }
-  MLoopUV *mluv_dst = static_cast<MLoopUV *>(CustomData_add_layer(
-      &mesh->ldata, CD_MLOOPUV, CD_DEFAULT, nullptr, mesh_geometry_.total_loops_));
+
+  UVMap_Data data = BKE_id_attributes_create_uvmap_layers((ID *)mesh, "UVMap", NULL, 0);
+  float2 *mluv_dst = (float2 *)data.uv;
+
   int tot_loop_idx = 0;
 
   for (const PolyElem &curr_face : mesh_geometry_.face_elements_) {
@@ -267,7 +269,7 @@ void MeshFromGeometry::create_uv_verts(Mesh *mesh)
       if (curr_corner.uv_vert_index >= 0 &&
           curr_corner.uv_vert_index < global_vertices_.uv_vertices.size()) {
         const float2 &mluv_src = global_vertices_.uv_vertices[curr_corner.uv_vert_index];
-        copy_v2_v2(mluv_dst[tot_loop_idx].uv, mluv_src);
+        copy_v2_v2(mluv_dst[tot_loop_idx], mluv_src);
         tot_loop_idx++;
       }
     }

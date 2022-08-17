@@ -264,17 +264,17 @@ void GPU_pbvh_mesh_buffers_update(PBVHGPUFormat *vbo_id,
   }
 
   int totuv = gpu_pbvh_make_attr_offs(ATTR_DOMAIN_MASK_CORNER,
-                                      CD_MASK_MLOOPUV,
+                                      CD_MASK_PROP_FLOAT2,
                                       NULL,
                                       NULL,
                                       ldata,
                                       NULL,
                                       cd_uvs,
                                       vbo_id->active_attrs_only,
-                                      CD_MLOOPUV,
+                                      CD_PROP_FLOAT2,
                                       ATTR_DOMAIN_CORNER,
-                                      get_active_layer(ldata, CD_MLOOPUV),
-                                      get_render_layer(ldata, CD_MLOOPUV));
+                                      get_active_layer(ldata, CD_PROP_FLOAT2),
+                                      get_render_layer(ldata, CD_PROP_FLOAT2));
 
   const bool show_mask = vmask && (update_flags & GPU_PBVH_BUFFERS_SHOW_MASK) != 0;
   const bool show_face_sets = sculpt_face_sets &&
@@ -309,7 +309,7 @@ void GPU_pbvh_mesh_buffers_update(PBVHGPUFormat *vbo_id,
 
           GPUAttrRef *ref = cd_uvs + uv_i;
           CustomDataLayer *layer = ldata->layers + ref->layer_idx;
-          MLoopUV *muv = layer->data;
+          float(*muv)[2] = layer->data;
 
           for (uint i = 0; i < buffers->face_indices_len; i++) {
             const MLoopTri *lt = &buffers->looptri[buffers->face_indices[i]];
@@ -319,9 +319,9 @@ void GPU_pbvh_mesh_buffers_update(PBVHGPUFormat *vbo_id,
             }
 
             for (uint j = 0; j < 3; j++) {
-              MLoopUV *muv2 = muv + lt->tri[j];
+              float(*muv2)[2] = muv + lt->tri[j];
 
-              memcpy(GPU_vertbuf_raw_step(&uv_step), muv2->uv, sizeof(muv2->uv));
+              memcpy(GPU_vertbuf_raw_step(&uv_step), muv2, sizeof(float) * 2);
             }
           }
         }
@@ -1372,22 +1372,22 @@ bool GPU_pbvh_attribute_names_update(PBVHType pbvh_type,
         &vbo_id->format, "fset", GPU_COMP_U8, 3, GPU_FETCH_INT_TO_FLOAT_UNIT);
 
     vbo_id->totuv = 0;
-    if (pbvh_type == PBVH_FACES && ldata && CustomData_has_layer(ldata, CD_MLOOPUV)) {
+    if (pbvh_type == PBVH_FACES && ldata && CustomData_has_layer(ldata, CD_PROP_FLOAT2)) {
       GPUAttrRef uv_layers[MAX_GPU_ATTR];
       CustomDataLayer *active = NULL, *render = NULL;
 
-      active = get_active_layer(ldata, CD_MLOOPUV);
-      render = get_render_layer(ldata, CD_MLOOPUV);
+      active = get_active_layer(ldata, CD_PROP_FLOAT2);
+      render = get_render_layer(ldata, CD_PROP_FLOAT2);
 
       int totlayer = gpu_pbvh_make_attr_offs(ATTR_DOMAIN_MASK_CORNER,
-                                             CD_MASK_MLOOPUV,
+                                             CD_MASK_PROP_FLOAT2,
                                              NULL,
                                              NULL,
                                              ldata,
                                              NULL,
                                              uv_layers,
                                              active_only,
-                                             CD_MLOOPUV,
+                                             CD_PROP_FLOAT2,
                                              ATTR_DOMAIN_CORNER,
                                              active,
                                              render);
@@ -1401,7 +1401,8 @@ bool GPU_pbvh_attribute_names_update(PBVHType pbvh_type,
             &vbo_id->format, "uvs", GPU_COMP_F32, 2, GPU_FETCH_FLOAT);
 
         CustomDataLayer *cl = ldata->layers + ref->layer_idx;
-        bool is_active = ref->layer_idx == CustomData_get_active_layer_index(ldata, CD_MLOOPUV);
+        bool is_active = ref->layer_idx ==
+                         CustomData_get_active_layer_index(ldata, CD_PROP_FLOAT2);
 
         DRW_cdlayer_attr_aliases_add(&vbo_id->format, "u", ldata, cl, cl == render, is_active);
 

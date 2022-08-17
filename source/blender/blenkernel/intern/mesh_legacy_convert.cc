@@ -16,6 +16,7 @@
 
 #include "BLI_edgehash.h"
 #include "BLI_math.h"
+#include "BLI_math_vec_types.hh"
 #include "BLI_memarena.h"
 #include "BLI_polyfill_2d.h"
 #include "BLI_utildefines.h"
@@ -44,17 +45,18 @@ static void bm_corners_to_loops_ex(ID *id,
   for (int i = 0; i < numTex; i++) {
     const MTFace *texface = (const MTFace *)CustomData_get_n(fdata, CD_MTFACE, findex, i);
 
-    MLoopUV *mloopuv = (MLoopUV *)CustomData_get_n(ldata, CD_MLOOPUV, loopstart, i);
-    copy_v2_v2(mloopuv->uv, texface->uv[0]);
-    mloopuv++;
-    copy_v2_v2(mloopuv->uv, texface->uv[1]);
-    mloopuv++;
-    copy_v2_v2(mloopuv->uv, texface->uv[2]);
-    mloopuv++;
+    blender::float2 *uv = static_cast<blender::float2 *>(
+        CustomData_get_n(ldata, CD_PROP_FLOAT2, loopstart, i));
+    copy_v2_v2((float *)uv, texface->uv[0]);
+    uv++;
+    copy_v2_v2((float *)uv, texface->uv[1]);
+    uv++;
+    copy_v2_v2((float *)uv, texface->uv[2]);
+    uv++;
 
     if (mf->v4) {
-      copy_v2_v2(mloopuv->uv, texface->uv[3]);
-      mloopuv++;
+      copy_v2_v2((float *)uv, texface->uv[3]);
+      uv++;
     }
   }
 
@@ -135,7 +137,7 @@ static void CustomData_to_bmeshpoly(CustomData *fdata, CustomData *ldata, int to
   for (int i = 0; i < fdata->totlayer; i++) {
     if (fdata->layers[i].type == CD_MTFACE) {
       CustomData_add_layer_named(
-          ldata, CD_MLOOPUV, CD_CALLOC, nullptr, totloop, fdata->layers[i].name);
+          ldata, CD_PROP_FLOAT2, CD_CALLOC, nullptr, totloop, fdata->layers[i].name);
     }
     else if (fdata->layers[i].type == CD_MCOL) {
       CustomData_add_layer_named(
@@ -307,16 +309,16 @@ static void CustomData_bmesh_do_versions_update_active_layers(CustomData *fdata,
 
   if (CustomData_has_layer(fdata, CD_MTFACE)) {
     act = CustomData_get_active_layer(fdata, CD_MTFACE);
-    CustomData_set_layer_active(ldata, CD_MLOOPUV, act);
+    CustomData_set_layer_active(ldata, CD_PROP_FLOAT2, act);
 
     act = CustomData_get_render_layer(fdata, CD_MTFACE);
-    CustomData_set_layer_render(ldata, CD_MLOOPUV, act);
+    CustomData_set_layer_render(ldata, CD_PROP_FLOAT2, act);
 
     act = CustomData_get_clone_layer(fdata, CD_MTFACE);
-    CustomData_set_layer_clone(ldata, CD_MLOOPUV, act);
+    CustomData_set_layer_clone(ldata, CD_PROP_FLOAT2, act);
 
     act = CustomData_get_stencil_layer(fdata, CD_MTFACE);
-    CustomData_set_layer_stencil(ldata, CD_MLOOPUV, act);
+    CustomData_set_layer_stencil(ldata, CD_PROP_FLOAT2, act);
   }
 
   if (CustomData_has_layer(fdata, CD_MCOL)) {
@@ -384,7 +386,7 @@ static void mesh_loops_to_tessdata(CustomData *fdata,
    * we could be ~25% quicker with dedicated code.
    * The issue is, unless having two different functions with nearly the same code,
    * there's not much ways to solve this. Better IMHO to live with it for now (sigh). */
-  const int numUV = CustomData_number_of_layers(ldata, CD_MLOOPUV);
+  const int numUV = CustomData_number_of_layers(ldata, CD_PROP_FLOAT2);
   const int numCol = CustomData_number_of_layers(ldata, CD_PROP_BYTE_COLOR);
   const bool hasPCol = CustomData_has_layer(ldata, CD_PREVIEW_MLOOPCOL);
   const bool hasOrigSpace = CustomData_has_layer(ldata, CD_ORIGSPACE_MLOOP);
@@ -396,12 +398,13 @@ static void mesh_loops_to_tessdata(CustomData *fdata,
 
   for (i = 0; i < numUV; i++) {
     MTFace *texface = (MTFace *)CustomData_get_layer_n(fdata, CD_MTFACE, i);
-    const MLoopUV *mloopuv = (const MLoopUV *)CustomData_get_layer_n(ldata, CD_MLOOPUV, i);
+    const blender::float2 *uv = static_cast<const blender::float2 *>(
+        CustomData_get_layer_n(ldata, CD_PROP_FLOAT2, i));
 
     for (findex = 0, pidx = polyindices, lidx = loopindices; findex < num_faces;
          pidx++, lidx++, findex++, texface++) {
       for (j = (mface ? mface[findex].v4 : (*lidx)[3]) ? 4 : 3; j--;) {
-        copy_v2_v2(texface->uv[j], mloopuv[(*lidx)[j]].uv);
+        copy_v2_v2(texface->uv[j], uv[(*lidx)[j]]);
       }
     }
   }
@@ -812,7 +815,7 @@ static bool check_matching_legacy_layer_counts(CustomData *fdata, CustomData *ld
     ((a_num += CustomData_number_of_layers(l_a, t_a)) == \
      (b_num += CustomData_number_of_layers(l_b, t_b)))
 
-  if (!LAYER_CMP(ldata, CD_MLOOPUV, fdata, CD_MTFACE)) {
+  if (!LAYER_CMP(ldata, CD_PROP_FLOAT2, fdata, CD_MTFACE)) {
     return false;
   }
   if (!LAYER_CMP(ldata, CD_PROP_BYTE_COLOR, fdata, CD_MCOL)) {
@@ -845,7 +848,7 @@ void BKE_mesh_add_mface_layers(CustomData *fdata, CustomData *ldata, int total)
   BLI_assert(!check_matching_legacy_layer_counts(fdata, ldata, false));
 
   for (int i = 0; i < ldata->totlayer; i++) {
-    if (ldata->layers[i].type == CD_MLOOPUV) {
+    if (ldata->layers[i].type == CD_PROP_FLOAT2) {
       CustomData_add_layer_named(
           fdata, CD_MTFACE, CD_CALLOC, nullptr, total, ldata->layers[i].name);
     }

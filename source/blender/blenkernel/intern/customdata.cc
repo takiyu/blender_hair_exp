@@ -1055,7 +1055,6 @@ static void layerInterp_mloopuv(const void **sources,
                                 void *dest)
 {
   float uv[2];
-  int flag = 0;
 
   zero_v2(uv);
 
@@ -1063,14 +1062,10 @@ static void layerInterp_mloopuv(const void **sources,
     const float interp_weight = weights[i];
     const MLoopUV *src = static_cast<const MLoopUV *>(sources[i]);
     madd_v2_v2fl(uv, src->uv, interp_weight);
-    if (interp_weight > 0.0f) {
-      flag |= src->flag;
-    }
   }
 
   /* Delay writing to the destination in case dest is in sources. */
   copy_v2_v2(((MLoopUV *)dest)->uv, uv);
-  ((MLoopUV *)dest)->flag = flag;
 }
 
 static bool layerValidate_mloopuv(void *data, const uint totitems, const bool do_fixes)
@@ -1593,6 +1588,50 @@ static bool layerValidate_propfloat2(void *data, const uint totitems, const bool
   return has_errors;
 }
 
+static bool layerEqual_propfloat2(const void *data1, const void *data2)
+{
+  const float *luv1 = static_cast<const float *>(data1);
+  const float *luv2 = static_cast<const float *>(data2);
+
+  return len_squared_v2v2(luv1, luv2) < 0.00001f;
+}
+
+static void layerInitMinMax_propfloat2(void *vmin, void *vmax)
+{
+  float *min = static_cast<float *>(vmin);
+  float *max = static_cast<float *>(vmax);
+
+  INIT_MINMAX2(min, max);
+}
+
+static void layerDoMinMax_propfloat2(const void *data, void *vmin, void *vmax)
+{
+  const float *luv = static_cast<const float *>(data);
+  float *min = static_cast<float *>(vmin);
+  float *max = static_cast<float *>(vmax);
+
+  minmax_v2v2_v2(min, max, luv);
+}
+
+static void layerCopyValue_propfloat2(const void *source,
+                                      void *dest,
+                                      const int mixmode,
+                                      const float mixfactor)
+{
+  const float *luv1 = static_cast<const float *>(source);
+  float *luv2 = static_cast<float *>(dest);
+
+  /* We only support a limited subset of advanced mixing here -
+   * namely the mixfactor interpolation. */
+
+  if (mixmode == CDT_MIX_NOMIX) {
+    copy_v2_v2(luv2, luv1);
+  }
+  else {
+    interp_v2_v2v2(luv2, luv2, luv1, mixfactor);
+  }
+}
+
 /** \} */
 
 /* -------------------------------------------------------------------- */
@@ -1991,10 +2030,12 @@ static const LayerTypeInfo LAYERTYPEINFO[CD_NUMTYPES] = {
      nullptr,
      nullptr,
      layerValidate_propfloat2,
-     nullptr,
+     layerEqual_propfloat2,
      layerMultiply_propfloat2,
-     nullptr,
-     layerAdd_propfloat2},
+     layerInitMinMax_propfloat2,
+     layerAdd_propfloat2,
+     layerDoMinMax_propfloat2,
+     layerCopyValue_propfloat2},
     /* 50: CD_PROP_BOOL */
     {sizeof(bool),
      "bool",
@@ -3381,7 +3422,7 @@ void *CustomData_get(const CustomData *data, int index, int type)
 
   return POINTER_OFFSET(data->layers[layer_index].data, offset);
 }
-
+/* index is the element in the layer, n is the n'th layer of this type */
 void *CustomData_get_n(const CustomData *data, int type, int index, int n)
 {
   BLI_assert(index >= 0 && n >= 0);
@@ -3450,7 +3491,18 @@ int CustomData_get_n_offset(const CustomData *data, int type, int n)
   return data->layers[layer_index].offset;
 }
 
-bool CustomData_set_layer_name(const CustomData *data, int type, int n, const char *name)
+int CustomData_get_named_offset(const struct CustomData *data, int type, const char *name)
+{
+  /* get the layer index of the active layer of type */
+  int layer_index = CustomData_get_named_layer_index(data, type, name);
+  if (layer_index == -1) {
+    return -1;
+  }
+
+  return data->layers[layer_index].offset;
+}
+
+bool CustomData_set_layer_name(CustomData *data, int type, int n, const char *name)
 {
   /* get the layer index of the first layer of type */
   const int layer_index = CustomData_get_layer_index_n(data, type, n);
@@ -3521,17 +3573,17 @@ void CustomData_bmesh_update_active_layers(CustomData *fdata, CustomData *ldata)
 {
   int act;
 
-  if (CustomData_has_layer(ldata, CD_MLOOPUV)) {
-    act = CustomData_get_active_layer(ldata, CD_MLOOPUV);
+  if (CustomData_has_layer(ldata, CD_PROP_FLOAT2)) {
+    act = CustomData_get_active_layer(ldata, CD_PROP_FLOAT2);
     CustomData_set_layer_active(fdata, CD_MTFACE, act);
 
-    act = CustomData_get_render_layer(ldata, CD_MLOOPUV);
+    act = CustomData_get_render_layer(ldata, CD_PROP_FLOAT2);
     CustomData_set_layer_render(fdata, CD_MTFACE, act);
 
-    act = CustomData_get_clone_layer(ldata, CD_MLOOPUV);
+    act = CustomData_get_clone_layer(ldata, CD_PROP_FLOAT2);
     CustomData_set_layer_clone(fdata, CD_MTFACE, act);
 
-    act = CustomData_get_stencil_layer(ldata, CD_MLOOPUV);
+    act = CustomData_get_stencil_layer(ldata, CD_PROP_FLOAT2);
     CustomData_set_layer_stencil(fdata, CD_MTFACE, act);
   }
 
@@ -5275,6 +5327,107 @@ void CustomData_blend_read(BlendDataReader *reader, CustomData *data, int count)
   data->maxlayer = data->totlayer;
 
   CustomData_update_typemap(data);
+}
+
+/** \} */
+
+/* -------------------------------------------------------------------- */
+/** \name Custom Data UVmap Handling
+ * \{ */
+
+std::string UV_sublayer_name(char const *layername, char const *prefix)
+{
+  /* If you change the naming scheme here, change it as well in BM_uv_layer_ensure_sublayer() . */
+  return "." + std::string(prefix) + "." + std::string(layername);
+}
+
+UVMap_Data CustomData_get_uvmap_data(const CustomData *ldata, char const *name)
+{
+
+  UVMap_Data data;
+  if (name) {
+    data.uv_index = CustomData_get_named_layer_index(ldata, CD_PROP_FLOAT2, name);
+  }
+  else {
+    data.uv_index = CustomData_get_layer_index(ldata, CD_PROP_FLOAT2);
+  }
+
+  data.uv = data.uv_index == -1 ? nullptr : (float(*)[2])ldata->layers[data.uv_index].data;
+
+  if (data.uv == nullptr) {
+    data.vertsel = data.edgesel = data.pinned = nullptr;
+    return data;
+  }
+
+  std::string vertsel_name = UV_sublayer_name(ldata->layers[data.uv_index].name, UV_VERTSEL_NAME);
+  std::string edgesel_name = UV_sublayer_name(ldata->layers[data.uv_index].name, UV_EDGESEL_NAME);
+  std::string pinned_name = UV_sublayer_name(ldata->layers[data.uv_index].name, UV_PINNED_NAME);
+
+  int vertsel_index = CustomData_get_named_layer_index(ldata, CD_PROP_BOOL, vertsel_name.c_str());
+  int edgesel_index = CustomData_get_named_layer_index(ldata, CD_PROP_BOOL, edgesel_name.c_str());
+  int pinned_index = CustomData_get_named_layer_index(ldata, CD_PROP_BOOL, pinned_name.c_str());
+
+  data.vertsel = vertsel_index == -1 ? nullptr : (bool *)ldata->layers[vertsel_index].data;
+  data.edgesel = edgesel_index == -1 ? nullptr : (bool *)ldata->layers[edgesel_index].data;
+  data.pinned = pinned_index == -1 ? nullptr : (bool *)ldata->layers[pinned_index].data;
+
+  return data;
+}
+
+UVMap_Data CustomData_get_uvmap_data_n(const CustomData *ldata, const int n)
+{
+
+  UVMap_Data data;
+  data.uv_index = CustomData_get_layer_index_n(ldata, CD_PROP_FLOAT2, n);
+
+  if (data.uv_index < 0) {
+    data.uv = nullptr;
+    data.vertsel = data.edgesel = data.pinned = nullptr;
+    return data;
+  }
+
+  std::string vertsel_name = UV_sublayer_name(ldata->layers[data.uv_index].name, UV_VERTSEL_NAME);
+  std::string edgesel_name = UV_sublayer_name(ldata->layers[data.uv_index].name, UV_EDGESEL_NAME);
+  std::string pinned_name = UV_sublayer_name(ldata->layers[data.uv_index].name, UV_PINNED_NAME);
+
+  int vertsel_index = CustomData_get_named_layer_index(ldata, CD_PROP_BOOL, vertsel_name.c_str());
+  int edgesel_index = CustomData_get_named_layer_index(ldata, CD_PROP_BOOL, edgesel_name.c_str());
+  int pinned_index = CustomData_get_named_layer_index(ldata, CD_PROP_BOOL, pinned_name.c_str());
+
+  data.vertsel = vertsel_index == -1 ? nullptr : (bool *)ldata->layers[vertsel_index].data;
+  data.edgesel = edgesel_index == -1 ? nullptr : (bool *)ldata->layers[edgesel_index].data;
+  data.pinned = pinned_index == -1 ? nullptr : (bool *)ldata->layers[pinned_index].data;
+
+  return data;
+}
+
+UVMap_Offsets CustomData_get_uvmap_offsets(const CustomData *ldata, char const *name)
+{
+
+  UVMap_Offsets offsets;
+  int index;
+  if (name) {
+    index = CustomData_get_named_layer_index(ldata, CD_PROP_FLOAT2, name);
+  }
+  else {
+    index = CustomData_get_layer_index(ldata, CD_PROP_FLOAT2);
+  }
+
+  if (index < 0) {
+    offsets.uv = offsets.vertsel = offsets.pinned = offsets.edgesel = -1;
+    return offsets;
+  }
+
+  offsets.uv = ldata->layers[index].offset;
+  std::string vertsel_name = UV_sublayer_name(ldata->layers[index].name, UV_VERTSEL_NAME);
+  std::string edgesel_name = UV_sublayer_name(ldata->layers[index].name, UV_EDGESEL_NAME);
+  std::string pinned_name = UV_sublayer_name(ldata->layers[index].name, UV_PINNED_NAME);
+
+  offsets.vertsel = CustomData_get_named_offset(ldata, CD_PROP_BOOL, vertsel_name.c_str());
+  offsets.edgesel = CustomData_get_named_offset(ldata, CD_PROP_BOOL, edgesel_name.c_str());
+  offsets.pinned = CustomData_get_named_offset(ldata, CD_PROP_BOOL, pinned_name.c_str());
+
+  return offsets;
 }
 
 /** \} */

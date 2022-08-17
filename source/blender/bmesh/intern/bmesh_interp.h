@@ -58,6 +58,9 @@ void BM_data_interp_face_vert_edge(
     BMesh *bm, const BMVert *v_src_1, const BMVert *v_src_2, BMVert *v, BMEdge *e, float fac);
 void BM_data_layer_add(BMesh *bm, CustomData *data, int type);
 void BM_data_layer_add_named(BMesh *bm, CustomData *data, int type, const char *name);
+void BM_data_layer_ensure_named(BMesh *bm, CustomData *data, int type, const char *name);
+void BM_uv_layer_ensure_sublayer(
+    BMesh *bm, CustomData *data, int type, int index_of_parent, const char *name);
 void BM_data_layer_free(BMesh *bm, CustomData *data, int type);
 /**
  * Remove a named custom data layer, if it existed. Return true if the layer was removed.

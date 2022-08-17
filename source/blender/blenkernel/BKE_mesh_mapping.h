@@ -13,7 +13,6 @@ extern "C" {
 struct MEdge;
 struct MLoop;
 struct MLoopTri;
-struct MLoopUV;
 struct MPoly;
 struct MVert;
 
@@ -78,7 +77,7 @@ typedef struct MeshElemMap {
 /* mapping */
 UvVertMap *BKE_mesh_uv_vert_map_create(const struct MPoly *mpoly,
                                        const struct MLoop *mloop,
-                                       const struct MLoopUV *mloopuv,
+                                       const float (*mloopuv)[2],
                                        unsigned int totpoly,
                                        unsigned int totvert,
                                        const float limit[2],
@@ -262,7 +261,7 @@ bool BKE_mesh_calc_islands_loop_poly_edgeseam(struct MVert *verts,
 /**
  * Calculate UV islands.
  *
- * \note If no MLoopUV layer is passed, we only consider edges tagged as seams as UV boundaries.
+ * \note If no UV layer is passed, we only consider edges tagged as seams as UV boundaries.
  * This has the advantages of simplicity, and being valid/common to all UV maps.
  * However, it means actual UV islands without matching UV seams will not be handled correctly.
  * If a valid UV layer is passed as \a luvs parameter,
@@ -280,7 +279,7 @@ bool BKE_mesh_calc_islands_loop_poly_uvmap(struct MVert *verts,
                                            int totpoly,
                                            struct MLoop *loops,
                                            int totloop,
-                                           const struct MLoopUV *luvs,
+                                           const float (*luvs)[2],
                                            MeshIslandStore *r_island_store);
 
 /**
@@ -305,10 +304,7 @@ int *BKE_mesh_calc_smoothgroups(const struct MEdge *medge,
   ((CHECK_TYPE_ANY( \
         _tri, unsigned int *, int *, int[3], const unsigned int *, const int *, const int[3]), \
     CHECK_TYPE_ANY(_v, unsigned int, const unsigned int, int, const int)), \
-   (((_tri)[0] == _v) ? 0 : \
-    ((_tri)[1] == _v) ? 1 : \
-    ((_tri)[2] == _v) ? 2 : \
-                        -1))
+   (((_tri)[0] == _v) ? 0 : ((_tri)[1] == _v) ? 1 : ((_tri)[2] == _v) ? 2 : -1))
 
 #ifdef __cplusplus
 }

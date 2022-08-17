@@ -99,7 +99,10 @@ CustomDataLayer *BKE_id_attribute_from_index(struct ID *id,
                                              eAttrDomainMask domain_mask,
                                              eCustomDataMask layer_mask);
 
-/** Layer is allowed to be nullptr; if so -1 (layer not found) will be returned. */
+/** Layer is allowed to be nullptr; if so -1 (layer not found) will be returned.
+ * Returns the index in the list of attributes of the same type on the same domain.
+ * note: this is *not* the CustomData layer index.
+ */
 int BKE_id_attribute_to_index(const struct ID *id,
                               const CustomDataLayer *layer,
                               eAttrDomainMask domain_mask,
@@ -137,6 +140,15 @@ void BKE_id_attributes_render_color_set(struct ID *id, struct CustomDataLayer *a
 struct CustomDataLayer *BKE_id_attributes_color_find(const struct ID *id, const char *name);
 
 bool BKE_id_attribute_calc_unique_name(struct ID *id, const char *name, char *outname);
+
+UVMap_Data BKE_id_attributes_create_uvmap_layers(struct ID *id,
+                                                 char const *name,
+                                                 struct ReportList *reports,
+                                                 uint32_t needed_layer_flags);
+UVMap_Data BKE_id_attributes_ensure_uvmap_layers_index(struct ID *id,
+                                                       int index_of_uvmap,
+                                                       struct ReportList *reports,
+                                                       uint32_t needed_layer_flags);
 
 #ifdef __cplusplus
 }

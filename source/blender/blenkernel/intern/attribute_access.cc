@@ -56,7 +56,20 @@ const char *no_procedural_access_message =
 
 bool allow_procedural_attribute_access(StringRef attribute_name)
 {
-  return !attribute_name.startswith(".selection");
+  if (attribute_name.startswith(".selection")) {
+    return false;
+  }
+  if (attribute_name.startswith("." UV_VERTSEL_NAME ".")) {
+    return false;
+  }
+  if (attribute_name.startswith("." UV_EDGESEL_NAME ".")) {
+    return false;
+  }
+  if (attribute_name.startswith("." UV_PINNED_NAME ".")) {
+    return false;
+  }
+
+  return true;
 }
 
 static int attribute_data_type_complexity(const eCustomDataType data_type)

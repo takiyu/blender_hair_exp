@@ -207,14 +207,14 @@ static int mesh_nurbs_displist_to_mdata(const Curve *cu,
                                         int *r_totedge,
                                         MLoop **r_allloop,
                                         MPoly **r_allpoly,
-                                        MLoopUV **r_alluv,
+                                        float (**r_alluv)[2],
                                         int *r_totloop,
                                         int *r_totpoly)
 {
   MVert *mvert;
   MPoly *mpoly;
   MLoop *mloop;
-  MLoopUV *mloopuv = nullptr;
+  float(*mloopuv)[2] = nullptr;
   MEdge *medge;
   const float *data;
   int a, b, ofs, vertcount, startvert, totvert = 0, totedge = 0, totloop = 0, totpoly = 0;
@@ -269,8 +269,8 @@ static int mesh_nurbs_displist_to_mdata(const Curve *cu,
   *r_allpoly = mpoly = (MPoly *)MEM_calloc_arrayN(totpoly, sizeof(MPoly), "nurbs_init mloop");
 
   if (r_alluv) {
-    *r_alluv = mloopuv = (MLoopUV *)MEM_calloc_arrayN(
-        totpoly, sizeof(MLoopUV[4]), "nurbs_init mloopuv");
+    *r_alluv = mloopuv = (float(*)[2])MEM_calloc_arrayN(
+        totpoly, sizeof(float[2]) * 4, "nurbs_init mloopuv");
   }
 
   /* verts and faces */
@@ -352,8 +352,8 @@ static int mesh_nurbs_displist_to_mdata(const Curve *cu,
 
         if (mloopuv) {
           for (int i = 0; i < 3; i++, mloopuv++) {
-            mloopuv->uv[0] = (mloop[i].v - startvert) / (float)(dl->nr - 1);
-            mloopuv->uv[1] = 0.0f;
+            (*mloopuv)[0] = (mloop[i].v - startvert) / (float)(dl->nr - 1);
+            (*mloopuv)[1] = 0.0f;
           }
         }
 
@@ -429,15 +429,15 @@ static int mesh_nurbs_displist_to_mdata(const Curve *cu,
               /* find uv based on vertex index into grid array */
               int v = mloop[i].v - startvert;
 
-              mloopuv->uv[0] = (v / dl->nr) / (float)orco_sizev;
-              mloopuv->uv[1] = (v % dl->nr) / (float)orco_sizeu;
+              (*mloopuv)[0] = (v / dl->nr) / (float)orco_sizev;
+              (*mloopuv)[1] = (v % dl->nr) / (float)orco_sizeu;
 
               /* cyclic correction */
-              if ((ELEM(i, 1, 2)) && mloopuv->uv[0] == 0.0f) {
-                mloopuv->uv[0] = 1.0f;
+              if ((ELEM(i, 1, 2)) && (*mloopuv)[0] == 0.0f) {
+                (*mloopuv)[0] = 1.0f;
               }
-              if ((ELEM(i, 0, 1)) && mloopuv->uv[1] == 0.0f) {
-                mloopuv->uv[1] = 1.0f;
+              if ((ELEM(i, 0, 1)) && (*mloopuv)[1] == 0.0f) {
+                (*mloopuv)[1] = 1.0f;
               }
             }
           }
@@ -492,7 +492,7 @@ Mesh *BKE_mesh_new_nomain_from_curve_displist(const Object *ob, const ListBase *
   MEdge *alledge;
   MLoop *allloop;
   MPoly *allpoly;
-  MLoopUV *alluv = nullptr;
+  float(*alluv)[2] = nullptr;
   int totvert, totedge, totloop, totpoly;
 
   if (mesh_nurbs_displist_to_mdata(cu,
@@ -527,7 +527,7 @@ Mesh *BKE_mesh_new_nomain_from_curve_displist(const Object *ob, const ListBase *
 
   if (alluv) {
     const char *uvname = "UVMap";
-    CustomData_add_layer_named(&mesh->ldata, CD_MLOOPUV, CD_ASSIGN, alluv, totloop, uvname);
+    CustomData_add_layer_named(&mesh->ldata, CD_PROP_FLOAT2, CD_ASSIGN, alluv, totloop, uvname);
   }
 
   mesh_copy_texture_space_from_curve_type(cu, mesh);

@@ -162,7 +162,27 @@ bool BKE_id_attribute_rename(ID *id,
   }
 
   char result_name[MAX_CUSTOMDATA_LAYER_NAME];
+
   BKE_id_attribute_calc_unique_name(id, new_name, result_name);
+
+  if (layer->type == CD_PROP_FLOAT2) {
+    /* Scan for and rename uv sublayers layers. */
+    std::string old_vertsel_layer_name = UV_sublayer_name(layer->name, UV_VERTSEL_NAME);
+    std::string old_edgesel_layer_name = UV_sublayer_name(layer->name, UV_EDGESEL_NAME);
+    std::string old_pinned_layer_name = UV_sublayer_name(layer->name, UV_PINNED_NAME);
+
+    std::string new_vertsel_layer_name = UV_sublayer_name(result_name, UV_VERTSEL_NAME);
+    std::string new_edgesel_layer_name = UV_sublayer_name(result_name, UV_EDGESEL_NAME);
+    std::string new_pinned_layer_name = UV_sublayer_name(result_name, UV_PINNED_NAME);
+
+    BKE_id_attribute_rename(
+        id, old_vertsel_layer_name.c_str(), new_vertsel_layer_name.c_str(), reports);
+    BKE_id_attribute_rename(
+        id, old_edgesel_layer_name.c_str(), new_edgesel_layer_name.c_str(), reports);
+    BKE_id_attribute_rename(
+        id, old_pinned_layer_name.c_str(), new_pinned_layer_name.c_str(), reports);
+  }
+
   BLI_strncpy_utf8(layer->name, result_name, sizeof(layer->name));
 
   return true;
@@ -567,6 +587,26 @@ CustomDataLayer *BKE_id_attribute_from_index(ID *id,
   return nullptr;
 }
 
+static CustomDataLayer *attribute_from_layerindex(ID *id,
+                                                  const int lookup_index,
+                                                  const eAttrDomain domain,
+                                                  const eCustomDataMask layer_mask)
+{
+  DomainInfo info[ATTR_DOMAIN_NUM];
+  get_domains(id, info);
+
+  CustomData *customdata = info[domain].customdata;
+
+  BLI_assert(lookup_index >= 0);
+  BLI_assert(lookup_index < customdata->totlayer);
+
+  if (!(layer_mask & CD_TYPE_AS_MASK(customdata->layers[lookup_index].type))) {
+    return nullptr;
+  }
+
+  return customdata->layers + lookup_index;
+}
+
 /** Get list of domain types but with ATTR_DOMAIN_FACE and
  * ATTR_DOMAIN_CORNER swapped.
  */
@@ -614,6 +654,43 @@ int BKE_id_attribute_to_index(const ID *id,
       }
 
       index++;
+    }
+  }
+
+  return -1;
+}
+
+static int attribute_to_layerindex(const struct ID *id,
+                                   const CustomDataLayer *layer,
+                                   const eAttrDomainMask domain_mask,
+                                   const eCustomDataMask layer_mask)
+{
+  if (!layer) {
+    return -1;
+  }
+
+  DomainInfo info[ATTR_DOMAIN_NUM];
+  eAttrDomain domains[ATTR_DOMAIN_NUM];
+  get_domains_types(domains);
+  get_domains(id, info);
+
+  for (int i = 0; i < ATTR_DOMAIN_NUM; i++) {
+    if (!(domain_mask & (1 << domains[i])) || !info[domains[i]].customdata) {
+      continue;
+    }
+
+    const CustomData *cdata = info[domains[i]].customdata;
+    for (int j = 0; j < cdata->totlayer; j++) {
+      const CustomDataLayer *layer_iter = cdata->layers + j;
+
+      if (!(CD_TYPE_AS_MASK(layer_iter->type) & layer_mask) ||
+          (layer_iter->flag & CD_FLAG_TEMPORARY)) {
+        continue;
+      }
+
+      if (layer == layer_iter) {
+        return j;
+      }
     }
   }
 
@@ -780,4 +857,113 @@ void BKE_id_attribute_copy_domains_temp(short id_type,
   }
 
   *((short *)r_id->name) = id_type;
+}
+
+UVMap_Data BKE_id_attributes_create_uvmap_layers(struct ID *id,
+                                                 char const *name,
+                                                 struct ReportList *reports,
+                                                 uint32_t needed_layer_flags)
+{
+  UVMap_Data data;
+
+  bool needvertsel = needed_layer_flags & MLOOPUV_VERTSEL;
+  bool neededgesel = needed_layer_flags & MLOOPUV_EDGESEL;
+  bool needpinned = needed_layer_flags & MLOOPUV_PINNED;
+
+  CustomDataLayer *uvlayer = BKE_id_attribute_new(
+      id, name, CD_PROP_FLOAT2, ATTR_DOMAIN_CORNER, reports);
+
+  data.uv = (float(*)[2])uvlayer->data;
+
+  data.uv_index = attribute_to_layerindex(
+      id, uvlayer, ATTR_DOMAIN_MASK_CORNER, CD_MASK_PROP_FLOAT2);
+
+  std::string vertsel_name = UV_sublayer_name(uvlayer->name, UV_VERTSEL_NAME);
+  std::string edgesel_name = UV_sublayer_name(uvlayer->name, UV_EDGESEL_NAME);
+  std::string pinned_name = UV_sublayer_name(uvlayer->name, UV_PINNED_NAME);
+
+  //! martijn still need to handle if one of the sublayer names is already taken.
+
+  if (needvertsel) {
+    CustomDataLayer *layer = BKE_id_attribute_new(
+        id, vertsel_name.c_str(), CD_PROP_BOOL, ATTR_DOMAIN_CORNER, reports);
+    data.vertsel = (bool *)layer->data;
+  }
+  else {
+    data.vertsel = nullptr;
+    ;
+  }
+  if (neededgesel) {
+    CustomDataLayer *layer = BKE_id_attribute_new(
+        id, edgesel_name.c_str(), CD_PROP_BOOL, ATTR_DOMAIN_CORNER, reports);
+    data.edgesel = (bool *)layer->data;
+  }
+  else {
+    data.edgesel = nullptr;
+  }
+  if (needpinned) {
+    CustomDataLayer *layer = BKE_id_attribute_new(
+        id, pinned_name.c_str(), CD_PROP_BOOL, ATTR_DOMAIN_CORNER, reports);
+    data.pinned = (bool *)layer->data;
+  }
+  else {
+    data.pinned = nullptr;
+  }
+
+  return data;
+}
+
+UVMap_Data BKE_id_attributes_ensure_uvmap_layers_index(struct ID *id,
+                                                       const int index_of_uvmap,
+                                                       struct ReportList *reports,
+                                                       uint32_t needed_layer_flags)
+{
+  UVMap_Data data;
+
+  const bool needvertsel = needed_layer_flags & MLOOPUV_VERTSEL;
+  const bool neededgesel = needed_layer_flags & MLOOPUV_EDGESEL;
+  const bool needpinned = needed_layer_flags & MLOOPUV_PINNED;
+
+  CustomDataLayer *uvlayer = attribute_from_layerindex(
+      id, index_of_uvmap, ATTR_DOMAIN_CORNER, CD_MASK_PROP_FLOAT2);
+
+  data.uv_index = attribute_to_layerindex(
+      id, uvlayer, ATTR_DOMAIN_MASK_CORNER, CD_MASK_PROP_FLOAT2);
+  data.uv = (float(*)[2])uvlayer->data;
+
+  std::string vertsel_name = UV_sublayer_name(uvlayer->name, UV_VERTSEL_NAME);
+  std::string edgesel_name = UV_sublayer_name(uvlayer->name, UV_EDGESEL_NAME);
+  std::string pinned_name = UV_sublayer_name(uvlayer->name, UV_PINNED_NAME);
+
+  CustomDataLayer *vslayer = BKE_id_attribute_find(
+      id, vertsel_name.c_str(), CD_PROP_BOOL, ATTR_DOMAIN_CORNER);
+  data.vertsel = vslayer ? (bool *)vslayer->data : nullptr;
+
+  CustomDataLayer *eslayer = BKE_id_attribute_find(
+      id, edgesel_name.c_str(), CD_PROP_BOOL, ATTR_DOMAIN_CORNER);
+  data.edgesel = eslayer ? (bool *)eslayer->data : nullptr;
+
+  CustomDataLayer *pnlayer = BKE_id_attribute_find(
+      id, pinned_name.c_str(), CD_PROP_BOOL, ATTR_DOMAIN_CORNER);
+  data.pinned = pnlayer ? (bool *)pnlayer->data : nullptr;
+
+  if (needvertsel && data.vertsel == nullptr) {
+    CustomDataLayer *layer = BKE_id_attribute_new(
+        id, vertsel_name.c_str(), CD_PROP_BOOL, ATTR_DOMAIN_CORNER, reports);
+    data.vertsel = (bool *)layer->data;
+  }
+
+  if (neededgesel && data.edgesel == nullptr) {
+    CustomDataLayer *layer = BKE_id_attribute_new(
+        id, edgesel_name.c_str(), CD_PROP_BOOL, ATTR_DOMAIN_CORNER, reports);
+    data.edgesel = (bool *)layer->data;
+  }
+
+  if (needpinned && data.pinned == nullptr) {
+    CustomDataLayer *layer = BKE_id_attribute_new(
+        id, pinned_name.c_str(), CD_PROP_BOOL, ATTR_DOMAIN_CORNER, reports);
+    data.pinned = (bool *)layer->data;
+  }
+
+  return data;
 }

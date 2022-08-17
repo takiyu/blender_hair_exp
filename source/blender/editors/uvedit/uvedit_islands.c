@@ -46,8 +46,8 @@ static void bm_face_uv_scale_y(BMFace *f, const float scale_y, const int cd_loop
   BMLoop *l_first;
   l_iter = l_first = BM_FACE_FIRST_LOOP(f);
   do {
-    MLoopUV *luv = BM_ELEM_CD_GET_VOID_P(l_iter, cd_loop_uv_offset);
-    luv->uv[1] *= scale_y;
+    float *luv = BM_ELEM_CD_GET_FLOAT_P(l_iter, cd_loop_uv_offset);
+    luv[1] *= scale_y;
   } while ((l_iter = l_iter->next) != l_first);
 }
 
@@ -61,9 +61,9 @@ static void bm_face_uv_translate_and_scale_around_pivot(BMFace *f,
   BMLoop *l_first;
   l_iter = l_first = BM_FACE_FIRST_LOOP(f);
   do {
-    MLoopUV *luv = BM_ELEM_CD_GET_VOID_P(l_iter, cd_loop_uv_offset);
+    float *luv = BM_ELEM_CD_GET_FLOAT_P(l_iter, cd_loop_uv_offset);
     for (int i = 0; i < 2; i++) {
-      luv->uv[i] = offset[i] + (((luv->uv[i] - pivot[i]) * scale[i]) + pivot[i]);
+      luv[i] = offset[i] + (((luv[i] - pivot[i]) * scale[i]) + pivot[i]);
     }
   } while ((l_iter = l_iter->next) != l_first);
 }
@@ -123,8 +123,8 @@ static float (*bm_face_array_calc_unique_uv_coords(
       }
 
       BM_elem_flag_disable(l_iter, BM_ELEM_TAG);
-      const MLoopUV *luv = BM_ELEM_CD_GET_VOID_P(l_iter, cd_loop_uv_offset);
-      copy_v2_v2(coords[coords_len++], luv->uv);
+      const float *luv = BM_ELEM_CD_GET_FLOAT_P(l_iter, cd_loop_uv_offset);
+      copy_v2_v2(coords[coords_len++], luv);
 
       /* Un tag all connected so we don't add them twice.
        * Note that we will tag other loops not part of `faces` but this is harmless,
@@ -138,8 +138,8 @@ static float (*bm_face_array_calc_unique_uv_coords(
           do {
             if (l_radial->v == l_iter->v) {
               if (BM_elem_flag_test(l_radial, BM_ELEM_TAG)) {
-                const MLoopUV *luv_radial = BM_ELEM_CD_GET_VOID_P(l_radial, cd_loop_uv_offset);
-                if (equals_v2v2(luv->uv, luv_radial->uv)) {
+                const float *luv_radial = BM_ELEM_CD_GET_FLOAT_P(l_radial, cd_loop_uv_offset);
+                if (equals_v2v2(luv, luv_radial)) {
                   /* Don't add this UV when met in another face in `faces`. */
                   BM_elem_flag_disable(l_iter, BM_ELEM_TAG);
                 }
@@ -322,12 +322,12 @@ struct FaceIsland {
    * \note While this is duplicate information,
    * it allows islands from multiple meshes to be stored in the same list.
    */
-  uint cd_loop_uv_offset;
+  UVMap_Offsets offsets;
   float aspect_y;
 };
 
 struct SharedUVLoopData {
-  uint cd_loop_uv_offset;
+  UVMap_Offsets offsets;
   bool use_seams;
 };
 
@@ -341,7 +341,7 @@ static bool bm_loop_uv_shared_edge_check(const BMLoop *l_a, const BMLoop *l_b, v
     }
   }
 
-  return BM_loop_uv_share_edge_check((BMLoop *)l_a, (BMLoop *)l_b, data->cd_loop_uv_offset);
+  return BM_loop_uv_share_edge_check((BMLoop *)l_a, (BMLoop *)l_b, data->offsets.uv);
 }
 
 /**
@@ -354,13 +354,13 @@ static int bm_mesh_calc_uv_islands(const Scene *scene,
                                    const bool only_selected_uvs,
                                    const bool use_seams,
                                    const float aspect_y,
-                                   const uint cd_loop_uv_offset)
+                                   const UVMap_Offsets offsets)
 {
   int island_added = 0;
   BM_mesh_elem_table_ensure(bm, BM_FACE);
 
   struct SharedUVLoopData user_data = {
-      .cd_loop_uv_offset = cd_loop_uv_offset,
+      .offsets = offsets,
       .use_seams = use_seams,
   };
 
@@ -376,8 +376,7 @@ static int bm_mesh_calc_uv_islands(const Scene *scene,
       BMIter iter;
       BM_ITER_MESH (f, &iter, bm, BM_FACES_OF_MESH) {
         bool value = false;
-        if (BM_elem_flag_test(f, BM_ELEM_SELECT) &&
-            uvedit_face_select_test(scene, f, cd_loop_uv_offset)) {
+        if (BM_elem_flag_test(f, BM_ELEM_SELECT) && uvedit_face_select_test(scene, f, offsets)) {
           value = true;
         }
         BM_elem_flag_set(f, BM_ELEM_TAG, value);
@@ -413,7 +412,7 @@ static int bm_mesh_calc_uv_islands(const Scene *scene,
     struct FaceIsland *island = MEM_callocN(sizeof(*island), __func__);
     island->faces = faces;
     island->faces_len = faces_len;
-    island->cd_loop_uv_offset = cd_loop_uv_offset;
+    island->offsets = offsets;
     island->aspect_y = aspect_y;
     BLI_addtail(island_list, island);
     island_added += 1;
@@ -448,8 +447,9 @@ void ED_uvedit_pack_islands_multi(const Scene *scene,
     BMEditMesh *em = BKE_editmesh_from_object(obedit);
     BMesh *bm = em->bm;
 
-    const int cd_loop_uv_offset = CustomData_get_offset(&bm->ldata, CD_MLOOPUV);
-    if (cd_loop_uv_offset == -1) {
+    UVMap_Offsets offsets = CustomData_get_uvmap_offsets(&bm->ldata, NULL);
+
+    if (offsets.uv == -1) {
       continue;
     }
 
@@ -469,7 +469,7 @@ void ED_uvedit_pack_islands_multi(const Scene *scene,
                                                params->only_selected_uvs,
                                                params->use_seams,
                                                aspect_y,
-                                               cd_loop_uv_offset);
+                                               offsets);
   }
 
   if (island_list_len == 0) {
@@ -496,7 +496,7 @@ void ED_uvedit_pack_islands_multi(const Scene *scene,
       INIT_MINMAX2(bounds_min, bounds_max);
       for (int i = 0; i < island->faces_len; i++) {
         BMFace *f = island->faces[i];
-        BM_face_uv_minmax(f, bounds_min, bounds_max, island->cd_loop_uv_offset);
+        BM_face_uv_minmax(f, bounds_min, bounds_max, island->offsets.uv);
       }
 
       selection_min_co[0] = MIN2(bounds_min[0], selection_min_co[0]);
@@ -508,20 +508,20 @@ void ED_uvedit_pack_islands_multi(const Scene *scene,
     if (params->rotate) {
       if (island->aspect_y != 1.0f) {
         bm_face_array_uv_scale_y(
-            island->faces, island->faces_len, 1.0f / island->aspect_y, island->cd_loop_uv_offset);
+            island->faces, island->faces_len, 1.0f / island->aspect_y, island->offsets.uv);
       }
 
       bm_face_array_uv_rotate_fit_aabb(
-          island->faces, island->faces_len, rotate_align_axis, island->cd_loop_uv_offset);
+          island->faces, island->faces_len, rotate_align_axis, island->offsets.uv);
 
       if (island->aspect_y != 1.0f) {
         bm_face_array_uv_scale_y(
-            island->faces, island->faces_len, island->aspect_y, island->cd_loop_uv_offset);
+            island->faces, island->faces_len, island->aspect_y, island->offsets.uv);
       }
     }
 
     bm_face_array_calc_bounds(
-        island->faces, island->faces_len, island->cd_loop_uv_offset, &island->bounds_rect);
+        island->faces, island->faces_len, island->offsets.uv, &island->bounds_rect);
 
     BoxPack *box = &boxarray[index];
     box->index = index;
@@ -626,8 +626,7 @@ void ED_uvedit_pack_islands_multi(const Scene *scene,
     };
     for (int j = 0; j < island->faces_len; j++) {
       BMFace *efa = island->faces[j];
-      bm_face_uv_translate_and_scale_around_pivot(
-          efa, offset, scale, pivot, island->cd_loop_uv_offset);
+      bm_face_uv_translate_and_scale_around_pivot(efa, offset, scale, pivot, island->offsets.uv);
     }
   }
 

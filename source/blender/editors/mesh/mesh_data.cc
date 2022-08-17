@@ -111,7 +111,7 @@ static void delete_customdata_layer(Mesh *me, CustomDataLayer *layer)
   int layer_index, tot, n;
 
   char htype = BM_FACE;
-  if (ELEM(type, CD_PROP_BYTE_COLOR, CD_MLOOPUV)) {
+  if (ELEM(type, CD_PROP_BYTE_COLOR, CD_PROP_FLOAT2)) {
     htype = BM_LOOP;
   }
   else if (ELEM(type, CD_PROP_COLOR)) {
@@ -180,18 +180,18 @@ static void mesh_uv_reset_bmface(BMFace *f, const int cd_loop_uv_offset)
   int i;
 
   BM_ITER_ELEM_INDEX (l, &liter, f, BM_LOOPS_OF_FACE, i) {
-    fuv[i] = ((MLoopUV *)BM_ELEM_CD_GET_VOID_P(l, cd_loop_uv_offset))->uv;
+    fuv[i] = ((float *)BM_ELEM_CD_GET_VOID_P(l, cd_loop_uv_offset));
   }
 
   mesh_uv_reset_array(fuv.data(), f->len);
 }
 
-static void mesh_uv_reset_mface(MPoly *mp, MLoopUV *mloopuv)
+static void mesh_uv_reset_mface(MPoly *mp, float (*mloopuv)[2])
 {
   Array<float *, BM_DEFAULT_NGON_STACK_SIZE> fuv(mp->totloop);
 
   for (int i = 0; i < mp->totloop; i++) {
-    fuv[i] = mloopuv[mp->loopstart + i].uv;
+    fuv[i] = mloopuv[mp->loopstart + i];
   }
 
   mesh_uv_reset_array(fuv.data(), mp->totloop);
@@ -203,7 +203,8 @@ void ED_mesh_uv_loop_reset_ex(Mesh *me, const int layernum)
 
   if (em) {
     /* Collect BMesh UVs */
-    const int cd_loop_uv_offset = CustomData_get_n_offset(&em->bm->ldata, CD_MLOOPUV, layernum);
+    const int cd_loop_uv_offset = CustomData_get_n_offset(
+        &em->bm->ldata, CD_PROP_FLOAT2, layernum);
 
     BMFace *efa;
     BMIter iter;
@@ -220,8 +221,9 @@ void ED_mesh_uv_loop_reset_ex(Mesh *me, const int layernum)
   }
   else {
     /* Collect Mesh UVs */
-    BLI_assert(CustomData_has_layer(&me->ldata, CD_MLOOPUV));
-    MLoopUV *mloopuv = (MLoopUV *)CustomData_get_layer_n(&me->ldata, CD_MLOOPUV, layernum);
+    BLI_assert(CustomData_has_layer(&me->ldata, CD_PROP_FLOAT2));
+    float(*mloopuv)[2] = static_cast<float(*)[2]>(
+        CustomData_get_layer_n(&me->ldata, CD_PROP_FLOAT2, layernum));
 
     for (int i = 0; i < me->totpoly; i++) {
       mesh_uv_reset_mface(&me->mpoly[i], mloopuv);
@@ -235,7 +237,7 @@ void ED_mesh_uv_loop_reset(bContext *C, Mesh *me)
 {
   /* could be ldata or pdata */
   CustomData *ldata = GET_CD_DATA(me, ldata);
-  const int layernum = CustomData_get_active_layer(ldata, CD_MLOOPUV);
+  const int layernum = CustomData_get_active_layer(ldata, CD_PROP_FLOAT2);
   ED_mesh_uv_loop_reset_ex(me, layernum);
 
   WM_event_add_notifier(C, NC_GEOM | ND_DATA, me);
@@ -254,27 +256,27 @@ int ED_mesh_uv_add(
   if (me->edit_mesh) {
     em = me->edit_mesh;
 
-    layernum_dst = CustomData_number_of_layers(&em->bm->ldata, CD_MLOOPUV);
+    layernum_dst = CustomData_number_of_layers(&em->bm->ldata, CD_PROP_FLOAT2);
     if (layernum_dst >= MAX_MTFACE) {
       BKE_reportf(reports, RPT_WARNING, "Cannot add more than %i UV maps", MAX_MTFACE);
       return -1;
     }
 
-    /* CD_MLOOPUV */
-    BM_data_layer_add_named(em->bm, &em->bm->ldata, CD_MLOOPUV, name);
+    /* CD_PROP_FLOAT2 */
+    BM_data_layer_add_named(em->bm, &em->bm->ldata, CD_PROP_FLOAT2, name);
     /* copy data from active UV */
     if (layernum_dst && do_init) {
-      const int layernum_src = CustomData_get_active_layer(&em->bm->ldata, CD_MLOOPUV);
-      BM_data_layer_copy(em->bm, &em->bm->ldata, CD_MLOOPUV, layernum_src, layernum_dst);
+      const int layernum_src = CustomData_get_active_layer(&em->bm->ldata, CD_PROP_FLOAT2);
+      BM_data_layer_copy(em->bm, &em->bm->ldata, CD_PROP_FLOAT2, layernum_src, layernum_dst);
 
       is_init = true;
     }
     if (active_set || layernum_dst == 0) {
-      CustomData_set_layer_active(&em->bm->ldata, CD_MLOOPUV, layernum_dst);
+      CustomData_set_layer_active(&em->bm->ldata, CD_PROP_FLOAT2, layernum_dst);
     }
   }
   else {
-    layernum_dst = CustomData_number_of_layers(&me->ldata, CD_MLOOPUV);
+    layernum_dst = CustomData_number_of_layers(&me->ldata, CD_PROP_FLOAT2);
     if (layernum_dst >= MAX_MTFACE) {
       BKE_reportf(reports, RPT_WARNING, "Cannot add more than %i UV maps", MAX_MTFACE);
       return -1;
@@ -282,15 +284,16 @@ int ED_mesh_uv_add(
 
     if (me->mloopuv && do_init) {
       CustomData_add_layer_named(
-          &me->ldata, CD_MLOOPUV, CD_DUPLICATE, me->mloopuv, me->totloop, name);
+          &me->ldata, CD_PROP_FLOAT2, CD_DUPLICATE, me->mloopuv, me->totloop, name);
       is_init = true;
     }
     else {
-      CustomData_add_layer_named(&me->ldata, CD_MLOOPUV, CD_DEFAULT, nullptr, me->totloop, name);
+      CustomData_add_layer_named(
+          &me->ldata, CD_PROP_FLOAT2, CD_DEFAULT, nullptr, me->totloop, name);
     }
 
     if (active_set || layernum_dst == 0) {
-      CustomData_set_layer_active(&me->ldata, CD_MLOOPUV, layernum_dst);
+      CustomData_set_layer_active(&me->ldata, CD_PROP_FLOAT2, layernum_dst);
     }
 
     BKE_mesh_update_customdata_pointers(me, true);
@@ -315,13 +318,13 @@ void ED_mesh_uv_ensure(Mesh *me, const char *name)
   if (me->edit_mesh) {
     em = me->edit_mesh;
 
-    layernum_dst = CustomData_number_of_layers(&em->bm->ldata, CD_MLOOPUV);
+    layernum_dst = CustomData_number_of_layers(&em->bm->ldata, CD_PROP_FLOAT2);
     if (layernum_dst == 0) {
       ED_mesh_uv_add(me, name, true, true, nullptr);
     }
   }
   else {
-    layernum_dst = CustomData_number_of_layers(&me->ldata, CD_MLOOPUV);
+    layernum_dst = CustomData_number_of_layers(&me->ldata, CD_PROP_FLOAT2);
     if (layernum_dst == 0) {
       ED_mesh_uv_add(me, name, true, true, nullptr);
     }
@@ -334,7 +337,7 @@ bool ED_mesh_uv_remove_index(Mesh *me, const int n)
   CustomDataLayer *cdlu;
   int index;
 
-  index = CustomData_get_layer_index_n(ldata, CD_MLOOPUV, n);
+  index = CustomData_get_layer_index_n(ldata, CD_PROP_FLOAT2, n);
   cdlu = (index == -1) ? nullptr : &ldata->layers[index];
 
   if (!cdlu) {
@@ -351,7 +354,7 @@ bool ED_mesh_uv_remove_index(Mesh *me, const int n)
 bool ED_mesh_uv_remove_active(Mesh *me)
 {
   CustomData *ldata = GET_CD_DATA(me, ldata);
-  const int n = CustomData_get_active_layer(ldata, CD_MLOOPUV);
+  const int n = CustomData_get_active_layer(ldata, CD_PROP_FLOAT2);
 
   if (n != -1) {
     return ED_mesh_uv_remove_index(me, n);
@@ -361,7 +364,7 @@ bool ED_mesh_uv_remove_active(Mesh *me)
 bool ED_mesh_uv_remove_named(Mesh *me, const char *name)
 {
   CustomData *ldata = GET_CD_DATA(me, ldata);
-  const int n = CustomData_get_named_layer(ldata, CD_MLOOPUV, name);
+  const int n = CustomData_get_named_layer(ldata, CD_PROP_FLOAT2, name);
   if (n != -1) {
     return ED_mesh_uv_remove_index(me, n);
   }
@@ -635,7 +638,7 @@ static bool uv_texture_remove_poll(bContext *C)
   Object *ob = ED_object_context(C);
   Mesh *me = static_cast<Mesh *>(ob->data);
   CustomData *ldata = GET_CD_DATA(me, ldata);
-  const int active = CustomData_get_active_layer(ldata, CD_MLOOPUV);
+  const int active = CustomData_get_active_layer(ldata, CD_PROP_FLOAT2);
   if (active != -1) {
     return true;
   }

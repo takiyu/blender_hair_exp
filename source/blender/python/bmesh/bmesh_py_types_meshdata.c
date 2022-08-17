@@ -15,12 +15,15 @@
 #include "DNA_meshdata_types.h"
 #include "DNA_object_types.h"
 
+#include "BKE_customdata.h"
+
 #include "BLI_math_base.h"
 #include "BLI_math_vector.h"
 #include "BLI_utildefines.h"
 
 #include "BKE_deform.h"
 
+#include "bmesh.h"
 #include "bmesh_py_types_meshdata.h"
 
 #include "../generic/py_capi_utils.h"
@@ -33,21 +36,22 @@
 
 typedef struct BPy_BMLoopUV {
   PyObject_VAR_HEAD
-  MLoopUV *data;
+  float uv[2];
+  int flag;
 } BPy_BMLoopUV;
 
 PyDoc_STRVAR(bpy_bmloopuv_uv_doc,
              "Loops UV (as a 2D Vector).\n\n:type: :class:`mathutils.Vector`");
 static PyObject *bpy_bmloopuv_uv_get(BPy_BMLoopUV *self, void *UNUSED(closure))
 {
-  return Vector_CreatePyObject_wrap(self->data->uv, 2, NULL);
+  return Vector_CreatePyObject_wrap(self->uv, 2, NULL);
 }
 
 static int bpy_bmloopuv_uv_set(BPy_BMLoopUV *self, PyObject *value, void *UNUSED(closure))
 {
   float tvec[2];
   if (mathutils_array_parse(tvec, 2, 2, value, "BMLoopUV.uv") != -1) {
-    copy_v2_v2(self->data->uv, tvec);
+    copy_v2_v2(self->uv, tvec);
     return 0;
   }
 
@@ -61,7 +65,8 @@ PyDoc_STRVAR(bpy_bmloopuv_flag__select_edge_doc, "UV edge select state.\n\n:type
 static PyObject *bpy_bmloopuv_flag_get(BPy_BMLoopUV *self, void *flag_p)
 {
   const int flag = POINTER_AS_INT(flag_p);
-  return PyBool_FromLong(self->data->flag & flag);
+
+  return PyBool_FromLong(self->flag & flag);
 }
 
 static int bpy_bmloopuv_flag_set(BPy_BMLoopUV *self, PyObject *value, void *flag_p)
@@ -70,10 +75,10 @@ static int bpy_bmloopuv_flag_set(BPy_BMLoopUV *self, PyObject *value, void *flag
 
   switch (PyC_Long_AsBool(value)) {
     case true:
-      self->data->flag |= flag;
+      self->flag |= flag;
       return 0;
     case false:
-      self->data->flag &= ~flag;
+      self->flag &= ~flag;
       return 0;
     default:
       /* error is set */
@@ -120,21 +125,48 @@ static void bm_init_types_bmloopuv(void)
   PyType_Ready(&BPy_BMLoopUV_Type);
 }
 
-int BPy_BMLoopUV_AssignPyObject(struct MLoopUV *mloopuv, PyObject *value)
+int BPy_BMLoopUV_AssignPyObject(struct BMesh *bmesh, int loop_index, PyObject *value)
 {
   if (UNLIKELY(!BPy_BMLoopUV_Check(value))) {
     PyErr_Format(PyExc_TypeError, "expected BMLoopUV, not a %.200s", Py_TYPE(value)->tp_name);
     return -1;
   }
 
-  *((MLoopUV *)mloopuv) = *(((BPy_BMLoopUV *)value)->data);
+  BPy_BMLoopUV *src = (BPy_BMLoopUV *)value;
+  int uv_layer_index = CustomData_get_layer_index(&bmesh->ldata, CD_PROP_FLOAT2);
+  BM_uv_layer_ensure_sublayer(bmesh, &bmesh->ldata, CD_PROP_BOOL, uv_layer_index, UV_VERTSEL_NAME);
+  BM_uv_layer_ensure_sublayer(bmesh, &bmesh->ldata, CD_PROP_BOOL, uv_layer_index, UV_EDGESEL_NAME);
+  BM_uv_layer_ensure_sublayer(bmesh, &bmesh->ldata, CD_PROP_BOOL, uv_layer_index, UV_PINNED_NAME);
+  UVMap_Offsets offsets = CustomData_get_uvmap_offsets(&bmesh->ldata, NULL);
+
+  BMLoop *l = BM_loop_at_index_find(bmesh, loop_index);
+  float *luv = BM_ELEM_CD_GET_FLOAT_P(l, offsets.uv);
+  copy_v2_v2(luv, src->uv);
+
+  BM_ELEM_CD_SET_BOOL(l, offsets.vertsel, src->flag & MLOOPUV_VERTSEL);
+  BM_ELEM_CD_SET_BOOL(l, offsets.edgesel, src->flag & MLOOPUV_EDGESEL);
+  BM_ELEM_CD_SET_BOOL(l, offsets.pinned, src->flag & MLOOPUV_PINNED);
+
   return 0;
 }
 
-PyObject *BPy_BMLoopUV_CreatePyObject(struct MLoopUV *mloopuv)
+PyObject *BPy_BMLoopUV_CreatePyObject(struct BMesh *bmesh, int loop_index)
 {
   BPy_BMLoopUV *self = PyObject_New(BPy_BMLoopUV, &BPy_BMLoopUV_Type);
-  self->data = mloopuv;
+
+  UVMap_Offsets offsets = CustomData_get_uvmap_offsets(&bmesh->ldata, NULL);
+
+  BMLoop *l = BM_loop_at_index_find(bmesh, loop_index);
+  float *luv = BM_ELEM_CD_GET_FLOAT_P(l, offsets.uv);
+  bool vertsel = BM_ELEM_CD_GET_OPT_BOOL(l, offsets.vertsel);
+  bool edgesel = BM_ELEM_CD_GET_OPT_BOOL(l, offsets.edgesel);
+  bool pinned = BM_ELEM_CD_GET_OPT_BOOL(l, offsets.pinned);
+
+  copy_v2_v2(self->uv, luv);
+
+  self->flag = 0 | (pinned ? MLOOPUV_PINNED : 0) | (vertsel ? MLOOPUV_VERTSEL : 0) |
+               (edgesel ? MLOOPUV_EDGESEL : 0);
+
   return (PyObject *)self;
 }
 
