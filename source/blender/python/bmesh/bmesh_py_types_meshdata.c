@@ -65,7 +65,6 @@ PyDoc_STRVAR(bpy_bmloopuv_flag__select_edge_doc, "UV edge select state.\n\n:type
 static PyObject *bpy_bmloopuv_flag_get(BPy_BMLoopUV *self, void *flag_p)
 {
   const int flag = POINTER_AS_INT(flag_p);
-
   return PyBool_FromLong(self->flag & flag);
 }
 
@@ -158,9 +157,9 @@ PyObject *BPy_BMLoopUV_CreatePyObject(struct BMesh *bmesh, int loop_index)
 
   BMLoop *l = BM_loop_at_index_find(bmesh, loop_index);
   float *luv = BM_ELEM_CD_GET_FLOAT_P(l, offsets.uv);
-  bool vertsel = BM_ELEM_CD_GET_OPT_BOOL(l, offsets.vertsel);
-  bool edgesel = BM_ELEM_CD_GET_OPT_BOOL(l, offsets.edgesel);
-  bool pinned = BM_ELEM_CD_GET_OPT_BOOL(l, offsets.pinned);
+  const bool vertsel = BM_ELEM_CD_GET_OPT_BOOL(l, offsets.vertsel);
+  const bool edgesel = BM_ELEM_CD_GET_OPT_BOOL(l, offsets.edgesel);
+  const bool pinned = BM_ELEM_CD_GET_OPT_BOOL(l, offsets.pinned);
 
   copy_v2_v2(self->uv, luv);
 

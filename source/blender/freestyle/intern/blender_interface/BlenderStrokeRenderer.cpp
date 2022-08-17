@@ -42,6 +42,7 @@
 #include "BLI_ghash.h"
 #include "BLI_listbase.h"
 #include "BLI_math_color.h"
+#include "BLI_math_vec_types.hh"
 #include "BLI_math_vector.h"
 #include "BLI_utildefines.h"
 
@@ -588,8 +589,7 @@ void BlenderStrokeRenderer::GenerateStrokeMesh(StrokeGroup *group, bool hasTex)
   MEdge *edges = mesh->medge;
   MPoly *polys = mesh->mpoly;
   MLoop *loops = mesh->mloop;
-  typedef float uvtype[2];
-  uvtype *loopsuv[2] = {nullptr};
+  blender::float2 *loopsuv[2] = {nullptr};
 
   if (hasTex) {
     // First UV layer

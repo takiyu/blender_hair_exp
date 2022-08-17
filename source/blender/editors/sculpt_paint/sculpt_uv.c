@@ -323,12 +323,12 @@ static void add_weighted_edge(float (*delta_buf)[3],
                               const UvElement *storage,
                               const UvElement *ele_next,
                               const UvElement *ele_prev,
-                              const MLoopUV *luv_next,
-                              const MLoopUV *luv_prev,
+                              const float luv_next[2],
+                              const float luv_prev[2],
                               const float weight)
 {
   float delta[2];
-  sub_v2_v2v2(delta, luv_next->uv, luv_prev->uv);
+  sub_v2_v2v2(delta, luv_next, luv_prev);
 
   bool code1 = (ele_prev->flag & MARK_BOUNDARY);
   bool code2 = (ele_next->flag & MARK_BOUNDARY);
@@ -397,9 +397,9 @@ static void relaxation_iteration_uv(BMEditMesh *em,
     const float *v_prev_co = ele_prev->l->v->co;
     const float *v_next_co = ele_next->l->v->co;
 
-    const MLoopUV *luv_curr = BM_ELEM_CD_GET_VOID_P(ele_curr->l, cd_loop_uv_offset);
-    const MLoopUV *luv_next = BM_ELEM_CD_GET_VOID_P(ele_next->l, cd_loop_uv_offset);
-    const MLoopUV *luv_prev = BM_ELEM_CD_GET_VOID_P(ele_prev->l, cd_loop_uv_offset);
+    const float(*luv_curr)[2] = BM_ELEM_CD_GET_FLOAT2_P(ele_curr->l, cd_loop_uv_offset);
+    const float(*luv_next)[2] = BM_ELEM_CD_GET_FLOAT2_P(ele_next->l, cd_loop_uv_offset);
+    const float(*luv_prev)[2] = BM_ELEM_CD_GET_FLOAT2_P(ele_prev->l, cd_loop_uv_offset);
 
     const UvElement *head_curr = head_table[ele_curr - sculptdata->elementMap->storage];
     const UvElement *head_next = head_table[ele_next - sculptdata->elementMap->storage];
@@ -407,11 +407,11 @@ static void relaxation_iteration_uv(BMEditMesh *em,
 
     /* If the mesh is triangulated with no boundaries, only one edge is required. */
     const float weight_curr = tri_weight_v3(method, v_curr_co, v_prev_co, v_next_co);
-    add_weighted_edge(delta_buf, storage, head_next, head_prev, luv_next, luv_prev, weight_curr);
+    add_weighted_edge(delta_buf, storage, head_next, head_prev, *luv_next, *luv_prev, weight_curr);
 
     /* Triangulated with a boundary? We need the incoming edges to solve the boundary. */
     const float weight_prev = tri_weight_v3(method, v_prev_co, v_curr_co, v_next_co);
-    add_weighted_edge(delta_buf, storage, head_next, head_curr, luv_next, luv_curr, weight_prev);
+    add_weighted_edge(delta_buf, storage, head_next, head_curr, *luv_next, *luv_curr, weight_prev);
 
     if (method == UV_SCULPT_TOOL_RELAX_LAPLACIAN) {
       /* Laplacian method has zero weights on virtual edges. */
@@ -420,7 +420,7 @@ static void relaxation_iteration_uv(BMEditMesh *em,
 
     /* Meshes with quads (or other n-gons) need "virtual" edges too. */
     const float weight_next = tri_weight_v3(method, v_next_co, v_curr_co, v_prev_co);
-    add_weighted_edge(delta_buf, storage, head_prev, head_curr, luv_prev, luv_curr, weight_next);
+    add_weighted_edge(delta_buf, storage, head_prev, head_curr, *luv_prev, *luv_curr, weight_next);
   }
 
   Brush *brush = BKE_paint_brush(sculptdata->uvsculpt);
@@ -444,18 +444,18 @@ static void relaxation_iteration_uv(BMEditMesh *em,
     const float *delta_sum = delta_buf[adj_el->element - storage];
 
     {
-      MLoopUV *luv = BM_ELEM_CD_GET_VOID_P(adj_el->element->l, cd_loop_uv_offset);
-      BLI_assert(adj_el->uv == luv->uv); /* Only true for head. */
-      adj_el->uv[0] = luv->uv[0] + strength * safe_divide(delta_sum[0], delta_sum[2]);
-      adj_el->uv[1] = luv->uv[1] + strength * safe_divide(delta_sum[1], delta_sum[2]);
+      const float(*luv)[2] = BM_ELEM_CD_GET_FLOAT2_P(adj_el->element->l, cd_loop_uv_offset);
+      BLI_assert(adj_el->uv == luv); /* Only true for head. */
+      adj_el->uv[0] = (*luv)[0] + strength * safe_divide(delta_sum[0], delta_sum[2]);
+      adj_el->uv[1] = (*luv)[1] + strength * safe_divide(delta_sum[1], delta_sum[2]);
       apply_sculpt_data_constraints(sculptdata, adj_el->uv);
     }
 
     /* Copy UV co-ordinates to all UvElements. */
     UvElement *tail = adj_el->element;
     while (tail) {
-      MLoopUV *luv = BM_ELEM_CD_GET_VOID_P(tail->l, cd_loop_uv_offset);
-      copy_v2_v2(luv->uv, adj_el->uv);
+      float(*luv)[2] = BM_ELEM_CD_GET_FLOAT2_P(tail->l, cd_loop_uv_offset);
+      copy_v2_v2(*luv, adj_el->uv);
       tail = tail->next;
       if (tail && tail->separate) {
         break;
@@ -754,7 +754,7 @@ static UvSculptData *uv_sculpt_stroke_init(bContext *C, wmOperator *op, const wm
 
           counter++;
           data->uv[counter].element = element;
-          data->uv[counter].uv = luv;
+          data->uv[counter].uv = *luv;
           if (data->tool != UV_SCULPT_TOOL_GRAB) {
             if (BM_ELEM_CD_GET_OPT_BOOL(element->l, offsets.pinned)) {
               data->uv[counter].is_locked = true;

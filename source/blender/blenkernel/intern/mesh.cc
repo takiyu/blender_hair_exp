@@ -461,9 +461,9 @@ static int customdata_compare(
   for (int i = 0; i < c1->totlayer; i++) {
     l1 = &c1->layers[i];
     if ((CD_TYPE_AS_MASK(l1->type) & cd_mask_all_attr) && l1->anonymous_id == nullptr) {
-      if (l1->name[0] != '.')  //! martijn.  this only added to be able to use the old test files
-                               //! in the tests. should be removed once the test file is updated
-      {
+      /* TODO(@Baardaap): This if statement is only added to be able to use the old test files
+       * in the tests. It should be removed once the test file is updated. */
+      if (l1->name[0] != '.') {
         layer_count1++;
       }
     }
@@ -472,9 +472,9 @@ static int customdata_compare(
   for (int i = 0; i < c2->totlayer; i++) {
     l2 = &c2->layers[i];
     if ((CD_TYPE_AS_MASK(l2->type) & cd_mask_all_attr) && l2->anonymous_id == nullptr) {
-      if (l2->name[0] != '.')  //! martijn.  this only added to be able to use the old test files
-                               //! in the tests. should be removed once the test file is updated
-      {
+      /* TODO(@Baardaap): This if statement is only added to be able to use the old test files
+       * in the tests. It should be removed once the test file is updated. */
+      if (l2->name[0] != '.') {
         layer_count2++;
       }
     }

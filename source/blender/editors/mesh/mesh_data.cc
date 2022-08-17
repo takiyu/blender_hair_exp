@@ -251,6 +251,10 @@ int ED_mesh_uv_add(
   BMEditMesh *em;
   int layernum_dst;
 
+  if (!name) {
+    name = "UVMap";
+  }
+
   bool is_init = false;
 
   if (me->edit_mesh) {

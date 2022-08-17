@@ -734,7 +734,8 @@ void CustomData_blend_write(BlendWriter *writer,
 
 void CustomData_blend_read(struct BlendDataReader *reader, struct CustomData *data, int count);
 
-/* Uvmap related customdata offsets for BMesh.
+/**
+ * UV map related customdata offsets for BMesh.
  */
 typedef struct UVMap_Offsets {
   int uv;
@@ -743,7 +744,8 @@ typedef struct UVMap_Offsets {
   int pinned;
 } UVMap_Offsets;
 
-/* UV related CustomData pointers.
+/**
+ * UV related CustomData pointers.
  * The data pointers point directly to the CustomData arrays.
  * The uv_index is also stored for on-demand creation of the bool datalayers.
  */
@@ -764,10 +766,9 @@ typedef struct UVMap_Data {
 std::string UV_sublayer_name(char const *layername, char const *prefix);
 
 #endif
-/* get a descriptor containing offsets for all needed layers for the uvmap
- * \param name: Optional layer name. When name is NULL, the default layer is returned
- * \param offsets: Output parameter that will be filled with the offsets
-
+/**
+ * Get a descriptor containing offsets for layers used for user interaction with the UV map.
+ * \param name: Optional layer name. When null, the default layer is returned.
  */
 UVMap_Offsets CustomData_get_uvmap_offsets(const struct CustomData *data, char const *name);
 UVMap_Data CustomData_get_uvmap_data(const struct CustomData *data, char const *name);

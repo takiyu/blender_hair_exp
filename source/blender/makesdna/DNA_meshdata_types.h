@@ -323,13 +323,14 @@ typedef enum eMVertSkinFlag {
 
 /**
  * UV coordinate for a polygon face & flag for selection & other options.
- * Deprecated! Only kept to read old files.
- * UV coordinates are now stored as CD_PROP_FLOAT2 layers
+ * Deprecated, and kept to read old files. UV coordinates are now stored as CD_PROP_FLOAT2 layers.
  */
+#ifdef DNA_DEPRECATED_ALLOW
 typedef struct MLoopUV {
   float uv[2];
   int flag;
 } MLoopUV;
+#endif
 
 /** #MLoopUV.flag */
 enum {

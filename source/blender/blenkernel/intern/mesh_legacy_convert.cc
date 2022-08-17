@@ -28,6 +28,8 @@
 #include "BKE_mesh_legacy_convert.h"
 #include "BKE_multires.h"
 
+using blender::float2;
+
 /* -------------------------------------------------------------------- */
 /** \name NGon Tessellation (NGon to MFace Conversion)
  * \{ */
@@ -47,8 +49,7 @@ static void bm_corners_to_loops_ex(ID *id,
   for (int i = 0; i < numTex; i++) {
     const MTFace *texface = (const MTFace *)CustomData_get_n(fdata, CD_MTFACE, findex, i);
 
-    blender::float2 *uv = static_cast<blender::float2 *>(
-        CustomData_get_n(ldata, CD_PROP_FLOAT2, loopstart, i));
+    float2 *uv = static_cast<float2 *>(CustomData_get_n(ldata, CD_PROP_FLOAT2, loopstart, i));
     copy_v2_v2((float *)uv, texface->uv[0]);
     uv++;
     copy_v2_v2((float *)uv, texface->uv[1]);
@@ -400,7 +401,7 @@ static void mesh_loops_to_tessdata(CustomData *fdata,
 
   for (i = 0; i < numUV; i++) {
     MTFace *texface = (MTFace *)CustomData_get_layer_n(fdata, CD_MTFACE, i);
-    const blender::float2 *uv = static_cast<const blender::float2 *>(
+    const float2 *uv = static_cast<const float2 *>(
         CustomData_get_layer_n(ldata, CD_PROP_FLOAT2, i));
 
     for (findex = 0, pidx = polyindices, lidx = loopindices; findex < num_faces;

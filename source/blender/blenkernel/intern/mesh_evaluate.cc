@@ -222,11 +222,6 @@ float BKE_mesh_calc_area(const Mesh *me)
   return total_area;
 }
 
-float BKE_mesh_calc_poly_uv_area(const MPoly *mpoly, const float (*uv_array)[2])
-{
-  return area_poly_v2(uv_array + mpoly->loopstart, (uint)mpoly->totloop);
-}
-
 static float UNUSED_FUNCTION(mesh_calc_poly_volume_centroid)(const MPoly *mpoly,
                                                              const MLoop *loopstart,
                                                              const MVert *mvarray,

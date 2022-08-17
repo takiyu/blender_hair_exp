@@ -40,7 +40,6 @@ typedef struct SubdivMeshContext {
   int *edge_origindex;
   int *loop_origindex;
   int *poly_origindex;
-
   /* UV layers interpolation. */
   int num_uv_layers;
   uvtype *uv_layers[MAX_MTFACE];

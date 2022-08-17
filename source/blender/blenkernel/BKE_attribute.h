@@ -99,9 +99,10 @@ CustomDataLayer *BKE_id_attribute_from_index(struct ID *id,
                                              eAttrDomainMask domain_mask,
                                              eCustomDataMask layer_mask);
 
-/** Layer is allowed to be nullptr; if so -1 (layer not found) will be returned.
+/**
  * Returns the index in the list of attributes of the same type on the same domain.
- * note: this is *not* the CustomData layer index.
+ * Note: this is *not* the CustomData layer index.
+ * Layer is allowed to be nullptr; if so -1 (layer not found) will be returned.
  */
 int BKE_id_attribute_to_index(const struct ID *id,
                               const CustomDataLayer *layer,

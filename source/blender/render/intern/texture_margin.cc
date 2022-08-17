@@ -279,7 +279,7 @@ class TextureMarginMap {
   }
 
  private:
-  float2 uv_to_xy(float2 const mloopuv) const
+  float2 uv_to_xy(const float2 &mloopuv) const
   {
     float2 ret;
     ret.x = (((mloopuv[0] - uv_offset_[0]) * w_) - (0.5f + 0.001f));
