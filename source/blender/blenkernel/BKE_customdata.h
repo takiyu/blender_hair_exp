@@ -769,7 +769,24 @@ typedef struct UVMap_Data {
 
 #ifdef __cplusplus
 
-std::string UV_sublayer_name(char const *layername, char const *prefix);
+namespace blender::bke {
+
+inline std::string uv_sublayer_name_vert_selection(const StringRef uv_map_name)
+{
+  return std::string(".") + UV_VERTSEL_NAME + "." + uv_map_name;
+}
+
+inline std::string uv_sublayer_name_edge_selection(const StringRef uv_map_name)
+{
+  return std::string(".") + UV_EDGESEL_NAME + "." + uv_map_name;
+}
+
+inline std::string uv_sublayer_name_pin(const StringRef uv_map_name)
+{
+  return std::string(".") + UV_PINNED_NAME + "." + uv_map_name;
+}
+
+}  // namespace blender::bke
 
 #endif
 /**

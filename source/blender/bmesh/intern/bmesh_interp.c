@@ -884,7 +884,7 @@ void BM_uv_layer_ensure_sublayer(
     BMesh *bm, CustomData *data, int type, int index_of_parent, const char *prefix)
 {
   char name[MAX_CUSTOMDATA_LAYER_NAME];
-  /* If you change the naming scheme here, change it in UV_sublayer_name() as well. */
+  /* If you change the naming scheme here, change it in #uv_sublayer_name* as well. */
   BLI_snprintf(
       name, MAX_CUSTOMDATA_LAYER_NAME, ".%s.%s", prefix, data->layers[index_of_parent].name);
   BM_data_layer_ensure_named(bm, data, type, name);

@@ -20,6 +20,7 @@ struct CustomData;
 struct CustomDataLayer;
 struct ID;
 struct ReportList;
+struct Mesh;
 
 /** #Attribute.domain */
 typedef enum eAttrDomain {
@@ -142,11 +143,11 @@ struct CustomDataLayer *BKE_id_attributes_color_find(const struct ID *id, const 
 
 bool BKE_id_attribute_calc_unique_name(struct ID *id, const char *name, char *outname);
 
-UVMap_Data BKE_id_attributes_create_uvmap_layers(struct ID *id,
+UVMap_Data BKE_id_attributes_create_uvmap_layers(struct Mesh *mesh,
                                                  char const *name,
                                                  struct ReportList *reports,
                                                  uint32_t needed_layer_flags);
-UVMap_Data BKE_id_attributes_ensure_uvmap_layers_index(struct ID *id,
+UVMap_Data BKE_id_attributes_ensure_uvmap_layers_index(struct Mesh *mesh,
                                                        int index_of_uvmap,
                                                        struct ReportList *reports,
                                                        uint32_t needed_layer_flags);

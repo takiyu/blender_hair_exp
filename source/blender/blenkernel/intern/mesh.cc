@@ -212,6 +212,7 @@ static void mesh_foreach_path(ID *id, BPathForeachPathData *bpath_data)
 
 static void mesh_blend_write(BlendWriter *writer, ID *id, const void *id_address)
 {
+  using namespace blender;
   Mesh *mesh = (Mesh *)id;
   const bool is_undo = BLO_write_is_undo(writer);
 
@@ -219,6 +220,7 @@ static void mesh_blend_write(BlendWriter *writer, ID *id, const void *id_address
   Vector<CustomDataLayer, 16> edge_layers;
   Vector<CustomDataLayer, 16> loop_layers;
   Vector<CustomDataLayer, 16> poly_layers;
+  blender::ResourceScope temp_arrays_for_legacy_format;
 
   /* cache only - don't write */
   mesh->mface = nullptr;
@@ -247,13 +249,16 @@ static void mesh_blend_write(BlendWriter *writer, ID *id, const void *id_address
   else {
     if (!BLO_write_is_undo(writer)) {
       BKE_mesh_legacy_convert_hide_layers_to_flags(mesh);
-      BKE_mesh_legacy_convert_uvs_to_struct(mesh);
     }
 
     CustomData_blend_write_prepare(mesh->vdata, vert_layers, {".hide_vert"});
     CustomData_blend_write_prepare(mesh->edata, edge_layers, {".hide_edge"});
     CustomData_blend_write_prepare(mesh->ldata, loop_layers);
     CustomData_blend_write_prepare(mesh->pdata, poly_layers, {".hide_poly"});
+
+    if (!BLO_write_is_undo(writer)) {
+      BKE_mesh_legacy_convert_uvs_to_struct(mesh, temp_arrays_for_legacy_format, loop_layers);
+    }
   }
 
   BLO_write_id_struct(writer, Mesh, id_address, &mesh->id);

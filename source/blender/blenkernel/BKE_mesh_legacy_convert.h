@@ -10,6 +10,12 @@
 #include "BLI_utildefines.h"
 
 #ifdef __cplusplus
+#  include "BLI_array.hh"
+#  include "BLI_resource_scope.hh"
+#  include "BLI_vector.hh"
+#endif
+
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -17,7 +23,15 @@ struct CustomData;
 struct Mesh;
 struct MFace;
 
-void BKE_mesh_legacy_convert_uvs_to_struct(const Mesh *mesh);
+#ifdef __cplusplus
+}
+#endif
+
+#ifdef __cplusplus
+
+void BKE_mesh_legacy_convert_uvs_to_struct(const Mesh *mesh,
+                                           blender::ResourceScope &temp_mloopuv_for_convert,
+                                           blender::Vector<CustomDataLayer, 16> &layers_to_write);
 void BKE_mesh_legacy_convert_uvs_to_generic(Mesh *mesh);
 
 /**
@@ -29,6 +43,12 @@ void BKE_mesh_legacy_convert_hide_layers_to_flags(struct Mesh *mesh);
  * Only add the attributes when there are any elements in each domain hidden.
  */
 void BKE_mesh_legacy_convert_flags_to_hide_layers(struct Mesh *mesh);
+
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /**
  * Recreate #MFace Tessellation.

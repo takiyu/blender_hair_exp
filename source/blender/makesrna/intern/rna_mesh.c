@@ -1497,10 +1497,7 @@ static void rna_MeshUVLoopLayer_uvvertsel_set(PointerRNA *ptr, const bool value)
   BLI_assert(index < mesh->totloop);
 
   UVMap_Data data = BKE_id_attributes_ensure_uvmap_layers_index(
-      (ID *)mesh, index, NULL, MLOOPUV_VERTSEL);
-
-  BLI_assert(data.vertsel != NULL);
-
+      mesh, index, NULL, MLOOPUV_VERTSEL);
   data.vertsel[index] = value;
 }
 
@@ -1527,10 +1524,7 @@ static void rna_MeshUVLoopLayer_uvedgesel_set(PointerRNA *ptr, const bool value)
   BLI_assert(index < mesh->totloop);
 
   UVMap_Data data = BKE_id_attributes_ensure_uvmap_layers_index(
-      (ID *)mesh, index, NULL, MLOOPUV_EDGESEL);
-
-  BLI_assert(data.edgesel != NULL);
-
+      mesh, index, NULL, MLOOPUV_EDGESEL);
   data.edgesel[index] = value;
 }
 
@@ -1556,11 +1550,7 @@ static void rna_MeshUVLoopLayer_uvpinned_set(PointerRNA *ptr, const bool value)
   BLI_assert(index >= 0);
   BLI_assert(index < mesh->totloop);
 
-  UVMap_Data data = BKE_id_attributes_ensure_uvmap_layers_index(
-      (ID *)mesh, index, NULL, MLOOPUV_PINNED);
-
-  BLI_assert(data.pinned != NULL);
-
+  UVMap_Data data = BKE_id_attributes_ensure_uvmap_layers_index(mesh, index, NULL, MLOOPUV_PINNED);
   data.pinned[index] = value;
 }
 

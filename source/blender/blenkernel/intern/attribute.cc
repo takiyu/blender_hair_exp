@@ -145,6 +145,7 @@ bool BKE_id_attribute_rename(ID *id,
                              const char *new_name,
                              ReportList *reports)
 {
+  using namespace blender::bke;
   if (BKE_id_attribute_required(id, old_name)) {
     BLI_assert_msg(0, "Required attribute name is not editable");
     return false;
@@ -170,13 +171,13 @@ bool BKE_id_attribute_rename(ID *id,
 
   if (layer->type == CD_PROP_FLOAT2) {
     /* Scan for and rename uv sublayers layers. */
-    std::string old_vertsel_layer_name = UV_sublayer_name(layer->name, UV_VERTSEL_NAME);
-    std::string old_edgesel_layer_name = UV_sublayer_name(layer->name, UV_EDGESEL_NAME);
-    std::string old_pinned_layer_name = UV_sublayer_name(layer->name, UV_PINNED_NAME);
+    std::string old_vertsel_layer_name = uv_sublayer_name_vert_selection(layer->name);
+    std::string old_edgesel_layer_name = uv_sublayer_name_edge_selection(layer->name);
+    std::string old_pinned_layer_name = uv_sublayer_name_pin(layer->name);
 
-    std::string new_vertsel_layer_name = UV_sublayer_name(result_name, UV_VERTSEL_NAME);
-    std::string new_edgesel_layer_name = UV_sublayer_name(result_name, UV_EDGESEL_NAME);
-    std::string new_pinned_layer_name = UV_sublayer_name(result_name, UV_PINNED_NAME);
+    std::string new_vertsel_layer_name = uv_sublayer_name_vert_selection(result_name);
+    std::string new_edgesel_layer_name = uv_sublayer_name_edge_selection(result_name);
+    std::string new_pinned_layer_name = uv_sublayer_name_pin(result_name);
 
     BKE_id_attribute_rename(
         id, old_vertsel_layer_name.c_str(), new_vertsel_layer_name.c_str(), reports);
@@ -869,51 +870,55 @@ void BKE_id_attribute_copy_domains_temp(short id_type,
   *((short *)r_id->name) = id_type;
 }
 
-UVMap_Data BKE_id_attributes_create_uvmap_layers(ID *id,
+UVMap_Data BKE_id_attributes_create_uvmap_layers(Mesh *mesh,
                                                  char const *name,
                                                  ReportList *reports,
                                                  uint32_t needed_layer_flags)
 {
+  using namespace blender::bke;
   UVMap_Data data;
 
-  bool needvertsel = needed_layer_flags & MLOOPUV_VERTSEL;
-  bool neededgesel = needed_layer_flags & MLOOPUV_EDGESEL;
-  bool needpinned = needed_layer_flags & MLOOPUV_PINNED;
-
   CustomDataLayer *uvlayer = BKE_id_attribute_new(
-      id, name, CD_PROP_FLOAT2, ATTR_DOMAIN_CORNER, reports);
+      &mesh->id, name, CD_PROP_FLOAT2, ATTR_DOMAIN_CORNER, reports);
 
   data.uv = (float(*)[2])uvlayer->data;
 
   data.uv_index = attribute_to_layerindex(
-      id, uvlayer, ATTR_DOMAIN_MASK_CORNER, CD_MASK_PROP_FLOAT2);
+      &mesh->id, uvlayer, ATTR_DOMAIN_MASK_CORNER, CD_MASK_PROP_FLOAT2);
 
-  std::string vertsel_name = UV_sublayer_name(uvlayer->name, UV_VERTSEL_NAME);
-  std::string edgesel_name = UV_sublayer_name(uvlayer->name, UV_EDGESEL_NAME);
-  std::string pinned_name = UV_sublayer_name(uvlayer->name, UV_PINNED_NAME);
+  /* TODO(@Baardaap): martijn still need to handle if one of the names is already taken. */
 
-  //! martijn still need to handle if one of the sublayer names is already taken.
-
-  if (needvertsel) {
+  if (needed_layer_flags & MLOOPUV_VERTSEL) {
     CustomDataLayer *layer = BKE_id_attribute_new(
-        id, vertsel_name.c_str(), CD_PROP_BOOL, ATTR_DOMAIN_CORNER, reports);
-    data.vertsel = (bool *)layer->data;
+        &mesh->id,
+        uv_sublayer_name_vert_selection(uvlayer->name).c_str(),
+        CD_PROP_BOOL,
+        ATTR_DOMAIN_CORNER,
+        reports);
+    data.vertsel = static_cast<bool *>(layer->data);
   }
   else {
     data.vertsel = nullptr;
   }
-  if (neededgesel) {
+  if (needed_layer_flags & MLOOPUV_EDGESEL) {
     CustomDataLayer *layer = BKE_id_attribute_new(
-        id, edgesel_name.c_str(), CD_PROP_BOOL, ATTR_DOMAIN_CORNER, reports);
-    data.edgesel = (bool *)layer->data;
+        &mesh->id,
+        uv_sublayer_name_edge_selection(uvlayer->name).c_str(),
+        CD_PROP_BOOL,
+        ATTR_DOMAIN_CORNER,
+        reports);
+    data.edgesel = static_cast<bool *>(layer->data);
   }
   else {
     data.edgesel = nullptr;
   }
-  if (needpinned) {
-    CustomDataLayer *layer = BKE_id_attribute_new(
-        id, pinned_name.c_str(), CD_PROP_BOOL, ATTR_DOMAIN_CORNER, reports);
-    data.pinned = (bool *)layer->data;
+  if (needed_layer_flags & MLOOPUV_PINNED) {
+    CustomDataLayer *layer = BKE_id_attribute_new(&mesh->id,
+                                                  uv_sublayer_name_pin(uvlayer->name).c_str(),
+                                                  CD_PROP_BOOL,
+                                                  ATTR_DOMAIN_CORNER,
+                                                  reports);
+    data.pinned = static_cast<bool *>(layer->data);
   }
   else {
     data.pinned = nullptr;
@@ -922,11 +927,12 @@ UVMap_Data BKE_id_attributes_create_uvmap_layers(ID *id,
   return data;
 }
 
-UVMap_Data BKE_id_attributes_ensure_uvmap_layers_index(struct ID *id,
+UVMap_Data BKE_id_attributes_ensure_uvmap_layers_index(Mesh *mesh,
                                                        const int index_of_uvmap,
                                                        struct ReportList *reports,
                                                        uint32_t needed_layer_flags)
 {
+  using namespace blender::bke;
   UVMap_Data data;
 
   const bool needvertsel = needed_layer_flags & MLOOPUV_VERTSEL;
@@ -934,43 +940,43 @@ UVMap_Data BKE_id_attributes_ensure_uvmap_layers_index(struct ID *id,
   const bool needpinned = needed_layer_flags & MLOOPUV_PINNED;
 
   CustomDataLayer *uvlayer = attribute_from_layerindex(
-      id, index_of_uvmap, ATTR_DOMAIN_CORNER, CD_MASK_PROP_FLOAT2);
+      &mesh->id, index_of_uvmap, ATTR_DOMAIN_CORNER, CD_MASK_PROP_FLOAT2);
 
   data.uv_index = attribute_to_layerindex(
-      id, uvlayer, ATTR_DOMAIN_MASK_CORNER, CD_MASK_PROP_FLOAT2);
+      &mesh->id, uvlayer, ATTR_DOMAIN_MASK_CORNER, CD_MASK_PROP_FLOAT2);
   data.uv = (float(*)[2])uvlayer->data;
 
-  std::string vertsel_name = UV_sublayer_name(uvlayer->name, UV_VERTSEL_NAME);
-  std::string edgesel_name = UV_sublayer_name(uvlayer->name, UV_EDGESEL_NAME);
-  std::string pinned_name = UV_sublayer_name(uvlayer->name, UV_PINNED_NAME);
+  std::string vertsel_name = uv_sublayer_name_vert_selection(uvlayer->name);
+  std::string edgesel_name = uv_sublayer_name_edge_selection(uvlayer->name);
+  std::string pinned_name = uv_sublayer_name_pin(uvlayer->name);
 
   CustomDataLayer *vslayer = BKE_id_attribute_find(
-      id, vertsel_name.c_str(), CD_PROP_BOOL, ATTR_DOMAIN_CORNER);
+      &mesh->id, vertsel_name.c_str(), CD_PROP_BOOL, ATTR_DOMAIN_CORNER);
   data.vertsel = vslayer ? (bool *)vslayer->data : nullptr;
 
   CustomDataLayer *eslayer = BKE_id_attribute_find(
-      id, edgesel_name.c_str(), CD_PROP_BOOL, ATTR_DOMAIN_CORNER);
+      &mesh->id, edgesel_name.c_str(), CD_PROP_BOOL, ATTR_DOMAIN_CORNER);
   data.edgesel = eslayer ? (bool *)eslayer->data : nullptr;
 
   CustomDataLayer *pnlayer = BKE_id_attribute_find(
-      id, pinned_name.c_str(), CD_PROP_BOOL, ATTR_DOMAIN_CORNER);
+      &mesh->id, pinned_name.c_str(), CD_PROP_BOOL, ATTR_DOMAIN_CORNER);
   data.pinned = pnlayer ? (bool *)pnlayer->data : nullptr;
 
   if (needvertsel && data.vertsel == nullptr) {
     CustomDataLayer *layer = BKE_id_attribute_new(
-        id, vertsel_name.c_str(), CD_PROP_BOOL, ATTR_DOMAIN_CORNER, reports);
+        &mesh->id, vertsel_name.c_str(), CD_PROP_BOOL, ATTR_DOMAIN_CORNER, reports);
     data.vertsel = (bool *)layer->data;
   }
 
   if (neededgesel && data.edgesel == nullptr) {
     CustomDataLayer *layer = BKE_id_attribute_new(
-        id, edgesel_name.c_str(), CD_PROP_BOOL, ATTR_DOMAIN_CORNER, reports);
+        &mesh->id, edgesel_name.c_str(), CD_PROP_BOOL, ATTR_DOMAIN_CORNER, reports);
     data.edgesel = (bool *)layer->data;
   }
 
   if (needpinned && data.pinned == nullptr) {
     CustomDataLayer *layer = BKE_id_attribute_new(
-        id, pinned_name.c_str(), CD_PROP_BOOL, ATTR_DOMAIN_CORNER, reports);
+        &mesh->id, pinned_name.c_str(), CD_PROP_BOOL, ATTR_DOMAIN_CORNER, reports);
     data.pinned = (bool *)layer->data;
   }
 

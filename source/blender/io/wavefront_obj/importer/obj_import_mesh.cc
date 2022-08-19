@@ -262,7 +262,7 @@ void MeshFromGeometry::create_uv_verts(Mesh *mesh)
     return;
   }
 
-  UVMap_Data data = BKE_id_attributes_create_uvmap_layers((ID *)mesh, "UVMap", NULL, 0);
+  UVMap_Data data = BKE_id_attributes_create_uvmap_layers(mesh, "UVMap", NULL, 0);
   float2 *mluv_dst = (float2 *)data.uv;
 
   int tot_loop_idx = 0;
