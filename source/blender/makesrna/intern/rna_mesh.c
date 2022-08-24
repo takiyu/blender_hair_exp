@@ -482,7 +482,6 @@ static void rna_MeshLoop_normal_set(PointerRNA *ptr, const float *values)
 {
   Mesh *me = rna_mesh(ptr);
   const int index = rna_MeshLoop_index_get(ptr);
-
   float(*vec)[3] = CustomData_get(&me->ldata, index, CD_NORMAL);
 
   if (vec) {
@@ -494,9 +493,7 @@ static void rna_MeshLoop_tangent_get(PointerRNA *ptr, float *values)
 {
   Mesh *me = rna_mesh(ptr);
   const int index = rna_MeshLoop_index_get(ptr);
-
   const float(*vec)[4] = CustomData_get(&me->ldata, index, CD_MLOOPTANGENT);
-
   if (!vec) {
     zero_v3(values);
   }
@@ -509,7 +506,6 @@ static float rna_MeshLoop_bitangent_sign_get(PointerRNA *ptr)
 {
   Mesh *me = rna_mesh(ptr);
   const int index = rna_MeshLoop_index_get(ptr);
-
   const float(*vec)[4] = CustomData_get(&me->ldata, index, CD_MLOOPTANGENT);
 
   return (vec) ? (*vec)[3] : 0.0f;
@@ -519,7 +515,6 @@ static void rna_MeshLoop_bitangent_get(PointerRNA *ptr, float *values)
 {
   Mesh *me = rna_mesh(ptr);
   const int index = rna_MeshLoop_index_get(ptr);
-
   const float(*nor)[3] = CustomData_get(&me->ldata, index, CD_NORMAL);
   const float(*vec)[4] = CustomData_get(&me->ldata, index, CD_MLOOPTANGENT);
 
@@ -536,10 +531,10 @@ static void rna_MeshPolygon_normal_get(PointerRNA *ptr, float *values)
 {
   Mesh *me = rna_mesh(ptr);
   MPoly *mp = (MPoly *)ptr->data;
-  const MVert *vertices = BKE_mesh_vertices(me);
+  const MVert *verts = BKE_mesh_vertices(me);
   const MLoop *loops = BKE_mesh_loops(me);
 
-  BKE_mesh_calc_poly_normal(mp, loops + mp->loopstart, vertices, values);
+  BKE_mesh_calc_poly_normal(mp, loops + mp->loopstart, verts, values);
 }
 
 static bool rna_MeshPolygon_hide_get(PointerRNA *ptr)
@@ -572,18 +567,18 @@ static void rna_MeshPolygon_center_get(PointerRNA *ptr, float *values)
 {
   Mesh *me = rna_mesh(ptr);
   MPoly *mp = (MPoly *)ptr->data;
-  const MVert *vertices = BKE_mesh_vertices(me);
+  const MVert *verts = BKE_mesh_vertices(me);
   const MLoop *loops = BKE_mesh_loops(me);
-  BKE_mesh_calc_poly_center(mp, loops + mp->loopstart, vertices, values);
+  BKE_mesh_calc_poly_center(mp, loops + mp->loopstart, verts, values);
 }
 
 static float rna_MeshPolygon_area_get(PointerRNA *ptr)
 {
   Mesh *me = (Mesh *)ptr->owner_id;
   MPoly *mp = (MPoly *)ptr->data;
-  const MVert *vertices = BKE_mesh_vertices(me);
+  const MVert *verts = BKE_mesh_vertices(me);
   const MLoop *loops = BKE_mesh_loops(me);
-  return BKE_mesh_calc_poly_area(mp, loops + mp->loopstart, vertices);
+  return BKE_mesh_calc_poly_area(mp, loops + mp->loopstart, verts);
 }
 
 static void rna_MeshPolygon_flip(ID *id, MPoly *mp)
@@ -612,14 +607,14 @@ static void rna_MeshLoopTriangle_normal_get(PointerRNA *ptr, float *values)
 {
   Mesh *me = rna_mesh(ptr);
   MLoopTri *lt = (MLoopTri *)ptr->data;
-  const MVert *vertices = BKE_mesh_vertices(me);
+  const MVert *verts = BKE_mesh_vertices(me);
   const MLoop *loops = BKE_mesh_loops(me);
 
   unsigned int v1 = loops[lt->tri[0]].v;
   unsigned int v2 = loops[lt->tri[1]].v;
   unsigned int v3 = loops[lt->tri[2]].v;
 
-  normal_tri_v3(values, vertices[v1].co, vertices[v2].co, vertices[v3].co);
+  normal_tri_v3(values, verts[v1].co, verts[v2].co, verts[v3].co);
 }
 
 static void rna_MeshLoopTriangle_split_normals_get(PointerRNA *ptr, float *values)
@@ -644,14 +639,14 @@ static float rna_MeshLoopTriangle_area_get(PointerRNA *ptr)
 {
   Mesh *me = rna_mesh(ptr);
   MLoopTri *lt = (MLoopTri *)ptr->data;
-  const MVert *vertices = BKE_mesh_vertices(me);
+  const MVert *verts = BKE_mesh_vertices(me);
   const MLoop *loops = BKE_mesh_loops(me);
 
   unsigned int v1 = loops[lt->tri[0]].v;
   unsigned int v2 = loops[lt->tri[1]].v;
   unsigned int v3 = loops[lt->tri[2]].v;
 
-  return area_tri_v3(vertices[v1].co, vertices[v2].co, vertices[v3].co);
+  return area_tri_v3(verts[v1].co, verts[v2].co, verts[v3].co);
 }
 
 static void rna_MeshLoopColor_color_get(PointerRNA *ptr, float *values)
@@ -701,8 +696,7 @@ static void rna_Mesh_texspace_loc_get(PointerRNA *ptr, float values[3])
 static void rna_MeshVertex_groups_begin(CollectionPropertyIterator *iter, PointerRNA *ptr)
 {
   Mesh *me = rna_mesh(ptr);
-
-  MDeformVert *dverts = BKE_mesh_deform_verts_for_write(me);
+  MDeformVert *dverts = (MDeformVert *)BKE_mesh_deform_verts(me);
   if (dverts) {
     const int index = rna_MeshVertex_index_get(ptr);
     MDeformVert *dvert = &dverts[index];
@@ -788,7 +782,6 @@ static bool rna_MEdge_freestyle_edge_mark_get(PointerRNA *ptr)
 {
   const Mesh *me = rna_mesh(ptr);
   const int index = rna_MeshEdge_index_get(ptr);
-
   const FreestyleEdge *fed = CustomData_get(&me->edata, index, CD_FREESTYLE_EDGE);
 
   return fed && (fed->flag & FREESTYLE_EDGE_MARK) != 0;
@@ -798,7 +791,6 @@ static void rna_MEdge_freestyle_edge_mark_set(PointerRNA *ptr, bool value)
 {
   Mesh *me = rna_mesh(ptr);
   const int index = rna_MeshEdge_index_get(ptr);
-
   FreestyleEdge *fed = CustomData_get(&me->edata, index, CD_FREESTYLE_EDGE);
 
   if (!fed) {
@@ -816,7 +808,6 @@ static bool rna_MPoly_freestyle_face_mark_get(PointerRNA *ptr)
 {
   const Mesh *me = rna_mesh(ptr);
   const int index = rna_MeshPolygon_index_get(ptr);
-
   const FreestyleFace *ffa = CustomData_get(&me->pdata, index, CD_FREESTYLE_FACE);
 
   return ffa && (ffa->flag & FREESTYLE_FACE_MARK) != 0;
@@ -826,7 +817,6 @@ static void rna_MPoly_freestyle_face_mark_set(PointerRNA *ptr, int value)
 {
   Mesh *me = rna_mesh(ptr);
   const int index = rna_MeshPolygon_index_get(ptr);
-
   FreestyleFace *ffa = CustomData_get(&me->pdata, index, CD_FREESTYLE_FACE);
 
   if (!ffa) {
