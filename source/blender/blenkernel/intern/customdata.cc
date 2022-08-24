@@ -26,6 +26,7 @@
 #include "BLI_math_vector.hh"
 #include "BLI_mempool.h"
 #include "BLI_path_util.h"
+#include "BLI_set.hh"
 #include "BLI_span.hh"
 #include "BLI_string.h"
 #include "BLI_string_ref.hh"
@@ -58,6 +59,7 @@
 #include "data_transfer_intern.h"
 
 using blender::IndexRange;
+using blender::Set;
 using blender::Span;
 using blender::StringRef;
 using blender::Vector;
@@ -2344,7 +2346,7 @@ bool CustomData_merge(const CustomData *source,
 
 static bool attribute_stored_in_bmesh_flag(const StringRef name)
 {
-  return ELEM(name, ".hide_vert", ".hide_edge", ".hide_face");
+  return ELEM(name, ".hide_vert", ".hide_edge", ".hide_poly");
 }
 
 static CustomData shallow_copy_remove_non_bmesh_attributes(const CustomData &src)
@@ -4351,13 +4353,18 @@ void CustomData_file_write_info(int type, const char **r_struct_name, int *r_str
   *r_struct_num = typeInfo->structnum;
 }
 
-void CustomData_blend_write_prepare(CustomData &data, Vector<CustomDataLayer, 16> &layers_to_write)
+void CustomData_blend_write_prepare(CustomData &data,
+                                    Vector<CustomDataLayer, 16> &layers_to_write,
+                                    const Set<std::string> &skip_names)
 {
   for (const CustomDataLayer &layer : Span(data.layers, data.totlayer)) {
     if (layer.flag & CD_FLAG_NOCOPY) {
       continue;
     }
     if (layer.anonymous_id != nullptr) {
+      continue;
+    }
+    if (skip_names.contains(layer.name)) {
       continue;
     }
     layers_to_write.append(layer);

@@ -605,7 +605,7 @@ static Mesh *normalEditModifier_do(NormalEditModifierData *enmd,
 
   MEM_SAFE_FREE(loopnors);
 
-  mesh->runtime.is_original = false;
+  mesh->runtime.is_original_bmesh = false;
 
   return mesh;
 }

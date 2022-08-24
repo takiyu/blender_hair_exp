@@ -683,7 +683,7 @@ static void draw_subdiv_cache_extra_coarse_face_data_mesh(const MeshRenderData *
     if ((polygons[i].flag & ME_FACE_SEL) != 0) {
       flag |= SUBDIV_COARSE_FACE_FLAG_SELECT;
     }
-    if (mr->hide_face && mr->hide_face[i]) {
+    if (mr->hide_poly && mr->hide_poly[i]) {
       flag |= SUBDIV_COARSE_FACE_FLAG_HIDDEN;
     }
     flags_data[i] = (uint)(polygons[i].loopstart) | (flag << SUBDIV_COARSE_FACE_FLAG_OFFSET);
@@ -727,7 +727,7 @@ static void draw_subdiv_cache_update_extra_coarse_face_data(DRWSubdivCache *cach
   if (mr->extract_type == MR_EXTRACT_BMESH) {
     draw_subdiv_cache_extra_coarse_face_data_bm(cache->bm, mr->efa_act, flags_data);
   }
-  else if (mr->extract_type == MR_EXTRACT_MAPPED) {
+  else if (mr->p_origindex != NULL) {
     draw_subdiv_cache_extra_coarse_face_data_mapped(mesh, cache->bm, mr, flags_data);
   }
   else {

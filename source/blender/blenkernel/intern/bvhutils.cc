@@ -1203,11 +1203,11 @@ static BLI_bitmap *loose_edges_map_get(const MEdge *medge,
 }
 
 static BLI_bitmap *looptri_no_hidden_map_get(const MPoly *mpoly,
-                                             const VArray<bool> &hide_face,
+                                             const VArray<bool> &hide_poly,
                                              const int looptri_len,
                                              int *r_looptri_active_len)
 {
-  if (hide_face.is_single() && !hide_face.get_internal_single()) {
+  if (hide_poly.is_single() && !hide_poly.get_internal_single()) {
     return nullptr;
   }
   BLI_bitmap *looptri_mask = BLI_BITMAP_NEW(looptri_len, __func__);
@@ -1217,7 +1217,7 @@ static BLI_bitmap *looptri_no_hidden_map_get(const MPoly *mpoly,
   int i_poly = 0;
   while (looptri_iter != looptri_len) {
     int mp_totlooptri = mpoly[i_poly].totloop - 2;
-    if (hide_face[i_poly]) {
+    if (hide_poly[i_poly]) {
       looptri_iter += mp_totlooptri;
     }
     else {
@@ -1322,8 +1322,8 @@ BVHTree *BKE_bvhtree_from_mesh_get(struct BVHTreeFromMesh *data,
     case BVHTREE_FROM_LOOPTRI_NO_HIDDEN: {
       blender::bke::AttributeAccessor attributes = blender::bke::mesh_attributes(*mesh);
       mask = looptri_no_hidden_map_get(
-          polygons.data(),
-          attributes.lookup_or_default(".hide_face", ATTR_DOMAIN_FACE, false),
+          blender::bke::mesh_polygons(*mesh).data(),
+          attributes.lookup_or_default(".hide_poly", ATTR_DOMAIN_FACE, false),
           looptri_len,
           &mask_bits_act_len);
       ATTR_FALLTHROUGH;

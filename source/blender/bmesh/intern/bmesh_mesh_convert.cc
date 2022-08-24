@@ -84,6 +84,7 @@
 #include "BLI_math_vector.h"
 #include "BLI_span.hh"
 #include "BLI_string_ref.hh"
+#include "BLI_task.hh"
 
 #include "BKE_attribute.hh"
 #include "BKE_customdata.h"
@@ -356,13 +357,14 @@ void BM_mesh_bm_from_me(BMesh *bm, const Mesh *me, const struct BMeshFromMeshPar
                                            CustomData_get_offset(&bm->vdata, CD_SHAPE_KEYINDEX) :
                                            -1;
 
-  const Span<MVert> mvert = blender::bke::mesh_vertices(*me);
   const bool *hide_vert = (const bool *)CustomData_get_layer_named(
       &me->vdata, CD_PROP_BOOL, ".hide_vert");
   const bool *hide_edge = (const bool *)CustomData_get_layer_named(
       &me->edata, CD_PROP_BOOL, ".hide_edge");
-  const bool *hide_face = (const bool *)CustomData_get_layer_named(
-      &me->pdata, CD_PROP_BOOL, ".hide_face");
+  const bool *hide_poly = (const bool *)CustomData_get_layer_named(
+      &me->pdata, CD_PROP_BOOL, ".hide_poly");
+
+  Span<MVert> mvert = blender::bke::mesh_vertices(*me);
   Array<BMVert *> vtable(me->totvert);
   for (const int i : mvert.index_range()) {
     BMVert *v = vtable[i] = BM_vert_create(
@@ -473,7 +475,7 @@ void BM_mesh_bm_from_me(BMesh *bm, const Mesh *me, const struct BMeshFromMeshPar
 
     /* Transfer flag. */
     f->head.hflag = BM_face_flag_from_mflag(mpoly[i].flag & ~ME_FACE_SEL);
-    if (hide_face && hide_face[i]) {
+    if (hide_poly && hide_poly[i]) {
       BM_elem_flag_enable(f, BM_ELEM_HIDDEN);
     }
 
@@ -932,9 +934,11 @@ static void write_elem_flag_to_attribute(blender::bke::MutableAttributeAccessor 
   if (do_write) {
     bke::SpanAttributeWriter<bool> attribute = attributes.lookup_or_add_for_write_only_span<bool>(
         attribute_name, domain);
-    for (const int i : attribute.span.index_range()) {
-      attribute.span[i] = get_fn(i);
-    }
+    threading::parallel_for(attribute.span.index_range(), 4096, [&](IndexRange range) {
+      for (const int i : range) {
+        attribute.span[i] = get_fn(i);
+      }
+    });
     attribute.finish();
   }
   else {
@@ -946,16 +950,16 @@ static void write_elem_flag_to_attribute(blender::bke::MutableAttributeAccessor 
 static void convert_bmesh_hide_flags_to_mesh_attributes(BMesh &bm,
                                                         const bool need_hide_vert,
                                                         const bool need_hide_edge,
-                                                        const bool need_hide_face,
+                                                        const bool need_hide_poly,
                                                         Mesh &mesh)
 {
   using namespace blender;
   /* The "hide" attributes are stored as flags on #BMesh. */
   BLI_assert(CustomData_get_layer_named(&bm.vdata, CD_PROP_BOOL, ".hide_vert") == nullptr);
-  BLI_assert(CustomData_get_layer_named(&bm.edata, CD_PROP_BOOL, ".edge_vert") == nullptr);
-  BLI_assert(CustomData_get_layer_named(&bm.pdata, CD_PROP_BOOL, ".face_vert") == nullptr);
+  BLI_assert(CustomData_get_layer_named(&bm.edata, CD_PROP_BOOL, ".hide_edge") == nullptr);
+  BLI_assert(CustomData_get_layer_named(&bm.pdata, CD_PROP_BOOL, ".hide_poly") == nullptr);
 
-  if (!(need_hide_vert || need_hide_edge || need_hide_face)) {
+  if (!(need_hide_vert || need_hide_edge || need_hide_poly)) {
     return;
   }
 
@@ -971,7 +975,7 @@ static void convert_bmesh_hide_flags_to_mesh_attributes(BMesh &bm,
         return BM_elem_flag_test(BM_edge_at_index(&bm, i), BM_ELEM_HIDDEN);
       });
   write_elem_flag_to_attribute(
-      attributes, ".hide_face", ATTR_DOMAIN_FACE, need_hide_face, [&](const int i) {
+      attributes, ".hide_poly", ATTR_DOMAIN_FACE, need_hide_poly, [&](const int i) {
         return BM_elem_flag_test(BM_face_at_index(&bm, i), BM_ELEM_HIDDEN);
       });
 }
@@ -1014,10 +1018,10 @@ void BM_mesh_bm_to_me(Main *bmain, BMesh *bm, Mesh *me, const struct BMeshToMesh
      * generic attribute there too). */
     CustomData_MeshMasks mask = CD_MASK_MESH;
     CustomData_MeshMasks_update(&mask, &params->cd_mask_extra);
-    CustomData_copy(&bm->vdata, &me->vdata, mask.vmask, CD_CALLOC, me->totvert);
-    CustomData_copy(&bm->edata, &me->edata, mask.emask, CD_CALLOC, me->totedge);
-    CustomData_copy(&bm->ldata, &me->ldata, mask.lmask, CD_CALLOC, me->totloop);
-    CustomData_copy(&bm->pdata, &me->pdata, mask.pmask, CD_CALLOC, me->totpoly);
+    CustomData_copy_mesh_to_bmesh(&bm->vdata, &me->vdata, mask.vmask, CD_CALLOC, me->totvert);
+    CustomData_copy_mesh_to_bmesh(&bm->edata, &me->edata, mask.emask, CD_CALLOC, me->totedge);
+    CustomData_copy_mesh_to_bmesh(&bm->ldata, &me->ldata, mask.lmask, CD_CALLOC, me->totloop);
+    CustomData_copy_mesh_to_bmesh(&bm->pdata, &me->pdata, mask.pmask, CD_CALLOC, me->totpoly);
   }
 
   MVert *mvert = bm->totvert ? (MVert *)MEM_callocN(sizeof(MVert) * bm->totvert, "bm_to_me.vert") :
@@ -1036,7 +1040,7 @@ void BM_mesh_bm_to_me(Main *bmain, BMesh *bm, Mesh *me, const struct BMeshToMesh
 
   bool need_hide_vert = false;
   bool need_hide_edge = false;
-  bool need_hide_face = false;
+  bool need_hide_poly = false;
 
   /* Clear normals on the mesh completely, since the original vertex and polygon count might be
    * different than the BMesh's. */
@@ -1109,7 +1113,7 @@ void BM_mesh_bm_to_me(Main *bmain, BMesh *bm, Mesh *me, const struct BMeshToMesh
     mpoly->mat_nr = f->mat_nr;
     mpoly->flag = BM_face_flag_to_mflag(f);
     if (BM_elem_flag_test(f, BM_ELEM_HIDDEN)) {
-      need_hide_face = true;
+      need_hide_poly = true;
     }
 
     l_iter = l_first = BM_FACE_FIRST_LOOP(f);
@@ -1204,7 +1208,7 @@ void BM_mesh_bm_to_me(Main *bmain, BMesh *bm, Mesh *me, const struct BMeshToMesh
   }
 
   convert_bmesh_hide_flags_to_mesh_attributes(
-      *bm, need_hide_vert, need_hide_edge, need_hide_face, *me);
+      *bm, need_hide_vert, need_hide_edge, need_hide_poly, *me);
 
   {
     me->totselect = BLI_listbase_count(&(bm->selected));
@@ -1298,7 +1302,7 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
 
   bool need_hide_vert = false;
   bool need_hide_edge = false;
-  bool need_hide_face = false;
+  bool need_hide_poly = false;
 
   /* Clear normals on the mesh completely, since the original vertex and polygon count might be
    * different than the BMesh's. */
@@ -1373,7 +1377,7 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
     mp->totloop = efa->len;
     mp->flag = BM_face_flag_to_mflag(efa);
     if (BM_elem_flag_test(efa, BM_ELEM_HIDDEN)) {
-      need_hide_face = true;
+      need_hide_poly = true;
     }
 
     mp->loopstart = j;
@@ -1396,7 +1400,7 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
   bm->elem_index_dirty &= ~(BM_FACE | BM_LOOP);
 
   convert_bmesh_hide_flags_to_mesh_attributes(
-      *bm, need_hide_vert, need_hide_edge, need_hide_face, *me);
+      *bm, need_hide_vert, need_hide_edge, need_hide_poly, *me);
 
   me->cd_flag = BM_mesh_cd_flag_from_bmesh(bm);
 }

@@ -42,7 +42,7 @@ static void extract_fdots_iter_poly_mesh(const MeshRenderData *mr,
                                          const int mp_index,
                                          void *_userdata)
 {
-  const bool hidden = mr->use_hide && mr->hide_face && mr->hide_face[mp - mr->mpoly];
+  const bool hidden = mr->use_hide && mr->hide_poly && mr->hide_poly[mp - mr->mpoly];
 
   GPUIndexBufBuilder *elb = static_cast<GPUIndexBufBuilder *>(_userdata);
   if (mr->use_subsurf_fdots) {

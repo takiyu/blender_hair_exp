@@ -705,11 +705,15 @@ bool ED_view3d_camera_lock_undo_test(const View3D *v3d,
  * Create a MEMFILE undo-step for locked camera movement when transforming the view.
  * Edit and texture paint mode don't use MEMFILE undo so undo push is skipped for them.
  * NDOF and track-pad navigation would create an undo step on every gesture and we may end up with
- * unnecessary undo steps so undo push for them is not supported for now. Also operators that uses
- * smooth view for navigation are excluded too, but they can be supported, see: D15345.
+ * unnecessary undo steps so undo push for them is not supported for now.
+ * Operators that use smooth view for navigation are supported via an optional parameter field,
+ * see: #V3D_SmoothParams.undo_str.
  */
-static bool view3d_camera_lock_undo_ex(
-    const char *str, View3D *v3d, RegionView3D *rv3d, struct bContext *C, bool undo_group)
+static bool view3d_camera_lock_undo_ex(const char *str,
+                                       const View3D *v3d,
+                                       const RegionView3D *rv3d,
+                                       struct bContext *C,
+                                       const bool undo_group)
 {
   if (ED_view3d_camera_lock_undo_test(v3d, rv3d, C)) {
     if (undo_group) {
@@ -723,14 +727,17 @@ static bool view3d_camera_lock_undo_ex(
   return false;
 }
 
-bool ED_view3d_camera_lock_undo_push(const char *str, View3D *v3d, RegionView3D *rv3d, bContext *C)
+bool ED_view3d_camera_lock_undo_push(const char *str,
+                                     const View3D *v3d,
+                                     const RegionView3D *rv3d,
+                                     bContext *C)
 {
   return view3d_camera_lock_undo_ex(str, v3d, rv3d, C, false);
 }
 
 bool ED_view3d_camera_lock_undo_grouped_push(const char *str,
-                                             View3D *v3d,
-                                             RegionView3D *rv3d,
+                                             const View3D *v3d,
+                                             const RegionView3D *rv3d,
                                              bContext *C)
 {
   return view3d_camera_lock_undo_ex(str, v3d, rv3d, C, true);

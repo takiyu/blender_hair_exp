@@ -67,53 +67,50 @@ void paintface_flush_flags(bContext *C,
     return;
   }
 
-  MutableSpan<MPoly> me_polygons = bke::mesh_polygons_for_write(*me);
-
   bke::AttributeAccessor attributes_me = bke::mesh_attributes(*me);
   Mesh *me_orig = (Mesh *)ob_eval->runtime.data_orig;
-  MutableSpan<MPoly> orig_polygons = bke::mesh_polygons_for_write(*me_orig);
-
   bke::MutableAttributeAccessor attributes_orig = bke::mesh_attributes_for_write(*me_orig);
   Mesh *me_eval = (Mesh *)ob_eval->runtime.data_eval;
-  MutableSpan<MPoly> eval_polygons = bke::mesh_polygons_for_write(*me_eval);
   bke::MutableAttributeAccessor attributes_eval = bke::mesh_attributes_for_write(*me_eval);
   bool updated = false;
+  const Span<MPoly> me_polys = bke::mesh_polygons(*me);
 
   if (me_orig != nullptr && me_eval != nullptr && me_orig->totpoly == me->totpoly) {
     /* Update the COW copy of the mesh. */
+    MutableSpan<MPoly> orig_polys = bke::mesh_polygons_for_write(*me_orig);
     for (int i = 0; i < me->totpoly; i++) {
-      orig_polygons[i].flag = me_polygons[i].flag;
+      orig_polys[i].flag = me_polys[i].flag;
     }
     if (flush_hidden) {
-      const VArray<bool> hide_face_me = attributes_me.lookup_or_default<bool>(
-          ".hide_face", ATTR_DOMAIN_FACE, false);
-      bke::SpanAttributeWriter<bool> hide_face_orig =
-          attributes_orig.lookup_or_add_for_write_only_span<bool>(".hide_face", ATTR_DOMAIN_FACE);
-      hide_face_me.materialize(hide_face_orig.span);
-      hide_face_orig.finish();
+      const VArray<bool> hide_poly_me = attributes_me.lookup_or_default<bool>(
+          ".hide_poly", ATTR_DOMAIN_FACE, false);
+      bke::SpanAttributeWriter<bool> hide_poly_orig =
+          attributes_orig.lookup_or_add_for_write_only_span<bool>(".hide_poly", ATTR_DOMAIN_FACE);
+      hide_poly_me.materialize(hide_poly_orig.span);
+      hide_poly_orig.finish();
     }
 
     /* Mesh polys => Final derived polys */
     if ((index_array = (const int *)CustomData_get_layer(&me_eval->pdata, CD_ORIGINDEX))) {
+      MutableSpan<MPoly> eval_polys = bke::mesh_polygons_for_write(*me_orig);
       /* loop over final derived polys */
-      for (const int i : eval_polygons.index_range()) {
+      for (const int i : eval_polys.index_range()) {
         if (index_array[i] != ORIGINDEX_NONE) {
           /* Copy flags onto the final derived poly from the original mesh poly */
-          eval_polygons[i].flag = me_polygons[index_array[i]].flag;
+          eval_polys[i].flag = me_polys[index_array[i]].flag;
         }
       }
-
-      const VArray<bool> hide_face_orig = attributes_orig.lookup_or_default<bool>(
-          ".hide_face", ATTR_DOMAIN_FACE, false);
-      bke::SpanAttributeWriter<bool> hide_face_eval =
-          attributes_eval.lookup_or_add_for_write_only_span<bool>(".hide_face", ATTR_DOMAIN_FACE);
+      const VArray<bool> hide_poly_orig = attributes_orig.lookup_or_default<bool>(
+          ".hide_poly", ATTR_DOMAIN_FACE, false);
+      bke::SpanAttributeWriter<bool> hide_poly_eval =
+          attributes_eval.lookup_or_add_for_write_only_span<bool>(".hide_poly", ATTR_DOMAIN_FACE);
       for (const int i : IndexRange(me_eval->totpoly)) {
-        const int orig_face_index = index_array[i];
-        if (orig_face_index != ORIGINDEX_NONE) {
-          hide_face_eval.span[i] = hide_face_orig[orig_face_index];
+        const int orig_poly_index = index_array[i];
+        if (orig_poly_index != ORIGINDEX_NONE) {
+          hide_poly_eval.span[i] = hide_poly_orig[orig_poly_index];
         }
       }
-      hide_face_eval.finish();
+      hide_poly_eval.finish();
 
       updated = true;
     }
@@ -144,25 +141,25 @@ void paintface_hide(bContext *C, Object *ob, const bool unselected)
     return;
   }
 
-  MutableSpan<MPoly> polygons = bke::mesh_polygons_for_write(*me);
+  MutableSpan<MPoly> polys = bke::mesh_polygons_for_write(*me);
   bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*me);
-  bke::SpanAttributeWriter<bool> hide_face = attributes.lookup_or_add_for_write_span<bool>(
-      ".hide_face", ATTR_DOMAIN_FACE);
+  bke::SpanAttributeWriter<bool> hide_poly = attributes.lookup_or_add_for_write_span<bool>(
+      ".hide_poly", ATTR_DOMAIN_FACE);
 
   for (int i = 0; i < me->totpoly; i++) {
-    MPoly *mpoly = &polygons[i];
-    if (!hide_face.span[i]) {
+    MPoly *mpoly = &polys[i];
+    if (!hide_poly.span[i]) {
       if (((mpoly->flag & ME_FACE_SEL) == 0) == unselected) {
-        hide_face.span[i] = true;
+        hide_poly.span[i] = true;
       }
     }
 
-    if (hide_face.span[i]) {
+    if (hide_poly.span[i]) {
       mpoly->flag &= ~ME_FACE_SEL;
     }
   }
 
-  hide_face.finish();
+  hide_poly.finish();
 
   BKE_mesh_flush_hidden_from_polys(me);
 
@@ -177,21 +174,21 @@ void paintface_reveal(bContext *C, Object *ob, const bool select)
     return;
   }
 
-  MutableSpan<MPoly> polygons = bke::mesh_polygons_for_write(*me);
+  MutableSpan<MPoly> polys = bke::mesh_polygons_for_write(*me);
   bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*me);
 
   if (select) {
-    const VArray<bool> hide_face = attributes.lookup_or_default<bool>(
-        ".hide_face", ATTR_DOMAIN_FACE, false);
+    const VArray<bool> hide_poly = attributes.lookup_or_default<bool>(
+        ".hide_poly", ATTR_DOMAIN_FACE, false);
     for (int i = 0; i < me->totpoly; i++) {
-      MPoly *mpoly = &polygons[i];
-      if (hide_face[i]) {
+      MPoly *mpoly = &polys[i];
+      if (hide_poly[i]) {
         mpoly->flag |= ME_FACE_SEL;
       }
     }
   }
 
-  attributes.remove(".hide_face");
+  attributes.remove(".hide_poly");
 
   BKE_mesh_flush_hidden_from_polys(me);
 
@@ -210,23 +207,23 @@ static void select_linked_tfaces_with_seams(Mesh *me, const uint index, const bo
   BLI_bitmap *poly_tag = BLI_BITMAP_NEW(me->totpoly, __func__);
 
   const Span<MEdge> edges = bke::mesh_edges(*me);
-  MutableSpan<MPoly> polygons = bke::mesh_polygons_for_write(*me);
+  MutableSpan<MPoly> polys = bke::mesh_polygons_for_write(*me);
   const Span<MLoop> loops = bke::mesh_loops(*me);
   bke::AttributeAccessor attributes = bke::mesh_attributes(*me);
-  const VArray<bool> hide_face = attributes.lookup_or_default<bool>(
-      ".hide_face", ATTR_DOMAIN_FACE, false);
+  const VArray<bool> hide_poly = attributes.lookup_or_default<bool>(
+      ".hide_poly", ATTR_DOMAIN_FACE, false);
 
   if (index != (uint)-1) {
     /* only put face under cursor in array */
-    const MPoly *mp = &polygons[index];
+    const MPoly *mp = &polys[index];
     BKE_mesh_poly_edgebitmap_insert(edge_tag, mp, &loops[mp->loopstart]);
     BLI_BITMAP_ENABLE(poly_tag, index);
   }
   else {
     /* fill array by selection */
     for (int i = 0; i < me->totpoly; i++) {
-      const MPoly *mp = &polygons[index];
-      if (hide_face[i]) {
+      MPoly *mp = &polys[i];
+      if (hide_poly[i]) {
         /* pass */
       }
       else if (mp->flag & ME_FACE_SEL) {
@@ -241,8 +238,8 @@ static void select_linked_tfaces_with_seams(Mesh *me, const uint index, const bo
 
     /* expand selection */
     for (int i = 0; i < me->totpoly; i++) {
-      const MPoly *mp = &polygons[index];
-      if (hide_face[i]) {
+      MPoly *mp = &polys[i];
+      if (hide_poly[i]) {
         continue;
       }
 
@@ -271,7 +268,7 @@ static void select_linked_tfaces_with_seams(Mesh *me, const uint index, const bo
   MEM_freeN(edge_tag);
 
   for (int i = 0; i < me->totpoly; i++) {
-    MPoly *mp = &polygons[index];
+    MPoly *mp = &polys[index];
     if (BLI_BITMAP_TEST(poly_tag, i)) {
       SET_FLAG_FROM_TEST(mp->flag, select, ME_FACE_SEL);
     }
@@ -308,17 +305,17 @@ bool paintface_deselect_all_visible(bContext *C, Object *ob, int action, bool fl
     return false;
   }
 
-  MutableSpan<MPoly> polygons = bke::mesh_polygons_for_write(*me);
+  MutableSpan<MPoly> polys = bke::mesh_polygons_for_write(*me);
   bke::AttributeAccessor attributes = bke::mesh_attributes(*me);
-  const VArray<bool> hide_face = attributes.lookup_or_default<bool>(
-      ".hide_face", ATTR_DOMAIN_FACE, false);
+  const VArray<bool> hide_poly = attributes.lookup_or_default<bool>(
+      ".hide_poly", ATTR_DOMAIN_FACE, false);
 
   if (action == SEL_TOGGLE) {
     action = SEL_SELECT;
 
     for (int i = 0; i < me->totpoly; i++) {
-      MPoly *mpoly = &polygons[i];
-      if (!hide_face[i] && mpoly->flag & ME_FACE_SEL) {
+      MPoly *mpoly = &polys[i];
+      if (!hide_poly[i] && mpoly->flag & ME_FACE_SEL) {
         action = SEL_DESELECT;
         break;
       }
@@ -328,8 +325,8 @@ bool paintface_deselect_all_visible(bContext *C, Object *ob, int action, bool fl
   bool changed = false;
 
   for (int i = 0; i < me->totpoly; i++) {
-    MPoly *mpoly = &polygons[i];
-    if (!hide_face[i]) {
+    MPoly *mpoly = &polys[i];
+    if (!hide_poly[i]) {
       switch (action) {
         case SEL_SELECT:
           if ((mpoly->flag & ME_FACE_SEL) == 0) {
@@ -372,22 +369,22 @@ bool paintface_minmax(Object *ob, float r_min[3], float r_max[3])
 
   copy_m3_m4(bmat, ob->obmat);
 
-  const Span<MVert> vertices = bke::mesh_vertices(*me);
-  const Span<MPoly> polygons = bke::mesh_polygons(*me);
+  const Span<MVert> verts = bke::mesh_vertices(*me);
+  const Span<MPoly> polys = bke::mesh_polygons(*me);
   const Span<MLoop> loops = bke::mesh_loops(*me);
   bke::AttributeAccessor attributes = bke::mesh_attributes(*me);
-  const VArray<bool> hide_face = attributes.lookup_or_default<bool>(
-      ".hide_face", ATTR_DOMAIN_FACE, false);
+  const VArray<bool> hide_poly = attributes.lookup_or_default<bool>(
+      ".hide_poly", ATTR_DOMAIN_FACE, false);
 
   for (int i = 0; i < me->totpoly; i++) {
-    const MPoly *mp = &polygons[i];
-    if (hide_face[i] || !(mp->flag & ME_FACE_SEL)) {
+    const MPoly *mp = &polys[i];
+    if (hide_poly[i] || !(mp->flag & ME_FACE_SEL)) {
       continue;
     }
 
     const MLoop *ml = &loops[mp->loopstart];
     for (int b = 0; b < mp->totloop; b++, ml++) {
-      mul_v3_m3v3(vec, bmat, vertices[ml->v].co);
+      mul_v3_m3v3(vec, bmat, verts[ml->v].co);
       add_v3_v3v3(vec, vec, ob->obmat[3]);
       minmax_v3v3_v3(r_min, r_max, vec);
     }
@@ -412,15 +409,15 @@ bool paintface_mouse_select(bContext *C,
   /* Get the face under the cursor */
   Mesh *me = BKE_mesh_from_object(ob);
 
-  MutableSpan<MPoly> polygons = bke::mesh_polygons_for_write(*me);
+  MutableSpan<MPoly> polys = bke::mesh_polygons_for_write(*me);
   bke::AttributeAccessor attributes = bke::mesh_attributes(*me);
-  const VArray<bool> hide_face = attributes.lookup_or_default<bool>(
-      ".hide_face", ATTR_DOMAIN_FACE, false);
+  const VArray<bool> hide_poly = attributes.lookup_or_default<bool>(
+      ".hide_poly", ATTR_DOMAIN_FACE, false);
 
   if (ED_mesh_pick_face(C, ob, mval, ED_MESH_PICK_DEFAULT_FACE_DIST, &index)) {
     if (index < me->totpoly) {
-      mpoly_sel = &polygons[index];
-      if (!hide_face[index]) {
+      mpoly_sel = polys.data() + index;
+      if (!hide_poly[index]) {
         found = true;
       }
     }
@@ -532,19 +529,17 @@ bool paintvert_deselect_all_visible(Object *ob, int action, bool flush_flags)
     return false;
   }
 
-  MutableSpan<MVert> vertices = bke::mesh_vertices_for_write(*me);
+  MutableSpan<MVert> verts = bke::mesh_vertices_for_write(*me);
   bke::AttributeAccessor attributes = bke::mesh_attributes(*me);
   const VArray<bool> hide_vert = attributes.lookup_or_default<bool>(
       ".hide_vert", ATTR_DOMAIN_POINT, false);
-  const VArray<bool> hide_face = attributes.lookup_or_default<bool>(
-      ".hide_face", ATTR_DOMAIN_FACE, false);
 
   if (action == SEL_TOGGLE) {
     action = SEL_SELECT;
 
     for (int i = 0; i < me->totvert; i++) {
-      MVert *mvert = &vertices[i];
-      if (!hide_face[i] && mvert->flag & SELECT) {
+      MVert *mvert = &verts[i];
+      if (!hide_vert[i] && mvert->flag & SELECT) {
         action = SEL_DESELECT;
         break;
       }
@@ -553,7 +548,7 @@ bool paintvert_deselect_all_visible(Object *ob, int action, bool flush_flags)
 
   bool changed = false;
   for (int i = 0; i < me->totvert; i++) {
-    MVert *mvert = &vertices[i];
+    MVert *mvert = &verts[i];
     if (!hide_vert[i]) {
       switch (action) {
         case SEL_SELECT:
@@ -611,15 +606,15 @@ void paintvert_select_ungrouped(Object *ob, bool extend, bool flush_flags)
     paintvert_deselect_all_visible(ob, SEL_DESELECT, false);
   }
 
-  MutableSpan<MVert> vertices = bke::mesh_vertices_for_write(*me);
+  MutableSpan<MVert> verts = bke::mesh_vertices_for_write(*me);
   bke::AttributeAccessor attributes = bke::mesh_attributes(*me);
-  const VArray<bool> hide_face = attributes.lookup_or_default<bool>(
-      ".hide_face", ATTR_DOMAIN_FACE, false);
+  const VArray<bool> hide_vert = attributes.lookup_or_default<bool>(
+      ".hide_vert", ATTR_DOMAIN_POINT, false);
 
   for (int i = 0; i < me->totvert; i++) {
-    MVert *mv = &vertices[i];
-    const MDeformVert *dv = &dverts[i];
-    if (!hide_face[i]) {
+    MVert *mv = &verts[i];
+    MDeformVert *dv = &me->dvert[i];
+    if (!hide_vert[i]) {
       if (dv->dw == nullptr) {
         /* if null weight then not grouped */
         mv->flag |= SELECT;
@@ -640,13 +635,13 @@ void paintvert_hide(bContext *C, Object *ob, const bool unselected)
     return;
   }
 
-  MutableSpan<MVert> vertices = bke::mesh_vertices_for_write(*me);
+  MutableSpan<MVert> verts = bke::mesh_vertices_for_write(*me);
   bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*me);
   bke::SpanAttributeWriter<bool> hide_vert = attributes.lookup_or_add_for_write_span<bool>(
       ".hide_vert", ATTR_DOMAIN_POINT);
 
-  for (const int i : vertices.index_range()) {
-    MVert &vert = vertices[i];
+  for (const int i : verts.index_range()) {
+    MVert &vert = verts[i];
     if (!hide_vert.span[i]) {
       if (((vert.flag & SELECT) == 0) == unselected) {
         hide_vert.span[i] = true;
@@ -673,13 +668,13 @@ void paintvert_reveal(bContext *C, Object *ob, const bool select)
     return;
   }
 
-  MutableSpan<MVert> vertices = bke::mesh_vertices_for_write(*me);
+  MutableSpan<MVert> verts = bke::mesh_vertices_for_write(*me);
   bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*me);
   const VArray<bool> hide_vert = attributes.lookup_or_default<bool>(
       ".hide_vert", ATTR_DOMAIN_POINT, false);
 
-  for (const int i : vertices.index_range()) {
-    MVert &vert = vertices[i];
+  for (const int i : verts.index_range()) {
+    MVert &vert = verts[i];
     if (hide_vert[i]) {
       SET_FLAG_FROM_TEST(vert.flag, select, SELECT);
     }

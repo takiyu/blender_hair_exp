@@ -148,7 +148,7 @@ static int voxel_remesh_exec(bContext *C, wmOperator *op)
   }
 
   if (ob->mode == OB_MODE_SCULPT) {
-    ED_sculpt_undo_geometry_begin(ob, op->type->name);
+    ED_sculpt_undo_geometry_begin(ob, op);
   }
 
   if (mesh->flag & ME_REMESH_FIX_POLES && mesh->remesh_voxel_adaptivity <= 0.0f) {
@@ -658,6 +658,7 @@ struct QuadriFlowJob {
   short *stop, *do_update;
   float *progress;
 
+  const struct wmOperator *op;
   Scene *scene;
   int target_faces;
   int seed;
@@ -896,7 +897,7 @@ static void quadriflow_start_job(void *customdata, short *stop, short *do_update
   new_mesh = remesh_symmetry_mirror(qj->owner, new_mesh, qj->symmetry_axes);
 
   if (ob->mode == OB_MODE_SCULPT) {
-    ED_sculpt_undo_geometry_begin(ob, "QuadriFlow Remesh");
+    ED_sculpt_undo_geometry_begin(ob, qj->op);
   }
 
   if (qj->preserve_paint_mask) {
@@ -954,6 +955,7 @@ static int quadriflow_remesh_exec(bContext *C, wmOperator *op)
 {
   QuadriFlowJob *job = (QuadriFlowJob *)MEM_mallocN(sizeof(QuadriFlowJob), "QuadriFlowJob");
 
+  job->op = op;
   job->owner = CTX_data_active_object(C);
   job->scene = CTX_data_scene(C);
 
