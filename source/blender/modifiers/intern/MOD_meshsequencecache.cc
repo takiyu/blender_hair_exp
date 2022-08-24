@@ -178,17 +178,17 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
   }
 
   if (me != nullptr) {
-    const Span<MVert> mesh_vertices = blender::bke::mesh_vertices(*mesh);
+    const Span<MVert> mesh_verts = blender::bke::mesh_vertices(*mesh);
     const Span<MEdge> mesh_edges = blender::bke::mesh_edges(*mesh);
-    const Span<MPoly> mesh_polygons = blender::bke::mesh_polygons(*mesh);
+    const Span<MPoly> mesh_polys = blender::bke::mesh_polygons(*mesh);
     const Span<MVert> me_vertices = blender::bke::mesh_vertices(*me);
     const Span<MEdge> me_edges = blender::bke::mesh_edges(*me);
     const Span<MPoly> me_polygons = blender::bke::mesh_polygons(*me);
 
     /* TODO(sybren+bastien): possibly check relevant custom data layers (UV/color depending on
      * flags) and duplicate those too. */
-    if ((me_vertices.data() == mesh_vertices.data()) || (me_edges.data() == mesh_edges.data()) ||
-        (me_polygons.data() == mesh_polygons.data())) {
+    if ((me_vertices.data() == mesh_verts.data()) || (me_edges.data() == mesh_edges.data()) ||
+        (me_polygons.data() == mesh_polys.data())) {
       /* We need to duplicate data here, otherwise we'll modify org mesh, see T51701. */
       mesh = reinterpret_cast<Mesh *>(
           BKE_id_copy_ex(nullptr,

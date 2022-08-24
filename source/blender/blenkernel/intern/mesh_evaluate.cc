@@ -205,13 +205,13 @@ float BKE_mesh_calc_poly_area(const MPoly *mpoly, const MLoop *loopstart, const 
 
 float BKE_mesh_calc_area(const Mesh *me)
 {
-  const Span<MVert> vertices = blender::bke::mesh_vertices(*me);
-  const Span<MPoly> polygons = blender::bke::mesh_polygons(*me);
+  const Span<MVert> vertts = blender::bke::mesh_vertices(*me);
+  const Span<MPoly> polys = blender::bke::mesh_polygons(*me);
   const Span<MLoop> loops = blender::bke::mesh_loops(*me);
 
   float total_area = 0.0f;
-  for (const MPoly &poly : polygons) {
-    total_area += BKE_mesh_calc_poly_area(&poly, &loops[poly.loopstart], vertices.data());
+  for (const MPoly &poly : polys) {
+    total_area += BKE_mesh_calc_poly_area(&poly, &loops[poly.loopstart], vertts.data());
   }
   return total_area;
 }
@@ -400,9 +400,9 @@ void BKE_mesh_poly_edgebitmap_insert(uint *edge_bitmap, const MPoly *mp, const M
 
 bool BKE_mesh_center_median(const Mesh *me, float r_cent[3])
 {
-  const Span<MVert> vertices = blender::bke::mesh_vertices(*me);
+  const Span<MVert> verts = blender::bke::mesh_vertices(*me);
   zero_v3(r_cent);
-  for (const MVert &vert : vertices) {
+  for (const MVert &vert : verts) {
     add_v3_v3(r_cent, vert.co);
   }
   /* otherwise we get NAN for 0 verts */
@@ -415,14 +415,14 @@ bool BKE_mesh_center_median(const Mesh *me, float r_cent[3])
 bool BKE_mesh_center_median_from_polys(const Mesh *me, float r_cent[3])
 {
   int tot = 0;
-  const Span<MVert> vertices = blender::bke::mesh_vertices(*me);
-  const Span<MPoly> polygons = blender::bke::mesh_polygons(*me);
+  const Span<MVert> verts = blender::bke::mesh_vertices(*me);
+  const Span<MPoly> polys = blender::bke::mesh_polygons(*me);
   const Span<MLoop> loops = blender::bke::mesh_loops(*me);
   zero_v3(r_cent);
-  for (const MPoly &poly : polygons) {
+  for (const MPoly &poly : polys) {
     int loopend = poly.loopstart + poly.totloop;
     for (int j = poly.loopstart; j < loopend; j++) {
-      add_v3_v3(r_cent, vertices[loops[j].v].co);
+      add_v3_v3(r_cent, verts[loops[j].v].co);
     }
     tot += poly.totloop;
   }
@@ -452,15 +452,15 @@ bool BKE_mesh_center_of_surface(const Mesh *me, float r_cent[3])
   float poly_area;
   float total_area = 0.0f;
   float poly_cent[3];
-  const MVert *vertices = BKE_mesh_vertices(me);
-  const MPoly *polygons = BKE_mesh_polygons(me);
+  const MVert *verts = BKE_mesh_vertices(me);
+  const MPoly *polys = BKE_mesh_polygons(me);
   const MLoop *loops = BKE_mesh_loops(me);
 
   zero_v3(r_cent);
 
   /* calculate a weighted average of polygon centroids */
-  for (mpoly = polygons; i--; mpoly++) {
-    poly_area = mesh_calc_poly_area_centroid(mpoly, loops + mpoly->loopstart, vertices, poly_cent);
+  for (mpoly = polys; i--; mpoly++) {
+    poly_area = mesh_calc_poly_area_centroid(mpoly, loops + mpoly->loopstart, verts, poly_cent);
 
     madd_v3_v3fl(r_cent, poly_cent, poly_area);
     total_area += poly_area;
@@ -485,8 +485,8 @@ bool BKE_mesh_center_of_volume(const Mesh *me, float r_cent[3])
   float poly_volume;
   float total_volume = 0.0f;
   float poly_cent[3];
-  const MVert *vertices = BKE_mesh_vertices(me);
-  const MPoly *polygons = BKE_mesh_polygons(me);
+  const MVert *verts = BKE_mesh_vertices(me);
+  const MPoly *polys = BKE_mesh_polygons(me);
   const MLoop *loops = BKE_mesh_loops(me);
 
   /* Use an initial center to avoid numeric instability of geometry far away from the center. */
@@ -496,9 +496,9 @@ bool BKE_mesh_center_of_volume(const Mesh *me, float r_cent[3])
   zero_v3(r_cent);
 
   /* calculate a weighted average of polyhedron centroids */
-  for (mpoly = polygons; i--; mpoly++) {
+  for (mpoly = polys; i--; mpoly++) {
     poly_volume = mesh_calc_poly_volume_centroid_with_reference_center(
-        mpoly, loops + mpoly->loopstart, vertices, init_cent, poly_cent);
+        mpoly, loops + mpoly->loopstart, verts, init_cent, poly_cent);
 
     /* poly_cent is already volume-weighted, so no need to multiply by the volume */
     add_v3_v3(r_cent, poly_cent);

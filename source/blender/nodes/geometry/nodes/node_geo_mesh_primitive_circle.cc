@@ -20,12 +20,12 @@ static void node_declare(NodeDeclarationBuilder &b)
   b.add_input<decl::Int>(N_("Vertices"))
       .default_value(32)
       .min(3)
-      .description(N_("Number of vertices on the circle"));
+      .description(N_("Number of verts on the circle"));
   b.add_input<decl::Float>(N_("Radius"))
       .default_value(1.0f)
       .min(0.0f)
       .subtype(PROP_DISTANCE)
-      .description(N_("Distance of the vertices from the origin"));
+      .description(N_("Distance of the verts from the origin"));
   b.add_output<decl::Geometry>(N_("Mesh"));
 }
 
@@ -109,19 +109,19 @@ static Mesh *create_circle_mesh(const float radius,
                                    circle_corner_total(fill_type, verts_num),
                                    circle_face_total(fill_type, verts_num));
   BKE_id_material_eval_ensure_default_slot(&mesh->id);
-  MutableSpan<MVert> vertices = bke::mesh_vertices_for_write(*mesh);
+  MutableSpan<MVert> verts = bke::mesh_vertices_for_write(*mesh);
   MutableSpan<MEdge> edges = bke::mesh_edges_for_write(*mesh);
-  MutableSpan<MPoly> polygons = bke::mesh_polygons_for_write(*mesh);
+  MutableSpan<MPoly> polys = bke::mesh_polygons_for_write(*mesh);
   MutableSpan<MLoop> loops = bke::mesh_loops_for_write(*mesh);
 
   /* Assign vertex coordinates. */
   const float angle_delta = 2.0f * (M_PI / static_cast<float>(verts_num));
   for (const int i : IndexRange(verts_num)) {
     const float angle = i * angle_delta;
-    copy_v3_v3(vertices[i].co, float3(std::cos(angle) * radius, std::sin(angle) * radius, 0.0f));
+    copy_v3_v3(verts[i].co, float3(std::cos(angle) * radius, std::sin(angle) * radius, 0.0f));
   }
   if (fill_type == GEO_NODE_MESH_CIRCLE_FILL_TRIANGLE_FAN) {
-    copy_v3_v3(vertices.last().co, float3(0));
+    copy_v3_v3(verts.last().co, float3(0));
   }
 
   /* Create outer edges. */
@@ -147,7 +147,7 @@ static Mesh *create_circle_mesh(const float radius,
 
   /* Create corners and faces. */
   if (fill_type == GEO_NODE_MESH_CIRCLE_FILL_NGON) {
-    MPoly &poly = polygons[0];
+    MPoly &poly = polys[0];
     poly.loopstart = 0;
     poly.totloop = loops.size();
 
@@ -159,7 +159,7 @@ static Mesh *create_circle_mesh(const float radius,
   }
   else if (fill_type == GEO_NODE_MESH_CIRCLE_FILL_TRIANGLE_FAN) {
     for (const int i : IndexRange(verts_num)) {
-      MPoly &poly = polygons[i];
+      MPoly &poly = polys[i];
       poly.loopstart = 3 * i;
       poly.totloop = 3;
 

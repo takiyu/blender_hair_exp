@@ -640,9 +640,9 @@ Mesh *curve_to_mesh_sweep(const CurvesGeometry &main,
       offsets.vert.last(), offsets.edge.last(), 0, offsets.loop.last(), offsets.poly.last());
   mesh->flag |= ME_AUTOSMOOTH;
   mesh->smoothresh = DEG2RADF(180.0f);
-  MutableSpan<MVert> vertices = mesh_vertices_for_write(*mesh);
+  MutableSpan<MVert> verts = mesh_vertices_for_write(*mesh);
   MutableSpan<MEdge> edges = mesh_edges_for_write(*mesh);
-  MutableSpan<MPoly> polygons = mesh_polygons_for_write(*mesh);
+  MutableSpan<MPoly> polys = mesh_polygons_for_write(*mesh);
   MutableSpan<MLoop> loops = mesh_loops_for_write(*mesh);
 
   foreach_curve_combination(curves_info, offsets, [&](const CombinationInfo &info) {
@@ -657,7 +657,7 @@ Mesh *curve_to_mesh_sweep(const CurvesGeometry &main,
                        fill_caps,
                        edges,
                        loops,
-                       polygons);
+                       polys);
   });
 
   const Span<float3> main_positions = main.evaluated_positions();
@@ -688,7 +688,7 @@ Mesh *curve_to_mesh_sweep(const CurvesGeometry &main,
                         tangents.slice(info.main_points),
                         normals.slice(info.main_points),
                         radii.is_empty() ? radii : radii.slice(info.main_points),
-                        vertices.slice(info.vert_range));
+                        verts.slice(info.vert_range));
   });
 
   if (profile.curve_type_counts()[CURVE_TYPE_BEZIER] > 0) {

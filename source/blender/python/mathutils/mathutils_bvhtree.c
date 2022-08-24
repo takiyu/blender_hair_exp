@@ -1148,9 +1148,9 @@ static PyObject *C_BVHTree_FromObject(PyObject *UNUSED(cls), PyObject *args, PyO
     coords = MEM_mallocN(sizeof(*coords) * (size_t)coords_len, __func__);
     tris = MEM_mallocN(sizeof(*tris) * (size_t)tris_len, __func__);
 
-    const MVert *vertices = BKE_mesh_vertices(mesh);
+    const MVert *verts = BKE_mesh_vertices(mesh);
     for (int i = 0; i < mesh->totvert; i++) {
-      copy_v3_v3(coords[i], vertices[i].co);
+      copy_v3_v3(coords[i], verts[i].co);
     }
 
     mloop = BKE_mesh_loops(mesh);

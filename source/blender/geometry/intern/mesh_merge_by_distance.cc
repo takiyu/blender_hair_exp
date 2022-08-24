@@ -1166,7 +1166,7 @@ static void weld_mesh_context_create(const Mesh &mesh,
 {
   const int mvert_len = mesh.totvert;
   const Span<MEdge> edges = bke::mesh_edges(mesh);
-  const Span<MPoly> polygons = bke::mesh_polygons(mesh);
+  const Span<MPoly> polys = bke::mesh_polygons(mesh);
   const Span<MLoop> loops = bke::mesh_loops(mesh);
 
   Vector<WeldVert> wvert = weld_vert_ctx_alloc_and_setup(vert_dest_map, vert_kill_len);
@@ -1179,11 +1179,11 @@ static void weld_mesh_context_create(const Mesh &mesh,
   Array<WeldGroup> v_links(mvert_len, {0, 0});
   weld_edge_ctx_setup(v_links, edge_dest_map, wedge, &r_weld_mesh->edge_kill_len);
 
-  weld_poly_loop_ctx_alloc(polygons, loops, vert_dest_map, edge_dest_map, r_weld_mesh);
+  weld_poly_loop_ctx_alloc(polys, loops, vert_dest_map, edge_dest_map, r_weld_mesh);
 
   weld_poly_loop_ctx_setup(loops,
 #ifdef USE_WELD_DEBUG
-                           polygons,
+                           polys,
 
 #endif
                            mvert_len,
@@ -1360,7 +1360,7 @@ static Mesh *create_merged_mesh(const Mesh &mesh,
                                 MutableSpan<int> vert_dest_map,
                                 const int removed_vertex_count)
 {
-  const Span<MPoly> src_polygons = bke::mesh_polygons(mesh);
+  const Span<MPoly> src_polys = bke::mesh_polygons(mesh);
   const Span<MLoop> src_loops = bke::mesh_loops(mesh);
   const int totvert = mesh.totvert;
   const int totedge = mesh.totedge;
@@ -1371,13 +1371,12 @@ static Mesh *create_merged_mesh(const Mesh &mesh,
   const int result_nverts = totvert - weld_mesh.vert_kill_len;
   const int result_nedges = totedge - weld_mesh.edge_kill_len;
   const int result_nloops = src_loops.size() - weld_mesh.loop_kill_len;
-  const int result_npolys = src_polygons.size() - weld_mesh.poly_kill_len +
-                            weld_mesh.wpoly_new_len;
+  const int result_npolys = src_polys.size() - weld_mesh.poly_kill_len + weld_mesh.wpoly_new_len;
 
   Mesh *result = BKE_mesh_new_nomain_from_template(
       &mesh, result_nverts, result_nedges, 0, result_nloops, result_npolys);
   MutableSpan<MEdge> dst_edges = bke::mesh_edges_for_write(*result);
-  MutableSpan<MPoly> dst_polygons = bke::mesh_polygons_for_write(*result);
+  MutableSpan<MPoly> dst_polys = bke::mesh_polygons_for_write(*result);
   MutableSpan<MLoop> dst_loops = bke::mesh_loops_for_write(*result);
 
   /* Vertices. */
@@ -1466,13 +1465,13 @@ static Mesh *create_merged_mesh(const Mesh &mesh,
 
   /* Polys/Loops. */
 
-  MPoly *r_mp = dst_polygons.data();
+  MPoly *r_mp = dst_polys.data();
   MLoop *r_ml = dst_loops.data();
   int r_i = 0;
   int loop_cur = 0;
   Array<int, 64> group_buffer(weld_mesh.max_poly_len);
-  for (const int i : src_polygons.index_range()) {
-    const MPoly &mp = src_polygons[i];
+  for (const int i : src_polys.index_range()) {
+    const MPoly &mp = src_polys[i];
     const int loop_start = loop_cur;
     const int poly_ctx = weld_mesh.poly_map[i];
     if (poly_ctx == OUT_OF_CONTEXT) {
@@ -1571,9 +1570,9 @@ std::optional<Mesh *> mesh_merge_by_distance_all(const Mesh &mesh,
 
   KDTree_3d *tree = BLI_kdtree_3d_new(selection.size());
 
-  const Span<MVert> vertices = bke::mesh_vertices(mesh);
+  const Span<MVert> verts = bke::mesh_vertices(mesh);
   for (const int i : selection) {
-    BLI_kdtree_3d_insert(tree, i, vertices[i].co);
+    BLI_kdtree_3d_insert(tree, i, verts[i].co);
   }
 
   BLI_kdtree_3d_balance(tree);
@@ -1598,7 +1597,7 @@ std::optional<Mesh *> mesh_merge_by_distance_connected(const Mesh &mesh,
                                                        const float merge_distance,
                                                        const bool only_loose_edges)
 {
-  const Span<MVert> vertices = bke::mesh_vertices(mesh);
+  const Span<MVert> verts = bke::mesh_vertices(mesh);
   const Span<MEdge> edges = bke::mesh_edges(mesh);
 
   int vert_kill_len = 0;
@@ -1609,9 +1608,9 @@ std::optional<Mesh *> mesh_merge_by_distance_connected(const Mesh &mesh,
 
   Array<WeldVertexCluster> vert_clusters(mesh.totvert);
 
-  for (const int i : vertices.index_range()) {
+  for (const int i : verts.index_range()) {
     WeldVertexCluster &vc = vert_clusters[i];
-    copy_v3_v3(vc.co, vertices[i].co);
+    copy_v3_v3(vc.co, verts[i].co);
     vc.merged_verts = 0;
   }
   const float merge_dist_sq = square_f(merge_distance);

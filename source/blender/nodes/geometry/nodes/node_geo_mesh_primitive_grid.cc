@@ -49,9 +49,9 @@ Mesh *create_grid_mesh(const int verts_x,
                                    0,
                                    edges_x * edges_y * 4,
                                    edges_x * edges_y);
-  MutableSpan<MVert> vertices = bke::mesh_vertices_for_write(*mesh);
+  MutableSpan<MVert> verts = bke::mesh_vertices_for_write(*mesh);
   MutableSpan<MEdge> edges = bke::mesh_edges_for_write(*mesh);
-  MutableSpan<MPoly> polygons = bke::mesh_polygons_for_write(*mesh);
+  MutableSpan<MPoly> polys = bke::mesh_polygons_for_write(*mesh);
   MutableSpan<MLoop> loops = bke::mesh_loops_for_write(*mesh);
 
   {
@@ -65,9 +65,9 @@ Mesh *create_grid_mesh(const int verts_x,
         threading::parallel_for(IndexRange(verts_y), 512, [&](IndexRange y_range) {
           for (const int y : y_range) {
             const int vert_index = y_offset + y;
-            vertices[vert_index].co[0] = (x - x_shift) * dx;
-            vertices[vert_index].co[1] = (y - y_shift) * dy;
-            vertices[vert_index].co[2] = 0.0f;
+            verts[vert_index].co[0] = (x - x_shift) * dx;
+            verts[vert_index].co[1] = (y - y_shift) * dy;
+            verts[vert_index].co[2] = 0.0f;
           }
         });
       }
@@ -119,7 +119,7 @@ Mesh *create_grid_mesh(const int verts_x,
         for (const int y : y_range) {
           const int poly_index = y_offset + y;
           const int loop_index = poly_index * 4;
-          MPoly &poly = polygons[poly_index];
+          MPoly &poly = polys[poly_index];
           poly.loopstart = loop_index;
           poly.totloop = 4;
           const int vert_index = x * verts_y + y;
@@ -142,7 +142,7 @@ Mesh *create_grid_mesh(const int verts_x,
   });
 
   if (mesh->totpoly != 0) {
-    calculate_uvs(mesh, vertices, loops, size_x, size_y);
+    calculate_uvs(mesh, verts, loops, size_x, size_y);
   }
 
   return mesh;

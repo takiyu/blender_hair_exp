@@ -2470,14 +2470,14 @@ void ED_vgroup_mirror(Object *ob,
       }
 
       BLI_bitmap *vert_tag = BLI_BITMAP_NEW(me->totvert, __func__);
-      const MVert *vertices = blender::bke::mesh_vertices(*me).data();
+      const MVert *verts = blender::bke::mesh_vertices(*me).data();
       MDeformVert *dverts = BKE_mesh_deform_verts_for_write(me);
 
-      for (vidx = 0, mv = vertices; vidx < me->totvert; vidx++, mv++) {
+      for (vidx = 0, mv = verts; vidx < me->totvert; vidx++, mv++) {
         if (!BLI_BITMAP_TEST(vert_tag, vidx)) {
           if ((vidx_mirr = mesh_get_x_mirror_vert(ob, nullptr, vidx, use_topology)) != -1) {
             if (vidx != vidx_mirr) {
-              mv_mirr = &vertices[vidx_mirr];
+              mv_mirr = &verts[vidx_mirr];
               if (!BLI_BITMAP_TEST(vert_tag, vidx_mirr)) {
 
                 if (use_vert_sel) {

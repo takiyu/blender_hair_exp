@@ -46,7 +46,7 @@ static Mesh *hull_from_bullet(const Mesh *mesh, Span<float3> coords)
   }
 
   /* Copy vertices. */
-  MutableSpan<MVert> dst_vertices = bke::mesh_vertices_for_write(*result);
+  MutableSpan<MVert> dst_verts = bke::mesh_vertices_for_write(*result);
   for (const int i : IndexRange(verts_num)) {
     float co[3];
     int original_index;
@@ -60,7 +60,7 @@ static Mesh *hull_from_bullet(const Mesh *mesh, Span<float3> coords)
       }
 #  endif
       /* Copy the position of the original point. */
-      copy_v3_v3(dst_vertices[i].co, co);
+      copy_v3_v3(dst_verts[i].co, co);
     }
     else {
       BLI_assert_msg(0, "Unexpected new vertex in hull output");
@@ -109,7 +109,7 @@ static Mesh *hull_from_bullet(const Mesh *mesh, Span<float3> coords)
   /* Copy faces. */
   Array<int> loops;
   int j = 0;
-  MutableSpan<MPoly> polygons = bke::mesh_polygons_for_write(*result);
+  MutableSpan<MPoly> polys = bke::mesh_polygons_for_write(*result);
   MutableSpan<MLoop> mesh_loops = bke::mesh_loops_for_write(*result);
   MLoop *loop = mesh_loops.data();
 
@@ -122,7 +122,7 @@ static Mesh *hull_from_bullet(const Mesh *mesh, Span<float3> coords)
     loops.reinitialize(len);
     plConvexHullGetFaceLoops(hull, i, loops.data());
 
-    MPoly &face = polygons[i];
+    MPoly &face = polys[i];
     face.loopstart = j;
     face.totloop = len;
     for (const int k : IndexRange(len)) {

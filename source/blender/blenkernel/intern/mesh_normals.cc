@@ -369,19 +369,19 @@ const float (*BKE_mesh_vertex_normals_ensure(const Mesh *mesh))[3]
   /* Isolate task because a mutex is locked and computing normals is multi-threaded. */
   blender::threading::isolate_task([&]() {
     Mesh &mesh_mutable = *const_cast<Mesh *>(mesh);
-    const Span<MVert> vertices = blender::bke::mesh_vertices(mesh_mutable);
-    const Span<MPoly> polygons = blender::bke::mesh_polygons(mesh_mutable);
+    const Span<MVert> verts = blender::bke::mesh_vertices(mesh_mutable);
+    const Span<MPoly> polys = blender::bke::mesh_polygons(mesh_mutable);
     const Span<MLoop> loops = blender::bke::mesh_loops(mesh_mutable);
 
     vert_normals = BKE_mesh_vertex_normals_for_write(&mesh_mutable);
     poly_normals = BKE_mesh_poly_normals_for_write(&mesh_mutable);
 
-    BKE_mesh_calc_normals_poly_and_vertex(vertices.data(),
-                                          vertices.size(),
+    BKE_mesh_calc_normals_poly_and_vertex(verts.data(),
+                                          verts.size(),
                                           loops.data(),
                                           loops.size(),
-                                          polygons.data(),
-                                          polygons.size(),
+                                          polys.data(),
+                                          polys.size(),
                                           poly_normals,
                                           vert_normals);
 
@@ -417,18 +417,18 @@ const float (*BKE_mesh_poly_normals_ensure(const Mesh *mesh))[3]
   /* Isolate task because a mutex is locked and computing normals is multi-threaded. */
   blender::threading::isolate_task([&]() {
     Mesh &mesh_mutable = *const_cast<Mesh *>(mesh);
-    const Span<MVert> vertices = blender::bke::mesh_vertices(mesh_mutable);
-    const Span<MPoly> polygons = blender::bke::mesh_polygons(mesh_mutable);
+    const Span<MVert> verts = blender::bke::mesh_vertices(mesh_mutable);
+    const Span<MPoly> polys = blender::bke::mesh_polygons(mesh_mutable);
     const Span<MLoop> loops = blender::bke::mesh_loops(mesh_mutable);
 
     poly_normals = BKE_mesh_poly_normals_for_write(&mesh_mutable);
 
-    BKE_mesh_calc_normals_poly(vertices.data(),
-                               vertices.size(),
+    BKE_mesh_calc_normals_poly(verts.data(),
+                               verts.size(),
                                loops.data(),
                                loops.size(),
-                               polygons.data(),
-                               polygons.size(),
+                               polys.data(),
+                               polys.size(),
                                poly_normals);
 
     BKE_mesh_poly_normals_clear_dirty(&mesh_mutable);
@@ -2028,9 +2028,9 @@ void BKE_mesh_normals_loop_custom_from_vertices_set(const MVert *mverts,
                                                     const int numVerts,
                                                     MEdge *medges,
                                                     const int numEdges,
-                                                  const  MLoop *mloops,
+                                                    const MLoop *mloops,
                                                     const int numLoops,
-                                               const     MPoly *mpolys,
+                                                    const MPoly *mpolys,
                                                     const float (*polynors)[3],
                                                     const int numPolys,
                                                     short (*r_clnors_data)[2])
@@ -2063,22 +2063,22 @@ static void mesh_set_custom_normals(Mesh *mesh, float (*r_custom_nors)[3], const
     clnors = (short(*)[2])CustomData_add_layer(
         &mesh->ldata, CD_CUSTOMLOOPNORMAL, CD_CALLOC, nullptr, numloops);
   }
-  const Span<MVert> vertices = blender::bke::mesh_vertices(*mesh);
+  const Span<MVert> verts = blender::bke::mesh_vertices(*mesh);
   MutableSpan<MEdge> edges = blender::bke::mesh_edges_for_write(*mesh);
-  const Span<MPoly> polygons = blender::bke::mesh_polygons(*mesh);
+  const Span<MPoly> polys = blender::bke::mesh_polygons(*mesh);
   const Span<MLoop> loops = blender::bke::mesh_loops(*mesh);
 
-  mesh_normals_loop_custom_set(vertices.data(),
+  mesh_normals_loop_custom_set(verts.data(),
                                BKE_mesh_vertex_normals_ensure(mesh),
-                               vertices.size(),
+                               verts.size(),
                                edges.data(),
                                edges.size(),
                                loops.data(),
                                r_custom_nors,
                                loops.size(),
-                               polygons.data(),
+                               polys.data(),
                                BKE_mesh_poly_normals_ensure(mesh),
-                               polygons.size(),
+                               polys.size(),
                                clnors,
                                use_vertices);
 }

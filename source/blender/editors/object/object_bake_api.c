@@ -971,7 +971,7 @@ static bool bake_targets_init_vertex_colors(Main *bmain,
   return true;
 }
 
-static int find_original_loop(const MPoly *orig_polygons,
+static int find_original_loop(const MPoly *orig_polys,
                               const MLoop *orig_loops,
                               const int *vert_origindex,
                               const int *poly_origindex,
@@ -988,7 +988,7 @@ static int find_original_loop(const MPoly *orig_polygons,
   }
 
   /* Find matching loop with original vertex in original polygon. */
-  const MPoly *mpoly_orig = orig_polygons + poly_orig;
+  const MPoly *mpoly_orig = orig_polys + poly_orig;
   const MLoop *mloop_orig = orig_loops + mpoly_orig->loopstart;
   for (int j = 0; j < mpoly_orig->totloop; ++j, ++mloop_orig) {
     if (mloop_orig->v == vert_orig) {
@@ -1037,7 +1037,7 @@ static void bake_targets_populate_pixels_color_attributes(BakeTargets *targets,
   /* For mapping back to original mesh in case there are modifiers. */
   const int *vert_origindex = CustomData_get_layer(&me_eval->vdata, CD_ORIGINDEX);
   const int *poly_origindex = CustomData_get_layer(&me_eval->pdata, CD_ORIGINDEX);
-  const MPoly *orig_polygons = BKE_mesh_polygons(me);
+  const MPoly *orig_polys = BKE_mesh_polygons(me);
   const MLoop *orig_loops = BKE_mesh_loops(me);
 
   for (int i = 0; i < tottri; i++) {
@@ -1050,7 +1050,7 @@ static void bake_targets_populate_pixels_color_attributes(BakeTargets *targets,
       /* Map back to original loop if there are modifiers. */
       if (vert_origindex != NULL && poly_origindex != NULL) {
         l = find_original_loop(
-            orig_polygons, orig_loops, vert_origindex, poly_origindex, lt->poly, v);
+            orig_polys, orig_loops, vert_origindex, poly_origindex, lt->poly, v);
         if (l == ORIGINDEX_NONE || l >= me->totloop) {
           continue;
         }

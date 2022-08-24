@@ -1014,8 +1014,6 @@ void BM_mesh_bm_to_me(Main *bmain, BMesh *bm, Mesh *me, const struct BMeshToMesh
   me->act_face = -1;
 
   {
-    /* TODO: Somehow deal with BMesh storage of hide layers (currently it's still stored as a
-     * generic attribute there too). */
     CustomData_MeshMasks mask = CD_MASK_MESH;
     CustomData_MeshMasks_update(&mask, &params->cd_mask_extra);
     CustomData_copy_mesh_to_bmesh(&bm->vdata, &me->vdata, mask.vmask, CD_CALLOC, me->totvert);

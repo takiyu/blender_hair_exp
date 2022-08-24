@@ -264,8 +264,8 @@ static void get_closest_mesh_corners(const Mesh &mesh,
                                      const MutableSpan<float> r_distances_sq,
                                      const MutableSpan<float3> r_positions)
 {
-  const Span<MVert> vertices = bke::mesh_vertices(mesh);
-  const Span<MPoly> polygons = bke::mesh_polygons(mesh);
+  const Span<MVert> verts = bke::mesh_vertices(mesh);
+  const Span<MPoly> polys = bke::mesh_polygons(mesh);
   const Span<MLoop> loops = bke::mesh_loops(mesh);
 
   BLI_assert(mesh.totloop > 0);
@@ -275,7 +275,7 @@ static void get_closest_mesh_corners(const Mesh &mesh,
   for (const int i : mask) {
     const float3 position = positions[i];
     const int poly_index = poly_indices[i];
-    const MPoly &poly = polygons[poly_index];
+    const MPoly &poly = polys[poly_index];
 
     /* Find the closest vertex in the polygon. */
     float min_distance_sq = FLT_MAX;
@@ -284,7 +284,7 @@ static void get_closest_mesh_corners(const Mesh &mesh,
     for (const int loop_index : IndexRange(poly.loopstart, poly.totloop)) {
       const MLoop &loop = loops[loop_index];
       const int vertex_index = loop.v;
-      const MVert &mvert = vertices[vertex_index];
+      const MVert &mvert = verts[vertex_index];
       const float distance_sq = math::distance_squared(position, float3(mvert.co));
       if (distance_sq < min_distance_sq) {
         min_distance_sq = distance_sq;

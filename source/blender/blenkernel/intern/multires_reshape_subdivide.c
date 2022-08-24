@@ -28,16 +28,16 @@
 
 static void multires_subdivide_create_object_space_linear_grids(Mesh *mesh)
 {
-  const MVert *vertices = BKE_mesh_vertices(mesh);
-  const MPoly *polygons = BKE_mesh_polygons(mesh);
+  const MVert *verts = BKE_mesh_vertices(mesh);
+  const MPoly *polys = BKE_mesh_polygons(mesh);
   const MLoop *loops = BKE_mesh_loops(mesh);
 
   MDisps *mdisps = CustomData_get_layer(&mesh->ldata, CD_MDISPS);
   const int totpoly = mesh->totpoly;
   for (int p = 0; p < totpoly; p++) {
-    const MPoly *poly = &polygons[p];
+    const MPoly *poly = &polys[p];
     float poly_center[3];
-    BKE_mesh_calc_poly_center(poly, &loops[poly->loopstart], vertices, poly_center);
+    BKE_mesh_calc_poly_center(poly, &loops[poly->loopstart], verts, poly_center);
     for (int l = 0; l < poly->totloop; l++) {
       const int loop_index = poly->loopstart + l;
 
@@ -53,9 +53,9 @@ static void multires_subdivide_create_object_space_linear_grids(Mesh *mesh)
       const MLoop *loop_prev = &loops[prev_loop_index];
 
       copy_v3_v3(disps[0], poly_center);
-      mid_v3_v3v3(disps[1], vertices[loop->v].co, vertices[loop_next->v].co);
-      mid_v3_v3v3(disps[2], vertices[loop->v].co, vertices[loop_prev->v].co);
-      copy_v3_v3(disps[3], vertices[loop->v].co);
+      mid_v3_v3v3(disps[1], verts[loop->v].co, verts[loop_next->v].co);
+      mid_v3_v3v3(disps[2], verts[loop->v].co, verts[loop_prev->v].co);
+      copy_v3_v3(disps[3], verts[loop->v].co);
     }
   }
 }

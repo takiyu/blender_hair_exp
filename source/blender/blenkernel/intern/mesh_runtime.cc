@@ -150,13 +150,13 @@ void BKE_mesh_runtime_looptri_recalc(Mesh *mesh)
 {
   mesh_ensure_looptri_data(mesh);
   BLI_assert(mesh->totpoly == 0 || mesh->runtime.looptris.array_wip != nullptr);
-  const Span<MVert> vertices = blender::bke::mesh_vertices(*mesh);
-  const Span<MPoly> polygons = blender::bke::mesh_polygons(*mesh);
+  const Span<MVert> verts = blender::bke::mesh_vertices(*mesh);
+  const Span<MPoly> polys = blender::bke::mesh_polygons(*mesh);
   const Span<MLoop> loops = blender::bke::mesh_loops(*mesh);
 
   BKE_mesh_recalc_looptri(loops.data(),
-                          polygons.data(),
-                          vertices.data(),
+                          polys.data(),
+                          verts.data(),
                           mesh->totloop,
                           mesh->totpoly,
                           mesh->runtime.looptris.array_wip);
@@ -278,7 +278,7 @@ void BKE_mesh_tag_coords_changed_uniformly(Mesh *mesh)
   const bool poly_normals_were_dirty = BKE_mesh_poly_normals_are_dirty(mesh);
 
   BKE_mesh_tag_coords_changed(mesh);
-  /* The normals didn't change, since all vertices moved by the same amount. */
+  /* The normals didn't change, since all verts moved by the same amount. */
   if (!vert_normals_were_dirty) {
     BKE_mesh_poly_normals_clear_dirty(mesh);
   }
@@ -330,9 +330,9 @@ bool BKE_mesh_runtime_is_valid(Mesh *me_eval)
     printf("MESH: %s\n", me_eval->id.name + 2);
   }
 
-  MutableSpan<MVert> vertices = blender::bke::mesh_vertices_for_write(*me_eval);
+  MutableSpan<MVert> verts = blender::bke::mesh_vertices_for_write(*me_eval);
   MutableSpan<MEdge> edges = blender::bke::mesh_edges_for_write(*me_eval);
-  MutableSpan<MPoly> polygons = blender::bke::mesh_polygons_for_write(*me_eval);
+  MutableSpan<MPoly> polys = blender::bke::mesh_polygons_for_write(*me_eval);
   MutableSpan<MLoop> loops = blender::bke::mesh_loops_for_write(*me_eval);
 
   is_valid &= BKE_mesh_validate_all_customdata(
@@ -351,16 +351,16 @@ bool BKE_mesh_runtime_is_valid(Mesh *me_eval)
 
   is_valid &= BKE_mesh_validate_arrays(
       me_eval,
-      vertices.data(),
-      vertices.size(),
+      verts.data(),
+      verts.size(),
       edges.data(),
       edges.size(),
       me_eval->mface,
       me_eval->totface,
       loops.data(),
       loops.size(),
-      polygons.data(),
-      polygons.size(),
+      polys.data(),
+      polys.size(),
       (MDeformVert *)CustomData_get_layer(&me_eval->vdata, CD_MDEFORMVERT),
       do_verbose,
       do_fixes,

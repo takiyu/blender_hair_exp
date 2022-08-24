@@ -398,20 +398,15 @@ void BlenderFileLoader::insertShapeNode(Object *ob, Mesh *me, int id)
 {
   char *name = ob->id.name + 2;
 
-  const Span<MVert> mesh_vertices = blender::bke::mesh_vertices(*me);
-  const Span<MEdge> mesh_edges = blender::bke::mesh_edges(*me);
-  const Span<MPoly> mesh_polygons = blender::bke::mesh_polygons(*me);
+  const Span<MVert> mesh_verts = blender::bke::mesh_vertices(*me);
+  const Span<MPoly> mesh_polys = blender::bke::mesh_polygons(*me);
   const Span<MLoop> mesh_loops = blender::bke::mesh_loops(*me);
 
   // Compute loop triangles
   int tottri = poly_to_tri_count(me->totpoly, me->totloop);
   MLoopTri *mlooptri = (MLoopTri *)MEM_malloc_arrayN(tottri, sizeof(*mlooptri), __func__);
-  BKE_mesh_recalc_looptri(mesh_loops.data(),
-                          mesh_polygons.data(),
-                          mesh_vertices.data(),
-                          me->totloop,
-                          me->totpoly,
-                          mlooptri);
+  BKE_mesh_recalc_looptri(
+      mesh_loops.data(), mesh_polys.data(), mesh_verts.data(), me->totloop, me->totpoly, mlooptri);
 
   // Compute loop normals
   BKE_mesh_calc_normals_split(me);
@@ -446,9 +441,9 @@ void BlenderFileLoader::insertShapeNode(Object *ob, Mesh *me, int id)
   for (int a = 0; a < tottri; a++) {
     const MLoopTri *lt = &mlooptri[a];
 
-    copy_v3_v3(v1, mesh_vertices[mesh_loops[lt->tri[0]].v].co);
-    copy_v3_v3(v2, mesh_vertices[mesh_loops[lt->tri[1]].v].co);
-    copy_v3_v3(v3, mesh_vertices[mesh_loops[lt->tri[2]].v].co);
+    copy_v3_v3(v1, mesh_verts[mesh_loops[lt->tri[0]].v].co);
+    copy_v3_v3(v2, mesh_verts[mesh_loops[lt->tri[1]].v].co);
+    copy_v3_v3(v3, mesh_verts[mesh_loops[lt->tri[2]].v].co);
 
     mul_m4_v3(obmat, v1);
     mul_m4_v3(obmat, v2);
@@ -513,12 +508,12 @@ void BlenderFileLoader::insertShapeNode(Object *ob, Mesh *me, int id)
   // by the near and far view planes.
   for (int a = 0; a < tottri; a++) {
     const MLoopTri *lt = &mlooptri[a];
-    const MPoly *mp = &mesh_polygons[lt->poly];
+    const MPoly *mp = &mesh_polys[lt->poly];
     Material *mat = BKE_object_material_get(ob, mp->mat_nr + 1);
 
-    copy_v3_v3(v1, mesh_vertices[mesh_loops[lt->tri[0]].v].co);
-    copy_v3_v3(v2, mesh_vertices[mesh_loops[lt->tri[1]].v].co);
-    copy_v3_v3(v3, mesh_vertices[mesh_loops[lt->tri[2]].v].co);
+    copy_v3_v3(v1, mesh_verts[mesh_loops[lt->tri[0]].v].co);
+    copy_v3_v3(v2, mesh_verts[mesh_loops[lt->tri[1]].v].co);
+    copy_v3_v3(v3, mesh_verts[mesh_loops[lt->tri[2]].v].co);
 
     mul_m4_v3(obmat, v1);
     mul_m4_v3(obmat, v2);

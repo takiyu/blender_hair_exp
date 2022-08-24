@@ -148,7 +148,7 @@ static float4x4 create_single_axis_transform(const float3 &center,
 }
 
 using GetVertexIndicesFn = FunctionRef<void(Span<MEdge> edges,
-                                            Span<MPoly> polygons,
+                                            Span<MPoly> polys,
                                             Span<MLoop> loops,
                                             int element_index,
                                             VectorSet<int> &r_vertex_indices)>;
@@ -158,9 +158,9 @@ static void scale_vertex_islands_uniformly(Mesh &mesh,
                                            const UniformScaleParams &params,
                                            const GetVertexIndicesFn get_vertex_indices)
 {
-  MutableSpan<MVert> vertices = bke::mesh_vertices_for_write(mesh);
+  MutableSpan<MVert> verts = bke::mesh_vertices_for_write(mesh);
   const Span<MEdge> edges = bke::mesh_edges(mesh);
-  const Span<MPoly> polygons = bke::mesh_polygons(mesh);
+  const Span<MPoly> polys = bke::mesh_polygons(mesh);
   const Span<MLoop> loops = bke::mesh_loops(mesh);
 
   threading::parallel_for(islands.index_range(), 256, [&](const IndexRange range) {
@@ -172,7 +172,7 @@ static void scale_vertex_islands_uniformly(Mesh &mesh,
 
       VectorSet<int> vertex_indices;
       for (const int poly_index : island.element_indices) {
-        get_vertex_indices(edges, polygons, loops, poly_index, vertex_indices);
+        get_vertex_indices(edges, polys, loops, poly_index, vertex_indices);
         center += params.centers[poly_index];
         scale += params.scales[poly_index];
       }
@@ -183,7 +183,7 @@ static void scale_vertex_islands_uniformly(Mesh &mesh,
       center *= f;
 
       for (const int vert_index : vertex_indices) {
-        MVert &vert = vertices[vert_index];
+        MVert &vert = verts[vert_index];
         const float3 old_position = vert.co;
         const float3 new_position = transform_with_uniform_scale(old_position, center, scale);
         copy_v3_v3(vert.co, new_position);
@@ -199,9 +199,9 @@ static void scale_vertex_islands_on_axis(Mesh &mesh,
                                          const AxisScaleParams &params,
                                          const GetVertexIndicesFn get_vertex_indices)
 {
-  MutableSpan<MVert> vertices = bke::mesh_vertices_for_write(mesh);
+  MutableSpan<MVert> verts = bke::mesh_vertices_for_write(mesh);
   const Span<MEdge> edges = bke::mesh_edges(mesh);
-  const Span<MPoly> polygons = bke::mesh_polygons(mesh);
+  const Span<MPoly> polys = bke::mesh_polygons(mesh);
   const Span<MLoop> loops = bke::mesh_loops(mesh);
 
   threading::parallel_for(islands.index_range(), 256, [&](const IndexRange range) {
@@ -214,7 +214,7 @@ static void scale_vertex_islands_on_axis(Mesh &mesh,
 
       VectorSet<int> vertex_indices;
       for (const int poly_index : island.element_indices) {
-        get_vertex_indices(edges, polygons, loops, poly_index, vertex_indices);
+        get_vertex_indices(edges, polys, loops, poly_index, vertex_indices);
         center += params.centers[poly_index];
         scale += params.scales[poly_index];
         axis += params.axis_vectors[poly_index];
@@ -232,7 +232,7 @@ static void scale_vertex_islands_on_axis(Mesh &mesh,
 
       const float4x4 transform = create_single_axis_transform(center, axis, scale);
       for (const int vert_index : vertex_indices) {
-        MVert &vert = vertices[vert_index];
+        MVert &vert = verts[vert_index];
         const float3 old_position = vert.co;
         const float3 new_position = transform * old_position;
         copy_v3_v3(vert.co, new_position);
@@ -245,13 +245,13 @@ static void scale_vertex_islands_on_axis(Mesh &mesh,
 
 static Vector<ElementIsland> prepare_face_islands(const Mesh &mesh, const IndexMask face_selection)
 {
-  const Span<MPoly> polygons = bke::mesh_polygons(mesh);
+  const Span<MPoly> polys = bke::mesh_polygons(mesh);
   const Span<MLoop> loops = bke::mesh_loops(mesh);
 
   /* Use the disjoint set data structure to determine which vertices have to be scaled together. */
   DisjointSet disjoint_set(mesh.totvert);
   for (const int poly_index : face_selection) {
-    const MPoly &poly = polygons[poly_index];
+    const MPoly &poly = polys[poly_index];
     const Span<MLoop> poly_loops = loops.slice(poly.loopstart, poly.totloop);
     for (const int loop_index : IndexRange(poly.totloop - 1)) {
       const int v1 = poly_loops[loop_index].v;
@@ -268,7 +268,7 @@ static Vector<ElementIsland> prepare_face_islands(const Mesh &mesh, const IndexM
 
   /* Gather all of the face indices in each island into separate vectors. */
   for (const int poly_index : face_selection) {
-    const MPoly &poly = polygons[poly_index];
+    const MPoly &poly = polys[poly_index];
     const Span<MLoop> poly_loops = loops.slice(poly.loopstart, poly.totloop);
     const int island_id = disjoint_set.find_root(poly_loops[0].v);
     const int island_index = island_ids.index_of_or_add(island_id);
@@ -283,12 +283,12 @@ static Vector<ElementIsland> prepare_face_islands(const Mesh &mesh, const IndexM
 }
 
 static void get_face_vertices(const Span<MEdge> /*edges*/,
-                              const Span<MPoly> polygons,
+                              const Span<MPoly> polys,
                               const Span<MLoop> loops,
                               int face_index,
                               VectorSet<int> &r_vertex_indices)
 {
-  const MPoly &poly = polygons[face_index];
+  const MPoly &poly = polys[face_index];
   const Span<MLoop> poly_loops = loops.slice(poly.loopstart, poly.totloop);
   for (const MLoop &loop : poly_loops) {
     r_vertex_indices.add(loop.v);

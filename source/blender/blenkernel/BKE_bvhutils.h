@@ -57,7 +57,7 @@ typedef struct BVHTreeFromMesh {
   const struct MVert *vert;
   const float (*vert_normals)[3];
   const struct MEdge *edge;
-  const struct MPoly *polygons;
+  const struct MPoly *polys;
   const struct MLoop *loop;
   const struct MFace *face;
   const struct MLoopTri *looptri;

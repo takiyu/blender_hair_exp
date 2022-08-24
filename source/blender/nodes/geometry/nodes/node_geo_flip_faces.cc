@@ -33,11 +33,11 @@ static void mesh_flip_faces(MeshComponent &component, const Field<bool> &selecti
 
   Mesh &mesh = *component.get_for_write();
 
-  const Span<MPoly> polygons = bke::mesh_polygons(mesh);
+  const Span<MPoly> polys = bke::mesh_polygons(mesh);
   MutableSpan<MLoop> loops = bke::mesh_loops_for_write(mesh);
 
   for (const int i : selection.index_range()) {
-    const MPoly &poly = polygons[selection[i]];
+    const MPoly &poly = polys[selection[i]];
     int start = poly.loopstart;
     for (const int j : IndexRange(poly.totloop / 2)) {
       const int index1 = start + j + 1;
@@ -57,7 +57,7 @@ static void mesh_flip_faces(MeshComponent &component, const Field<bool> &selecti
             using T = decltype(dummy);
             MutableSpan<T> dst_span = attribute.span.typed<T>();
             for (const int j : selection.index_range()) {
-              const MPoly &poly = polygons[selection[j]];
+              const MPoly &poly = polys[selection[j]];
               dst_span.slice(poly.loopstart + 1, poly.totloop - 1).reverse();
             }
           });

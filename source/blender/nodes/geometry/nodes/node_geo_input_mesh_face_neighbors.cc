@@ -26,7 +26,7 @@ static VArray<int> construct_neighbor_count_gvarray(const MeshComponent &compone
   if (mesh == nullptr) {
     return {};
   }
-  const Span<MPoly> polygons = bke::mesh_polygons(*mesh);
+  const Span<MPoly> polys = bke::mesh_polygons(*mesh);
   const Span<MLoop> loops = bke::mesh_loops(*mesh);
 
   Array<int> edge_count(mesh->totedge, 0);
@@ -34,9 +34,9 @@ static VArray<int> construct_neighbor_count_gvarray(const MeshComponent &compone
     edge_count[loop.e]++;
   }
 
-  Array<int> poly_count(polygons.size(), 0);
-  for (const int poly_index : polygons.index_range()) {
-    const MPoly &poly = polygons[poly_index];
+  Array<int> poly_count(polys.size(), 0);
+  for (const int poly_index : polys.index_range()) {
+    const MPoly &poly = polys[poly_index];
     for (const MLoop &loop : loops.slice(poly.loopstart, poly.totloop)) {
       poly_count[poly_index] += edge_count[loop.e] - 1;
     }
@@ -85,11 +85,11 @@ static VArray<int> construct_vertex_count_gvarray(const MeshComponent &component
     return {};
   }
 
-  const Span<MPoly> polygons = bke::mesh_polygons(*mesh);
+  const Span<MPoly> polys = bke::mesh_polygons(*mesh);
 
   return component.attributes()->adapt_domain<int>(
       VArray<int>::ForFunc(mesh->totpoly,
-                           [polygons](const int i) -> float { return polygons[i].totloop; }),
+                           [polys](const int i) -> float { return polys[i].totloop; }),
       ATTR_DOMAIN_FACE,
       domain);
 }

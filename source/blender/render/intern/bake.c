@@ -460,8 +460,8 @@ static TriTessFace *mesh_calc_tri_tessface(Mesh *me, bool tangent, Mesh *me_eval
   unsigned int mpoly_prev = UINT_MAX;
   float no[3];
 
-  const MVert *vertices = BKE_mesh_vertices(me);
-  const MPoly *polygons = BKE_mesh_polygons(me);
+  const MVert *verts = BKE_mesh_vertices(me);
+  const MPoly *polys = BKE_mesh_polygons(me);
   const MLoop *loops = BKE_mesh_loops(me);
 
   looptri = MEM_mallocN(sizeof(*looptri) * tottri, __func__);
@@ -474,10 +474,10 @@ static TriTessFace *mesh_calc_tri_tessface(Mesh *me, bool tangent, Mesh *me_eval
 
   if (precomputed_normals != NULL) {
     BKE_mesh_recalc_looptri_with_normals(
-        loops, polygons, vertices, me->totloop, me->totpoly, looptri, precomputed_normals);
+        loops, polys, verts, me->totloop, me->totpoly, looptri, precomputed_normals);
   }
   else {
-    BKE_mesh_recalc_looptri(loops, polygons, vertices, me->totloop, me->totpoly, looptri);
+    BKE_mesh_recalc_looptri(loops, polys, verts, me->totloop, me->totpoly, looptri);
   }
 
   const TSpace *tspace = NULL;
@@ -496,11 +496,11 @@ static TriTessFace *mesh_calc_tri_tessface(Mesh *me, bool tangent, Mesh *me_eval
   const float(*vert_normals)[3] = BKE_mesh_vertex_normals_ensure(me);
   for (i = 0; i < tottri; i++) {
     const MLoopTri *lt = &looptri[i];
-    const MPoly *mp = &polygons[lt->poly];
+    const MPoly *mp = &polys[lt->poly];
 
-    triangles[i].mverts[0] = &vertices[loops[lt->tri[0]].v];
-    triangles[i].mverts[1] = &vertices[loops[lt->tri[1]].v];
-    triangles[i].mverts[2] = &vertices[loops[lt->tri[2]].v];
+    triangles[i].mverts[0] = &verts[loops[lt->tri[0]].v];
+    triangles[i].mverts[1] = &verts[loops[lt->tri[1]].v];
+    triangles[i].mverts[2] = &verts[loops[lt->tri[2]].v];
     triangles[i].vert_normals[0] = vert_normals[loops[lt->tri[0]].v];
     triangles[i].vert_normals[1] = vert_normals[loops[lt->tri[1]].v];
     triangles[i].vert_normals[2] = vert_normals[loops[lt->tri[2]].v];
@@ -520,7 +520,7 @@ static TriTessFace *mesh_calc_tri_tessface(Mesh *me, bool tangent, Mesh *me_eval
 
     if (calculate_normal) {
       if (lt->poly != mpoly_prev) {
-        BKE_mesh_calc_poly_normal(mp, &loops[mp->loopstart], vertices, no);
+        BKE_mesh_calc_poly_normal(mp, &loops[mp->loopstart], verts, no);
         mpoly_prev = lt->poly;
       }
       copy_v3_v3(triangles[i].normal, no);
@@ -742,14 +742,14 @@ void RE_bake_pixels_populate(Mesh *me,
   const int tottri = poly_to_tri_count(me->totpoly, me->totloop);
   MLoopTri *looptri = MEM_mallocN(sizeof(*looptri) * tottri, __func__);
 
-  const MVert *vertices = BKE_mesh_vertices(me);
-  const MPoly *polygons = BKE_mesh_polygons(me);
+  const MVert *verts = BKE_mesh_vertices(me);
+  const MPoly *polys = BKE_mesh_polygons(me);
   const MLoop *loops = BKE_mesh_loops(me);
-  BKE_mesh_recalc_looptri(loops, polygons, vertices, me->totloop, me->totpoly, looptri);
+  BKE_mesh_recalc_looptri(loops, polys, verts, me->totloop, me->totpoly, looptri);
 
   for (int i = 0; i < tottri; i++) {
     const MLoopTri *lt = &looptri[i];
-    const MPoly *mp = &polygons[lt->poly];
+    const MPoly *mp = &polys[lt->poly];
 
     bd.primitive_id = i;
 

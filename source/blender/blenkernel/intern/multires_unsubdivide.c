@@ -640,9 +640,9 @@ static void store_grid_data(MultiresUnsubdivideContext *context,
                             int grid_y)
 {
   Mesh *original_mesh = context->original_mesh;
-  const MPoly *polygons = BKE_mesh_polygons(original_mesh);
+  const MPoly *polys = BKE_mesh_polygons(original_mesh);
   const MLoop *loops = BKE_mesh_loops(original_mesh);
-  const MPoly *poly = &polygons[BM_elem_index_get(f)];
+  const MPoly *poly = &polys[BM_elem_index_get(f)];
 
   const int corner_vertex_index = BM_elem_index_get(v);
 
@@ -920,7 +920,7 @@ static void multires_unsubdivide_prepare_original_bmesh_for_extract(
     MultiresUnsubdivideContext *context)
 {
   Mesh *original_mesh = context->original_mesh;
-  const MPoly *original_polygons = BKE_mesh_polygons(original_mesh);
+  const MPoly *original_polys = BKE_mesh_polygons(original_mesh);
 
   Mesh *base_mesh = context->base_mesh;
 
@@ -951,7 +951,7 @@ static void multires_unsubdivide_prepare_original_bmesh_for_extract(
   context->loop_to_face_map = MEM_calloc_arrayN(original_mesh->totloop, sizeof(int), "loop map");
 
   for (int i = 0; i < original_mesh->totpoly; i++) {
-    const MPoly *poly = &original_polygons[i];
+    const MPoly *poly = &original_polys[i];
     for (int l = 0; l < poly->totloop; l++) {
       int original_loop_index = l + poly->loopstart;
       context->loop_to_face_map[original_loop_index] = i;
@@ -965,10 +965,10 @@ static void multires_unsubdivide_prepare_original_bmesh_for_extract(
  */
 static bool multires_unsubdivide_flip_grid_x_axis(Mesh *mesh, int poly, int loop, int v_x)
 {
-  const MPoly *polygons = BKE_mesh_polygons(mesh);
+  const MPoly *polys = BKE_mesh_polygons(mesh);
   const MLoop *loops = BKE_mesh_loops(mesh);
 
-  const MPoly *p = &polygons[poly];
+  const MPoly *p = &polys[poly];
 
   const MLoop *l_first = &loops[p->loopstart];
   if ((loop == (p->loopstart + (p->totloop - 1))) && l_first->v == v_x) {

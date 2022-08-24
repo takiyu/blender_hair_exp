@@ -66,10 +66,10 @@ static void deform_curves(const CurvesGeometry &curves,
 
   const float4x4 curves_to_surface = surface_to_curves.inverted();
 
-  const Span<MVert> surface_vertices_old = bke::mesh_vertices(surface_mesh_old);
+  const Span<MVert> surface_verts_old = bke::mesh_vertices(surface_mesh_old);
   const Span<MLoop> surface_loops_old = bke::mesh_loops(surface_mesh_old);
 
-  const Span<MVert> surface_vertices_new = bke::mesh_vertices(surface_mesh_new);
+  const Span<MVert> surface_verts_new = bke::mesh_vertices(surface_mesh_new);
   const Span<MLoop> surface_loops_new = bke::mesh_loops(surface_mesh_new);
 
   threading::parallel_for(curves.curves_range(), 256, [&](const IndexRange range) {
@@ -118,14 +118,14 @@ static void deform_curves(const CurvesGeometry &curves,
       const float3 normal_new = math::normalize(
           mix3(bary_weights_new, normal_0_new, normal_1_new, normal_2_new));
 
-      const float3 &pos_0_old = surface_vertices_old[vert_0_old].co;
-      const float3 &pos_1_old = surface_vertices_old[vert_1_old].co;
-      const float3 &pos_2_old = surface_vertices_old[vert_2_old].co;
+      const float3 &pos_0_old = surface_verts_old[vert_0_old].co;
+      const float3 &pos_1_old = surface_verts_old[vert_1_old].co;
+      const float3 &pos_2_old = surface_verts_old[vert_2_old].co;
       const float3 pos_old = mix3(bary_weights_old, pos_0_old, pos_1_old, pos_2_old);
 
-      const float3 &pos_0_new = surface_vertices_new[vert_0_new].co;
-      const float3 &pos_1_new = surface_vertices_new[vert_1_new].co;
-      const float3 &pos_2_new = surface_vertices_new[vert_2_new].co;
+      const float3 &pos_0_new = surface_verts_new[vert_0_new].co;
+      const float3 &pos_1_new = surface_verts_new[vert_1_new].co;
+      const float3 &pos_2_new = surface_verts_new[vert_2_new].co;
       const float3 pos_new = mix3(bary_weights_new, pos_0_new, pos_1_new, pos_2_new);
 
       /* The translation is just the difference between the old and new position on the surface. */

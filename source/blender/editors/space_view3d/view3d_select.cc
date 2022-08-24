@@ -334,8 +334,8 @@ static bool edbm_backbuf_check_and_select_verts_obmode(Mesh *me,
                                                        EditSelectBuf_Cache *esel,
                                                        const eSelectOp sel_op)
 {
-  MVert *vertices = BKE_mesh_vertices_for_write(me);
-  MVert *mv = vertices;
+  MVert *verts = BKE_mesh_vertices_for_write(me);
+  MVert *mv = verts;
   bool changed = false;
 
   const BLI_bitmap *select_bitmap = esel->select_bitmap;
@@ -2812,7 +2812,7 @@ static bool ed_wpaint_vertex_select_pick(bContext *C,
 
   Mesh *me = static_cast<Mesh *>(obact->data); /* already checked for nullptr */
   uint index = 0;
-  MVert *vertices = BKE_mesh_vertices_for_write(me);
+  MVert *verts = BKE_mesh_vertices_for_write(me);
 
   MVert *mv;
   bool changed = false;
@@ -2820,7 +2820,7 @@ static bool ed_wpaint_vertex_select_pick(bContext *C,
   bool found = ED_mesh_pick_vert(C, obact, mval, ED_MESH_PICK_DEFAULT_VERT_DIST, use_zbuf, &index);
 
   if (params->sel_op == SEL_OP_SET) {
-    if ((found && params->select_passthrough) && (vertices[index].flag & SELECT)) {
+    if ((found && params->select_passthrough) && (verts[index].flag & SELECT)) {
       found = false;
     }
     else if (found || params->deselect_all) {
@@ -2830,7 +2830,7 @@ static bool ed_wpaint_vertex_select_pick(bContext *C,
   }
 
   if (found) {
-    mv = &vertices[index];
+    mv = &verts[index];
     switch (params->sel_op) {
       case SEL_OP_ADD: {
         mv->flag |= SELECT;
@@ -3428,7 +3428,8 @@ static bool do_mesh_box_select(ViewContext *vc,
   }
   if (ts->selectmode & SCE_SELECT_EDGE) {
     /* Does both use_zbuf and non-use_zbuf versions (need screen cos for both) */
-    struct BoxSelectUserData_ForMeshEdge cb_data {};
+    struct BoxSelectUserData_ForMeshEdge cb_data {
+    };
     cb_data.data = &data;
     cb_data.esel = use_zbuf ? esel : nullptr;
     cb_data.backbuf_offset = use_zbuf ? DRW_select_buffer_context_offset_for_object_elem(

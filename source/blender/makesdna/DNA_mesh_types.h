@@ -295,8 +295,8 @@ typedef struct Mesh {
    * default and Face Sets can be used without affecting the color of the mesh. */
   int face_sets_color_default;
 
-  char _pad[4];
-  void *_pad1;
+  char _pad1[4];
+  void *_pad2;
 
   Mesh_Runtime runtime;
 } Mesh;

@@ -52,17 +52,16 @@ class PlanarFieldInput final : public GeometryFieldInput {
     evaluator.add(threshold_);
     evaluator.evaluate();
     const VArray<float> thresholds = evaluator.get_evaluated<float>(0);
-    const Span<MVert> vertices = bke::mesh_vertices(*mesh);
-    const Span<MPoly> polygons = bke::mesh_polygons(*mesh);
+    const Span<MVert> verts = bke::mesh_vertices(*mesh);
+    const Span<MPoly> polys = bke::mesh_polygons(*mesh);
     const Span<MLoop> loops = bke::mesh_loops(*mesh);
     const Span<float3> poly_normals{(float3 *)BKE_mesh_poly_normals_ensure(mesh), mesh->totpoly};
 
-    auto planar_fn =
-        [polygons, loops, vertices, thresholds, poly_normals](const int i_poly) -> bool {
-      if (polygons[i_poly].totloop <= 3) {
+    auto planar_fn = [polys, loops, verts, thresholds, poly_normals](const int i_poly) -> bool {
+      if (polys[i_poly].totloop <= 3) {
         return true;
       }
-      const MPoly &poly = polygons[i_poly];
+      const MPoly &poly = polys[i_poly];
       const Span<MLoop> poly_loops = loops.slice(poly.loopstart, poly.totloop);
       const float3 &reference_normal = poly_normals[i_poly];
 
@@ -70,7 +69,7 @@ class PlanarFieldInput final : public GeometryFieldInput {
       float max = -FLT_MAX;
 
       for (const int i_loop : poly_loops.index_range()) {
-        const float3 vert = vertices[poly_loops[i_loop].v].co;
+        const float3 vert = verts[poly_loops[i_loop].v].co;
         float dot = math::dot(reference_normal, vert);
         if (dot > max) {
           max = dot;

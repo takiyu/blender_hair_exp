@@ -244,9 +244,9 @@ static SnapData_Mesh *snap_object_data_mesh_get(SnapObjectContext *sctx,
   SnapData_Mesh *sod;
   bool init = false;
 
-  const Span<MVert> vertices = blender::bke::mesh_vertices(*me_eval);
+  const Span<MVert> verts = blender::bke::mesh_vertices(*me_eval);
   const Span<MEdge> edges = blender::bke::mesh_edges(*me_eval);
-  const Span<MPoly> polygons = blender::bke::mesh_polygons(*me_eval);
+  const Span<MPoly> polys = blender::bke::mesh_polygons(*me_eval);
   const Span<MLoop> loops = blender::bke::mesh_loops(*me_eval);
 
   if (std::unique_ptr<SnapData_Mesh> *sod_p = sctx->mesh_caches.lookup_ptr(ob_eval)) {
@@ -270,7 +270,7 @@ static SnapData_Mesh *snap_object_data_mesh_get(SnapObjectContext *sctx,
     else if (sod->treedata_mesh.looptri != me_eval->runtime.looptris.array) {
       is_dirty = true;
     }
-    else if (sod->treedata_mesh.vert != vertices.data()) {
+    else if (sod->treedata_mesh.vert != verts.data()) {
       is_dirty = true;
     }
     else if (sod->treedata_mesh.loop != loops.data()) {
@@ -279,7 +279,7 @@ static SnapData_Mesh *snap_object_data_mesh_get(SnapObjectContext *sctx,
     else if (sod->treedata_mesh.edge != edges.data()) {
       is_dirty = true;
     }
-    else if (sod->poly != polygons.data()) {
+    else if (sod->poly != polys.data()) {
       is_dirty = true;
     }
 
@@ -309,16 +309,16 @@ static SnapData_Mesh *snap_object_data_mesh_get(SnapObjectContext *sctx,
                               use_hide ? BVHTREE_FROM_LOOPTRI_NO_HIDDEN : BVHTREE_FROM_LOOPTRI,
                               4);
 
-    BLI_assert(sod->treedata_mesh.vert == vertices.data());
-    BLI_assert(!vertices.data() || sod->treedata_mesh.vert_normals);
+    BLI_assert(sod->treedata_mesh.vert == verts.data());
+    BLI_assert(!verts.data() || sod->treedata_mesh.vert_normals);
     BLI_assert(sod->treedata_mesh.loop == loops.data());
-    BLI_assert(!polygons.data() || sod->treedata_mesh.looptri);
+    BLI_assert(!polys.data() || sod->treedata_mesh.looptri);
 
     sod->has_looptris = sod->treedata_mesh.tree != nullptr;
 
     /* Required for snapping with occlusion. */
     sod->treedata_mesh.edge = edges.data();
-    sod->poly = polygons.data();
+    sod->poly = polys.data();
 
     /* Start assuming that it has each of these element types. */
     sod->has_loose_edge = true;

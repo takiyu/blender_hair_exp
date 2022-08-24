@@ -1008,7 +1008,7 @@ static void obstacles_from_mesh(Object *coll_ob,
     int min[3], max[3], res[3];
 
     /* Duplicate vertices to modify. */
-    MVert *vertices = MEM_dupallocN(BKE_mesh_vertices(me));
+    MVert *verts = MEM_dupallocN(BKE_mesh_vertices(me));
 
     const MLoop *mloop = BKE_mesh_loops(me);
     looptri = BKE_mesh_runtime_looptri_ensure(me);
@@ -1037,11 +1037,11 @@ static void obstacles_from_mesh(Object *coll_ob,
       float co[3];
 
       /* Vertex position. */
-      mul_m4_v3(coll_ob->obmat, vertices[i].co);
-      manta_pos_to_cell(fds, vertices[i].co);
+      mul_m4_v3(coll_ob->obmat, verts[i].co);
+      manta_pos_to_cell(fds, verts[i].co);
 
       /* Vertex velocity. */
-      add_v3fl_v3fl_v3i(co, vertices[i].co, fds->shift);
+      add_v3fl_v3fl_v3i(co, verts[i].co, fds->shift);
       if (has_velocity) {
         sub_v3_v3v3(&vert_vel[i * 3], co, &fes->verts_old[i * 3]);
         mul_v3_fl(&vert_vel[i * 3], 1.0f / dt);
@@ -1049,7 +1049,7 @@ static void obstacles_from_mesh(Object *coll_ob,
       copy_v3_v3(&fes->verts_old[i * 3], co);
 
       /* Calculate emission map bounds. */
-      bb_boundInsert(bb, vertices[i].co);
+      bb_boundInsert(bb, verts[i].co);
     }
 
     /* Set emission map.
@@ -1071,7 +1071,7 @@ static void obstacles_from_mesh(Object *coll_ob,
 
       ObstaclesFromDMData data = {
           .fes = fes,
-          .mvert = vertices,
+          .mvert = verts,
           .mloop = mloop,
           .mlooptri = looptri,
           .tree = &tree_data,
@@ -1094,7 +1094,7 @@ static void obstacles_from_mesh(Object *coll_ob,
     if (vert_vel) {
       MEM_freeN(vert_vel);
     }
-    MEM_freeN(vertices);
+    MEM_freeN(verts);
     BKE_id_free(NULL, me);
   }
 }
@@ -2074,7 +2074,7 @@ static void emit_from_mesh(
     Mesh *me = BKE_mesh_copy_for_eval(ffs->mesh, true);
 
     /* Duplicate vertices to modify. */
-    MVert *vertices = MEM_dupallocN(BKE_mesh_vertices(me));
+    MVert *verts = MEM_dupallocN(BKE_mesh_vertices(me));
 
     const MLoop *mloop = BKE_mesh_loops(me);
     const MLoopTri *mlooptri = BKE_mesh_runtime_looptri_ensure(me);
@@ -2102,8 +2102,8 @@ static void emit_from_mesh(
     float(*vert_normals)[3] = MEM_dupallocN(BKE_mesh_vertex_normals_ensure(me));
     for (i = 0; i < numverts; i++) {
       /* Vertex position. */
-      mul_m4_v3(flow_ob->obmat, vertices[i].co);
-      manta_pos_to_cell(fds, vertices[i].co);
+      mul_m4_v3(flow_ob->obmat, verts[i].co);
+      manta_pos_to_cell(fds, verts[i].co);
 
       /* Vertex normal. */
       mul_mat3_m4_v3(flow_ob->obmat, vert_normals[i]);
@@ -2113,7 +2113,7 @@ static void emit_from_mesh(
       /* Vertex velocity. */
       if (ffs->flags & FLUID_FLOW_INITVELOCITY) {
         float co[3];
-        add_v3fl_v3fl_v3i(co, vertices[i].co, fds->shift);
+        add_v3fl_v3fl_v3i(co, verts[i].co, fds->shift);
         if (has_velocity) {
           sub_v3_v3v3(&vert_vel[i * 3], co, &ffs->verts_old[i * 3]);
           mul_v3_fl(&vert_vel[i * 3], 1.0 / dt);
@@ -2122,7 +2122,7 @@ static void emit_from_mesh(
       }
 
       /* Calculate emission map bounds. */
-      bb_boundInsert(bb, vertices[i].co);
+      bb_boundInsert(bb, verts[i].co);
     }
     mul_m4_v3(flow_ob->obmat, flow_center);
     manta_pos_to_cell(fds, flow_center);
@@ -2147,7 +2147,7 @@ static void emit_from_mesh(
       EmitFromDMData data = {
           .fds = fds,
           .ffs = ffs,
-          .mvert = vertices,
+          .mvert = verts,
           .vert_normals = vert_normals,
           .mloop = mloop,
           .mlooptri = mlooptri,
@@ -2175,7 +2175,7 @@ static void emit_from_mesh(
     if (vert_vel) {
       MEM_freeN(vert_vel);
     }
-    MEM_freeN(vertices);
+    MEM_freeN(verts);
     MEM_freeN(vert_normals);
     BKE_id_free(NULL, me);
   }

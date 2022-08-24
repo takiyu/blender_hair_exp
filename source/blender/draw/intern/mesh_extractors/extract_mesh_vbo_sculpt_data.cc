@@ -129,7 +129,7 @@ static void extract_sculpt_data_init_subdiv(const DRWSubdivCache *subdiv_cache,
   GPUVertBuf *subdiv_mask_vbo = nullptr;
   const float *cd_mask = (const float *)CustomData_get_layer(cd_vdata, CD_PAINT_MASK);
 
-  const Span<MPoly> coarse_polygons = bke::mesh_polygons(*coarse_mesh);
+  const Span<MPoly> coarse_polys = bke::mesh_polygons(*coarse_mesh);
   const Span<MLoop> coarse_loops = bke::mesh_loops(*coarse_mesh);
 
   if (cd_mask) {
@@ -142,7 +142,7 @@ static void extract_sculpt_data_init_subdiv(const DRWSubdivCache *subdiv_cache,
     float *v_mask = static_cast<float *>(GPU_vertbuf_get_data(mask_vbo));
 
     for (int i = 0; i < coarse_mesh->totpoly; i++) {
-      const MPoly *mpoly = &coarse_polygons[i];
+      const MPoly *mpoly = &coarse_polys[i];
 
       for (int loop_index = mpoly->loopstart; loop_index < mpoly->loopstart + mpoly->totloop;
            loop_index++) {

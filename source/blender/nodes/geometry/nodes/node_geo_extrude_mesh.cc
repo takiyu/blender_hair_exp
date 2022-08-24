@@ -980,14 +980,14 @@ static void extrude_mesh_face_regions(MeshComponent &component,
   /* Translate vertices based on the offset. If the vertex is used by a selected edge, it will
    * have been duplicated and only the new vertex should use the offset. Otherwise the vertex might
    * still need an offset, but it was reused on the inside of a region of extruded faces. */
-  MutableSpan<MVert> vertices = bke::mesh_vertices_for_write(mesh);
+  MutableSpan<MVert> verts = bke::mesh_vertices_for_write(mesh);
   if (poly_offsets.is_single()) {
     const float3 offset = poly_offsets.get_internal_single();
     threading::parallel_for(
         IndexRange(all_selected_verts.size()), 1024, [&](const IndexRange range) {
           for (const int i_orig : all_selected_verts.as_span().slice(range)) {
             const int i_new = new_vert_indices.index_of_try(i_orig);
-            MVert &vert = vertices[(i_new == -1) ? i_orig : new_vert_range[i_new]];
+            MVert &vert = verts[(i_new == -1) ? i_orig : new_vert_range[i_new]];
             add_v3_v3(vert.co, offset);
           }
         });
@@ -998,7 +998,7 @@ static void extrude_mesh_face_regions(MeshComponent &component,
           for (const int i_orig : all_selected_verts.as_span().slice(range)) {
             const int i_new = new_vert_indices.index_of_try(i_orig);
             const float3 offset = vert_offsets[i_orig];
-            MVert &vert = vertices[(i_new == -1) ? i_orig : new_vert_range[i_new]];
+            MVert &vert = verts[(i_new == -1) ? i_orig : new_vert_range[i_new]];
             add_v3_v3(vert.co, offset);
           }
         });

@@ -1237,7 +1237,7 @@ static void vertex_paint_init_session_data(const ToolSettings *ts, Object *ob)
   }
 
   Mesh *me = (Mesh *)ob->data;
-  const Span<MPoly> polygons = blender::bke::mesh_polygons(*me);
+  const Span<MPoly> polys = blender::bke::mesh_polygons(*me);
   const Span<MLoop> loops = bke::mesh_loops(*me);
 
   if (gmap->vert_to_loop == nullptr) {
@@ -1247,14 +1247,14 @@ static void vertex_paint_init_session_data(const ToolSettings *ts, Object *ob)
     gmap->vert_to_poly = nullptr;
     BKE_mesh_vert_loop_map_create(&gmap->vert_to_loop,
                                   &gmap->vert_map_mem,
-                                  polygons.data(),
+                                  polys.data(),
                                   loops.data(),
                                   me->totvert,
                                   me->totpoly,
                                   me->totloop);
     BKE_mesh_vert_poly_map_create(&gmap->vert_to_poly,
                                   &gmap->poly_map_mem,
-                                  polygons.data(),
+                                  polys.data(),
                                   loops.data(),
                                   me->totvert,
                                   me->totpoly,
@@ -4088,12 +4088,12 @@ static bool vertex_color_set(Object *ob, ColorPaint4f paintcol_in, CustomDataLay
   }
   else {
     Color *color_layer = static_cast<Color *>(layer->data);
-    const Span<MVert> vertices = blender::bke::mesh_vertices(*me);
-    const Span<MPoly> polygons = blender::bke::mesh_polygons(*me);
+    const Span<MVert> verts = blender::bke::mesh_vertices(*me);
+    const Span<MPoly> polys = blender::bke::mesh_polygons(*me);
     const Span<MLoop> loops = blender::bke::mesh_loops(*me);
 
-    for (const int i : polygons.index_range()) {
-      const MPoly &poly = polygons[i];
+    for (const int i : polys.index_range()) {
+      const MPoly &poly = polys[i];
       if (use_face_sel && !(poly.flag & ME_FACE_SEL)) {
         continue;
       }
@@ -4102,7 +4102,7 @@ static bool vertex_color_set(Object *ob, ColorPaint4f paintcol_in, CustomDataLay
       do {
         uint vidx = loops[poly.loopstart + j].v;
 
-        if (!(use_vert_sel && !(vertices[vidx].flag & SELECT))) {
+        if (!(use_vert_sel && !(verts[vidx].flag & SELECT))) {
           if constexpr (domain == ATTR_DOMAIN_CORNER) {
             color_layer[poly.loopstart + j] = paintcol;
           }

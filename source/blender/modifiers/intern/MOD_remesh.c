@@ -80,8 +80,8 @@ static void init_dualcon_mesh(DualConInput *input, Mesh *mesh)
  * keep track of the current elements */
 typedef struct {
   Mesh *mesh;
-  MVert *vertices;
-  MPoly *polygons;
+  MVert *verts;
+  MPoly *polys;
   MLoop *loops;
   int curvert, curface;
 } DualConOutput;
@@ -96,8 +96,8 @@ static void *dualcon_alloc_output(int totvert, int totquad)
   }
 
   output->mesh = BKE_mesh_new_nomain(totvert, 0, 0, 4 * totquad, totquad);
-  output->vertices = BKE_mesh_vertices_for_write(output->mesh);
-  output->polygons = BKE_mesh_polygons_for_write(output->mesh);
+  output->verts = BKE_mesh_vertices_for_write(output->mesh);
+  output->polys = BKE_mesh_polygons_for_write(output->mesh);
   output->loops = BKE_mesh_loops_for_write(output->mesh);
 
   return output;
@@ -109,7 +109,7 @@ static void dualcon_add_vert(void *output_v, const float co[3])
 
   BLI_assert(output->curvert < output->mesh->totvert);
 
-  copy_v3_v3(output->vertices[output->curvert].co, co);
+  copy_v3_v3(output->verts[output->curvert].co, co);
   output->curvert++;
 }
 
@@ -123,7 +123,7 @@ static void dualcon_add_quad(void *output_v, const int vert_indices[4])
   UNUSED_VARS_NDEBUG(mesh);
 
   MLoop *mloop = output->loops;
-  MPoly *cur_poly = &output->polygons[output->curface];
+  MPoly *cur_poly = &output->polys[output->curface];
 
   cur_poly->loopstart = output->curface * 4;
   cur_poly->totloop = 4;

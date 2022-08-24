@@ -97,11 +97,11 @@ static void add_polygon_edges_to_hash_maps(Mesh *mesh,
                                            MutableSpan<EdgeMap> edge_maps,
                                            uint32_t parallel_mask)
 {
-  const Span<MPoly> polygons = mesh_polygons(*mesh);
+  const Span<MPoly> polys = mesh_polygons(*mesh);
   const Span<MLoop> loops = mesh_loops(*mesh);
   threading::parallel_for_each(edge_maps, [&](EdgeMap &edge_map) {
     const int task_index = &edge_map - edge_maps.data();
-    for (const MPoly &poly : polygons) {
+    for (const MPoly &poly : polys) {
       Span<MLoop> poly_loops = loops.slice(poly.loopstart, poly.totloop);
       const MLoop *prev_loop = &poly_loops.last();
       for (const MLoop &next_loop : poly_loops) {
@@ -159,11 +159,11 @@ static void update_edge_indices_in_poly_loops(Mesh *mesh,
                                               Span<EdgeMap> edge_maps,
                                               uint32_t parallel_mask)
 {
-  const Span<MPoly> polygons = bke::mesh_polygons(*mesh);
+  const Span<MPoly> polys = bke::mesh_polygons(*mesh);
   MutableSpan<MLoop> loops = mesh_loops_for_write(*mesh);
   threading::parallel_for(IndexRange(mesh->totpoly), 100, [&](IndexRange range) {
     for (const int poly_index : range) {
-      const MPoly &poly = polygons[poly_index];
+      const MPoly &poly = polys[poly_index];
       MutableSpan<MLoop> poly_loops = loops.slice(poly.loopstart, poly.totloop);
 
       MLoop *prev_loop = &poly_loops.last();

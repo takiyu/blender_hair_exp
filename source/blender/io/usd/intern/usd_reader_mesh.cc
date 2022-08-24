@@ -307,7 +307,7 @@ bool USDMeshReader::topology_changed(const Mesh *existing_mesh, const double mot
 
 void USDMeshReader::read_mpolys(Mesh *mesh)
 {
-  MutableSpan<MPoly> polygons = bke::mesh_polygons_for_write(*mesh);
+  MutableSpan<MPoly> polys = bke::mesh_polygons_for_write(*mesh);
   MutableSpan<MLoop> loops = bke::mesh_loops_for_write(*mesh);
 
   int loop_index = 0;
@@ -315,7 +315,7 @@ void USDMeshReader::read_mpolys(Mesh *mesh)
   for (int i = 0; i < face_counts_.size(); i++) {
     const int face_size = face_counts_[i];
 
-    MPoly &poly = polygons[i];
+    MPoly &poly = polys[i];
     poly.loopstart = loop_index;
     poly.totloop = face_size;
     poly.mat_nr = 0;
@@ -512,10 +512,10 @@ void USDMeshReader::read_colors(Mesh *mesh, const double motionSampleTime)
 
   MLoopCol *colors = static_cast<MLoopCol *>(cd_ptr);
 
-  const Span<MPoly> polygons = bke::mesh_polygons(*mesh);
+  const Span<MPoly> polys = bke::mesh_polygons(*mesh);
   const Span<MLoop> loops = bke::mesh_loops(*mesh);
-  for (const int i : polygons.index_range()) {
-    const MPoly &poly = polygons[i];
+  for (const int i : polys.index_range()) {
+    const MPoly &poly = polys[i];
     for (int j = 0; j < poly.totloop; ++j) {
       int loop_index = poly.loopstart + j;
 
@@ -626,9 +626,9 @@ void USDMeshReader::process_normals_face_varying(Mesh *mesh)
   float(*lnors)[3] = static_cast<float(*)[3]>(
       MEM_malloc_arrayN(loop_count, sizeof(float[3]), "USD::FaceNormals"));
 
-  const Span<MPoly> polygons = bke::mesh_polygons(*mesh);
-  for (const int i : polygons.index_range()) {
-    const MPoly &poly = polygons[i];
+  const Span<MPoly> polys = bke::mesh_polygons(*mesh);
+  for (const int i : polys.index_range()) {
+    const MPoly &poly = polys[i];
     for (int j = 0; j < poly.totloop; j++) {
       int blender_index = poly.loopstart + j;
 
@@ -667,9 +667,9 @@ void USDMeshReader::process_normals_uniform(Mesh *mesh)
   float(*lnors)[3] = static_cast<float(*)[3]>(
       MEM_malloc_arrayN(mesh->totloop, sizeof(float[3]), "USD::FaceNormals"));
 
-  const Span<MPoly> polygons = bke::mesh_polygons(*mesh);
-  for (const int i : polygons.index_range()) {
-    const MPoly &poly = polygons[i];
+  const Span<MPoly> polys = bke::mesh_polygons(*mesh);
+  for (const int i : polys.index_range()) {
+    const MPoly &poly = polys[i];
     for (int j = 0; j < poly.totloop; j++) {
       int loop_index = poly.loopstart + j;
       lnors[loop_index][0] = normals_[i][0];
@@ -694,9 +694,9 @@ void USDMeshReader::read_mesh_sample(ImportSettings *settings,
    * in code that expect this data to be there. */
 
   if (new_mesh || (settings->read_flag & MOD_MESHSEQ_READ_VERT) != 0) {
-    MutableSpan<MVert> vertices = bke::mesh_vertices_for_write(*mesh);
+    MutableSpan<MVert> verts = bke::mesh_vertices_for_write(*mesh);
     for (int i = 0; i < positions_.size(); i++) {
-      MVert &mvert = vertices[i];
+      MVert &mvert = verts[i];
       mvert.co[0] = positions_[i][0];
       mvert.co[1] = positions_[i][1];
       mvert.co[2] = positions_[i][2];
@@ -735,7 +735,7 @@ void USDMeshReader::read_mesh_sample(ImportSettings *settings,
 }
 
 void USDMeshReader::assign_facesets_to_mpoly(double motionSampleTime,
-                                             MutableSpan<MPoly> polygons,
+                                             MutableSpan<MPoly> polys,
                                              std::map<pxr::SdfPath, int> *r_mat_map)
 {
   if (r_mat_map == nullptr) {
@@ -777,7 +777,7 @@ void USDMeshReader::assign_facesets_to_mpoly(double motionSampleTime,
       indicesAttribute.Get(&indices, motionSampleTime);
 
       for (int i = 0; i < indices.size(); i++) {
-        MPoly &poly = polygons[indices[i]];
+        MPoly &poly = polys[indices[i]];
         poly.mat_nr = mat_idx;
       }
     }
@@ -905,10 +905,10 @@ Mesh *USDMeshReader::read_mesh(Mesh *existing_mesh,
     /* Here we assume that the number of materials doesn't change, i.e. that
      * the material slots that were created when the object was loaded from
      * USD are still valid now. */
-    MutableSpan<MPoly> polygons = bke::mesh_polygons_for_write(*active_mesh);
-    if (!polygons.is_empty() && import_params_.import_materials) {
+    MutableSpan<MPoly> polys = bke::mesh_polygons_for_write(*active_mesh);
+    if (!polys.is_empty() && import_params_.import_materials) {
       std::map<pxr::SdfPath, int> mat_map;
-      assign_facesets_to_mpoly(motionSampleTime, polygons, &mat_map);
+      assign_facesets_to_mpoly(motionSampleTime, polys, &mat_map);
     }
   }
 

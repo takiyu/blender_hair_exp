@@ -231,7 +231,7 @@ static void computed_masked_polygons(const Mesh *mesh,
                                      uint *r_loops_masked_num)
 {
   BLI_assert(mesh->totvert == vertex_mask.size());
-  const Span<MPoly> polygons = blender::bke::mesh_polygons(*mesh);
+  const Span<MPoly> polys = blender::bke::mesh_polygons(*mesh);
   const Span<MLoop> loops = blender::bke::mesh_loops(*mesh);
 
   r_masked_poly_indices.reserve(mesh->totpoly);
@@ -239,7 +239,7 @@ static void computed_masked_polygons(const Mesh *mesh,
 
   uint loops_masked_num = 0;
   for (int i : IndexRange(mesh->totpoly)) {
-    const MPoly &poly_src = polygons[i];
+    const MPoly &poly_src = polys[i];
 
     bool all_verts_in_mask = true;
     Span<MLoop> loops_src = loops.slice(poly_src.loopstart, poly_src.totloop);
@@ -277,14 +277,14 @@ static void compute_interpolated_polygons(const Mesh *mesh,
   /* NOTE: this reserve can only lift the capacity if there are ngons, which get split. */
   r_masked_poly_indices.reserve(r_masked_poly_indices.size() + verts_add_num);
   r_loop_starts.reserve(r_loop_starts.size() + verts_add_num);
-  const Span<MPoly> polygons = blender::bke::mesh_polygons(*mesh);
+  const Span<MPoly> polys = blender::bke::mesh_polygons(*mesh);
   const Span<MLoop> loops = blender::bke::mesh_loops(*mesh);
 
   uint edges_add_num = 0;
   uint polys_add_num = 0;
   uint loops_add_num = 0;
   for (int i : IndexRange(mesh->totpoly)) {
-    const MPoly &poly_src = polygons[i];
+    const MPoly &poly_src = polys[i];
 
     int in_count = 0;
     int start = -1;
@@ -338,8 +338,8 @@ static void copy_masked_vertices_to_new_mesh(const Mesh &src_mesh,
                                              Span<int> vertex_map)
 {
   BLI_assert(src_mesh.totvert == vertex_map.size());
-  const Span<MVert> src_vertices = blender::bke::mesh_vertices(src_mesh);
-  MutableSpan<MVert> dst_vertices = blender::bke::mesh_vertices_for_write(dst_mesh);
+  const Span<MVert> src_verts = blender::bke::mesh_vertices(src_mesh);
+  MutableSpan<MVert> dst_verts = blender::bke::mesh_vertices_for_write(dst_mesh);
 
   for (const int i_src : vertex_map.index_range()) {
     const int i_dst = vertex_map[i_src];
@@ -347,8 +347,8 @@ static void copy_masked_vertices_to_new_mesh(const Mesh &src_mesh,
       continue;
     }
 
-    const MVert &v_src = src_vertices[i_src];
-    MVert &v_dst = dst_vertices[i_dst];
+    const MVert &v_src = src_verts[i_src];
+    MVert &v_dst = dst_verts[i_dst];
 
     v_dst = v_src;
     CustomData_copy_data(&src_mesh.vdata, &dst_mesh.vdata, i_src, i_dst, 1);
@@ -378,9 +378,9 @@ static void add_interp_verts_copy_edges_to_new_mesh(const Mesh &src_mesh,
 {
   BLI_assert(src_mesh.totvert == vertex_mask.size());
   BLI_assert(src_mesh.totedge == r_edge_map.size());
-  const Span<MVert> src_vertices = blender::bke::mesh_vertices(src_mesh);
+  const Span<MVert> src_verts = blender::bke::mesh_vertices(src_mesh);
   const Span<MEdge> src_edges = blender::bke::mesh_edges(src_mesh);
-  MutableSpan<MVert> dst_vertices = blender::bke::mesh_vertices_for_write(dst_mesh);
+  MutableSpan<MVert> dst_verts = blender::bke::mesh_vertices_for_write(dst_mesh);
   MutableSpan<MEdge> dst_edges = blender::bke::mesh_edges_for_write(dst_mesh);
 
   uint vert_index = dst_mesh.totvert - verts_add_num;
@@ -420,9 +420,9 @@ static void add_interp_verts_copy_edges_to_new_mesh(const Mesh &src_mesh,
       float weights[2] = {1.0f - fac, fac};
       CustomData_interp(
           &src_mesh.vdata, &dst_mesh.vdata, (int *)&e_src.v1, weights, nullptr, 2, vert_index);
-      MVert &v = dst_vertices[vert_index];
-      const MVert &v1 = src_vertices[e_src.v1];
-      const MVert &v2 = src_vertices[e_src.v2];
+      MVert &v = dst_verts[vert_index];
+      const MVert &v1 = src_verts[e_src.v1];
+      const MVert &v2 = src_verts[e_src.v2];
 
       interp_v3_v3v3(v.co, v1.co, v2.co, fac);
       vert_index++;
@@ -466,16 +466,16 @@ static void copy_masked_polys_to_new_mesh(const Mesh &src_mesh,
                                           Span<int> new_loop_starts,
                                           int polys_masked_num)
 {
-  const Span<MPoly> src_polygons = blender::bke::mesh_polygons(src_mesh);
+  const Span<MPoly> src_polys = blender::bke::mesh_polygons(src_mesh);
   const Span<MLoop> src_loops = blender::bke::mesh_loops(src_mesh);
-  MutableSpan<MPoly> dst_polygons = blender::bke::mesh_polygons_for_write(dst_mesh);
+  MutableSpan<MPoly> dst_polys = blender::bke::mesh_polygons_for_write(dst_mesh);
   MutableSpan<MLoop> dst_loops = blender::bke::mesh_loops_for_write(dst_mesh);
 
   for (const int i_dst : IndexRange(polys_masked_num)) {
     const int i_src = masked_poly_indices[i_dst];
 
-    const MPoly &mp_src = src_polygons[i_src];
-    MPoly &mp_dst = dst_polygons[i_dst];
+    const MPoly &mp_src = src_polys[i_src];
+    MPoly &mp_dst = dst_polys[i_dst];
     const int i_ml_src = mp_src.loopstart;
     const int i_ml_dst = new_loop_starts[i_dst];
 
@@ -507,10 +507,10 @@ static void add_interpolated_polys_to_new_mesh(const Mesh &src_mesh,
                                                int polys_masked_num,
                                                int edges_add_num)
 {
-  const Span<MPoly> src_polygons = blender::bke::mesh_polygons(src_mesh);
+  const Span<MPoly> src_polys = blender::bke::mesh_polygons(src_mesh);
   const Span<MLoop> src_loops = blender::bke::mesh_loops(src_mesh);
   MutableSpan<MEdge> dst_edges = blender::bke::mesh_edges_for_write(dst_mesh);
-  MutableSpan<MPoly> dst_polygons = blender::bke::mesh_polygons_for_write(dst_mesh);
+  MutableSpan<MPoly> dst_polys = blender::bke::mesh_polygons_for_write(dst_mesh);
   MutableSpan<MLoop> dst_loops = blender::bke::mesh_loops_for_write(dst_mesh);
 
   int edge_index = dst_mesh.totedge - edges_add_num;
@@ -527,8 +527,8 @@ static void add_interpolated_polys_to_new_mesh(const Mesh &src_mesh,
       last_i_src = i_src;
     }
 
-    const MPoly &mp_src = src_polygons[i_src];
-    MPoly &mp_dst = dst_polygons[i_dst];
+    const MPoly &mp_src = src_polys[i_src];
+    MPoly &mp_dst = dst_polys[i_dst];
     const int i_ml_src = mp_src.loopstart;
     int i_ml_dst = new_loop_starts[i_dst];
     const int mp_totloop = (i_dst + 1 < new_loop_starts.size() ? new_loop_starts[i_dst + 1] :

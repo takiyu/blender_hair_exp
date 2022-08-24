@@ -574,7 +574,6 @@ static void rna_MeshPolygon_center_get(PointerRNA *ptr, float *values)
   MPoly *mp = (MPoly *)ptr->data;
   const MVert *vertices = BKE_mesh_vertices(me);
   const MLoop *loops = BKE_mesh_loops(me);
-
   BKE_mesh_calc_poly_center(mp, loops + mp->loopstart, vertices, values);
 }
 
@@ -584,7 +583,6 @@ static float rna_MeshPolygon_area_get(PointerRNA *ptr)
   MPoly *mp = (MPoly *)ptr->data;
   const MVert *vertices = BKE_mesh_vertices(me);
   const MLoop *loops = BKE_mesh_loops(me);
-
   return BKE_mesh_calc_poly_area(mp, loops + mp->loopstart, vertices);
 }
 

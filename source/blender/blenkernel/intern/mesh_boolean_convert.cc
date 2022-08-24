@@ -160,10 +160,10 @@ const MPoly *MeshesToIMeshInfo::input_mpoly_for_orig_index(int orig_index,
   int orig_mesh_index = input_mesh_for_imesh_face(orig_index);
   BLI_assert(0 <= orig_mesh_index && orig_mesh_index < meshes.size());
   const Mesh *me = meshes[orig_mesh_index];
-  const Span<MPoly> polygons = bke::mesh_polygons(*me);
+  const Span<MPoly> polys = bke::mesh_polygons(*me);
   int index_in_mesh = orig_index - mesh_poly_offset[orig_mesh_index];
   BLI_assert(0 <= index_in_mesh && index_in_mesh < me->totpoly);
-  const MPoly *mp = &polygons[index_in_mesh];
+  const MPoly *mp = &polys[index_in_mesh];
   if (r_orig_mesh) {
     *r_orig_mesh = me;
   }
@@ -187,10 +187,10 @@ const MVert *MeshesToIMeshInfo::input_mvert_for_orig_index(int orig_index,
   int orig_mesh_index = input_mesh_for_imesh_vert(orig_index);
   BLI_assert(0 <= orig_mesh_index && orig_mesh_index < meshes.size());
   const Mesh *me = meshes[orig_mesh_index];
-  const Span<MVert> vertices = bke::mesh_vertices(*me);
+  const Span<MVert> verts = bke::mesh_vertices(*me);
   int index_in_mesh = orig_index - mesh_vert_offset[orig_mesh_index];
   BLI_assert(0 <= index_in_mesh && index_in_mesh < me->totvert);
-  const MVert *mv = &vertices[index_in_mesh];
+  const MVert *mv = &verts[index_in_mesh];
   if (r_orig_mesh) {
     *r_orig_mesh = me;
   }
@@ -307,8 +307,8 @@ static IMesh meshes_to_imesh(Span<const Mesh *> meshes,
     bool need_face_flip = r_info->has_negative_transform[mi] != r_info->has_negative_transform[0];
 
     Vector<Vert *> verts(me->totvert);
-    const Span<MVert> vertices = bke::mesh_vertices(*me);
-    const Span<MPoly> polygons = bke::mesh_polygons(*me);
+    const Span<MVert> mesh_verts = bke::mesh_vertices(*me);
+    const Span<MPoly> polys = bke::mesh_polygons(*me);
     const Span<MLoop> loops = bke::mesh_loops(*me);
 
     /* Allocate verts
@@ -316,10 +316,10 @@ static IMesh meshes_to_imesh(Span<const Mesh *> meshes,
      * for example when the first mesh is already in the target space. (Note the logic
      * directly above, which uses an identity matrix with a null input transform). */
     if (obmats[mi] == nullptr) {
-      threading::parallel_for(vertices.index_range(), 2048, [&](IndexRange range) {
+      threading::parallel_for(mesh_verts.index_range(), 2048, [&](IndexRange range) {
         float3 co;
         for (int i : range) {
-          co = float3(vertices[i].co);
+          co = float3(mesh_verts[i].co);
           mpq3 mco = mpq3(co.x, co.y, co.z);
           double3 dco(mco[0].get_d(), mco[1].get_d(), mco[2].get_d());
           verts[i] = new Vert(mco, dco, NO_INDEX, i);
@@ -327,22 +327,22 @@ static IMesh meshes_to_imesh(Span<const Mesh *> meshes,
       });
     }
     else {
-      threading::parallel_for(vertices.index_range(), 2048, [&](IndexRange range) {
+      threading::parallel_for(mesh_verts.index_range(), 2048, [&](IndexRange range) {
         float3 co;
         for (int i : range) {
-          co = r_info->to_target_transform[mi] * float3(vertices[i].co);
+          co = r_info->to_target_transform[mi] * float3(mesh_verts[i].co);
           mpq3 mco = mpq3(co.x, co.y, co.z);
           double3 dco(mco[0].get_d(), mco[1].get_d(), mco[2].get_d());
           verts[i] = new Vert(mco, dco, NO_INDEX, i);
         }
       });
     }
-    for (int i : vertices.index_range()) {
+    for (int i : mesh_verts.index_range()) {
       r_info->mesh_to_imesh_vert[v] = arena.add_or_find_vert(verts[i]);
       ++v;
     }
 
-    for (const MPoly &poly : polygons) {
+    for (const MPoly &poly : polys) {
       int flen = poly.totloop;
       face_vert.resize(flen);
       face_edge_orig.resize(flen);
@@ -557,16 +557,16 @@ static void get_poly2d_cos(const Mesh *me,
                            const float4x4 &trans_mat,
                            float r_axis_mat[3][3])
 {
-  const Span<MVert> vertices = bke::mesh_vertices(*me);
+  const Span<MVert> verts = bke::mesh_vertices(*me);
   const Span<MLoop> loops = bke::mesh_loops(*me);
   const Span<MLoop> poly_loops = loops.slice(mp->loopstart, mp->totloop);
 
   /* Project coordinates to 2d in cos_2d, using normal as projection axis. */
   float axis_dominant[3];
-  BKE_mesh_calc_poly_normal(mp, &loops[mp->loopstart], vertices.data(), axis_dominant);
+  BKE_mesh_calc_poly_normal(mp, &loops[mp->loopstart], verts.data(), axis_dominant);
   axis_dominant_v3_to_m3(r_axis_mat, axis_dominant);
   for (const int i : poly_loops.index_range()) {
-    float3 co = vertices[poly_loops[i].v].co;
+    float3 co = verts[poly_loops[i].v].co;
     co = trans_mat * co;
     mul_v2_m3v3(cos_2d[i], r_axis_mat, co);
   }
@@ -734,7 +734,7 @@ static Mesh *imesh_to_mesh(IMesh *im, MeshesToIMeshInfo &mim)
    * and set the vertices in the appropriate loops. */
   int cur_loop_index = 0;
   MutableSpan<MLoop> dst_loops = bke::mesh_loops_for_write(*result);
-  MutableSpan<MPoly> dst_polygons = bke::mesh_polygons_for_write(*result);
+  MutableSpan<MPoly> dst_polys = bke::mesh_polygons_for_write(*result);
   MLoop *l = dst_loops.data();
   for (int fi : im->face_index_range()) {
     const Face *f = im->face(fi);
@@ -743,7 +743,7 @@ static Mesh *imesh_to_mesh(IMesh *im, MeshesToIMeshInfo &mim)
     int orig_me_index;
     const MPoly *orig_mp = mim.input_mpoly_for_orig_index(
         f->orig, &orig_me, &orig_me_index, &index_in_orig_me);
-    MPoly *mp = &dst_polygons[fi];
+    MPoly *mp = &dst_polys[fi];
     mp->totloop = f->size();
     mp->loopstart = cur_loop_index;
     for (int j : f->index_range()) {
@@ -776,7 +776,7 @@ static Mesh *imesh_to_mesh(IMesh *im, MeshesToIMeshInfo &mim)
   MutableSpan<MEdge> edges = bke::mesh_edges_for_write(*result);
   for (int fi : im->face_index_range()) {
     const Face *f = im->face(fi);
-    const MPoly *mp = &dst_polygons[fi];
+    const MPoly *mp = &dst_polys[fi];
     for (int j : f->index_range()) {
       if (f->edge_orig[j] != NO_INDEX) {
         const Mesh *orig_me;
@@ -846,11 +846,11 @@ Mesh *direct_mesh_boolean(Span<const Mesh *> meshes,
 
   /* Store intersecting edge indices. */
   if (r_intersecting_edges != nullptr) {
-    const Span<MPoly> polygons = bke::mesh_polygons(*result);
+    const Span<MPoly> polys = bke::mesh_polygons(*result);
     const Span<MLoop> loops = bke::mesh_loops(*result);
     for (int fi : m_out.face_index_range()) {
       const Face &face = *m_out.face(fi);
-      const MPoly &poly = polygons[fi];
+      const MPoly &poly = polys[fi];
       for (int corner_i : face.index_range()) {
         if (face.is_intersect[corner_i]) {
           int e_index = loops[poly.loopstart + corner_i].e;

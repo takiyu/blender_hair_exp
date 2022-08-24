@@ -203,9 +203,9 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
   const int totedge = mesh->totedge;
   const int totloop = mesh->totloop;
   const int totpoly = mesh->totpoly;
-  const MVert *src_vertices = BKE_mesh_vertices(mesh);
+  const MVert *src_verts = BKE_mesh_vertices(mesh);
   const MEdge *src_edges = BKE_mesh_edges(mesh);
-  const MPoly *src_polygons = BKE_mesh_polygons(mesh);
+  const MPoly *src_polys = BKE_mesh_polygons(mesh);
   const MLoop *src_loops = BKE_mesh_loops(mesh);
 
   const int totvert_final = totvert - tot_vtargetmap;
@@ -262,7 +262,7 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
   STACK_INIT(mpoly, totpoly);
 
   /* fill newv with destination vertex indices */
-  mv = src_vertices;
+  mv = src_verts;
   c = 0;
   for (i = 0; i < totvert; i++, mv++) {
     if (vtargetmap[i] == -1) {
@@ -324,7 +324,7 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
     /* Duplicates allowed because our compare function is not pure equality */
     BLI_gset_flag_set(poly_gset, GHASH_FLAG_ALLOW_DUPES);
 
-    mp = src_polygons;
+    mp = src_polys;
     mpgh = poly_keys;
     for (i = 0; i < totpoly; i++, mp++, mpgh++) {
       mpgh->poly_index = i;
@@ -341,13 +341,13 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
     /* Can we optimize by reusing an old `pmap`? How do we know an old `pmap` is stale? */
     /* When called by `MOD_array.c` the `cddm` has just been created, so it has no valid `pmap`. */
     BKE_mesh_vert_poly_map_create(
-        &poly_map, &poly_map_mem, src_polygons, src_loops, totvert, totpoly, totloop);
+        &poly_map, &poly_map_mem, src_polys, src_loops, totvert, totpoly, totloop);
   } /* done preparing for fast poly compare */
 
   BLI_bitmap *vert_tag = BLI_BITMAP_NEW(mesh->totvert, __func__);
 
-  mp = src_polygons;
-  mv = src_vertices;
+  mp = src_polys;
+  mv = src_verts;
   for (i = 0; i < totpoly; i++, mp++) {
     MPoly *mp_new;
 
@@ -409,7 +409,7 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
            * in same order, or reverse order */
 
           for (i_poly = 0; i_poly < poly_map[v_target].count; i_poly++) {
-            const MPoly *target_poly = src_polygons + *(poly_map[v_target].indices + i_poly);
+            const MPoly *target_poly = src_polys + *(poly_map[v_target].indices + i_poly);
 
             if (cddm_poly_compare(src_loops, mp, target_poly, vtargetmap, +1) ||
                 cddm_poly_compare(src_loops, mp, target_poly, vtargetmap, -1)) {

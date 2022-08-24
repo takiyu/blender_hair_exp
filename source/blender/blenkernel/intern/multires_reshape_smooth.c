@@ -643,7 +643,7 @@ static void foreach_vertex(const SubdivForeachContext *foreach_context,
   const int face_index = multires_reshape_grid_to_face_index(reshape_context,
                                                              grid_coord.grid_index);
 
-  const MPoly *base_poly = &reshape_context->base_polygons[face_index];
+  const MPoly *base_poly = &reshape_context->base_polys[face_index];
   const int num_corners = base_poly->totloop;
   const int start_grid_index = reshape_context->face_start_grid_index[face_index];
   const int corner = grid_coord.grid_index - start_grid_index;
@@ -845,7 +845,7 @@ static void geometry_init_loose_information(MultiresReshapeSmoothContext *reshap
 {
   const MultiresReshapeContext *reshape_context = reshape_smooth_context->reshape_context;
   const Mesh *base_mesh = reshape_context->base_mesh;
-  const MPoly *base_mpoly = reshape_context->base_polygons;
+  const MPoly *base_mpoly = reshape_context->base_polys;
   const MLoop *base_mloop = reshape_context->base_loops;
   const MEdge *base_edge = reshape_context->base_edges;
 

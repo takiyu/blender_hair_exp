@@ -1399,8 +1399,8 @@ static void init_particle_interpolation(Object *ob,
     pind->dietime = (key + pa->totkey - 1)->time;
 
     if (pind->mesh) {
-      MVert *vertices = BKE_mesh_vertices_for_write(pind->mesh);
-      pind->mvert[0] = &vertices[pa->hair_index];
+      MVert *verts = BKE_mesh_vertices_for_write(pind->mesh);
+      pind->mvert[0] = &verts[pa->hair_index];
       pind->mvert[1] = pind->mvert[0] + 1;
     }
   }
@@ -3869,10 +3869,10 @@ static void psys_face_mat(Object *ob, Mesh *mesh, ParticleData *pa, float mat[4]
     }
   }
   else {
-    const MVert *vertices = BKE_mesh_vertices(mesh);
-    copy_v3_v3(v[0], vertices[mface->v1].co);
-    copy_v3_v3(v[1], vertices[mface->v2].co);
-    copy_v3_v3(v[2], vertices[mface->v3].co);
+    const MVert *verts = BKE_mesh_vertices(mesh);
+    copy_v3_v3(v[0], verts[mface->v1].co);
+    copy_v3_v3(v[1], verts[mface->v2].co);
+    copy_v3_v3(v[2], verts[mface->v3].co);
   }
 
   triatomat(v[0], v[1], v[2], (osface) ? osface->uv : NULL, mat);

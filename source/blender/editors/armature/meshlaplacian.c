@@ -652,8 +652,8 @@ void heat_bone_weighting(Object *ob,
   int a, tris_num, j, bbone, firstsegment, lastsegment;
   bool use_topology = (me->editflag & ME_EDIT_MIRROR_TOPO) != 0;
 
-  const MVert *vertices = BKE_mesh_vertices(me);
-  const MPoly *polygons = BKE_mesh_polygons(me);
+  const MVert *mesh_verts = BKE_mesh_vertices(me);
+  const MPoly *polys = BKE_mesh_polygons(me);
   const MLoop *loops = BKE_mesh_loops(me);
   bool use_vert_sel = (me->editflag & ME_EDIT_PAINT_VERT_SEL) != 0;
   bool use_face_sel = (me->editflag & ME_EDIT_PAINT_FACE_SEL) != 0;
@@ -669,14 +669,14 @@ void heat_bone_weighting(Object *ob,
 
     /*  (added selectedVerts content for vertex mask, they used to just equal 1) */
     if (use_vert_sel) {
-      for (a = 0, mp = polygons; a < me->totpoly; mp++, a++) {
+      for (a = 0, mp = polys; a < me->totpoly; mp++, a++) {
         for (j = 0, ml = loops + mp->loopstart; j < mp->totloop; j++, ml++) {
-          mask[ml->v] = (vertices[ml->v].flag & SELECT) != 0;
+          mask[ml->v] = (mesh_verts[ml->v].flag & SELECT) != 0;
         }
       }
     }
     else if (use_face_sel) {
-      for (a = 0, mp = polygons; a < me->totpoly; mp++, a++) {
+      for (a = 0, mp = polys; a < me->totpoly; mp++, a++) {
         if (mp->flag & ME_FACE_SEL) {
           for (j = 0, ml = loops + mp->loopstart; j < mp->totloop; j++, ml++) {
             mask[ml->v] = 1;
@@ -692,7 +692,7 @@ void heat_bone_weighting(Object *ob,
   sys->heat.tris_num = poly_to_tri_count(me->totpoly, me->totloop);
   mlooptri = MEM_mallocN(sizeof(*sys->heat.mlooptri) * sys->heat.tris_num, __func__);
 
-  BKE_mesh_recalc_looptri(loops, polygons, vertices, me->totloop, me->totpoly, mlooptri);
+  BKE_mesh_recalc_looptri(loops, polys, mesh_verts, me->totloop, me->totpoly, mlooptri);
 
   sys->heat.mlooptri = mlooptri;
   sys->heat.mloop = loops;

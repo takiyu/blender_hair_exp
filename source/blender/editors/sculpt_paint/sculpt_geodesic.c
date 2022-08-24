@@ -109,7 +109,7 @@ static float *SCULPT_geodesic_mesh_create(Object *ob,
 
   MVert *verts = SCULPT_mesh_deformed_mverts_get(ss);
   const MEdge *edges = BKE_mesh_edges(mesh);
-  const MPoly *polygons = BKE_mesh_polygons(mesh);
+  const MPoly *polys = BKE_mesh_polygons(mesh);
   const MLoop *loops = BKE_mesh_loops(mesh);
 
   float *dists = MEM_malloc_arrayN(totvert, sizeof(float), "distances");
@@ -120,7 +120,7 @@ static float *SCULPT_geodesic_mesh_create(Object *ob,
                                   &ss->epmap_mem,
                                   edges,
                                   mesh->totedge,
-                                  polygons,
+                                  polys,
                                   mesh->totpoly,
                                   loops,
                                   mesh->totloop);
@@ -202,7 +202,7 @@ static float *SCULPT_geodesic_mesh_create(Object *ob,
           if (ss->face_sets[poly] <= 0) {
             continue;
           }
-          const MPoly *mpoly = &polygons[poly];
+          const MPoly *mpoly = &polys[poly];
 
           for (int loop_index = 0; loop_index < mpoly->totloop; loop_index++) {
             const MLoop *mloop = &loops[loop_index + mpoly->loopstart];

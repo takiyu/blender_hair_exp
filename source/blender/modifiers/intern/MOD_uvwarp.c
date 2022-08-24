@@ -195,7 +195,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
   /* make sure we're using an existing layer */
   CustomData_validate_layer_name(&mesh->ldata, CD_MLOOPUV, umd->uvlayer_name, uvname);
 
-  const MPoly *polygons = BKE_mesh_polygons(mesh);
+  const MPoly *polys = BKE_mesh_polygons(mesh);
   const MLoop *loops = BKE_mesh_loops(mesh);
   polys_num = mesh->totpoly;
   loops_num = mesh->totloop;
@@ -206,7 +206,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
   MOD_get_vgroup(ctx->object, mesh, umd->vgroup_name, &dvert, &defgrp_index);
 
   UVWarpData data = {
-      .mpoly = polygons,
+      .mpoly = polys,
       .mloop = loops,
       .mloopuv = mloopuv,
       .dvert = dvert,

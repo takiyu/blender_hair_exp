@@ -466,7 +466,7 @@ GPU_PBVH_Buffers *GPU_pbvh_mesh_buffers_build(const Mesh *mesh,
   int i, tottri;
   int tot_real_edges = 0;
 
-  const MPoly *polygons = BKE_mesh_polygons(mesh);
+  const MPoly *polys = BKE_mesh_polygons(mesh);
   const MLoop *loops = BKE_mesh_loops(mesh);
 
   buffers = MEM_callocN(sizeof(GPU_PBVH_Buffers), "GPU_Buffers");
@@ -475,7 +475,7 @@ GPU_PBVH_Buffers *GPU_pbvh_mesh_buffers_build(const Mesh *mesh,
       &mesh->vdata, CD_PROP_BOOL, ".hide_vert");
 
   /* smooth or flat for all */
-  buffers->smooth = polygons[looptri[face_indices[0]].poly].flag & ME_SMOOTH;
+  buffers->smooth = polys[looptri[face_indices[0]].poly].flag & ME_SMOOTH;
 
   buffers->show_overlay = false;
 
@@ -497,7 +497,7 @@ GPU_PBVH_Buffers *GPU_pbvh_mesh_buffers_build(const Mesh *mesh,
   if (tottri == 0) {
     buffers->tot_tri = 0;
 
-    buffers->mpoly = polygons;
+    buffers->mpoly = polys;
     buffers->mloop = loops;
     buffers->looptri = looptri;
     buffers->face_indices = face_indices;
@@ -537,7 +537,7 @@ GPU_PBVH_Buffers *GPU_pbvh_mesh_buffers_build(const Mesh *mesh,
 
   buffers->tot_tri = tottri;
 
-  buffers->mpoly = polygons;
+  buffers->mpoly = polys;
   buffers->mloop = loops;
   buffers->looptri = looptri;
 

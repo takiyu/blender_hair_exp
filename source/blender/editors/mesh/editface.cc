@@ -613,7 +613,7 @@ void paintvert_select_ungrouped(Object *ob, bool extend, bool flush_flags)
 
   for (int i = 0; i < me->totvert; i++) {
     MVert *mv = &verts[i];
-    MDeformVert *dv = &me->dvert[i];
+    const MDeformVert *dv = &dverts[i];
     if (!hide_vert[i]) {
       if (dv->dw == nullptr) {
         /* if null weight then not grouped */

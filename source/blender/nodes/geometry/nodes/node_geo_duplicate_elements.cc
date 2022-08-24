@@ -487,14 +487,14 @@ static void copy_stable_id_faces(const Mesh &mesh,
   VArraySpan<int> src{src_attribute.varray.typed<int>()};
   MutableSpan<int> dst = dst_attribute.span.typed<int>();
 
-  const Span<MPoly> polygons = bke::mesh_polygons(mesh);
+  const Span<MPoly> polys = bke::mesh_polygons(mesh);
   int loop_index = 0;
   for (const int i_poly : selection.index_range()) {
     const IndexRange range = range_for_offsets_index(poly_offsets, i_poly);
     if (range.size() == 0) {
       continue;
     }
-    const MPoly &source = polygons[i_poly];
+    const MPoly &source = polys[i_poly];
     for ([[maybe_unused]] const int i_duplicate : IndexRange(range.size())) {
       for ([[maybe_unused]] const int i_loops : IndexRange(source.totloop)) {
         if (i_duplicate == 0) {

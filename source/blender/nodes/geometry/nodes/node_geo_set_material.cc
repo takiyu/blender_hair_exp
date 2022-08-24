@@ -50,9 +50,9 @@ static void assign_material_to_faces(Mesh &mesh, const IndexMask selection, Mate
     BKE_id_material_eval_assign(&mesh.id, new_material_index + 1, material);
   }
 
-  MutableSpan<MPoly> polygons = bke::mesh_polygons_for_write(mesh);
+  MutableSpan<MPoly> polys = bke::mesh_polygons_for_write(mesh);
   for (const int i : selection) {
-    MPoly &poly = polygons[i];
+    MPoly &poly = polys[i];
     poly.mat_nr = new_material_index;
   }
 }

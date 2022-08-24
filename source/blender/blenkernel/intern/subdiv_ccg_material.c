@@ -15,7 +15,7 @@
 
 typedef struct CCGMaterialFromMeshData {
   const Mesh *mesh;
-  const MPoly *polygons;
+  const MPoly *polys;
 } CCGMaterialFromMeshData;
 
 static DMFlagMat subdiv_ccg_material_flags_eval(
@@ -23,7 +23,7 @@ static DMFlagMat subdiv_ccg_material_flags_eval(
 {
   CCGMaterialFromMeshData *data = (CCGMaterialFromMeshData *)material_flags_evaluator->user_data;
   BLI_assert(coarse_face_index < data->mesh->totpoly);
-  const MPoly *poly = &data->polygons[coarse_face_index];
+  const MPoly *poly = &data->polys[coarse_face_index];
   DMFlagMat material_flags;
   material_flags.flag = poly->flag;
   material_flags.mat_nr = poly->mat_nr;
@@ -42,7 +42,7 @@ void BKE_subdiv_ccg_material_flags_init_from_mesh(
   CCGMaterialFromMeshData *data = MEM_mallocN(sizeof(CCGMaterialFromMeshData),
                                               "ccg material eval");
   data->mesh = mesh;
-  data->polygons = BKE_mesh_polygons(mesh);
+  data->polys = BKE_mesh_polygons(mesh);
   material_flags_evaluator->eval_material_flags = subdiv_ccg_material_flags_eval;
   material_flags_evaluator->free = subdiv_ccg_material_flags_free;
   material_flags_evaluator->user_data = data;

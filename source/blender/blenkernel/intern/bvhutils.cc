@@ -574,7 +574,7 @@ static void bvhtree_from_mesh_setup_data(BVHTree *tree,
                                          const BVHCacheType bvh_cache_type,
                                          const MVert *vert,
                                          const MEdge *edge,
-                                         const MPoly *polygons,
+                                         const MPoly *polys,
                                          const MFace *face,
                                          const MLoop *loop,
                                          const MLoopTri *looptri,
@@ -587,7 +587,7 @@ static void bvhtree_from_mesh_setup_data(BVHTree *tree,
 
   r_data->vert = vert;
   r_data->edge = edge;
-  r_data->polygons = polygons;
+  r_data->polys = polys;
   r_data->loop = loop;
   r_data->face = face;
   r_data->looptri = looptri;
@@ -1249,17 +1249,17 @@ BVHTree *BKE_bvhtree_from_mesh_get(struct BVHTreeFromMesh *data,
     looptri = BKE_mesh_runtime_looptri_ensure(mesh);
     looptri_len = BKE_mesh_runtime_looptri_len(mesh);
   }
-  const Span<MVert> vertices = blender::bke::mesh_vertices(*mesh);
+  const Span<MVert> verts = blender::bke::mesh_vertices(*mesh);
   const Span<MEdge> edges = blender::bke::mesh_edges(*mesh);
-  const Span<MPoly> polygons = blender::bke::mesh_polygons(*mesh);
+  const Span<MPoly> polys = blender::bke::mesh_polygons(*mesh);
   const Span<MLoop> loops = blender::bke::mesh_loops(*mesh);
 
   /* Setup BVHTreeFromMesh */
   bvhtree_from_mesh_setup_data(nullptr,
                                bvh_cache_type,
-                               vertices.data(),
+                               verts.data(),
                                edges.data(),
-                               polygons.data(),
+                               polys.data(),
                                (const MFace *)CustomData_get_layer(&mesh->fdata, CD_MFACE),
                                loops.data(),
                                looptri,
@@ -1285,25 +1285,19 @@ BVHTree *BKE_bvhtree_from_mesh_get(struct BVHTreeFromMesh *data,
   switch (bvh_cache_type) {
     case BVHTREE_FROM_LOOSEVERTS:
       mask = loose_verts_map_get(
-          edges.data(), mesh->totedge, vertices.data(), mesh->totvert, &mask_bits_act_len);
+          edges.data(), mesh->totedge, verts.data(), mesh->totvert, &mask_bits_act_len);
       ATTR_FALLTHROUGH;
     case BVHTREE_FROM_VERTS:
       data->tree = bvhtree_from_mesh_verts_create_tree(
-          0.0f, tree_type, 6, vertices.data(), mesh->totvert, mask, mask_bits_act_len);
+          0.0f, tree_type, 6, verts.data(), mesh->totvert, mask, mask_bits_act_len);
       break;
 
     case BVHTREE_FROM_LOOSEEDGES:
       mask = loose_edges_map_get(edges.data(), mesh->totedge, &mask_bits_act_len);
       ATTR_FALLTHROUGH;
     case BVHTREE_FROM_EDGES:
-      data->tree = bvhtree_from_mesh_edges_create_tree(vertices.data(),
-                                                       edges.data(),
-                                                       mesh->totedge,
-                                                       mask,
-                                                       mask_bits_act_len,
-                                                       0.0f,
-                                                       tree_type,
-                                                       6);
+      data->tree = bvhtree_from_mesh_edges_create_tree(
+          verts.data(), edges.data(), mesh->totedge, mask, mask_bits_act_len, 0.0f, tree_type, 6);
       break;
 
     case BVHTREE_FROM_FACES:
@@ -1312,7 +1306,7 @@ BVHTree *BKE_bvhtree_from_mesh_get(struct BVHTreeFromMesh *data,
           0.0f,
           tree_type,
           6,
-          vertices.data(),
+          verts.data(),
           (const MFace *)CustomData_get_layer(&mesh->fdata, CD_MFACE),
           mesh->totface,
           nullptr,
@@ -1332,7 +1326,7 @@ BVHTree *BKE_bvhtree_from_mesh_get(struct BVHTreeFromMesh *data,
       data->tree = bvhtree_from_mesh_looptri_create_tree(0.0f,
                                                          tree_type,
                                                          6,
-                                                         vertices.data(),
+                                                         verts.data(),
                                                          loops.data(),
                                                          looptri,
                                                          looptri_len,

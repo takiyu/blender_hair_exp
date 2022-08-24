@@ -169,7 +169,7 @@ std::unique_ptr<ColumnValues> GeometryDataSource::get_column_values(
     const MeshComponent &component = static_cast<const MeshComponent &>(*component_);
     if (const Mesh *mesh = component.get_for_read()) {
       const Span<MEdge> edges = bke::mesh_edges(*mesh);
-      const Span<MPoly> polygons = bke::mesh_polygons(*mesh);
+      const Span<MPoly> polys = bke::mesh_polygons(*mesh);
       const Span<MLoop> loops = bke::mesh_loops(*mesh);
 
       if (domain_ == ATTR_DOMAIN_EDGE) {
@@ -189,14 +189,14 @@ std::unique_ptr<ColumnValues> GeometryDataSource::get_column_values(
       else if (domain_ == ATTR_DOMAIN_FACE) {
         if (STREQ(column_id.name, "Corner Start")) {
           return std::make_unique<ColumnValues>(
-              column_id.name, VArray<int>::ForFunc(polygons.size(), [polygons](int64_t index) {
-                return polygons[index].loopstart;
+              column_id.name, VArray<int>::ForFunc(polys.size(), [polys](int64_t index) {
+                return polys[index].loopstart;
               }));
         }
         if (STREQ(column_id.name, "Corner Size")) {
           return std::make_unique<ColumnValues>(
-              column_id.name, VArray<int>::ForFunc(polygons.size(), [polygons](int64_t index) {
-                return polygons[index].totloop;
+              column_id.name, VArray<int>::ForFunc(polys.size(), [polys](int64_t index) {
+                return polys[index].totloop;
               }));
         }
       }

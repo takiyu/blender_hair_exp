@@ -1450,27 +1450,27 @@ void recalc_emitter_field(Depsgraph *UNUSED(depsgraph), Object *UNUSED(ob), Part
   vec = edit->emitter_cosnos;
   nor = vec + 3;
 
-  const MVert *vertices = BKE_mesh_vertices(mesh);
+  const MVert *verts = BKE_mesh_vertices(mesh);
   const float(*vert_normals)[3] = BKE_mesh_vertex_normals_ensure(mesh);
   MFace *mfaces = (MFace *)CustomData_get_layer(&mesh->fdata, CD_MFACE);
   for (i = 0; i < totface; i++, vec += 6, nor += 6) {
     MFace *mface = &mfaces[i];
     const MVert *mvert;
 
-    mvert = &vertices[mface->v1];
+    mvert = &verts[mface->v1];
     copy_v3_v3(vec, mvert->co);
     copy_v3_v3(nor, vert_normals[mface->v1]);
 
-    mvert = &vertices[mface->v2];
+    mvert = &verts[mface->v2];
     add_v3_v3v3(vec, vec, mvert->co);
     add_v3_v3(nor, vert_normals[mface->v2]);
 
-    mvert = &vertices[mface->v3];
+    mvert = &verts[mface->v3];
     add_v3_v3v3(vec, vec, mvert->co);
     add_v3_v3(nor, vert_normals[mface->v3]);
 
     if (mface->v4) {
-      mvert = &vertices[mface->v4];
+      mvert = &verts[mface->v4];
       add_v3_v3v3(vec, vec, mvert->co);
       add_v3_v3(nor, vert_normals[mface->v4]);
 

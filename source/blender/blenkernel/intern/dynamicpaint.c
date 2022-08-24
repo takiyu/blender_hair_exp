@@ -1403,7 +1403,7 @@ static void dynamicPaint_initAdjacencyData(DynamicPaintSurface *surface, const b
     int numOfEdges = mesh->totedge;
     int numOfPolys = mesh->totpoly;
     const MEdge *edges = BKE_mesh_edges(mesh);
-    const MPoly *polygons = BKE_mesh_polygons(mesh);
+    const MPoly *polys = BKE_mesh_polygons(mesh);
     const MLoop *loops = BKE_mesh_loops(mesh);
 
     /* count number of edges per vertex */
@@ -1418,8 +1418,8 @@ static void dynamicPaint_initAdjacencyData(DynamicPaintSurface *surface, const b
     /* also add number of vertices to temp_data
      * to locate points on "mesh edge" */
     for (int i = 0; i < numOfPolys; i++) {
-      for (int j = 0; j < polygons[i].totloop; j++) {
-        temp_data[loops[polygons[i].loopstart + j].v]++;
+      for (int j = 0; j < polys[i].totloop; j++) {
+        temp_data[loops[polys[i].loopstart + j].v]++;
       }
     }
 

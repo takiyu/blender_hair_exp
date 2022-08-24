@@ -451,9 +451,9 @@ static void appendPolyLineVert(ListBase *lb, uint index)
 
 void BKE_mesh_to_curve_nurblist(const Mesh *me, ListBase *nurblist, const int edge_users_test)
 {
-  const Span<MVert> vertices = blender::bke::mesh_vertices(*me);
+  const Span<MVert> verts = blender::bke::mesh_vertices(*me);
   const Span<MEdge> mesh_edges = blender::bke::mesh_edges(*me);
-  const Span<MPoly> polygons = blender::bke::mesh_polygons(*me);
+  const Span<MPoly> polys = blender::bke::mesh_polygons(*me);
   const Span<MLoop> loops = blender::bke::mesh_loops(*me);
 
   const MEdge *med;
@@ -471,7 +471,7 @@ void BKE_mesh_to_curve_nurblist(const Mesh *me, ListBase *nurblist, const int ed
 
   /* get boundary edges */
   edge_users = (int *)MEM_calloc_arrayN(medge_len, sizeof(int), __func__);
-  for (i = 0, mp = polygons.data(); i < mpoly_len; i++, mp++) {
+  for (i = 0, mp = polys.data(); i < mpoly_len; i++, mp++) {
     const MLoop *ml = &loops[mp->loopstart];
     int j;
     for (j = 0; j < mp->totloop; j++, ml++) {
@@ -583,7 +583,7 @@ void BKE_mesh_to_curve_nurblist(const Mesh *me, ListBase *nurblist, const int ed
         /* add points */
         vl = (VertLink *)polyline.first;
         for (i = 0, bp = nu->bp; i < totpoly; i++, bp++, vl = (VertLink *)vl->next) {
-          copy_v3_v3(bp->vec, vertices[vl->index].co);
+          copy_v3_v3(bp->vec, verts[vl->index].co);
           bp->f1 = SELECT;
           bp->radius = bp->weight = 1.0;
         }
@@ -686,9 +686,9 @@ void BKE_mesh_from_pointcloud(const PointCloud *pointcloud, Mesh *me)
   CustomDataLayer *pos_layer = &me->vdata.layers[layer_idx];
   float(*positions)[3] = (float(*)[3])pos_layer->data;
 
-  MutableSpan<MVert> vertices = blender::bke::mesh_vertices_for_write(*me);
+  MutableSpan<MVert> verts = blender::bke::mesh_vertices_for_write(*me);
   for (int i = 0; i < me->totvert; i++) {
-    copy_v3_v3(vertices[i].co, positions[i]);
+    copy_v3_v3(verts[i].co, positions[i]);
   }
 
   /* Delete Position attribute since it is now in vertex coordinates. */
@@ -1165,8 +1165,8 @@ Mesh *BKE_mesh_create_derived_for_modifier(struct Depsgraph *depsgraph,
 
   if (build_shapekey_layers && me->key &&
       (kb = (KeyBlock *)BLI_findlink(&me->key->block, ob_eval->shapenr - 1))) {
-    MutableSpan<MVert> vertices = blender::bke::mesh_vertices_for_write(*me);
-    BKE_keyblock_convert_to_mesh(kb, vertices.data(), me->totvert);
+    MutableSpan<MVert> verts = blender::bke::mesh_vertices_for_write(*me);
+    BKE_keyblock_convert_to_mesh(kb, verts.data(), me->totvert);
   }
 
   Mesh *mesh_temp = (Mesh *)BKE_id_copy_ex(nullptr, &me->id, nullptr, LIB_ID_COPY_LOCALIZE);
@@ -1269,9 +1269,9 @@ static void shapekey_layers_to_keyblocks(Mesh *mesh_src, Mesh *mesh_dst, int act
 
     kb->data = kbcos = (float(*)[3])MEM_malloc_arrayN(kb->totelem, sizeof(float[3]), __func__);
     if (kb->uid == actshape_uid) {
-      const Span<MVert> vertices = blender::bke::mesh_vertices(*mesh_src);
+      const Span<MVert> verts = blender::bke::mesh_vertices(*mesh_src);
       for (j = 0; j < mesh_src->totvert; j++, kbcos++) {
-        copy_v3_v3(*kbcos, vertices[j].co);
+        copy_v3_v3(*kbcos, verts[j].co);
       }
     }
     else {
@@ -1485,8 +1485,8 @@ void BKE_mesh_nomain_to_meshkey(Mesh *mesh_src, Mesh *mesh_dst, KeyBlock *kb)
   kb->totelem = totvert;
 
   fp = (float *)kb->data;
-  const Span<MVert> vertices = blender::bke::mesh_vertices(*mesh_src);
+  const Span<MVert> verts = blender::bke::mesh_vertices(*mesh_src);
   for (a = 0; a < kb->totelem; a++, fp += 3) {
-    copy_v3_v3(fp, vertices[a].co);
+    copy_v3_v3(fp, verts[a].co);
   }
 }

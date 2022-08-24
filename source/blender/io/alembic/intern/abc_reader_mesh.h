@@ -41,7 +41,7 @@ class AbcMeshReader final : public AbcObjectReader {
                           const Alembic::AbcGeom::ISampleSelector &sample_sel);
 
   void assign_facesets_to_mpoly(const Alembic::Abc::ISampleSelector &sample_sel,
-                                MutableSpan<MPoly> polygons,
+                                MutableSpan<MPoly> polys,
                                 std::map<std::string, int> &r_mat_map);
 };
 

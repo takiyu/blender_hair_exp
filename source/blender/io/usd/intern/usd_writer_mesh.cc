@@ -245,9 +245,9 @@ static void get_vertices(const Mesh *mesh, USDMeshData &usd_mesh_data)
 {
   usd_mesh_data.points.reserve(mesh->totvert);
 
-  const Span<MVert> vertices = bke::mesh_vertices(*mesh);
-  for (const int i : vertices.index_range()) {
-    usd_mesh_data.points.push_back(pxr::GfVec3f(vertices[i].co));
+  const Span<MVert> verts = bke::mesh_vertices(*mesh);
+  for (const int i : verts.index_range()) {
+    usd_mesh_data.points.push_back(pxr::GfVec3f(verts[i].co));
   }
 }
 
@@ -260,11 +260,11 @@ static void get_loops_polys(const Mesh *mesh, USDMeshData &usd_mesh_data)
   usd_mesh_data.face_vertex_counts.reserve(mesh->totpoly);
   usd_mesh_data.face_indices.reserve(mesh->totloop);
 
-  const Span<MPoly> polygons = bke::mesh_polygons(*mesh);
+  const Span<MPoly> polys = bke::mesh_polygons(*mesh);
   const Span<MLoop> loops = bke::mesh_loops(*mesh);
 
-  for (const int i : polygons.index_range()) {
-    const MPoly &poly = polygons[i];
+  for (const int i : polys.index_range()) {
+    const MPoly &poly = polys[i];
     usd_mesh_data.face_vertex_counts.push_back(poly.totloop);
     for (const MLoop &loop : loops.slice(poly.loopstart, poly.totloop)) {
       usd_mesh_data.face_indices.push_back(loop.v);
@@ -394,7 +394,7 @@ void USDGenericMeshWriter::write_normals(const Mesh *mesh, pxr::UsdGeomMesh usd_
 {
   pxr::UsdTimeCode timecode = get_export_time_code();
   const float(*lnors)[3] = static_cast<float(*)[3]>(CustomData_get_layer(&mesh->ldata, CD_NORMAL));
-  const Span<MPoly> polygons = bke::mesh_polygons(*mesh);
+  const Span<MPoly> polys = bke::mesh_polygons(*mesh);
   const Span<MLoop> loops = bke::mesh_loops(*mesh);
 
   pxr::VtVec3fArray loop_normals;
@@ -410,8 +410,8 @@ void USDGenericMeshWriter::write_normals(const Mesh *mesh, pxr::UsdGeomMesh usd_
     /* Compute the loop normals based on the 'smooth' flag. */
     const float(*vert_normals)[3] = BKE_mesh_vertex_normals_ensure(mesh);
     const float(*face_normals)[3] = BKE_mesh_poly_normals_ensure(mesh);
-    for (const int i : polygons.index_range()) {
-      const MPoly &poly = polygons[i];
+    for (const int i : polys.index_range()) {
+      const MPoly &poly = polys[i];
 
       if ((poly.flag & ME_SMOOTH) == 0) {
         /* Flat shaded, use common normal for all verts. */

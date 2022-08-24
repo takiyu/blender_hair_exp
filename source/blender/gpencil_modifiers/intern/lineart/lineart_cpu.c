@@ -1636,14 +1636,14 @@ static void lineart_identify_mlooptri_feature_edges(void *__restrict userdata,
   }
 
   if (!only_contour) {
-    const MPoly *polygons = BKE_mesh_polygons(me);
+    const MPoly *polys = BKE_mesh_polygons(me);
 
     if (ld->conf.use_crease) {
 
       bool do_crease = true;
       if (!ld->conf.force_crease && !e_feat_data->use_auto_smooth &&
-          (polygons[mlooptri[f1].poly].flag & ME_SMOOTH) &&
-          (polygons[mlooptri[f2].poly].flag & ME_SMOOTH)) {
+          (polys[mlooptri[f1].poly].flag & ME_SMOOTH) &&
+          (polys[mlooptri[f2].poly].flag & ME_SMOOTH)) {
         do_crease = false;
       }
       if (do_crease && (dot_v3v3_db(tri1->gn, tri2->gn) < e_feat_data->crease_threshold)) {
@@ -1651,8 +1651,8 @@ static void lineart_identify_mlooptri_feature_edges(void *__restrict userdata,
       }
     }
 
-    int mat1 = polygons[mlooptri[f1].poly].mat_nr;
-    int mat2 = polygons[mlooptri[f2].poly].mat_nr;
+    int mat1 = polys[mlooptri[f1].poly].mat_nr;
+    int mat2 = polys[mlooptri[f2].poly].mat_nr;
 
     if (mat1 != mat2) {
       Material *m1 = BKE_object_material_get_eval(ob_eval, mat1 + 1);
@@ -1896,8 +1896,8 @@ static void lineart_load_tri_task(void *__restrict userdata,
 
   double gn[3];
   float no[3];
-  const MVert *vertices = BKE_mesh_vertices(me);
-  normal_tri_v3(no, vertices[v1].co, vertices[v2].co, vertices[v3].co);
+  const MVert *verts = BKE_mesh_vertices(me);
+  normal_tri_v3(no, verts[v1].co, verts[v2].co, verts[v3].co);
   copy_v3db_v3fl(gn, no);
   mul_v3_mat3_m4v3_db(tri->gn, ob_info->normal, gn);
   normalize_v3_db(tri->gn);

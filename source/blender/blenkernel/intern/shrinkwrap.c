@@ -1179,7 +1179,7 @@ void BKE_shrinkwrap_compute_smooth_normal(const struct ShrinkwrapTreeData *tree,
   const float(*vert_normals)[3] = tree->treeData.vert_normals;
 
   /* Interpolate smooth normals if enabled. */
-  if ((treeData->polygons[tri->poly].flag & ME_SMOOTH) != 0) {
+  if ((treeData->polys[tri->poly].flag & ME_SMOOTH) != 0) {
     const uint32_t vert_indices[3] = {treeData->loop[tri->tri[0]].v,
                                       treeData->loop[tri->tri[1]].v,
                                       treeData->loop[tri->tri[2]].v};

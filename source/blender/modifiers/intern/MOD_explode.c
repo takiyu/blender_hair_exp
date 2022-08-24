@@ -730,15 +730,15 @@ static Mesh *cutEdges(ExplodeModifierData *emd, Mesh *mesh)
 
   layers_num = CustomData_number_of_layers(&split_m->fdata, CD_MTFACE);
 
-  const MVert *mesh_vertices = BKE_mesh_vertices(mesh);
-  MVert *split_m_vertices = BKE_mesh_vertices_for_write(split_m);
+  const MVert *mesh_verts = BKE_mesh_vertices(mesh);
+  MVert *split_m_verts = BKE_mesh_vertices_for_write(split_m);
 
   /* copy new faces & verts (is it really this painful with custom data??) */
   for (i = 0; i < totvert; i++) {
     MVert source;
     MVert *dest;
-    source = mesh_vertices[i];
-    dest = &split_m_vertices[i];
+    source = mesh_verts[i];
+    dest = &split_m_verts[i];
 
     CustomData_copy_data(&mesh->vdata, &split_m->vdata, i, i, 1);
     *dest = source;
@@ -759,14 +759,14 @@ static Mesh *cutEdges(ExplodeModifierData *emd, Mesh *mesh)
   for (; !BLI_edgehashIterator_isDone(ehi); BLI_edgehashIterator_step(ehi)) {
     BLI_edgehashIterator_getKey(ehi, &ed_v1, &ed_v2);
     esplit = POINTER_AS_INT(BLI_edgehashIterator_getValue(ehi));
-    mv = &split_m_vertices[ed_v2];
-    dupve = &split_m_vertices[esplit];
+    mv = &split_m_verts[ed_v2];
+    dupve = &split_m_verts[esplit];
 
     CustomData_copy_data(&split_m->vdata, &split_m->vdata, ed_v2, esplit, 1);
 
     *dupve = *mv;
 
-    mv = &split_m_vertices[ed_v1];
+    mv = &split_m_verts[ed_v1];
 
     mid_v3_v3v3(dupve->co, dupve->co, mv->co);
   }
@@ -989,8 +989,8 @@ static Mesh *explodeMesh(ExplodeModifierData *emd,
 
   psmd->psys->lattice_deform_data = psys_create_lattice_deform_data(&sim);
 
-  const MVert *mesh_vertices = BKE_mesh_vertices(mesh);
-  MVert *explode_vertices = BKE_mesh_vertices_for_write(explode);
+  const MVert *mesh_verts = BKE_mesh_vertices(mesh);
+  MVert *explode_verts = BKE_mesh_vertices_for_write(explode);
 
   /* duplicate & displace vertices */
   ehi = BLI_edgehashIterator_new(vertpahash);
@@ -1003,8 +1003,8 @@ static Mesh *explodeMesh(ExplodeModifierData *emd,
     ed_v2 -= totvert;
     v = POINTER_AS_INT(BLI_edgehashIterator_getValue(ehi));
 
-    source = mesh_vertices[ed_v1];
-    dest = &explode_vertices[v];
+    source = mesh_verts[ed_v1];
+    dest = &explode_verts[v];
 
     CustomData_copy_data(&mesh->vdata, &explode->vdata, ed_v1, v, 1);
 
@@ -1019,7 +1019,7 @@ static Mesh *explodeMesh(ExplodeModifierData *emd,
       state.time = ctime;
       psys_get_particle_state(&sim, ed_v2, &state, 1);
 
-      vertco = explode_vertices[v].co;
+      vertco = explode_verts[v].co;
       mul_m4_v3(ctx->object->obmat, vertco);
 
       sub_v3_v3(vertco, birth.co);

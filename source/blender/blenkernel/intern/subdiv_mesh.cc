@@ -32,16 +32,16 @@
 struct SubdivMeshContext {
   const SubdivToMeshSettings *settings;
   const Mesh *coarse_mesh;
-  const MVert *coarse_vertices;
+  const MVert *coarse_verts;
   const MEdge *coarse_edges;
-  const MPoly *coarse_polygons;
+  const MPoly *coarse_polys;
   const MLoop *coarse_loops;
 
   Subdiv *subdiv;
   Mesh *subdiv_mesh;
-  MVert *subdiv_vertices;
+  MVert *subdiv_verts;
   MEdge *subdiv_edges;
-  MPoly *subdiv_polygons;
+  MPoly *subdiv_polys;
   MLoop *subdiv_loops;
 
   /* Cached custom data arrays for faster access. */
@@ -73,9 +73,9 @@ static void subdiv_mesh_ctx_cache_uv_layers(SubdivMeshContext *ctx)
 static void subdiv_mesh_ctx_cache_custom_data_layers(SubdivMeshContext *ctx)
 {
   Mesh *subdiv_mesh = ctx->subdiv_mesh;
-  ctx->subdiv_vertices = BKE_mesh_vertices_for_write(subdiv_mesh);
+  ctx->subdiv_verts = BKE_mesh_vertices_for_write(subdiv_mesh);
   ctx->subdiv_edges = BKE_mesh_edges_for_write(subdiv_mesh);
-  ctx->subdiv_polygons = BKE_mesh_polygons_for_write(subdiv_mesh);
+  ctx->subdiv_polys = BKE_mesh_polygons_for_write(subdiv_mesh);
   ctx->subdiv_loops = BKE_mesh_loops_for_write(subdiv_mesh);
   /* Pointers to original indices layers. */
   ctx->vert_origindex = static_cast<int *>(
@@ -478,7 +478,7 @@ static void subdiv_accumulate_vertex_displacement(SubdivMeshContext *ctx,
 {
   /* Accumulate displacement. */
   Subdiv *subdiv = ctx->subdiv;
-  const int subdiv_vertex_index = subdiv_vert - ctx->subdiv_vertices;
+  const int subdiv_vertex_index = subdiv_vert - ctx->subdiv_verts;
   float dummy_P[3], dPdu[3], dPdv[3], D[3];
   BKE_subdiv_eval_limit_point_and_derivatives(subdiv, ptex_face_index, u, v, dummy_P, dPdu, dPdv);
 
@@ -532,8 +532,8 @@ static void subdiv_vertex_data_copy(const SubdivMeshContext *ctx,
                                     MVert *subdiv_vertex)
 {
   const Mesh *coarse_mesh = ctx->coarse_mesh;
-  const int coarse_vertex_index = coarse_vertex - ctx->coarse_vertices;
-  const int subdiv_vertex_index = subdiv_vertex - ctx->subdiv_vertices;
+  const int coarse_vertex_index = coarse_vertex - ctx->coarse_verts;
+  const int subdiv_vertex_index = subdiv_vertex - ctx->subdiv_verts;
   CustomData_copy_data(
       &coarse_mesh->vdata, &ctx->subdiv_mesh->vdata, coarse_vertex_index, subdiv_vertex_index, 1);
 }
@@ -544,7 +544,7 @@ static void subdiv_vertex_data_interpolate(const SubdivMeshContext *ctx,
                                            const float u,
                                            const float v)
 {
-  const int subdiv_vertex_index = subdiv_vertex - ctx->subdiv_vertices;
+  const int subdiv_vertex_index = subdiv_vertex - ctx->subdiv_verts;
   const float weights[4] = {(1.0f - u) * (1.0f - v), u * (1.0f - v), u * v, (1.0f - u) * v};
   CustomData_interp(vertex_interpolation->vertex_data,
                     &ctx->subdiv_mesh->vdata,
@@ -565,7 +565,7 @@ static void evaluate_vertex_and_apply_displacement_copy(const SubdivMeshContext 
                                                         const MVert *coarse_vert,
                                                         MVert *subdiv_vert)
 {
-  const int subdiv_vertex_index = subdiv_vert - ctx->subdiv_vertices;
+  const int subdiv_vertex_index = subdiv_vert - ctx->subdiv_verts;
   /* Displacement is accumulated in subdiv vertex position.
    * Needs to be backed up before copying data from original vertex. */
   float D[3] = {0.0f, 0.0f, 0.0f};
@@ -593,7 +593,7 @@ static void evaluate_vertex_and_apply_displacement_interpolate(
     VerticesForInterpolation *vertex_interpolation,
     MVert *subdiv_vert)
 {
-  const int subdiv_vertex_index = subdiv_vert - ctx->subdiv_vertices;
+  const int subdiv_vertex_index = subdiv_vert - ctx->subdiv_verts;
   /* Displacement is accumulated in subdiv vertex position.
    * Needs to be backed up before copying data from original vertex. */
   float D[3] = {0.0f, 0.0f, 0.0f};
@@ -620,7 +620,7 @@ static void subdiv_mesh_vertex_displacement_every_corner_or_edge(
     const int subdiv_vertex_index)
 {
   SubdivMeshContext *ctx = static_cast<SubdivMeshContext *>(foreach_context->user_data);
-  MVert *subdiv_vert = &ctx->subdiv_vertices[subdiv_vertex_index];
+  MVert *subdiv_vert = &ctx->subdiv_verts[subdiv_vertex_index];
   subdiv_accumulate_vertex_displacement(ctx, ptex_face_index, u, v, subdiv_vert);
 }
 
@@ -665,8 +665,8 @@ static void subdiv_mesh_vertex_corner(const SubdivForeachContext *foreach_contex
 {
   BLI_assert(coarse_vertex_index != ORIGINDEX_NONE);
   SubdivMeshContext *ctx = static_cast<SubdivMeshContext *>(foreach_context->user_data);
-  const MVert *coarse_vert = &ctx->coarse_vertices[coarse_vertex_index];
-  MVert *subdiv_vert = &ctx->subdiv_vertices[subdiv_vertex_index];
+  const MVert *coarse_vert = &ctx->coarse_verts[coarse_vertex_index];
+  MVert *subdiv_vert = &ctx->subdiv_verts[subdiv_vertex_index];
   evaluate_vertex_and_apply_displacement_copy(
       ctx, ptex_face_index, u, v, coarse_vert, subdiv_vert);
 }
@@ -711,8 +711,8 @@ static void subdiv_mesh_vertex_edge(const SubdivForeachContext *foreach_context,
 {
   SubdivMeshContext *ctx = static_cast<SubdivMeshContext *>(foreach_context->user_data);
   SubdivMeshTLS *tls = static_cast<SubdivMeshTLS *>(tls_v);
-  const MPoly *coarse_poly = &ctx->coarse_polygons[coarse_poly_index];
-  MVert *subdiv_vert = &ctx->subdiv_vertices[subdiv_vertex_index];
+  const MPoly *coarse_poly = &ctx->coarse_polys[coarse_poly_index];
+  MVert *subdiv_vert = &ctx->subdiv_verts[subdiv_vertex_index];
   subdiv_mesh_ensure_vertex_interpolation(ctx, tls, coarse_poly, coarse_corner);
   evaluate_vertex_and_apply_displacement_interpolate(
       ctx, ptex_face_index, u, v, &tls->vertex_interpolation, subdiv_vert);
@@ -756,9 +756,9 @@ static void subdiv_mesh_vertex_inner(const SubdivForeachContext *foreach_context
   SubdivMeshContext *ctx = static_cast<SubdivMeshContext *>(foreach_context->user_data);
   SubdivMeshTLS *tls = static_cast<SubdivMeshTLS *>(tls_v);
   Subdiv *subdiv = ctx->subdiv;
-  const MPoly *coarse_poly = &ctx->coarse_polygons[coarse_poly_index];
+  const MPoly *coarse_poly = &ctx->coarse_polys[coarse_poly_index];
   Mesh *subdiv_mesh = ctx->subdiv_mesh;
-  MVert *subdiv_vert = &ctx->subdiv_vertices[subdiv_vertex_index];
+  MVert *subdiv_vert = &ctx->subdiv_verts[subdiv_vertex_index];
   subdiv_mesh_ensure_vertex_interpolation(ctx, tls, coarse_poly, coarse_corner);
   subdiv_vertex_data_interpolate(ctx, subdiv_vert, &tls->vertex_interpolation, u, v);
   BKE_subdiv_eval_final_point(subdiv, ptex_face_index, u, v, subdiv_vert->co);
@@ -899,7 +899,7 @@ static void subdiv_mesh_loop(const SubdivForeachContext *foreach_context,
 {
   SubdivMeshContext *ctx = static_cast<SubdivMeshContext *>(foreach_context->user_data);
   SubdivMeshTLS *tls = static_cast<SubdivMeshTLS *>(tls_v);
-  const MPoly *coarse_mpoly = ctx->coarse_polygons;
+  const MPoly *coarse_mpoly = ctx->coarse_polys;
   const MPoly *coarse_poly = &coarse_mpoly[coarse_poly_index];
   MLoop *subdiv_loop = &ctx->subdiv_loops[subdiv_loop_index];
   subdiv_mesh_ensure_loop_interpolation(ctx, tls, coarse_poly, coarse_corner);
@@ -919,8 +919,8 @@ static void subdiv_copy_poly_data(const SubdivMeshContext *ctx,
                                   MPoly *subdiv_poly,
                                   const MPoly *coarse_poly)
 {
-  const int coarse_poly_index = coarse_poly - ctx->coarse_polygons;
-  const int subdiv_poly_index = subdiv_poly - ctx->subdiv_polygons;
+  const int coarse_poly_index = coarse_poly - ctx->coarse_polys;
+  const int subdiv_poly_index = subdiv_poly - ctx->subdiv_polys;
   CustomData_copy_data(
       &ctx->coarse_mesh->pdata, &ctx->subdiv_mesh->pdata, coarse_poly_index, subdiv_poly_index, 1);
 }
@@ -934,8 +934,8 @@ static void subdiv_mesh_poly(const SubdivForeachContext *foreach_context,
 {
   BLI_assert(coarse_poly_index != ORIGINDEX_NONE);
   SubdivMeshContext *ctx = static_cast<SubdivMeshContext *>(foreach_context->user_data);
-  const MPoly *coarse_poly = &ctx->coarse_polygons[coarse_poly_index];
-  MPoly *subdiv_poly = &ctx->subdiv_polygons[subdiv_poly_index];
+  const MPoly *coarse_poly = &ctx->coarse_polys[coarse_poly_index];
+  MPoly *subdiv_poly = &ctx->subdiv_polys[subdiv_poly_index];
   subdiv_copy_poly_data(ctx, subdiv_poly, coarse_poly);
   subdiv_poly->loopstart = start_loop_index;
   subdiv_poly->totloop = num_loops;
@@ -953,8 +953,8 @@ static void subdiv_mesh_vertex_loose(const SubdivForeachContext *foreach_context
                                      const int subdiv_vertex_index)
 {
   SubdivMeshContext *ctx = static_cast<SubdivMeshContext *>(foreach_context->user_data);
-  const MVert *coarse_vertex = &ctx->coarse_vertices[coarse_vertex_index];
-  MVert *subdiv_vertex = &ctx->subdiv_vertices[subdiv_vertex_index];
+  const MVert *coarse_vertex = &ctx->coarse_verts[coarse_vertex_index];
+  MVert *subdiv_vertex = &ctx->subdiv_verts[subdiv_vertex_index];
   subdiv_vertex_data_copy(ctx, coarse_vertex, subdiv_vertex);
 }
 
@@ -1096,7 +1096,7 @@ static void subdiv_mesh_vertex_of_loose_edge(const SubdivForeachContext *foreach
     subdiv_mesh_vertex_of_loose_edge_interpolate(ctx, coarse_edge, u, subdiv_vertex_index);
   }
   /* Interpolate coordinate. */
-  MVert *subdiv_vertex = &ctx->subdiv_vertices[subdiv_vertex_index];
+  MVert *subdiv_vertex = &ctx->subdiv_verts[subdiv_vertex_index];
   BKE_subdiv_mesh_interpolate_position_on_edge(
       coarse_mesh, coarse_edge, is_simple, u, subdiv_vertex->co);
   /* Reset flags and such. */
@@ -1164,9 +1164,9 @@ Mesh *BKE_subdiv_to_mesh(Subdiv *subdiv,
   subdiv_context.settings = settings;
 
   subdiv_context.coarse_mesh = coarse_mesh;
-  subdiv_context.coarse_vertices = BKE_mesh_vertices(coarse_mesh);
+  subdiv_context.coarse_verts = BKE_mesh_vertices(coarse_mesh);
   subdiv_context.coarse_edges = BKE_mesh_edges(coarse_mesh);
-  subdiv_context.coarse_polygons = BKE_mesh_polygons(coarse_mesh);
+  subdiv_context.coarse_polys = BKE_mesh_polygons(coarse_mesh);
   subdiv_context.coarse_loops = BKE_mesh_loops(coarse_mesh);
 
   subdiv_context.subdiv = subdiv;

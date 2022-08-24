@@ -70,7 +70,7 @@ struct PuffOperationExecutor {
 
   Object *surface_ob_ = nullptr;
   Mesh *surface_ = nullptr;
-  Span<MVert> surface_vertices_;
+  Span<MVert> surface_verts_;
   Span<MLoop> surface_loops_;
   Span<MLoopTri> surface_looptris_;
   Span<float3> corner_normals_su_;
@@ -119,7 +119,7 @@ struct PuffOperationExecutor {
         reinterpret_cast<const float3 *>(CustomData_get_layer(&surface_->ldata, CD_NORMAL)),
         surface_->totloop};
 
-    surface_vertices_ = bke::mesh_vertices(*surface_);
+    surface_verts_ = bke::mesh_vertices(*surface_);
     surface_loops_ = bke::mesh_loops(*surface_);
     surface_looptris_ = {BKE_mesh_runtime_looptri_ensure(surface_),
                          BKE_mesh_runtime_looptri_len(surface_)};
@@ -292,9 +292,9 @@ struct PuffOperationExecutor {
 
         const MLoopTri &looptri = surface_looptris_[nearest.index];
         const float3 closest_pos_su = nearest.co;
-        const float3 &v0_su = surface_vertices_[surface_loops_[looptri.tri[0]].v].co;
-        const float3 &v1_su = surface_vertices_[surface_loops_[looptri.tri[1]].v].co;
-        const float3 &v2_su = surface_vertices_[surface_loops_[looptri.tri[2]].v].co;
+        const float3 &v0_su = surface_verts_[surface_loops_[looptri.tri[0]].v].co;
+        const float3 &v1_su = surface_verts_[surface_loops_[looptri.tri[1]].v].co;
+        const float3 &v2_su = surface_verts_[surface_loops_[looptri.tri[2]].v].co;
         float3 bary_coords;
         interp_weights_tri_v3(bary_coords, v0_su, v1_su, v2_su, closest_pos_su);
         const float3 normal_su = geometry::compute_surface_point_normal(

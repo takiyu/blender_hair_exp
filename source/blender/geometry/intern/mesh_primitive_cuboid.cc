@@ -405,13 +405,13 @@ Mesh *create_cuboid_mesh(const float3 &size,
 
   Mesh *mesh = BKE_mesh_new_nomain(
       config.vertex_count, 0, 0, config.loop_count, config.poly_count);
-  MutableSpan<MVert> vertices = bke::mesh_vertices_for_write(*mesh);
-  MutableSpan<MPoly> polygons = bke::mesh_polygons_for_write(*mesh);
+  MutableSpan<MVert> verts = bke::mesh_vertices_for_write(*mesh);
+  MutableSpan<MPoly> polys = bke::mesh_polygons_for_write(*mesh);
   MutableSpan<MLoop> loops = bke::mesh_loops_for_write(*mesh);
 
-  calculate_vertices(config, vertices);
+  calculate_vertices(config, verts);
 
-  calculate_polys(config, polygons, loops);
+  calculate_polys(config, polys, loops);
   BKE_mesh_calc_edges(mesh, false, false);
 
   if (uv_id) {

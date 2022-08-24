@@ -118,12 +118,12 @@ void GeometryExporter::operator()(Object *ob)
   if (this->export_settings.get_include_shapekeys()) {
     Key *key = BKE_key_from_object(ob);
     if (key) {
-      blender::MutableSpan<MVert> vertices = blender::bke::mesh_vertices_for_write(*me);
+      blender::MutableSpan<MVert> verts = blender::bke::mesh_vertices_for_write(*me);
       KeyBlock *kb = (KeyBlock *)key->block.first;
       /* skip the basis */
       kb = kb->next;
       for (; kb; kb = kb->next) {
-        BKE_keyblock_convert_to_mesh(kb, vertices.data(), me->totvert);
+        BKE_keyblock_convert_to_mesh(kb, verts.data(), me->totvert);
         export_key_mesh(ob, me, kb);
       }
     }
@@ -288,11 +288,11 @@ static bool collect_vertex_counts_per_poly(Mesh *me,
 {
   int totpolys = me->totpoly;
   bool is_triangulated = true;
-  const Span<MPoly> polygons = blender::bke::mesh_polygons(*me);
+  const Span<MPoly> polys = blender::bke::mesh_polygons(*me);
 
   /* Expecting that p->mat_nr is always 0 if the mesh has no materials assigned */
-  for (const int i : polygons.index_range()) {
-    const MPoly *p = &polygons[i];
+  for (const int i : polys.index_range()) {
+    const MPoly *p = &polys[i];
     if (p->mat_nr == material_index) {
       int vertex_count = p->totloop;
       vcount_list.push_back(vertex_count);
@@ -319,7 +319,7 @@ void GeometryExporter::create_mesh_primitive_list(short material_index,
                                                   std::string &geom_id,
                                                   std::vector<BCPolygonNormalsIndices> &norind)
 {
-  const Span<MPoly> polygons = blender::bke::mesh_polygons(*me);
+  const Span<MPoly> polys = blender::bke::mesh_polygons(*me);
   const Span<MLoop> loops = blender::bke::mesh_loops(*me);
 
   std::vector<unsigned long> vcount_list;
@@ -398,8 +398,8 @@ void GeometryExporter::create_mesh_primitive_list(short material_index,
 
   /* <p> */
   int texindex = 0;
-  for (const int i : polygons.index_range()) {
-    const MPoly *p = &polygons[i];
+  for (const int i : polys.index_range()) {
+    const MPoly *p = &polys[i];
     int loop_count = p->totloop;
 
     if (p->mat_nr == material_index) {
@@ -427,13 +427,13 @@ void GeometryExporter::create_mesh_primitive_list(short material_index,
 
 void GeometryExporter::createVertsSource(std::string geom_id, Mesh *me)
 {
-  const Span<MVert> vertices = blender::bke::mesh_vertices(*me);
+  const Span<MVert> verts = blender::bke::mesh_vertices(*me);
 
   COLLADASW::FloatSourceF source(mSW);
   source.setId(getIdBySemantics(geom_id, COLLADASW::InputSemantic::POSITION));
   source.setArrayId(getIdBySemantics(geom_id, COLLADASW::InputSemantic::POSITION) +
                     ARRAY_ID_SUFFIX);
-  source.setAccessorCount(vertices.size());
+  source.setAccessorCount(verts.size());
   source.setAccessorStride(3);
 
   COLLADASW::SourceBase::ParameterNameList &param = source.getParameterNameList();
@@ -444,13 +444,13 @@ void GeometryExporter::createVertsSource(std::string geom_id, Mesh *me)
    * count = ""> */
   source.prepareToAppendValues();
   /* appends data to <float_array> */
-  for (const int i : vertices.index_range()) {
+  for (const int i : verts.index_range()) {
     Vector co;
     if (export_settings.get_apply_global_orientation()) {
-      bc_add_global_transform(co, vertices[i].co, export_settings.get_global_transform());
+      bc_add_global_transform(co, verts[i].co, export_settings.get_global_transform());
     }
     else {
-      copy_v3_v3(co, vertices[i].co);
+      copy_v3_v3(co, verts[i].co);
     }
     source.appendValues(co[0], co[1], co[2]);
   }
@@ -493,9 +493,9 @@ void GeometryExporter::createVertexColorSource(std::string geom_id, Mesh *me)
 
     source.prepareToAppendValues();
 
-    const Span<MPoly> polygons = blender::bke::mesh_polygons(*me);
-    for (const int i : polygons.index_range()) {
-      const MPoly &poly = polygons[i];
+    const Span<MPoly> polys = blender::bke::mesh_polygons(*me);
+    for (const int i : polys.index_range()) {
+      const MPoly &poly = polys[i];
       const MLoopCol *mlc = mloopcol + poly.loopstart;
       for (int j = 0; j < poly.totloop; j++, mlc++) {
         source.appendValues(mlc->r / 255.0f, mlc->g / 255.0f, mlc->b / 255.0f, mlc->a / 255.0f);
@@ -523,7 +523,7 @@ std::string GeometryExporter::makeTexcoordSourceId(std::string &geom_id,
 void GeometryExporter::createTexcoordsSource(std::string geom_id, Mesh *me)
 {
   int totuv = me->totloop;
-  const Span<MPoly> polygons = blender::bke::mesh_polygons(*me);
+  const Span<MPoly> polys = blender::bke::mesh_polygons(*me);
 
   int num_layers = CustomData_number_of_layers(&me->ldata, CD_MLOOPUV);
 
@@ -549,8 +549,8 @@ void GeometryExporter::createTexcoordsSource(std::string geom_id, Mesh *me)
 
       source.prepareToAppendValues();
 
-      for (const int i : polygons.index_range()) {
-        const MPoly *mpoly = &polygons[i];
+      for (const int i : polys.index_range()) {
+        const MPoly *mpoly = &polys[i];
         MLoopUV *mloop = mloops + mpoly->loopstart;
         for (int j = 0; j < mpoly->totloop; j++) {
           source.appendValues(mloop[j].uv[0], mloop[j].uv[1]);
@@ -608,9 +608,9 @@ void GeometryExporter::create_normals(std::vector<Normal> &normals,
   std::map<Normal, unsigned int> shared_normal_indices;
   int last_normal_index = -1;
 
-  const Span<MVert> vertices = blender::bke::mesh_vertices(*me);
+  const Span<MVert> verts = blender::bke::mesh_vertices(*me);
   const float(*vert_normals)[3] = BKE_mesh_vertex_normals_ensure(me);
-  const Span<MPoly> polygons = blender::bke::mesh_polygons(*me);
+  const Span<MPoly> polys = blender::bke::mesh_polygons(*me);
   const Span<MLoop> loops = blender::bke::mesh_loops(*me);
   const float(*lnors)[3] = nullptr;
   bool use_custom_normals = false;
@@ -621,15 +621,15 @@ void GeometryExporter::create_normals(std::vector<Normal> &normals,
     use_custom_normals = true;
   }
 
-  for (const int poly_index : polygons.index_range()) {
-    const MPoly *mpoly = &polygons[poly_index];
+  for (const int poly_index : polys.index_range()) {
+    const MPoly *mpoly = &polys[poly_index];
     bool use_vertex_normals = use_custom_normals || mpoly->flag & ME_SMOOTH;
 
     if (!use_vertex_normals) {
       /* For flat faces use face normal as vertex normal: */
 
       float vector[3];
-      BKE_mesh_calc_poly_normal(mpoly, &loops[mpoly->loopstart], vertices.data(), vector);
+      BKE_mesh_calc_poly_normal(mpoly, &loops[mpoly->loopstart], verts.data(), vector);
 
       Normal n = {vector[0], vector[1], vector[2]};
       normals.push_back(n);

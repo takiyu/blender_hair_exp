@@ -160,11 +160,11 @@ static void copy_face_corner_attributes(const Map<AttributeIDRef, AttributeKind>
                                         const Span<int> selected_poly_indices,
                                         const Mesh &mesh_in)
 {
-  const Span<MPoly> polygons = bke::mesh_polygons(mesh_in);
+  const Span<MPoly> polys = bke::mesh_polygons(mesh_in);
   Vector<int64_t> indices;
   indices.reserve(selected_loops_num);
   for (const int src_poly_index : selected_poly_indices) {
-    const MPoly &src_poly = polygons[src_poly_index];
+    const MPoly &src_poly = polys[src_poly_index];
     const int src_loop_start = src_poly.loopstart;
     const int tot_loop = src_poly.totloop;
     for (const int i : IndexRange(tot_loop)) {
@@ -459,15 +459,15 @@ static void compute_selected_polygons_from_vertex_selection(const Mesh &mesh,
                                                             int *r_selected_loops_num)
 {
   BLI_assert(mesh.totvert == vertex_selection.size());
-  const Span<MPoly> polygons = bke::mesh_polygons(mesh);
+  const Span<MPoly> polys = bke::mesh_polygons(mesh);
   const Span<MLoop> loops = bke::mesh_loops(mesh);
 
   r_selected_poly_indices.reserve(mesh.totpoly);
   r_loop_starts.reserve(mesh.totloop);
 
   int selected_loops_num = 0;
-  for (const int i : polygons.index_range()) {
-    const MPoly &poly_src = polygons[i];
+  for (const int i : polys.index_range()) {
+    const MPoly &poly_src = polys[i];
 
     bool all_verts_in_selection = true;
     const Span<MLoop> poly_loops = loops.slice(poly_src.loopstart, poly_src.totloop);
@@ -564,15 +564,15 @@ static void compute_selected_polygons_from_edge_selection(const Mesh &mesh,
                                                           int *r_selected_polys_num,
                                                           int *r_selected_loops_num)
 {
-  const Span<MPoly> polygons = bke::mesh_polygons(mesh);
+  const Span<MPoly> polys = bke::mesh_polygons(mesh);
   const Span<MLoop> loops = bke::mesh_loops(mesh);
 
   r_selected_poly_indices.reserve(mesh.totpoly);
   r_loop_starts.reserve(mesh.totloop);
 
   int selected_loops_num = 0;
-  for (const int i : polygons.index_range()) {
-    const MPoly &poly_src = polygons[i];
+  for (const int i : polys.index_range()) {
+    const MPoly &poly_src = polys[i];
 
     bool all_edges_in_selection = true;
     const Span<MLoop> poly_loops = loops.slice(poly_src.loopstart, poly_src.totloop);
@@ -674,7 +674,7 @@ static void compute_selected_mesh_data_from_edge_selection_edge_face(
 
 /**
  * Checks for every edge if it is in `edge_selection`. If it is, the vertices belonging to
- * that edge are kept as well. The polygons are kept if all edges are in the selection.
+ * that edge are kept as well. The polys are kept if all edges are in the selection.
  */
 static void compute_selected_mesh_data_from_edge_selection(const Mesh &mesh,
                                                            const Span<bool> edge_selection,
@@ -713,14 +713,14 @@ static void compute_selected_polygons_from_poly_selection(const Mesh &mesh,
                                                           int *r_selected_loops_num)
 {
   BLI_assert(mesh.totpoly == poly_selection.size());
-  const Span<MPoly> polygons = bke::mesh_polygons(mesh);
+  const Span<MPoly> polys = bke::mesh_polygons(mesh);
 
   r_selected_poly_indices.reserve(mesh.totpoly);
   r_loop_starts.reserve(mesh.totloop);
 
   int selected_loops_num = 0;
-  for (const int i : polygons.index_range()) {
-    const MPoly &poly_src = polygons[i];
+  for (const int i : polys.index_range()) {
+    const MPoly &poly_src = polys[i];
     /* We keep this one. */
     if (poly_selection[i]) {
       r_selected_poly_indices.append_unchecked(i);
@@ -747,7 +747,7 @@ static void compute_selected_mesh_data_from_poly_selection_edge_face(
 {
   BLI_assert(mesh.totpoly == poly_selection.size());
   BLI_assert(mesh.totedge == r_edge_map.size());
-  const Span<MPoly> polygons = bke::mesh_polygons(mesh);
+  const Span<MPoly> polys = bke::mesh_polygons(mesh);
   const Span<MLoop> loops = bke::mesh_loops(mesh);
 
   r_edge_map.fill(-1);
@@ -757,8 +757,8 @@ static void compute_selected_mesh_data_from_poly_selection_edge_face(
 
   int selected_loops_num = 0;
   int selected_edges_num = 0;
-  for (const int i : polygons.index_range()) {
-    const MPoly &poly_src = polygons[i];
+  for (const int i : polys.index_range()) {
+    const MPoly &poly_src = polys[i];
     /* We keep this one. */
     if (poly_selection[i]) {
       r_selected_poly_indices.append_unchecked(i);
@@ -798,7 +798,7 @@ static void compute_selected_mesh_data_from_poly_selection(const Mesh &mesh,
 {
   BLI_assert(mesh.totpoly == poly_selection.size());
   BLI_assert(mesh.totedge == r_edge_map.size());
-  const Span<MPoly> polygons = bke::mesh_polygons(mesh);
+  const Span<MPoly> polys = bke::mesh_polygons(mesh);
   const Span<MLoop> loops = bke::mesh_loops(mesh);
 
   r_vertex_map.fill(-1);
@@ -810,8 +810,8 @@ static void compute_selected_mesh_data_from_poly_selection(const Mesh &mesh,
   int selected_loops_num = 0;
   int selected_verts_num = 0;
   int selected_edges_num = 0;
-  for (const int i : polygons.index_range()) {
-    const MPoly &poly_src = polygons[i];
+  for (const int i : polys.index_range()) {
+    const MPoly &poly_src = polys[i];
     /* We keep this one. */
     if (poly_selection[i]) {
       r_selected_poly_indices.append_unchecked(i);

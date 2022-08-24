@@ -317,7 +317,7 @@ static const EnumPropertyItem *weight_paint_sample_enum_itemf(bContext *C,
 
       ED_view3d_viewcontext_init(C, &vc, depsgraph);
       me = BKE_mesh_from_object(vc.obact);
-      const MPoly *polygons = BKE_mesh_polygons(me);
+      const MPoly *polys = BKE_mesh_polygons(me);
       const MLoop *loops = BKE_mesh_loops(me);
       const MDeformVert *dverts = BKE_mesh_deform_verts(me);
 
@@ -344,7 +344,7 @@ static const EnumPropertyItem *weight_paint_sample_enum_itemf(bContext *C,
         }
         else {
           if (ED_mesh_pick_face(C, vc.obact, mval, ED_MESH_PICK_DEFAULT_FACE_DIST, &index)) {
-            const MPoly *mp = &polygons[index];
+            const MPoly *mp = &polys[index];
             uint fidx = mp->totloop - 1;
 
             do {
@@ -445,8 +445,8 @@ static bool weight_paint_set(Object *ob, float paintweight)
   /* mutually exclusive, could be made into a */
   const short paint_selmode = ME_EDIT_PAINT_SEL_MODE(me);
 
-  const MVert *vertices = BKE_mesh_vertices(me);
-  const MPoly *polygons = BKE_mesh_polygons(me);
+  const MVert *verts = BKE_mesh_vertices(me);
+  const MPoly *polys = BKE_mesh_polygons(me);
   const MLoop *loops = BKE_mesh_loops(me);
   MDeformVert *dvert = BKE_mesh_deform_verts_for_write(me);
 
@@ -464,7 +464,7 @@ static bool weight_paint_set(Object *ob, float paintweight)
   struct WPaintPrev wpp;
   wpaint_prev_create(&wpp, dvert, me->totvert);
 
-  for (index = 0, mp = polygons; index < me->totpoly; index++, mp++) {
+  for (index = 0, mp = polys; index < me->totpoly; index++, mp++) {
     uint fidx = mp->totloop - 1;
 
     if ((paint_selmode == SCE_SELECT_FACE) && !(mp->flag & ME_FACE_SEL)) {
@@ -475,7 +475,7 @@ static bool weight_paint_set(Object *ob, float paintweight)
       uint vidx = loops[mp->loopstart + fidx].v;
 
       if (!dvert[vidx].flag) {
-        if ((paint_selmode == SCE_SELECT_VERTEX) && !(vertices[vidx].flag & SELECT)) {
+        if ((paint_selmode == SCE_SELECT_VERTEX) && !(verts[vidx].flag & SELECT)) {
           continue;
         }
 

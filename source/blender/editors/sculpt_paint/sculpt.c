@@ -65,7 +65,7 @@
 #include "IMB_colormanagement.h"
 
 #include "WM_api.h"
-// #include "WM_message.h"
+#include "WM_message.h"
 #include "WM_toolsystem.h"
 #include "WM_types.h"
 
@@ -3162,10 +3162,10 @@ void SCULPT_vertcos_to_key(Object *ob, KeyBlock *kb, const float (*vertCos)[3])
 
   /* Modifying of basis key should update mesh. */
   if (kb == me->key->refkey) {
-    MVert *vertices = BKE_mesh_vertices_for_write(me);
+    MVert *verts = BKE_mesh_vertices_for_write(me);
 
     for (a = 0; a < me->totvert; a++) {
-      copy_v3_v3(vertices[a].co, vertCos[a]);
+      copy_v3_v3(verts[a].co, vertCos[a]);
     }
     BKE_mesh_tag_coords_changed(me);
   }
@@ -3589,9 +3589,9 @@ static void sculpt_flush_pbvhvert_deform(Object *ob, PBVHVertexIter *vd)
   copy_v3_v3(ss->deform_cos[index], vd->co);
   copy_v3_v3(ss->orig_cos[index], newco);
 
-  MVert *vertices = BKE_mesh_vertices_for_write(me);
+  MVert *verts = BKE_mesh_vertices_for_write(me);
   if (!ss->shapekey_active) {
-    copy_v3_v3(vertices[index].co, newco);
+    copy_v3_v3(verts[index].co, newco);
   }
 }
 
@@ -5910,7 +5910,7 @@ void SCULPT_boundary_info_ensure(Object *object)
 
   Mesh *base_mesh = BKE_mesh_from_object(object);
   const MEdge *edges = BKE_mesh_edges(base_mesh);
-  const MPoly *polygons = BKE_mesh_polygons(base_mesh);
+  const MPoly *polys = BKE_mesh_polygons(base_mesh);
   const MLoop *loops = BKE_mesh_loops(base_mesh);
 
   ss->vertex_info.boundary = BLI_BITMAP_NEW(base_mesh->totvert, "Boundary info");
@@ -5918,7 +5918,7 @@ void SCULPT_boundary_info_ensure(Object *object)
       base_mesh->totedge, sizeof(int), "Adjacent face edge count");
 
   for (int p = 0; p < base_mesh->totpoly; p++) {
-    const MPoly *poly = &polygons[p];
+    const MPoly *poly = &polys[p];
     for (int l = 0; l < poly->totloop; l++) {
       const MLoop *loop = &loops[l + poly->loopstart];
       adjacent_faces_edge_count[loop->e]++;

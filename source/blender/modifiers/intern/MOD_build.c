@@ -202,9 +202,9 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, struct
   /* now we know the number of verts, edges and faces, we can create the mesh. */
   result = BKE_mesh_new_nomain_from_template(
       mesh, BLI_ghash_len(vertHash), BLI_ghash_len(edgeHash), 0, loops_dst_num, faces_dst_num);
-  MVert *result_vertices = BKE_mesh_vertices_for_write(result);
+  MVert *result_verts = BKE_mesh_vertices_for_write(result);
   MEdge *result_edges = BKE_mesh_edges_for_write(result);
-  MPoly *result_polygons = BKE_mesh_polygons_for_write(result);
+  MPoly *result_polys = BKE_mesh_polygons_for_write(result);
   MLoop *result_loops = BKE_mesh_loops_for_write(result);
 
   /* copy the vertices across */
@@ -215,7 +215,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, struct
     int newIndex = POINTER_AS_INT(BLI_ghashIterator_getValue(&gh_iter));
 
     source = mvert_src[oldIndex];
-    dest = &result_vertices[newIndex];
+    dest = &result_verts[newIndex];
 
     CustomData_copy_data(&mesh->vdata, &result->vdata, oldIndex, newIndex, 1);
     *dest = source;
@@ -237,7 +237,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, struct
     *dest = source;
   }
 
-  mpoly_dst = result_polygons;
+  mpoly_dst = result_polys;
   ml_dst = result_loops;
 
   /* copy the faces across, remapping indices */

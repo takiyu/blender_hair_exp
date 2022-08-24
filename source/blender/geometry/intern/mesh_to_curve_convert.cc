@@ -224,8 +224,8 @@ static Vector<std::pair<int, int>> get_selected_edges(const Mesh &mesh, const In
 bke::CurvesGeometry mesh_to_curve_convert(const Mesh &mesh, const IndexMask selection)
 {
   Vector<std::pair<int, int>> selected_edges = get_selected_edges(mesh, selection);
-  const Span<MVert> vertices = bke::mesh_vertices(mesh);
-  CurveFromEdgesOutput output = edges_to_curve_point_indices(vertices, selected_edges);
+  const Span<MVert> verts = bke::mesh_vertices(mesh);
+  CurveFromEdgesOutput output = edges_to_curve_point_indices(verts, selected_edges);
 
   return create_curve_from_vert_indices(
       mesh, output.vert_indices, output.curve_offsets, output.cyclic_curves);

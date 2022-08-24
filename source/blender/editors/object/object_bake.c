@@ -161,10 +161,10 @@ static bool multiresbake_check(bContext *C, wmOperator *op)
       ok = false;
     }
     else {
-      const MPoly *polygons = BKE_mesh_polygons(me);
+      const MPoly *polys = BKE_mesh_polygons(me);
       a = me->totpoly;
       while (ok && a--) {
-        Image *ima = bake_object_image_get(ob, polygons[a].mat_nr);
+        Image *ima = bake_object_image_get(ob, polys[a].mat_nr);
 
         if (!ima) {
           BKE_report(

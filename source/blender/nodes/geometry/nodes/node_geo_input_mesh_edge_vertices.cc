@@ -92,21 +92,19 @@ static VArray<float3> construct_edge_positions_gvarray(const MeshComponent &comp
   if (mesh == nullptr) {
     return {};
   }
-  const Span<MVert> vertices = bke::mesh_vertices(*mesh);
+  const Span<MVert> verts = bke::mesh_vertices(*mesh);
   const Span<MEdge> edges = bke::mesh_edges(*mesh);
 
   if (vertex == VERTEX_ONE) {
     return component.attributes()->adapt_domain<float3>(
         VArray<float3>::ForFunc(
-            mesh->totedge,
-            [vertices, edges](const int i) { return float3(vertices[edges[i].v1].co); }),
+            mesh->totedge, [verts, edges](const int i) { return float3(verts[edges[i].v1].co); }),
         ATTR_DOMAIN_EDGE,
         domain);
   }
   return component.attributes()->adapt_domain<float3>(
       VArray<float3>::ForFunc(
-          mesh->totedge,
-          [vertices, edges](const int i) { return float3(vertices[edges[i].v2].co); }),
+          mesh->totedge, [verts, edges](const int i) { return float3(verts[edges[i].v2].co); }),
       ATTR_DOMAIN_EDGE,
       domain);
 }

@@ -78,21 +78,21 @@ Mesh *STLMeshHelper::to_mesh(Main *bmain, char *mesh_name)
   mesh->totvert = verts_.size();
 
   CustomData_add_layer(&mesh->vdata, CD_MVERT, CD_CALLOC, nullptr, mesh->totvert);
-  MutableSpan<MVert> vertices = bke::mesh_vertices_for_write(*mesh);
-  for (const int i : vertices.index_range()) {
-    copy_v3_v3(vertices[i].co, verts_[i]);
+  MutableSpan<MVert> verts = bke::mesh_vertices_for_write(*mesh);
+  for (const int i : verts.index_range()) {
+    copy_v3_v3(verts[i].co, verts_[i]);
   }
 
   mesh->totpoly = tris_.size();
   mesh->totloop = tris_.size() * 3;
   CustomData_add_layer(&mesh->pdata, CD_MPOLY, CD_CALLOC, nullptr, mesh->totpoly);
   CustomData_add_layer(&mesh->ldata, CD_MLOOP, CD_CALLOC, nullptr, mesh->totloop);
-  MutableSpan<MPoly> polygons = bke::mesh_polygons_for_write(*mesh);
+  MutableSpan<MPoly> polys = bke::mesh_polygons_for_write(*mesh);
   MutableSpan<MLoop> loops = bke::mesh_loops_for_write(*mesh);
   threading::parallel_for(tris_.index_range(), 2048, [&](IndexRange tris_range) {
     for (const int i : tris_range) {
-      polygons[i].loopstart = 3 * i;
-      polygons[i].totloop = 3;
+      polys[i].loopstart = 3 * i;
+      polys[i].totloop = 3;
 
       loops[3 * i].v = tris_[i].v1;
       loops[3 * i + 1].v = tris_[i].v2;

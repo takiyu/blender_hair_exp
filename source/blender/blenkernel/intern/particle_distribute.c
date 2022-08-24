@@ -1063,15 +1063,15 @@ static int psys_thread_context_init_distribute(ParticleThreadContext *ctx,
         }
       }
       else {
-        MVert *vertices = BKE_mesh_vertices_for_write(mesh);
-        v1 = &vertices[mf->v1];
-        v2 = &vertices[mf->v2];
-        v3 = &vertices[mf->v3];
+        MVert *verts = BKE_mesh_vertices_for_write(mesh);
+        v1 = &verts[mf->v1];
+        v2 = &verts[mf->v2];
+        v3 = &verts[mf->v3];
         copy_v3_v3(co1, v1->co);
         copy_v3_v3(co2, v2->co);
         copy_v3_v3(co3, v3->co);
         if (mf->v4) {
-          v4 = &vertices[mf->v4];
+          v4 = &verts[mf->v4];
           copy_v3_v3(co4, v4->co);
         }
       }

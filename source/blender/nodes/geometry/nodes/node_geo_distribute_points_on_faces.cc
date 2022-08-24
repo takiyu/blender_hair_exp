@@ -105,7 +105,7 @@ static void sample_mesh_surface(const Mesh &mesh,
                                 Vector<float3> &r_bary_coords,
                                 Vector<int> &r_looptri_indices)
 {
-  const Span<MVert> vertices = bke::mesh_vertices(mesh);
+  const Span<MVert> verts = bke::mesh_vertices(mesh);
   const Span<MLoop> loops = bke::mesh_loops(mesh);
   const Span<MLoopTri> looptris{BKE_mesh_runtime_looptri_ensure(&mesh),
                                 BKE_mesh_runtime_looptri_len(&mesh)};
@@ -118,9 +118,9 @@ static void sample_mesh_surface(const Mesh &mesh,
     const int v0_index = loops[v0_loop].v;
     const int v1_index = loops[v1_loop].v;
     const int v2_index = loops[v2_loop].v;
-    const float3 v0_pos = vertices[v0_index].co;
-    const float3 v1_pos = vertices[v1_index].co;
-    const float3 v2_pos = vertices[v2_index].co;
+    const float3 v0_pos = verts[v0_index].co;
+    const float3 v1_pos = verts[v1_index].co;
+    const float3 v2_pos = verts[v2_index].co;
 
     float looptri_density_factor = 1.0f;
     if (!density_factors.is_empty()) {
@@ -352,7 +352,7 @@ BLI_NOINLINE static void compute_attribute_outputs(const MeshComponent &mesh_com
   }
 
   const Mesh &mesh = *mesh_component.get_for_read();
-  const Span<MVert> vertices = bke::mesh_vertices(mesh);
+  const Span<MVert> verts = bke::mesh_vertices(mesh);
   const Span<MLoop> loops = bke::mesh_loops(mesh);
   const Span<MLoopTri> looptris{BKE_mesh_runtime_looptri_ensure(&mesh),
                                 BKE_mesh_runtime_looptri_len(&mesh)};
@@ -365,9 +365,9 @@ BLI_NOINLINE static void compute_attribute_outputs(const MeshComponent &mesh_com
     const int v0_index = loops[looptri.tri[0]].v;
     const int v1_index = loops[looptri.tri[1]].v;
     const int v2_index = loops[looptri.tri[2]].v;
-    const float3 v0_pos = vertices[v0_index].co;
-    const float3 v1_pos = vertices[v1_index].co;
-    const float3 v2_pos = vertices[v2_index].co;
+    const float3 v0_pos = verts[v0_index].co;
+    const float3 v1_pos = verts[v1_index].co;
+    const float3 v2_pos = verts[v2_index].co;
 
     ids.span[i] = noise::hash(noise::hash_float(bary_coord), looptri_index);
 

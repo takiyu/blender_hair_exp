@@ -674,19 +674,19 @@ static void draw_subdiv_cache_extra_coarse_face_data_mesh(const MeshRenderData *
                                                           Mesh *mesh,
                                                           uint32_t *flags_data)
 {
-  const Span<MPoly> polygons = blender::bke::mesh_polygons(*mesh);
-  for (const int i : polygons.index_range()) {
+  const Span<MPoly> polys = blender::bke::mesh_polygons(*mesh);
+  for (const int i : polys.index_range()) {
     uint32_t flag = 0;
-    if ((polygons[i].flag & ME_SMOOTH) != 0) {
+    if ((polys[i].flag & ME_SMOOTH) != 0) {
       flag |= SUBDIV_COARSE_FACE_FLAG_SMOOTH;
     }
-    if ((polygons[i].flag & ME_FACE_SEL) != 0) {
+    if ((polys[i].flag & ME_FACE_SEL) != 0) {
       flag |= SUBDIV_COARSE_FACE_FLAG_SELECT;
     }
     if (mr->hide_poly && mr->hide_poly[i]) {
       flag |= SUBDIV_COARSE_FACE_FLAG_HIDDEN;
     }
-    flags_data[i] = (uint)(polygons[i].loopstart) | (flag << SUBDIV_COARSE_FACE_FLAG_OFFSET);
+    flags_data[i] = (uint)(polys[i].loopstart) | (flag << SUBDIV_COARSE_FACE_FLAG_OFFSET);
   }
 }
 
@@ -1094,7 +1094,7 @@ static bool draw_subdiv_build_cache(DRWSubdivCache *cache,
   }
 
   /* Only build polygon related data if we have polygons. */
-  const Span<MPoly> polygons = blender::bke::mesh_polygons(*mesh_eval);
+  const Span<MPoly> polys = blender::bke::mesh_polygons(*mesh_eval);
   if (cache->num_subdiv_loops != 0) {
     /* Build buffers for the PatchMap. */
     draw_patch_map_build(&cache->gpu_patch_map, subdiv);
@@ -1106,10 +1106,9 @@ static bool draw_subdiv_build_cache(DRWSubdivCache *cache,
                                                                mesh_eval->totpoly);
     CompressedPatchCoord *blender_fdots_patch_coords = (CompressedPatchCoord *)
         GPU_vertbuf_get_data(cache->fdots_patch_coords);
-
     for (int i = 0; i < mesh_eval->totpoly; i++) {
       const int ptex_face_index = cache->face_ptex_offset[i];
-      if (polygons[i].totloop == 4) {
+      if (polys[i].totloop == 4) {
         /* For quads, the center coordinate of the coarse face has `u = v = 0.5`. */
         blender_fdots_patch_coords[i] = make_patch_coord(ptex_face_index, 0.5f, 0.5f);
       }
@@ -1122,16 +1121,16 @@ static bool draw_subdiv_build_cache(DRWSubdivCache *cache,
     }
 
     cache->subdiv_polygon_offset_buffer = draw_subdiv_build_origindex_buffer(
-        cache->subdiv_polygon_offset, polygons.size());
+        cache->subdiv_polygon_offset, polys.size());
 
     cache->face_ptex_offset_buffer = draw_subdiv_build_origindex_buffer(cache->face_ptex_offset,
-                                                                        polygons.size() + 1);
+                                                                        polys.size() + 1);
 
     build_vertex_face_adjacency_maps(cache);
   }
 
   cache->resolution = to_mesh_settings.resolution;
-  cache->num_coarse_poly = polygons.size();
+  cache->num_coarse_poly = polys.size();
 
   /* To avoid floating point precision issues when evaluating patches at patch boundaries,
    * ensure that all loops sharing a vertex use the same patch coordinate. This could cause
@@ -1972,9 +1971,9 @@ static void draw_subdiv_cache_ensure_mat_offsets(DRWSubdivCache *cache,
   int *subdiv_polygon_offset = cache->subdiv_polygon_offset;
 
   /* TODO: parallel_reduce? */
-  const Span<MPoly> polygons = blender::bke::mesh_polygons(*mesh_eval);
-  for (const int i : polygons.index_range()) {
-    const MPoly *mpoly = &polygons[i];
+  const Span<MPoly> polys = blender::bke::mesh_polygons(*mesh_eval);
+  for (const int i : polys.index_range()) {
+    const MPoly *mpoly = &polys[i];
     const int next_offset = (i == mesh_eval->totpoly - 1) ? number_of_quads :
                                                             subdiv_polygon_offset[i + 1];
     const int quad_count = next_offset - subdiv_polygon_offset[i];
@@ -1996,8 +1995,8 @@ static void draw_subdiv_cache_ensure_mat_offsets(DRWSubdivCache *cache,
   int *per_polygon_mat_offset = static_cast<int *>(
       MEM_mallocN(sizeof(int) * mesh_eval->totpoly, "per_polygon_mat_offset"));
 
-  for (const int i : polygons.index_range()) {
-    const MPoly *mpoly = &polygons[i];
+  for (const int i : polys.index_range()) {
+    const MPoly *mpoly = &polys[i];
     const int mat_index = mpoly->mat_nr;
     const int single_material_index = subdiv_polygon_offset[i];
     const int material_offset = mat_end[mat_index];
@@ -2186,10 +2185,10 @@ void DRW_subdivide_loose_geom(DRWSubdivCache *subdiv_cache, MeshBufferCache *cac
   }
 
   /* Copy the remaining loose_verts. */
-  const Span<MVert> coarse_vertices = blender::bke::mesh_vertices(*coarse_mesh);
+  const Span<MVert> coarse_verts = blender::bke::mesh_vertices(*coarse_mesh);
   for (int i = 0; i < coarse_loose_vert_len; i++) {
     const int coarse_vertex_index = cache->loose_geom.verts[i];
-    const MVert &coarse_vertex = coarse_vertices[coarse_vertex_index];
+    const MVert &coarse_vertex = coarse_verts[coarse_vertex_index];
 
     DRWSubdivLooseVertex &subd_v = loose_subd_verts[subd_vert_offset++];
     subd_v.coarse_vertex_index = cache->loose_geom.verts[i];

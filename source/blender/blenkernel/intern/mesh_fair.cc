@@ -195,7 +195,7 @@ class MeshFairingContext : public FairingContext {
     totvert_ = mesh->totvert;
     totloop_ = mesh->totloop;
 
-    MutableSpan<MVert> vertices = blender::bke::mesh_vertices_for_write(*mesh);
+    MutableSpan<MVert> verts = blender::bke::mesh_vertices_for_write(*mesh);
     medge_ = blender::bke::mesh_edges(*mesh);
     mpoly_ = blender::bke::mesh_polygons(*mesh);
     mloop_ = blender::bke::mesh_loops(*mesh);
@@ -216,7 +216,7 @@ class MeshFairingContext : public FairingContext {
     }
     else {
       for (int i = 0; i < mesh->totvert; i++) {
-        co_[i] = vertices[i].co;
+        co_[i] = verts[i].co;
       }
     }
 

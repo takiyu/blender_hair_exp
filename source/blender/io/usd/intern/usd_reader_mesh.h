@@ -64,7 +64,7 @@ class USDMeshReader : public USDGeomReader {
   void process_normals_uniform(Mesh *mesh);
   void readFaceSetsSample(Main *bmain, Mesh *mesh, double motionSampleTime);
   void assign_facesets_to_mpoly(double motionSampleTime,
-                                MutableSpan<MPoly> polygons,
+                                MutableSpan<MPoly> polys,
                                 std::map<pxr::SdfPath, int> *r_mat_map);
 
   void read_mpolys(Mesh *mesh);

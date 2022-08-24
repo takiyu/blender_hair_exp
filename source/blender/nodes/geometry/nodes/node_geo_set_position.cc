@@ -36,14 +36,14 @@ static void set_computed_position_and_offset(GeometryComponent &component,
   switch (component.type()) {
     case GEO_COMPONENT_TYPE_MESH: {
       Mesh *mesh = static_cast<MeshComponent &>(component).get_for_write();
-      MutableSpan<MVert> vertices = bke::mesh_vertices_for_write(*mesh);
+      MutableSpan<MVert> verts = bke::mesh_vertices_for_write(*mesh);
       if (in_positions.is_same(positions.varray)) {
         devirtualize_varray(in_offsets, [&](const auto in_offsets) {
           threading::parallel_for(
               selection.index_range(), grain_size, [&](const IndexRange range) {
                 for (const int i : selection.slice(range)) {
                   const float3 offset = in_offsets[i];
-                  add_v3_v3(vertices[i].co, offset);
+                  add_v3_v3(verts[i].co, offset);
                 }
               });
         });
@@ -55,7 +55,7 @@ static void set_computed_position_and_offset(GeometryComponent &component,
                   selection.index_range(), grain_size, [&](const IndexRange range) {
                     for (const int i : selection.slice(range)) {
                       const float3 new_position = in_positions[i] + in_offsets[i];
-                      copy_v3_v3(vertices[i].co, new_position);
+                      copy_v3_v3(verts[i].co, new_position);
                     }
                   });
             });

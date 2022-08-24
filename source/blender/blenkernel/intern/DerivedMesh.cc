@@ -1999,9 +1999,9 @@ void mesh_get_mapped_verts_coords(Mesh *me_eval, float (*r_cos)[3], const int to
     MEM_freeN(userData.vertex_visit);
   }
   else {
-    const Span<MVert> vertices = blender::bke::mesh_vertices(*me_eval);
+    const Span<MVert> verts = blender::bke::mesh_vertices(*me_eval);
     for (int i = 0; i < totcos; i++) {
-      copy_v3_v3(r_cos[i], vertices[i].co);
+      copy_v3_v3(r_cos[i], verts[i].co);
     }
   }
 }
@@ -2014,11 +2014,11 @@ static void mesh_init_origspace(Mesh *mesh)
                                                                    CD_ORIGSPACE_MLOOP);
   const int numpoly = mesh->totpoly;
   // const int numloop = mesh->totloop;
-  const Span<MVert> vertices = blender::bke::mesh_vertices(*mesh);
-  const Span<MPoly> polygons = blender::bke::mesh_polygons(*mesh);
+  const Span<MVert> verts = blender::bke::mesh_vertices(*mesh);
+  const Span<MPoly> polys = blender::bke::mesh_polygons(*mesh);
   const Span<MLoop> loops = blender::bke::mesh_loops(*mesh);
 
-  const MPoly *mp = polygons.data();
+  const MPoly *mp = polys.data();
   int i, j, k;
 
   blender::Vector<blender::float2, 64> vcos_2d;
@@ -2039,12 +2039,12 @@ static void mesh_init_origspace(Mesh *mesh)
       float min[2] = {FLT_MAX, FLT_MAX}, max[2] = {-FLT_MAX, -FLT_MAX};
       float translate[2], scale[2];
 
-      BKE_mesh_calc_poly_normal(mp, l, vertices.data(), p_nor);
+      BKE_mesh_calc_poly_normal(mp, l, verts.data(), p_nor);
       axis_dominant_v3_to_m3(mat, p_nor);
 
       vcos_2d.resize(mp->totloop);
       for (j = 0; j < mp->totloop; j++, l++) {
-        mul_v3_m3v3(co, mat, vertices[l->v].co);
+        mul_v3_m3v3(co, mat, verts[l->v].co);
         copy_v2_v2(vcos_2d[j], co);
 
         for (k = 0; k < 2; k++) {

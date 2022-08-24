@@ -301,20 +301,20 @@ static Mesh *create_uv_sphere_mesh(const float radius, const int segments, const
                                    sphere_corner_total(segments, rings),
                                    sphere_face_total(segments, rings));
   BKE_id_material_eval_ensure_default_slot(&mesh->id);
-  MutableSpan<MVert> vertices = bke::mesh_vertices_for_write(*mesh);
+  MutableSpan<MVert> verts = bke::mesh_vertices_for_write(*mesh);
   MutableSpan<MEdge> edges = bke::mesh_edges_for_write(*mesh);
-  MutableSpan<MPoly> polygons = bke::mesh_polygons_for_write(*mesh);
+  MutableSpan<MPoly> polys = bke::mesh_polygons_for_write(*mesh);
   MutableSpan<MLoop> loops = bke::mesh_loops_for_write(*mesh);
 
   threading::parallel_invoke(
       1024 < segments * rings,
       [&]() {
         MutableSpan vert_normals{(float3 *)BKE_mesh_vertex_normals_for_write(mesh), mesh->totvert};
-        calculate_sphere_vertex_data(vertices, vert_normals, radius, segments, rings);
+        calculate_sphere_vertex_data(verts, vert_normals, radius, segments, rings);
         BKE_mesh_vertex_normals_clear_dirty(mesh);
       },
       [&]() { calculate_sphere_edge_indices(edges, segments, rings); },
-      [&]() { calculate_sphere_faces(polygons, segments); },
+      [&]() { calculate_sphere_faces(polys, segments); },
       [&]() { calculate_sphere_corners(loops, segments, rings); },
       [&]() { calculate_sphere_uvs(mesh, segments, rings); });
 

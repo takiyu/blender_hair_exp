@@ -41,12 +41,12 @@ static VArray<float3> construct_uv_gvarray(const MeshComponent &component,
   if (mesh == nullptr) {
     return {};
   }
-  const Span<MVert> vertices = bke::mesh_vertices(*mesh);
-  const Span<MPoly> polygons = bke::mesh_polygons(*mesh);
+  const Span<MVert> verts = bke::mesh_vertices(*mesh);
+  const Span<MPoly> polys = bke::mesh_polygons(*mesh);
   const Span<MLoop> loops = bke::mesh_loops(*mesh);
 
   GeometryComponentFieldContext face_context{component, ATTR_DOMAIN_FACE};
-  FieldEvaluator face_evaluator{face_context, polygons.size()};
+  FieldEvaluator face_evaluator{face_context, polys.size()};
   face_evaluator.add(selection_field);
   face_evaluator.evaluate();
   const IndexMask selection = face_evaluator.get_evaluated_as_mask(0);
@@ -63,7 +63,7 @@ static VArray<float3> construct_uv_gvarray(const MeshComponent &component,
 
   ParamHandle *handle = GEO_uv_parametrizer_construct_begin();
   for (const int mp_index : selection) {
-    const MPoly &mp = polygons[mp_index];
+    const MPoly &mp = polys[mp_index];
     Array<ParamKey, 16> mp_vkeys(mp.totloop);
     Array<bool, 16> mp_pin(mp.totloop);
     Array<bool, 16> mp_select(mp.totloop);
@@ -72,7 +72,7 @@ static VArray<float3> construct_uv_gvarray(const MeshComponent &component,
     for (const int i : IndexRange(mp.totloop)) {
       const MLoop &ml = loops[mp.loopstart + i];
       mp_vkeys[i] = ml.v;
-      mp_co[i] = vertices[ml.v].co;
+      mp_co[i] = verts[ml.v].co;
       mp_uv[i] = uv[mp.loopstart + i];
       mp_pin[i] = false;
       mp_select[i] = false;

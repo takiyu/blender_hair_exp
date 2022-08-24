@@ -30,8 +30,8 @@ struct UVSample {
 };
 
 struct CDStreamConfig {
-  MutableSpan<MVert> vertices;
-  MutableSpan<MPoly> polygons;
+  MutableSpan<MVert> verts;
+  MutableSpan<MPoly> polys;
   MutableSpan<MLoop> loops;
 
   MLoopUV *mloopuv;

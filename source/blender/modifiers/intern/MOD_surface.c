@@ -151,9 +151,9 @@ static void deformVerts(ModifierData *md,
     }
 
     /* convert to global coordinates and calculate velocity */
-    MVert *vertices = BKE_mesh_vertices_for_write(surmd->mesh);
+    MVert *verts = BKE_mesh_vertices_for_write(surmd->mesh);
     for (i = 0, x = surmd->x, v = surmd->v; i < mesh_verts_num; i++, x++, v++) {
-      float *vec = vertices[i].co;
+      float *vec = verts[i].co;
       mul_m4_v3(ctx->object->obmat, vec);
 
       if (init) {

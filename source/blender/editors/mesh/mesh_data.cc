@@ -225,9 +225,9 @@ void ED_mesh_uv_loop_reset_ex(Mesh *me, const int layernum)
     BLI_assert(CustomData_has_layer(&me->ldata, CD_MLOOPUV));
     MLoopUV *mloopuv = (MLoopUV *)CustomData_get_layer_n(&me->ldata, CD_MLOOPUV, layernum);
 
-    const MPoly *polygons = BKE_mesh_polygons(me);
+    const MPoly *polys = BKE_mesh_polygons(me);
     for (int i = 0; i < me->totpoly; i++) {
-      mesh_uv_reset_mface(&polygons[i], mloopuv);
+      mesh_uv_reset_mface(&polys[i], mloopuv);
     }
   }
 
@@ -787,20 +787,20 @@ static int mesh_customdata_custom_splitnormals_add_exec(bContext *C, wmOperator 
       /* Tag edges as sharp according to smooth threshold if needed,
        * to preserve autosmooth shading. */
       if (me->flag & ME_AUTOSMOOTH) {
-        const Span<MVert> vertices = blender::bke::mesh_vertices(*me);
+        const Span<MVert> verts = blender::bke::mesh_vertices(*me);
         MutableSpan<MEdge> edges = blender::bke::mesh_edges_for_write(*me);
-        const Span<MPoly> polygons = blender::bke::mesh_polygons(*me);
+        const Span<MPoly> polys = blender::bke::mesh_polygons(*me);
         const Span<MLoop> loops = blender::bke::mesh_loops(*me);
 
-        BKE_edges_sharp_from_angle_set(vertices.data(),
-                                       vertices.size(),
+        BKE_edges_sharp_from_angle_set(verts.data(),
+                                       verts.size(),
                                        edges.data(),
                                        edges.size(),
                                        loops.data(),
                                        loops.size(),
-                                       polygons.data(),
+                                       polys.data(),
                                        BKE_mesh_poly_normals_ensure(me),
-                                       polygons.size(),
+                                       polys.size(),
                                        me->smoothresh);
       }
 
@@ -904,8 +904,8 @@ static void mesh_add_verts(Mesh *mesh, int len)
   const int old_vertex_num = mesh->totvert;
   mesh->totvert = totvert;
 
-  MutableSpan<MVert> vertices = blender::bke::mesh_vertices_for_write(*mesh);
-  for (MVert &vert : vertices.drop_front(old_vertex_num)) {
+  MutableSpan<MVert> verts = blender::bke::mesh_vertices_for_write(*mesh);
+  for (MVert &vert : verts.drop_front(old_vertex_num)) {
     vert.flag = SELECT;
   }
 }
@@ -997,8 +997,8 @@ static void mesh_add_polys(Mesh *mesh, int len)
   const int old_polys_num = mesh->totpoly;
   mesh->totpoly = totpoly;
 
-  MutableSpan<MPoly> polygons = blender::bke::mesh_polygons_for_write(*mesh);
-  for (MPoly &poly : polygons.drop_front(old_polys_num)) {
+  MutableSpan<MPoly> polys = blender::bke::mesh_polygons_for_write(*mesh);
+  for (MPoly &poly : polys.drop_front(old_polys_num)) {
     poly.flag = ME_FACE_SEL;
   }
 }

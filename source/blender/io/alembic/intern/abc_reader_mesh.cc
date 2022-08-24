@@ -117,14 +117,14 @@ struct AbcMeshData {
   UInt32ArraySamplePtr uvs_indices;
 };
 
-static void read_mverts_interp(MutableSpan<MVert> vertices,
+static void read_mverts_interp(MutableSpan<MVert> verts,
                                const P3fArraySamplePtr &positions,
                                const P3fArraySamplePtr &ceil_positions,
                                const double weight)
 {
   float tmp[3];
   for (int i = 0; i < positions->size(); i++) {
-    MVert &mvert = vertices[i];
+    MVert &mvert = verts[i];
     const Imath::V3f &floor_pos = (*positions)[i];
     const Imath::V3f &ceil_pos = (*ceil_positions)[i];
 
@@ -137,13 +137,13 @@ static void read_mverts_interp(MutableSpan<MVert> vertices,
 
 static void read_mverts(CDStreamConfig &config, const AbcMeshData &mesh_data)
 {
-  MutableSpan<MVert> vertices = config.vertices;
+  MutableSpan<MVert> verts = config.verts;
   const P3fArraySamplePtr &positions = mesh_data.positions;
 
   if (config.use_vertex_interpolation && config.weight != 0.0f &&
       mesh_data.ceil_positions != nullptr &&
       mesh_data.ceil_positions->size() == positions->size()) {
-    read_mverts_interp(vertices, positions, mesh_data.ceil_positions, config.weight);
+    read_mverts_interp(verts, positions, mesh_data.ceil_positions, config.weight);
     return;
   }
 
@@ -152,9 +152,9 @@ static void read_mverts(CDStreamConfig &config, const AbcMeshData &mesh_data)
 
 void read_mverts(Mesh &mesh, const P3fArraySamplePtr positions, const N3fArraySamplePtr normals)
 {
-  MutableSpan<MVert> vertices = bke::mesh_vertices_for_write(mesh);
+  MutableSpan<MVert> verts = bke::mesh_vertices_for_write(mesh);
   for (int i = 0; i < positions->size(); i++) {
-    MVert &mvert = vertices[i];
+    MVert &mvert = verts[i];
     Imath::V3f pos_in = (*positions)[i];
 
     copy_zup_from_yup(mvert.co, pos_in.getValue());
@@ -173,7 +173,7 @@ void read_mverts(Mesh &mesh, const P3fArraySamplePtr positions, const N3fArraySa
 
 static void read_mpolys(CDStreamConfig &config, const AbcMeshData &mesh_data)
 {
-  MutableSpan<MPoly> polygons = config.polygons;
+  MutableSpan<MPoly> polys = config.polys;
   MutableSpan<MLoop> loops = config.loops;
   MLoopUV *mloopuvs = config.mloopuv;
 
@@ -195,7 +195,7 @@ static void read_mpolys(CDStreamConfig &config, const AbcMeshData &mesh_data)
   for (int i = 0; i < face_counts->size(); i++) {
     const int face_size = (*face_counts)[i];
 
-    MPoly &poly = polygons[i];
+    MPoly &poly = polys[i];
     poly.loopstart = loop_index;
     poly.totloop = face_size;
 
@@ -270,8 +270,8 @@ static void process_loop_normals(CDStreamConfig &config, const N3fArraySamplePtr
   float(*lnors)[3] = static_cast<float(*)[3]>(
       MEM_malloc_arrayN(loop_count, sizeof(float[3]), "ABC::FaceNormals"));
 
-  MutableSpan<MPoly> polygons = bke::mesh_polygons_for_write(*mesh);
-  MPoly *mpoly = polygons.data();
+  MutableSpan<MPoly> polys = bke::mesh_polygons_for_write(*mesh);
+  MPoly *mpoly = polys.data();
   const N3fArraySample &loop_normals = *loop_normals_ptr;
   int abc_index = 0;
   for (int i = 0, e = mesh->totpoly; i < e; i++, mpoly++) {
@@ -517,9 +517,9 @@ CDStreamConfig get_config(Mesh *mesh, const bool use_vertex_interpolation)
 {
   CDStreamConfig config;
   config.mesh = mesh;
-  config.vertices = bke::mesh_vertices_for_write(*mesh);
+  config.verts = bke::mesh_vertices_for_write(*mesh);
   config.loops = bke::mesh_loops_for_write(*mesh);
-  config.polygons = bke::mesh_polygons_for_write(*mesh);
+  config.polys = bke::mesh_polygons_for_write(*mesh);
   config.loopdata = &mesh->ldata;
   config.add_customdata_cb = add_customdata_cb;
   config.use_vertex_interpolation = use_vertex_interpolation;
@@ -759,10 +759,10 @@ Mesh *AbcMeshReader::read_mesh(Mesh *existing_mesh,
     /* Here we assume that the number of materials doesn't change, i.e. that
      * the material slots that were created when the object was loaded from
      * Alembic are still valid now. */
-    MutableSpan<MPoly> polygons = bke::mesh_polygons_for_write(*new_mesh);
-    if (!polygons.is_empty()) {
+    MutableSpan<MPoly> polys = bke::mesh_polygons_for_write(*new_mesh);
+    if (!polys.is_empty()) {
       std::map<std::string, int> mat_map;
-      assign_facesets_to_mpoly(sample_sel, polygons, mat_map);
+      assign_facesets_to_mpoly(sample_sel, polys, mat_map);
     }
 
     return new_mesh;
@@ -772,7 +772,7 @@ Mesh *AbcMeshReader::read_mesh(Mesh *existing_mesh,
 }
 
 void AbcMeshReader::assign_facesets_to_mpoly(const ISampleSelector &sample_sel,
-                                             MutableSpan<MPoly> polygons,
+                                             MutableSpan<MPoly> polys,
                                              std::map<std::string, int> &r_mat_map)
 {
   std::vector<std::string> face_sets;
@@ -806,12 +806,12 @@ void AbcMeshReader::assign_facesets_to_mpoly(const ISampleSelector &sample_sel,
     for (size_t l = 0; l < num_group_faces; l++) {
       size_t pos = (*group_faces)[l];
 
-      if (pos >= polygons.size()) {
+      if (pos >= polys.size()) {
         std::cerr << "Faceset overflow on " << faceset.getName() << '\n';
         break;
       }
 
-      MPoly &poly = polygons[pos];
+      MPoly &poly = polys[pos];
       poly.mat_nr = assigned_mat - 1;
     }
   }

@@ -592,9 +592,9 @@ bool ED_object_modifier_convert_psys_to_mesh(ReportList *UNUSED(reports),
   CustomData_add_layer(&me->edata, CD_MEDGE, CD_CALLOC, nullptr, edges_num);
   CustomData_add_layer(&me->fdata, CD_MFACE, CD_CALLOC, nullptr, 0);
 
-  blender::MutableSpan<MVert> vertices = blender::bke::mesh_vertices_for_write(*me);
+  blender::MutableSpan<MVert> verts = blender::bke::mesh_vertices_for_write(*me);
   blender::MutableSpan<MEdge> edges = blender::bke::mesh_edges_for_write(*me);
-  MVert *mvert = vertices.data();
+  MVert *mvert = verts.data();
   MEdge *medge = edges.data();
 
   /* copy coordinates */
@@ -2638,7 +2638,7 @@ static void skin_armature_bone_create(Object *skin_ob,
 static Object *modifier_skin_armature_create(Depsgraph *depsgraph, Main *bmain, Object *skin_ob)
 {
   Mesh *me = static_cast<Mesh *>(skin_ob->data);
-  const Span<MVert> me_vertices = blender::bke::mesh_vertices(*me);
+  const Span<MVert> me_verts = blender::bke::mesh_vertices(*me);
   const Span<MEdge> me_edges = blender::bke::mesh_edges(*me);
 
   Scene *scene_eval = DEG_get_evaluated_scene(depsgraph);
@@ -2646,7 +2646,7 @@ static Object *modifier_skin_armature_create(Depsgraph *depsgraph, Main *bmain, 
 
   const Mesh *me_eval_deform = mesh_get_eval_deform(
       depsgraph, scene_eval, ob_eval, &CD_MASK_BAREMESH);
-  const Span<MVert> vertices_eval = blender::bke::mesh_vertices(*me_eval_deform);
+  const Span<MVert> verts_eval = blender::bke::mesh_vertices(*me_eval_deform);
 
   /* add vertex weights to original mesh */
   CustomData_add_layer(&me->vdata, CD_MDEFORMVERT, CD_CALLOC, nullptr, me->totvert);
@@ -2680,8 +2680,8 @@ static Object *modifier_skin_armature_create(Depsgraph *depsgraph, Main *bmain, 
       if (emap[v].count > 1) {
         bone = ED_armature_ebone_add(arm, "Bone");
 
-        copy_v3_v3(bone->head, me_vertices[v].co);
-        copy_v3_v3(bone->tail, me_vertices[v].co);
+        copy_v3_v3(bone->head, me_verts[v].co);
+        copy_v3_v3(bone->tail, me_verts[v].co);
 
         bone->head[1] = 1.0f;
         bone->rad_head = bone->rad_tail = 0.25;
@@ -2689,7 +2689,7 @@ static Object *modifier_skin_armature_create(Depsgraph *depsgraph, Main *bmain, 
 
       if (emap[v].count >= 1) {
         skin_armature_bone_create(
-            skin_ob, vertices_eval.data(), me_edges.data(), arm, edges_visited, emap, bone, v);
+            skin_ob, verts_eval.data(), me_edges.data(), arm, edges_visited, emap, bone, v);
       }
     }
   }

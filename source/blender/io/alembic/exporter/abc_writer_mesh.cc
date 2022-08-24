@@ -385,10 +385,10 @@ void ABCGenericMeshWriter::get_geo_groups(Object *object,
                                           struct Mesh *mesh,
                                           std::map<std::string, std::vector<int32_t>> &geo_groups)
 {
-  const Span<MPoly> polygons = bke::mesh_polygons(*mesh);
+  const Span<MPoly> polys = bke::mesh_polygons(*mesh);
 
-  for (const int i : polygons.index_range()) {
-    const MPoly &current_poly = polygons[i];
+  for (const int i : polys.index_range()) {
+    const MPoly &current_poly = polys[i];
     short mnr = current_poly.mat_nr;
 
     Material *mat = BKE_object_material_get(object, mnr + 1);
@@ -440,18 +440,18 @@ static void get_topology(struct Mesh *mesh,
                          std::vector<int32_t> &loop_counts,
                          bool &r_has_flat_shaded_poly)
 {
-  const Span<MPoly> polygons = bke::mesh_polygons(*mesh);
+  const Span<MPoly> polys = bke::mesh_polygons(*mesh);
   const Span<MLoop> loops = bke::mesh_loops(*mesh);
   r_has_flat_shaded_poly = false;
 
   poly_verts.clear();
   loop_counts.clear();
   poly_verts.reserve(loops.size());
-  loop_counts.reserve(polygons.size());
+  loop_counts.reserve(polys.size());
 
   /* NOTE: data needs to be written in the reverse order. */
-  for (const int i : polygons.index_range()) {
-    const MPoly &poly = polygons[i];
+  for (const int i : polys.index_range()) {
+    const MPoly &poly = polys[i];
     loop_counts.push_back(poly.totloop);
 
     r_has_flat_shaded_poly |= (poly.flag & ME_SMOOTH) == 0;
@@ -534,10 +534,10 @@ static void get_loop_normals(struct Mesh *mesh,
 
   /* NOTE: data needs to be written in the reverse order. */
   int abc_index = 0;
-  const Span<MPoly> polygons = bke::mesh_polygons(*mesh);
+  const Span<MPoly> polys = bke::mesh_polygons(*mesh);
 
-  for (const int i : polygons.index_range()) {
-    const MPoly *mp = &polygons[i];
+  for (const int i : polys.index_range()) {
+    const MPoly *mp = &polys[i];
     for (int j = mp->totloop - 1; j >= 0; j--, abc_index++) {
       int blender_index = mp->loopstart + j;
       copy_yup_from_zup(normals[abc_index].getValue(), lnors[blender_index]);

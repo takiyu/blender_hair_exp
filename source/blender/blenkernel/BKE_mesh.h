@@ -1032,8 +1032,7 @@ BLI_INLINE const MVert *BKE_mesh_vertices(const Mesh *mesh)
 }
 BLI_INLINE MVert *BKE_mesh_vertices_for_write(Mesh *mesh)
 {
-  CustomData_duplicate_referenced_layer(&mesh->vdata, CD_MVERT, mesh->totvert);
-  return (MVert *)CustomData_get_layer(&mesh->vdata, CD_MVERT);
+  return (MVert *)CustomData_duplicate_referenced_layer(&mesh->vdata, CD_MVERT, mesh->totvert);
 }
 
 BLI_INLINE const MEdge *BKE_mesh_edges(const Mesh *mesh)
@@ -1042,8 +1041,7 @@ BLI_INLINE const MEdge *BKE_mesh_edges(const Mesh *mesh)
 }
 BLI_INLINE MEdge *BKE_mesh_edges_for_write(Mesh *mesh)
 {
-  CustomData_duplicate_referenced_layer(&mesh->edata, CD_MEDGE, mesh->totedge);
-  return (MEdge *)CustomData_get_layer(&mesh->edata, CD_MEDGE);
+  return (MEdge *)CustomData_duplicate_referenced_layer(&mesh->edata, CD_MEDGE, mesh->totedge);
 }
 
 BLI_INLINE const MPoly *BKE_mesh_polygons(const Mesh *mesh)
@@ -1052,8 +1050,7 @@ BLI_INLINE const MPoly *BKE_mesh_polygons(const Mesh *mesh)
 }
 BLI_INLINE MPoly *BKE_mesh_polygons_for_write(Mesh *mesh)
 {
-  CustomData_duplicate_referenced_layer(&mesh->pdata, CD_MPOLY, mesh->totpoly);
-  return (MPoly *)CustomData_get_layer(&mesh->pdata, CD_MPOLY);
+  return (MPoly *)CustomData_duplicate_referenced_layer(&mesh->pdata, CD_MPOLY, mesh->totpoly);
 }
 
 BLI_INLINE const MLoop *BKE_mesh_loops(const Mesh *mesh)
@@ -1062,8 +1059,7 @@ BLI_INLINE const MLoop *BKE_mesh_loops(const Mesh *mesh)
 }
 BLI_INLINE MLoop *BKE_mesh_loops_for_write(Mesh *mesh)
 {
-  CustomData_duplicate_referenced_layer(&mesh->ldata, CD_MLOOP, mesh->totloop);
-  return (MLoop *)CustomData_get_layer(&mesh->ldata, CD_MLOOP);
+  return (MLoop *)CustomData_duplicate_referenced_layer(&mesh->ldata, CD_MLOOP, mesh->totloop);
 }
 
 BLI_INLINE const MDeformVert *BKE_mesh_deform_verts(const Mesh *mesh)

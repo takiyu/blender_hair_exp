@@ -2,11 +2,10 @@
 
 #include <queue>
 
-#include "BKE_curves.hh"
-
 #include "BLI_map.hh"
 #include "BLI_math_vec_types.hh"
 #include "BLI_set.hh"
+#include "BLI_task.hh"
 
 #include "BKE_mesh.h"
 

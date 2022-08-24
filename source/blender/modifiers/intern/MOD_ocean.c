@@ -366,8 +366,8 @@ static Mesh *doOcean(ModifierData *md, const ModifierEvalContext *ctx, Mesh *mes
   CLAMP(cfra_for_cache, omd->bakestart, omd->bakeend);
   cfra_for_cache -= omd->bakestart; /* shift to 0 based */
 
-  MVert *vertices = BKE_mesh_vertices_for_write(result);
-  MPoly *polygons = BKE_mesh_polygons_for_write(result);
+  MVert *verts = BKE_mesh_vertices_for_write(result);
+  MPoly *polys = BKE_mesh_polygons_for_write(result);
 
   /* add vcols before displacement - allows lookup based on position */
 
@@ -388,7 +388,7 @@ static Mesh *doOcean(ModifierData *md, const ModifierEvalContext *ctx, Mesh *mes
       if (mloopcols) { /* unlikely to fail */
         MPoly *mp;
 
-        for (i = 0, mp = polygons; i < polys_num; i++, mp++) {
+        for (i = 0, mp = polys; i < polys_num; i++, mp++) {
           MLoop *ml = &mloops[mp->loopstart];
           MLoopCol *mlcol = &mloopcols[mp->loopstart];
 
@@ -398,7 +398,7 @@ static Mesh *doOcean(ModifierData *md, const ModifierEvalContext *ctx, Mesh *mes
           }
 
           for (j = mp->totloop; j--; ml++, mlcol++) {
-            const float *vco = vertices[ml->v].co;
+            const float *vco = verts[ml->v].co;
             const float u = OCEAN_CO(size_co_inv, vco[0]);
             const float v = OCEAN_CO(size_co_inv, vco[1]);
             float foam;
@@ -447,7 +447,7 @@ static Mesh *doOcean(ModifierData *md, const ModifierEvalContext *ctx, Mesh *mes
     const int verts_num = result->totvert;
 
     for (i = 0; i < verts_num; i++) {
-      float *vco = vertices[i].co;
+      float *vco = verts[i].co;
       const float u = OCEAN_CO(size_co_inv, vco[0]);
       const float v = OCEAN_CO(size_co_inv, vco[1]);
 

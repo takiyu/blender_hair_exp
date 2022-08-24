@@ -204,11 +204,11 @@ static Mesh *uvprojectModifier_do(UVProjectModifierData *umd,
     }
   }
 
-  const MPoly *polygons = BKE_mesh_polygons(mesh);
+  const MPoly *polys = BKE_mesh_polygons(mesh);
   const MLoop *loops = BKE_mesh_loops(mesh);
 
   /* apply coords as UVs */
-  for (i = 0, mp = polygons; i < polys_num; i++, mp++) {
+  for (i = 0, mp = polys; i < polys_num; i++, mp++) {
     if (projectors_num == 1) {
       if (projectors[0].uci) {
         uint fidx = mp->totloop - 1;
