@@ -106,6 +106,12 @@ blender_project_hack_post()
 enable_testing()
 
 #-----------------------------------------------------------------------------
+# Test compiler/library features.
+
+include(build_files/cmake/have_features.cmake)
+
+
+#-----------------------------------------------------------------------------
 # Redirect output files
 
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin CACHE INTERNAL "" FORCE)
@@ -725,6 +731,13 @@ if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   endif()
 endif()
 
+# Effective install path including config folder, as a generator expression.
+get_property(GENERATOR_IS_MULTI_CONFIG GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+if(GENERATOR_IS_MULTI_CONFIG)
+  string(REPLACE "\${BUILD_TYPE}" "$<CONFIG>" CMAKE_INSTALL_PREFIX_WITH_CONFIG ${CMAKE_INSTALL_PREFIX})
+else()
+  string(REPLACE "\${BUILD_TYPE}" "" CMAKE_INSTALL_PREFIX_WITH_CONFIG ${CMAKE_INSTALL_PREFIX})
+endif()
 
 
 # Apple

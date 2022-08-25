@@ -148,7 +148,7 @@ static void verttag_set_cb(BMLoop *l, bool val, void *user_data_v)
   BMLoop *l_iter;
   BM_ITER_ELEM (l_iter, &iter, l->v, BM_LOOPS_OF_VERT) {
     if (verttag_filter_cb(l_iter, user_data)) {
-      float const *luv_iter = BM_ELEM_CD_GET_FLOAT_P(l_iter, cd_loop_uv_offset);
+      const float *luv_iter = BM_ELEM_CD_GET_FLOAT_P(l_iter, cd_loop_uv_offset);
       if (equals_v2v2(luv, luv_iter)) {
         uvedit_uv_select_set(scene, em, l_iter, val, false, user_data->offsets);
       }

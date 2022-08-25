@@ -571,8 +571,11 @@ static uiBlock *id_search_menu(bContext *C, ARegion *region, void *arg_litem)
 /** \name ID Template
  * \{ */
 
-/* This is for browsing and editing the ID-blocks used */
+static void template_id_cb(bContext *C, void *arg_litem, void *arg_event);
 
+/**
+ * This is for browsing and editing the ID-blocks used.
+ */
 void UI_context_active_but_prop_get_templateID(bContext *C,
                                                PointerRNA *r_ptr,
                                                PropertyRNA **r_prop)
@@ -582,7 +585,7 @@ void UI_context_active_but_prop_get_templateID(bContext *C,
   memset(r_ptr, 0, sizeof(*r_ptr));
   *r_prop = NULL;
 
-  if (but && but->func_argN) {
+  if (but && (but->funcN == template_id_cb) && but->func_argN) {
     TemplateID *template_ui = but->func_argN;
     *r_ptr = template_ui->ptr;
     *r_prop = template_ui->prop;
@@ -650,7 +653,7 @@ static void template_id_liboverride_hierarchy_collections_tag_recursive(
   }
 }
 
-ID *ui_template_id_liboverride_hierarchy_create(
+ID *ui_template_id_liboverride_hierarchy_make(
     bContext *C, Main *bmain, ID *owner_id, ID *id, const char **r_undo_push_label)
 {
   const char *undo_push_label;
@@ -683,7 +686,7 @@ ID *ui_template_id_liboverride_hierarchy_create(
    * NOTE: do not attempt to perform such hierarchy override at all cost, if there is not enough
    * context, better to abort than create random overrides all over the place. */
   if (!ID_IS_OVERRIDABLE_LIBRARY_HIERARCHY(id)) {
-    RNA_warning("The data-block %s is not direclty overridable", id->name);
+    RNA_warning("The data-block %s is not overridable", id->name);
     return NULL;
   }
 
@@ -789,6 +792,15 @@ ID *ui_template_id_liboverride_hierarchy_create(
         BKE_lib_override_library_create(
             bmain, scene, view_layer, NULL, id, &collection_active->id, NULL, &id_override, false);
       }
+      else {
+        if (object_active != NULL) {
+          object_active->id.tag |= LIB_TAG_DOIT;
+        }
+        BKE_lib_override_library_create(
+            bmain, scene, view_layer, NULL, id, NULL, NULL, &id_override, false);
+        BKE_scene_collections_object_remove(bmain, scene, (Object *)id, true);
+        WM_event_add_notifier(C, NC_ID | NA_REMOVED, NULL);
+      }
       break;
     case ID_ME:
     case ID_CU_LEGACY:
@@ -845,28 +857,44 @@ ID *ui_template_id_liboverride_hierarchy_create(
   if (id_override != NULL) {
     id_override->override_library->flag &= ~IDOVERRIDE_LIBRARY_FLAG_SYSTEM_DEFINED;
     *r_undo_push_label = "Make Library Override Hierarchy";
+
+    /* In theory we could rely on setting/updating the RNA ID pointer property (as done by calling
+     * code) to be enough.
+     *
+     * However, some rare ID pointers properties (like the 'active object in viewlayer' one used
+     * for the Object templateID in the Object properties) use notifiers that do not enforce a
+     * rebuild of outliner trees, leading to crashes.
+     *
+     * So for now, add some extra notifiers here. */
+    WM_event_add_notifier(C, NC_ID | NA_ADDED, NULL);
+    WM_event_add_notifier(C, NC_SPACE | ND_SPACE_OUTLINER, NULL);
   }
   return id_override;
 }
 
-static void template_id_liboverride_hierarchy_create(bContext *C,
-                                                     Main *bmain,
-                                                     TemplateID *template_ui,
-                                                     PointerRNA *idptr,
-                                                     const char **r_undo_push_label)
+static void template_id_liboverride_hierarchy_make(bContext *C,
+                                                   Main *bmain,
+                                                   TemplateID *template_ui,
+                                                   PointerRNA *idptr,
+                                                   const char **r_undo_push_label)
 {
   ID *id = idptr->data;
   ID *owner_id = template_ui->ptr.owner_id;
 
-  ID *id_override = ui_template_id_liboverride_hierarchy_create(
+  ID *id_override = ui_template_id_liboverride_hierarchy_make(
       C, bmain, owner_id, id, r_undo_push_label);
 
   if (id_override != NULL) {
-    /* Given `idptr` is re-assigned to owner property by caller to ensure proper updates etc. Here
-     * we also use it to ensure remapping of the owner property from the linked data to the newly
-     * created liboverride (note that in theory this remapping has already been done by code
-     * above). */
-    RNA_id_pointer_create(id_override, idptr);
+    /* `idptr` is re-assigned to owner property to ensure proper updates etc. Here we also use it
+     * to ensure remapping of the owner property from the linked data to the newly created
+     * liboverride (note that in theory this remapping has already been done by code above), but
+     * only in case owner ID was already local ID (override or pure local data).
+     *
+     * Otherwise, owner ID will also have been overridden, and remapped already to use it's
+     * override of the data too. */
+    if (!ID_IS_LINKED(owner_id)) {
+      RNA_id_pointer_create(id_override, idptr);
+    }
   }
   else {
     RNA_warning("The data-block %s could not be overridden", id->name);
@@ -922,8 +950,7 @@ static void template_id_cb(bContext *C, void *arg_litem, void *arg_event)
       if (id) {
         Main *bmain = CTX_data_main(C);
         if (CTX_wm_window(C)->eventstate->modifier & KM_SHIFT) {
-          template_id_liboverride_hierarchy_create(
-              C, bmain, template_ui, &idptr, &undo_push_label);
+          template_id_liboverride_hierarchy_make(C, bmain, template_ui, &idptr, &undo_push_label);
         }
         else {
           if (BKE_lib_id_make_local(bmain, id, 0)) {
@@ -944,8 +971,7 @@ static void template_id_cb(bContext *C, void *arg_litem, void *arg_event)
       if (id && ID_IS_OVERRIDE_LIBRARY(id)) {
         Main *bmain = CTX_data_main(C);
         if (CTX_wm_window(C)->eventstate->modifier & KM_SHIFT) {
-          template_id_liboverride_hierarchy_create(
-              C, bmain, template_ui, &idptr, &undo_push_label);
+          template_id_liboverride_hierarchy_make(C, bmain, template_ui, &idptr, &undo_push_label);
         }
         else {
           BKE_lib_override_library_make_local(id);

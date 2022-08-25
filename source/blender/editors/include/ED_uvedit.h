@@ -111,7 +111,7 @@ bool uvedit_uv_select_test(const struct Scene *scene, struct BMLoop *l, UVMap_Of
  * Changes selection state of a single UV Face.
  */
 void uvedit_face_select_set(const struct Scene *scene,
-                            struct BMEditMesh *em,
+                            struct BMesh *em,
                             struct BMFace *efa,
                             bool select,
                             bool do_history,
@@ -122,7 +122,7 @@ void uvedit_face_select_set(const struct Scene *scene,
  * Changes selection state of a single UV Edge.
  */
 void uvedit_edge_select_set(const struct Scene *scene,
-                            struct BMEditMesh *em,
+                            struct BMesh *em,
                             struct BMLoop *l,
                             bool select,
                             bool do_history,
@@ -133,7 +133,7 @@ void uvedit_edge_select_set(const struct Scene *scene,
  * Changes selection state of a single UV vertex.
  */
 void uvedit_uv_select_set(const struct Scene *scene,
-                          struct BMEditMesh *em,
+                          struct BMesh *em,
                           struct BMLoop *l,
                           bool select,
                           bool do_history,
@@ -143,32 +143,32 @@ void uvedit_uv_select_set(const struct Scene *scene,
  * use. */
 
 void uvedit_face_select_enable(const struct Scene *scene,
-                               struct BMEditMesh *em,
+                               struct BMesh *bm,
                                struct BMFace *efa,
                                bool do_history,
                                UVMap_Offsets offsets);
 void uvedit_face_select_disable(const struct Scene *scene,
-                                struct BMEditMesh *em,
+                                struct BMesh *bm,
                                 struct BMFace *efa,
                                 UVMap_Offsets offsets);
 
 void uvedit_edge_select_enable(const struct Scene *scene,
-                               struct BMEditMesh *em,
+                               struct BMesh *bm,
                                struct BMLoop *l,
                                bool do_history,
                                UVMap_Offsets offsets);
 void uvedit_edge_select_disable(const struct Scene *scene,
-                                struct BMEditMesh *em,
+                                struct BMesh *bm,
                                 struct BMLoop *l,
                                 UVMap_Offsets offsets);
 
 void uvedit_uv_select_enable(const struct Scene *scene,
-                             struct BMEditMesh *em,
+                             struct BMesh *bm,
                              struct BMLoop *l,
                              bool do_history,
                              UVMap_Offsets offsets);
 void uvedit_uv_select_disable(const struct Scene *scene,
-                              struct BMEditMesh *em,
+                              struct BMesh *bm,
                               struct BMLoop *l,
                               UVMap_Offsets offsets);
 
