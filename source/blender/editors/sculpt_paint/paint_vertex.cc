@@ -3059,7 +3059,6 @@ static void do_vpaint_brush_blur_loops(bContext *C,
                   const int p_index = gmap->vert_to_poly[v_index].indices[j];
                   const int l_index = gmap->vert_to_loop[v_index].indices[j];
                   BLI_assert(me->mloop[l_index].v == v_index);
-                  const MPoly *mp = &me->mpoly[p_index];
                   if (!use_face_sel || selection_poly[p_index]) {
                     Color color_orig(0, 0, 0, 0); /* unused when array is nullptr */
 
@@ -3208,7 +3207,6 @@ static void do_vpaint_brush_blur_verts(bContext *C,
 
                   BLI_assert(me->mloop[gmap->vert_to_loop[v_index].indices[j]].v == v_index);
 
-                  const MPoly *mp = &me->mpoly[p_index];
                   if (!use_face_sel || selection_poly[p_index]) {
                     Color color_orig(0, 0, 0, 0); /* unused when array is nullptr */
 
@@ -3389,7 +3387,6 @@ static void do_vpaint_brush_smear(bContext *C,
                       BLI_assert(me->mloop[l_index].v == v_index);
                     }
 
-                    const MPoly *mp = &me->mpoly[p_index];
                     if (!use_face_sel || selection_poly[p_index]) {
                       /* Get the previous element color */
                       Color color_orig(0, 0, 0, 0); /* unused when array is nullptr */
@@ -3646,7 +3643,6 @@ static void vpaint_do_draw(bContext *C,
                   const int p_index = gmap->vert_to_poly[v_index].indices[j];
                   const int l_index = gmap->vert_to_loop[v_index].indices[j];
                   BLI_assert(me->mloop[l_index].v == v_index);
-                  const MPoly *mp = &me->mpoly[p_index];
                   if (!use_face_sel || selection_poly[p_index]) {
                     Color color_orig = Color(0, 0, 0, 0); /* unused when array is nullptr */
 

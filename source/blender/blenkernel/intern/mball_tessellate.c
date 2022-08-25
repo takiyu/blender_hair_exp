@@ -1448,7 +1448,6 @@ Mesh *BKE_mball_polygonize(Depsgraph *depsgraph, Scene *scene, Object *ob)
   for (int i = 0; i < mesh->totvert; i++) {
     copy_v3_v3(mvert[i].co, process.co[i]);
     mvert->bweight = 0;
-    mvert->flag = 0;
   }
   MEM_freeN(process.co);
 

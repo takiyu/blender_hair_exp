@@ -1268,7 +1268,6 @@ static void customdata_weld(
           no[2] += mv_src_no[2];
 #endif
           bweight += mv_src->bweight;
-          flag |= mv_src->flag;
         }
       }
       else if (type == CD_MEDGE) {
@@ -1324,7 +1323,6 @@ static void customdata_weld(
       mv_no[2] = (short)no[2];
 #endif
 
-      mv->flag = (char)flag;
       mv->bweight = (char)bweight;
     }
     else if (type == CD_MEDGE) {

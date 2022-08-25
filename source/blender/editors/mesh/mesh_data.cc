@@ -891,9 +891,9 @@ static void mesh_add_verts(Mesh *mesh, int len)
 
   mesh->totvert = totvert;
 
-  const bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*mesh);
-  const bke::SpanAttributeWriter<bool> selection_vert =
-      attributes.lookup_or_add_for_write_span<bool>(".selection_vert", ATTR_DOMAIN_POINT);
+  bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*mesh);
+  bke::SpanAttributeWriter<bool> selection_vert = attributes.lookup_or_add_for_write_span<bool>(
+      ".selection_vert", ATTR_DOMAIN_POINT);
   selection_vert.span.take_back(len).fill(true);
   selection_vert.finish();
 }
@@ -933,9 +933,9 @@ static void mesh_add_edges(Mesh *mesh, int len)
 
   mesh->totedge = totedge;
 
-  const bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*mesh);
-  const bke::SpanAttributeWriter<bool> selection_edge =
-      attributes.lookup_or_add_for_write_span<bool>(".selection_edge", ATTR_DOMAIN_EDGE);
+  bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*mesh);
+  bke::SpanAttributeWriter<bool> selection_edge = attributes.lookup_or_add_for_write_span<bool>(
+      ".selection_edge", ATTR_DOMAIN_EDGE);
   selection_edge.span.take_back(len).fill(true);
   selection_edge.finish();
 }
@@ -972,8 +972,7 @@ static void mesh_add_polys(Mesh *mesh, int len)
 {
   using namespace blender;
   CustomData pdata;
-  MPoly *mpoly;
-  int i, totpoly;
+  int totpoly;
 
   if (len == 0) {
     return;
@@ -997,9 +996,9 @@ static void mesh_add_polys(Mesh *mesh, int len)
 
   mesh->totpoly = totpoly;
 
-  const bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*mesh);
-  const bke::SpanAttributeWriter<bool> selection_poly =
-      attributes.lookup_or_add_for_write_span<bool>(".selection_poly", ATTR_DOMAIN_FACE);
+  bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*mesh);
+  bke::SpanAttributeWriter<bool> selection_poly = attributes.lookup_or_add_for_write_span<bool>(
+      ".selection_poly", ATTR_DOMAIN_FACE);
   selection_poly.span.take_back(len).fill(true);
   selection_poly.finish();
 }

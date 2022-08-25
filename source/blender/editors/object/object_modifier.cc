@@ -526,6 +526,7 @@ bool ED_object_modifier_convert_psys_to_mesh(ReportList *UNUSED(reports),
                                              Object *ob,
                                              ModifierData *md)
 {
+  using namespace blender;
   int cvert = 0;
 
   if (md->type != eModifierType_ParticleSystem) {
@@ -590,16 +591,22 @@ bool ED_object_modifier_convert_psys_to_mesh(ReportList *UNUSED(reports),
   me->medge = (MEdge *)CustomData_add_layer(&me->edata, CD_MEDGE, CD_CALLOC, nullptr, edges_num);
   me->mface = (MFace *)CustomData_add_layer(&me->fdata, CD_MFACE, CD_CALLOC, nullptr, 0);
 
+  int vert_index = 0;
+
   MVert *mvert = me->mvert;
   MEdge *medge = me->medge;
+
+  bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*me);
+  bke::SpanAttributeWriter<bool> selection_vert = attributes.lookup_or_add_for_write_span<bool>(
+      ".selection_vert", ATTR_DOMAIN_POINT);
 
   /* copy coordinates */
   cache = psys_eval->pathcache;
   for (int a = 0; a < part_num; a++) {
     ParticleCacheKey *key = cache[a];
     int kmax = key->segments;
-    for (int k = 0; k <= kmax; k++, key++, cvert++, mvert++) {
-      copy_v3_v3(mvert->co, key->co);
+    for (int k = 0; k <= kmax; k++, key++, cvert++, vert_index++) {
+      copy_v3_v3(mvert[vert_index].co, key->co);
       if (k) {
         medge->v1 = cvert - 1;
         medge->v2 = cvert;
@@ -608,7 +615,7 @@ bool ED_object_modifier_convert_psys_to_mesh(ReportList *UNUSED(reports),
       }
       else {
         /* cheap trick to select the roots */
-        mvert->flag |= SELECT;
+        selection_vert.span[vert_index] = true;
       }
     }
   }
@@ -617,8 +624,8 @@ bool ED_object_modifier_convert_psys_to_mesh(ReportList *UNUSED(reports),
   for (int a = 0; a < child_num; a++) {
     ParticleCacheKey *key = cache[a];
     int kmax = key->segments;
-    for (int k = 0; k <= kmax; k++, key++, cvert++, mvert++) {
-      copy_v3_v3(mvert->co, key->co);
+    for (int k = 0; k <= kmax; k++, key++, cvert++, vert_index++) {
+      copy_v3_v3(mvert[vert_index].co, key->co);
       if (k) {
         medge->v1 = cvert - 1;
         medge->v2 = cvert;
@@ -627,10 +634,12 @@ bool ED_object_modifier_convert_psys_to_mesh(ReportList *UNUSED(reports),
       }
       else {
         /* cheap trick to select the roots */
-        mvert->flag |= SELECT;
+        selection_vert.span[vert_index] = true;
       }
     }
   }
+
+  selection_vert.finish();
 
   DEG_relations_tag_update(bmain);
 

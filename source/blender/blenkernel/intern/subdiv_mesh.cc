@@ -1116,8 +1116,6 @@ static void subdiv_mesh_vertex_of_loose_edge(const SubdivForeachContext *foreach
   MVert *subdiv_vertex = &subdiv_mvert[subdiv_vertex_index];
   BKE_subdiv_mesh_interpolate_position_on_edge(
       coarse_mesh, coarse_edge, is_simple, u, subdiv_vertex->co);
-  /* Reset flags and such. */
-  subdiv_vertex->flag = 0;
   /* TODO(sergey): This matches old behavior, but we can as well interpolate
    * it. Maybe even using vertex varying attributes. */
   subdiv_vertex->bweight = 0.0f;

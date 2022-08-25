@@ -720,8 +720,7 @@ BMesh *BM_mesh_copy(BMesh *bm_old)
 
 char BM_edge_flag_from_mflag(const short mflag)
 {
-  return ((((mflag & ME_SEAM) ? BM_ELEM_SEAM : 0) |
-          ((mflag & ME_EDGEDRAW) ? BM_ELEM_DRAW : 0) |
+  return (((mflag & ME_SEAM) ? BM_ELEM_SEAM : 0) | ((mflag & ME_EDGEDRAW) ? BM_ELEM_DRAW : 0) |
           ((mflag & ME_SHARP) == 0 ? BM_ELEM_SMOOTH : 0));
 }
 char BM_face_flag_from_mflag(const char mflag)

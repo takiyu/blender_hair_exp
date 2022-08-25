@@ -27,7 +27,7 @@ typedef struct MVert {
   float co[3];
   char flag DNA_DEPRECATED;
   char bweight;
-  char _pad[3];
+  char _pad[2];
 } MVert;
 
 /** #MVert.flag */

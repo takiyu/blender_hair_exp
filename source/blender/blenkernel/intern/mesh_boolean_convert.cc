@@ -375,7 +375,6 @@ static void copy_vert_attributes(Mesh *dest_mesh,
                                  int index_in_orig_me)
 {
   mv->bweight = orig_mv->bweight;
-  mv->flag = orig_mv->flag;
 
   /* For all layers in the orig mesh, copy the layer information. */
   CustomData *target_cd = &dest_mesh->vdata;

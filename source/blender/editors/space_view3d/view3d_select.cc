@@ -45,6 +45,7 @@
 
 #include "BKE_action.h"
 #include "BKE_armature.h"
+#include "BKE_attribute.hh"
 #include "BKE_context.h"
 #include "BKE_curve.h"
 #include "BKE_editmesh.h"
@@ -334,26 +335,31 @@ static bool edbm_backbuf_check_and_select_verts_obmode(Mesh *me,
                                                        EditSelectBuf_Cache *esel,
                                                        const eSelectOp sel_op)
 {
+  using namespace blender;
   MVert *mv = me->mvert;
   bool changed = false;
 
   const BLI_bitmap *select_bitmap = esel->select_bitmap;
 
   if (mv) {
-    const bool *hide_vert = (const bool *)CustomData_get_layer_named(
-        &me->vdata, CD_PROP_BOOL, ".hide_vert");
+    bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*me);
+    bke::SpanAttributeWriter<bool> selection_vert = attributes.lookup_or_add_for_write_span<bool>(
+        ".selection_vert", ATTR_DOMAIN_POINT);
+    const VArray<bool> hide_vert = attributes.lookup_or_default<bool>(
+        ".hide_vert", ATTR_DOMAIN_POINT, false);
 
     for (int index = 0; index < me->totvert; index++, mv++) {
-      if (!(hide_vert && hide_vert[index])) {
-        const bool is_select = mv->flag & SELECT;
+      if (!hide_vert[index]) {
+        const bool is_select = selection_vert.span[index];
         const bool is_inside = BLI_BITMAP_TEST_BOOL(select_bitmap, index);
         const int sel_op_result = ED_select_op_action_deselected(sel_op, is_select, is_inside);
         if (sel_op_result != -1) {
-          SET_FLAG_FROM_TEST(mv->flag, sel_op_result, SELECT);
+          selection_vert.span[index] = sel_op_result == 1;
           changed = true;
         }
       }
     }
+    selection_vert.finish();
   }
   return changed;
 }
@@ -363,22 +369,26 @@ static bool edbm_backbuf_check_and_select_faces_obmode(Mesh *me,
                                                        EditSelectBuf_Cache *esel,
                                                        const eSelectOp sel_op)
 {
+  using namespace blender;
   MPoly *mpoly = me->mpoly;
   bool changed = false;
 
   const BLI_bitmap *select_bitmap = esel->select_bitmap;
 
   if (mpoly) {
-    const bool *hide_poly = (const bool *)CustomData_get_layer_named(
-        &me->pdata, CD_PROP_BOOL, ".hide_poly");
+    bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*me);
+    bke::SpanAttributeWriter<bool> selection_poly = attributes.lookup_or_add_for_write_span<bool>(
+        ".selection_poly", ATTR_DOMAIN_FACE);
+    const VArray<bool> hide_poly = attributes.lookup_or_default<bool>(
+        ".hide_poly", ATTR_DOMAIN_FACE, false);
 
     for (int index = 0; index < me->totpoly; index++, mpoly++) {
-      if (!(hide_poly && hide_poly[index])) {
-        const bool is_select = mpoly->flag & ME_FACE_SEL;
+      if (!hide_poly[index]) {
+        const bool is_select = selection_poly.span[index];
         const bool is_inside = BLI_BITMAP_TEST_BOOL(select_bitmap, index);
         const int sel_op_result = ED_select_op_action_deselected(sel_op, is_select, is_inside);
         if (sel_op_result != -1) {
-          SET_FLAG_FROM_TEST(mpoly->flag, sel_op_result, ME_FACE_SEL);
+          selection_poly.span[index] = sel_op_result == 1;
           changed = true;
         }
       }
@@ -1150,20 +1160,27 @@ static bool do_lasso_select_meta(ViewContext *vc,
   return data.is_changed;
 }
 
+struct LassoSelectUserData_ForMeshVert {
+  LassoSelectUserData lasso_data;
+  blender::MutableSpan<bool> selection_vert;
+};
 static void do_lasso_select_meshobject__doSelectVert(void *userData,
-                                                     MVert *mv,
+                                                     MVert * /*mv*/,
                                                      const float screen_co[2],
-                                                     int UNUSED(index))
+                                                     int index)
 {
-  LassoSelectUserData *data = static_cast<LassoSelectUserData *>(userData);
-  const bool is_select = mv->flag & SELECT;
+  using namespace blender;
+  LassoSelectUserData_ForMeshVert *mesh_data = static_cast<LassoSelectUserData_ForMeshVert *>(
+      userData);
+  LassoSelectUserData *data = &mesh_data->lasso_data;
+  const bool is_select = mesh_data->selection_vert[index];
   const bool is_inside =
       (BLI_rctf_isect_pt_v(data->rect_fl, screen_co) &&
        BLI_lasso_is_point_inside(
            data->mcoords, data->mcoords_len, screen_co[0], screen_co[1], IS_CLIPPED));
   const int sel_op_result = ED_select_op_action_deselected(data->sel_op, is_select, is_inside);
   if (sel_op_result != -1) {
-    SET_FLAG_FROM_TEST(mv->flag, sel_op_result, SELECT);
+    mesh_data->selection_vert[index] = sel_op_result == 1;
     data->is_changed = true;
   }
 }
@@ -1173,6 +1190,7 @@ static bool do_lasso_select_paintvert(ViewContext *vc,
                                       const int mcoords_len,
                                       const eSelectOp sel_op)
 {
+  using namespace blender;
   const bool use_zbuf = !XRAY_ENABLED(vc->v3d);
   Object *ob = vc->obact;
   Mesh *me = static_cast<Mesh *>(ob->data);
@@ -1206,16 +1224,23 @@ static bool do_lasso_select_paintvert(ViewContext *vc,
     }
   }
   else {
-    LassoSelectUserData data;
+    bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*me);
+    bke::SpanAttributeWriter<bool> selection_vert = attributes.lookup_or_add_for_write_span<bool>(
+        ".selection_vert", ATTR_DOMAIN_POINT);
 
-    view3d_userdata_lassoselect_init(&data, vc, &rect, mcoords, mcoords_len, sel_op);
+    LassoSelectUserData_ForMeshVert data;
+
+    data.selection_vert = selection_vert.span;
+
+    view3d_userdata_lassoselect_init(&data.lasso_data, vc, &rect, mcoords, mcoords_len, sel_op);
 
     ED_view3d_init_mats_rv3d(vc->obact, vc->rv3d);
 
     meshobject_foreachScreenVert(
         vc, do_lasso_select_meshobject__doSelectVert, &data, V3D_PROJ_TEST_CLIP_DEFAULT);
 
-    changed |= data.is_changed;
+    changed |= data.lasso_data.is_changed;
+    selection_vert.finish();
   }
 
   if (changed) {
@@ -2806,18 +2831,22 @@ static bool ed_wpaint_vertex_select_pick(bContext *C,
                                          const SelectPick_Params *params,
                                          Object *obact)
 {
+  using namespace blender;
   View3D *v3d = CTX_wm_view3d(C);
   const bool use_zbuf = !XRAY_ENABLED(v3d);
 
   Mesh *me = static_cast<Mesh *>(obact->data); /* already checked for nullptr */
   uint index = 0;
-  MVert *mv;
   bool changed = false;
 
   bool found = ED_mesh_pick_vert(C, obact, mval, ED_MESH_PICK_DEFAULT_VERT_DIST, use_zbuf, &index);
 
+  bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*me);
+  bke::AttributeWriter<bool> selection_vert = attributes.lookup_or_add_for_write<bool>(
+      ".selection_vert", ATTR_DOMAIN_POINT);
+
   if (params->sel_op == SEL_OP_SET) {
-    if ((found && params->select_passthrough) && (me->mvert[index].flag & SELECT)) {
+    if ((found && params->select_passthrough) && selection_vert.varray[index]) {
       found = false;
     }
     else if (found || params->deselect_all) {
@@ -2827,23 +2856,22 @@ static bool ed_wpaint_vertex_select_pick(bContext *C,
   }
 
   if (found) {
-    mv = &me->mvert[index];
     switch (params->sel_op) {
       case SEL_OP_ADD: {
-        mv->flag |= SELECT;
+        selection_vert.varray.set(index, true);
         break;
       }
       case SEL_OP_SUB: {
-        mv->flag &= ~SELECT;
+        selection_vert.varray.set(index, false);
         break;
       }
       case SEL_OP_XOR: {
-        mv->flag ^= SELECT;
+        selection_vert.varray.set(index, !selection_vert.varray[index]);
         break;
       }
       case SEL_OP_SET: {
         paintvert_deselect_all_visible(obact, SEL_DESELECT, false);
-        mv->flag |= SELECT;
+        selection_vert.varray.set(index, true);
         break;
       }
       case SEL_OP_AND: {
@@ -2853,12 +2881,14 @@ static bool ed_wpaint_vertex_select_pick(bContext *C,
     }
 
     /* update mselect */
-    if (mv->flag & SELECT) {
+    if (selection_vert.varray[index]) {
       BKE_mesh_mselect_active_set(me, index, ME_VSEL);
     }
     else {
       BKE_mesh_mselect_validate(me);
     }
+
+    selection_vert.finish();
 
     paintvert_flush_flags(obact);
 
@@ -3092,17 +3122,23 @@ bool edge_inside_circle(const float cent[2],
   return (dist_squared_to_line_segment_v2(cent, screen_co_a, screen_co_b) < radius_squared);
 }
 
+struct BoxSelectUserData_ForMeshVert {
+  BoxSelectUserData box_data;
+  blender::MutableSpan<bool> selection_vert;
+};
 static void do_paintvert_box_select__doSelectVert(void *userData,
-                                                  MVert *mv,
+                                                  MVert * /*mv*/,
                                                   const float screen_co[2],
-                                                  int UNUSED(index))
+                                                  int index)
 {
-  BoxSelectUserData *data = static_cast<BoxSelectUserData *>(userData);
-  const bool is_select = mv->flag & SELECT;
+  BoxSelectUserData_ForMeshVert *mesh_data = static_cast<BoxSelectUserData_ForMeshVert *>(
+      userData);
+  BoxSelectUserData *data = &mesh_data->box_data;
+  const bool is_select = mesh_data->selection_vert[index];
   const bool is_inside = BLI_rctf_isect_pt_v(data->rect_fl, screen_co);
   const int sel_op_result = ED_select_op_action_deselected(data->sel_op, is_select, is_inside);
   if (sel_op_result != -1) {
-    SET_FLAG_FROM_TEST(mv->flag, sel_op_result, SELECT);
+    mesh_data->selection_vert[index] = sel_op_result == 1;
     data->is_changed = true;
   }
 }
@@ -3111,6 +3147,7 @@ static bool do_paintvert_box_select(ViewContext *vc,
                                     const rcti *rect,
                                     const eSelectOp sel_op)
 {
+  using namespace blender;
   const bool use_zbuf = !XRAY_ENABLED(vc->v3d);
 
   Mesh *me = static_cast<Mesh *>(vc->obact->data);
@@ -3139,15 +3176,22 @@ static bool do_paintvert_box_select(ViewContext *vc,
     }
   }
   else {
-    BoxSelectUserData data;
+    bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*me);
+    bke::SpanAttributeWriter<bool> selection_vert = attributes.lookup_or_add_for_write_span<bool>(
+        ".selection_vert", ATTR_DOMAIN_POINT);
 
-    view3d_userdata_boxselect_init(&data, vc, rect, sel_op);
+    BoxSelectUserData_ForMeshVert data;
+
+    data.selection_vert = selection_vert.span;
+
+    view3d_userdata_boxselect_init(&data.box_data, vc, rect, sel_op);
 
     ED_view3d_init_mats_rv3d(vc->obact, vc->rv3d);
 
     meshobject_foreachScreenVert(
         vc, do_paintvert_box_select__doSelectVert, &data, V3D_PROJ_TEST_CLIP_DEFAULT);
-    changed |= data.is_changed;
+    changed |= data.box_data.is_changed;
+    selection_vert.finish();
   }
 
   if (changed) {
@@ -3425,8 +3469,7 @@ static bool do_mesh_box_select(ViewContext *vc,
   }
   if (ts->selectmode & SCE_SELECT_EDGE) {
     /* Does both use_zbuf and non-use_zbuf versions (need screen cos for both) */
-    struct BoxSelectUserData_ForMeshEdge cb_data {
-    };
+    struct BoxSelectUserData_ForMeshEdge cb_data {};
     cb_data.data = &data;
     cb_data.esel = use_zbuf ? esel : nullptr;
     cb_data.backbuf_offset = use_zbuf ? DRW_select_buffer_context_offset_for_object_elem(
@@ -4099,15 +4142,21 @@ static bool paint_facesel_circle_select(ViewContext *vc,
   return changed;
 }
 
+struct CircleSelectUserData_ForMeshVert {
+  CircleSelectUserData circle_data;
+  blender::MutableSpan<bool> selection_vert;
+};
 static void paint_vertsel_circle_select_doSelectVert(void *userData,
-                                                     MVert *mv,
+                                                     MVert * /*mv*/,
                                                      const float screen_co[2],
-                                                     int UNUSED(index))
+                                                     int index)
 {
-  CircleSelectUserData *data = static_cast<CircleSelectUserData *>(userData);
+  CircleSelectUserData_ForMeshVert *mesh_data = static_cast<CircleSelectUserData_ForMeshVert *>(
+      userData);
+  CircleSelectUserData *data = &mesh_data->circle_data;
 
   if (len_squared_v2v2(data->mval_fl, screen_co) <= data->radius_squared) {
-    SET_FLAG_FROM_TEST(mv->flag, data->select, SELECT);
+    mesh_data->selection_vert[index] = data->select;
     data->is_changed = true;
   }
 }
@@ -4117,6 +4166,7 @@ static bool paint_vertsel_circle_select(ViewContext *vc,
                                         const int mval[2],
                                         float rad)
 {
+  using namespace blender;
   BLI_assert(ELEM(sel_op, SEL_OP_SET, SEL_OP_ADD, SEL_OP_SUB));
   const bool use_zbuf = !XRAY_ENABLED(vc->v3d);
   Object *ob = vc->obact;
@@ -4148,14 +4198,21 @@ static bool paint_vertsel_circle_select(ViewContext *vc,
     }
   }
   else {
-    CircleSelectUserData data;
+    bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*me);
+    bke::SpanAttributeWriter<bool> selection_vert = attributes.lookup_or_add_for_write_span<bool>(
+        ".selection_vert", ATTR_DOMAIN_POINT);
+
+    CircleSelectUserData_ForMeshVert data;
+
+    data.selection_vert = selection_vert.span;
 
     ED_view3d_init_mats_rv3d(vc->obact, vc->rv3d); /* for foreach's screen/vert projection */
 
-    view3d_userdata_circleselect_init(&data, vc, select, mval, rad);
+    view3d_userdata_circleselect_init(&data.circle_data, vc, select, mval, rad);
     meshobject_foreachScreenVert(
         vc, paint_vertsel_circle_select_doSelectVert, &data, V3D_PROJ_TEST_CLIP_DEFAULT);
-    changed |= data.is_changed;
+    changed |= data.circle_data.is_changed;
+    selection_vert.finish();
   }
 
   if (changed) {
