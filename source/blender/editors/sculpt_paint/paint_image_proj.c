@@ -4144,7 +4144,6 @@ static bool project_paint_clone_face_skip(ProjPaintState *ps,
 }
 
 typedef struct {
-  const MPoly *mpoly_orig;
   const bool *selection_poly_orig;
 
   const int *index_mp_to_orig;
@@ -4156,7 +4155,6 @@ static void proj_paint_face_lookup_init(const ProjPaintState *ps, ProjPaintFaceL
   if (ps->do_face_sel) {
     Mesh *orig_mesh = (Mesh *)ps->ob->data;
     face_lookup->index_mp_to_orig = CustomData_get_layer(&ps->me_eval->pdata, CD_ORIGINDEX);
-    face_lookup->mpoly_orig = orig_mesh->mpoly;
     face_lookup->selection_poly_orig = CustomData_get_layer_named(
         &orig_mesh->pdata, CD_PROP_BOOL, ".selection_poly");
   }

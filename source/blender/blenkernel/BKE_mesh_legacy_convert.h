@@ -28,6 +28,16 @@ void BKE_mesh_legacy_convert_hide_layers_to_flags(struct Mesh *mesh);
 void BKE_mesh_legacy_convert_flags_to_hide_layers(struct Mesh *mesh);
 
 /**
+ * Convert the selected element attributes to the old flag format for writing.
+ */
+void BKE_mesh_legacy_convert_selection_layers_to_flags(struct Mesh *mesh);
+/**
+ * Convert the old selection flags (#SELECT/#ME_FACE_SEL) to the selected element attribute for
+ * reading. Only add the attributes when there are any elements in each domain selected.
+ */
+void BKE_mesh_legacy_convert_flags_to_selection_layers(struct Mesh *mesh);
+
+/**
  * Recreate #MFace Tessellation.
  *
  * \note This doesn't use multi-threading like #BKE_mesh_recalc_looptri since

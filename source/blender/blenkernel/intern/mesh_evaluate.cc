@@ -837,7 +837,7 @@ void BKE_mesh_flush_select_from_polys(Mesh *me)
       ".selection_edge", ATTR_DOMAIN_EDGE);
 
   /* Use generic domain interpolation to read the polygon attribute on the other domains.
-   * Assume selected faces are not hidden and none of their verts/edges are hidden. */
+   * Assume selected faces are not hidden and none of their vertices/edges are hidden. */
   attributes.lookup_or_default<bool>(".selection_poly", ATTR_DOMAIN_POINT, false)
       .materialize(selection_vert.span);
   attributes.lookup_or_default<bool>(".selection_poly", ATTR_DOMAIN_EDGE, false)
@@ -856,6 +856,7 @@ static void mesh_flush_select_from_verts(const Span<MEdge> edges,
                                          MutableSpan<bool> selection_edge,
                                          MutableSpan<bool> selection_poly)
 {
+  /* Select visible edges that have both of their vertices selected. */
   for (const int i : edges.index_range()) {
     if (!hide_edge[i]) {
       const MEdge &edge = edges[i];
@@ -863,6 +864,7 @@ static void mesh_flush_select_from_verts(const Span<MEdge> edges,
     }
   }
 
+  /* Select visible faces that have all of their vertices selected. */
   for (const int i : polys.index_range()) {
     if (!hide_poly[i]) {
       const MPoly &poly = polys[i];

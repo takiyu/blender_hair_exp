@@ -25,7 +25,7 @@ extern "C" {
  */
 typedef struct MVert {
   float co[3];
-  // char flag
+  char flag DNA_DEPRECATED;
   char bweight;
   char _pad[3];
 } MVert;
@@ -85,8 +85,8 @@ typedef struct MPoly {
 enum {
   ME_SMOOTH = (1 << 0),
 #ifdef DNA_DEPRECATED_ALLOW
-/** Deprecated selection status. Now stored in ".selection_poly" attribute. */
-// ME_FACE_SEL = (1 << 1),
+  /** Deprecated selection status. Now stored in ".selection_poly" attribute. */
+  ME_FACE_SEL = (1 << 1),
 #endif
   /** Deprecated hide status. Now stored in ".hide_poly" attribute. */
   /* ME_HIDE = (1 << 4), */

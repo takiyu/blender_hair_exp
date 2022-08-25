@@ -13,6 +13,7 @@
 
 #include "DNA_mesh_types.h"
 #include "DNA_meshdata_types.h"
+#include "DNA_object_types.h"
 
 #include "BLI_edgehash.h"
 #include "BLI_math.h"
@@ -958,6 +959,92 @@ void BKE_mesh_legacy_convert_flags_to_hide_layers(Mesh *mesh)
       }
     });
     hide_poly.finish();
+  }
+}
+
+/** \} */
+
+/* -------------------------------------------------------------------- */
+/** \name Selection Attribute and Legacy Flag Conversion
+ * \{ */
+
+void BKE_mesh_legacy_convert_selection_layers_to_flags(Mesh *mesh)
+{
+  using namespace blender;
+  using namespace blender::bke;
+  const AttributeAccessor attributes = mesh_attributes(*mesh);
+
+  MutableSpan<MVert> verts(mesh->mvert, mesh->totvert);
+  const VArray<bool> selection_vert = attributes.lookup_or_default<bool>(
+      ".selection_vert", ATTR_DOMAIN_POINT, false);
+  threading::parallel_for(verts.index_range(), 4096, [&](IndexRange range) {
+    for (const int i : range) {
+      SET_FLAG_FROM_TEST(verts[i].flag, selection_vert[i], SELECT);
+    }
+  });
+
+  MutableSpan<MEdge> edges(mesh->medge, mesh->totedge);
+  const VArray<bool> selection_edge = attributes.lookup_or_default<bool>(
+      ".selection_edge", ATTR_DOMAIN_EDGE, false);
+  threading::parallel_for(edges.index_range(), 4096, [&](IndexRange range) {
+    for (const int i : range) {
+      SET_FLAG_FROM_TEST(edges[i].flag, selection_edge[i], SELECT);
+    }
+  });
+
+  MutableSpan<MPoly> polys(mesh->mpoly, mesh->totpoly);
+  const VArray<bool> selection_poly = attributes.lookup_or_default<bool>(
+      ".selection_poly", ATTR_DOMAIN_FACE, false);
+  threading::parallel_for(polys.index_range(), 4096, [&](IndexRange range) {
+    for (const int i : range) {
+      SET_FLAG_FROM_TEST(polys[i].flag, selection_poly[i], ME_FACE_SEL);
+    }
+  });
+}
+
+void BKE_mesh_legacy_convert_flags_to_selection_layers(Mesh *mesh)
+{
+  using namespace blender;
+  using namespace blender::bke;
+  MutableAttributeAccessor attributes = mesh_attributes_for_write(*mesh);
+
+  const Span<MVert> verts(mesh->mvert, mesh->totvert);
+  if (std::any_of(
+          verts.begin(), verts.end(), [](const MVert &vert) { return vert.flag & SELECT; })) {
+    SpanAttributeWriter<bool> selection_vert = attributes.lookup_or_add_for_write_only_span<bool>(
+        ".selection_vert", ATTR_DOMAIN_POINT);
+    threading::parallel_for(verts.index_range(), 4096, [&](IndexRange range) {
+      for (const int i : range) {
+        selection_vert.span[i] = verts[i].flag & SELECT;
+      }
+    });
+    selection_vert.finish();
+  }
+
+  const Span<MEdge> edges(mesh->medge, mesh->totedge);
+  if (std::any_of(
+          edges.begin(), edges.end(), [](const MEdge &edge) { return edge.flag & SELECT; })) {
+    SpanAttributeWriter<bool> selection_edge = attributes.lookup_or_add_for_write_only_span<bool>(
+        ".selection_edge", ATTR_DOMAIN_EDGE);
+    threading::parallel_for(edges.index_range(), 4096, [&](IndexRange range) {
+      for (const int i : range) {
+        selection_edge.span[i] = edges[i].flag & SELECT;
+      }
+    });
+    selection_edge.finish();
+  }
+
+  const Span<MPoly> polys(mesh->mpoly, mesh->totpoly);
+  if (std::any_of(
+          polys.begin(), polys.end(), [](const MPoly &poly) { return poly.flag & ME_FACE_SEL; })) {
+    SpanAttributeWriter<bool> selection_poly = attributes.lookup_or_add_for_write_only_span<bool>(
+        ".selection_poly", ATTR_DOMAIN_FACE);
+    threading::parallel_for(polys.index_range(), 4096, [&](IndexRange range) {
+      for (const int i : range) {
+        selection_poly.span[i] = polys[i].flag & ME_FACE_SEL;
+      }
+    });
+    selection_poly.finish();
   }
 }
 

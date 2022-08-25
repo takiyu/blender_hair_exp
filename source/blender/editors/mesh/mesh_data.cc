@@ -869,6 +869,7 @@ void ED_mesh_update(Mesh *mesh, bContext *C, bool calc_edges, bool calc_edges_lo
 
 static void mesh_add_verts(Mesh *mesh, int len)
 {
+  using namespace blender;
   if (len == 0) {
     return;
   }
@@ -899,6 +900,7 @@ static void mesh_add_verts(Mesh *mesh, int len)
 
 static void mesh_add_edges(Mesh *mesh, int len)
 {
+  using namespace blender;
   CustomData edata;
   MEdge *medge;
   int i, totedge;
@@ -995,7 +997,6 @@ static void mesh_add_polys(Mesh *mesh, int len)
 
   mesh->totpoly = totpoly;
 
-  /* TODO: Make selection optional. */
   const bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*mesh);
   const bke::SpanAttributeWriter<bool> selection_poly =
       attributes.lookup_or_add_for_write_span<bool>(".selection_poly", ATTR_DOMAIN_FACE);

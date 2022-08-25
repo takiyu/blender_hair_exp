@@ -283,7 +283,6 @@ static void extract_edituv_lines_iter_subdiv_mesh(const DRWSubdivCache *subdiv_c
                                                   const MPoly *coarse_poly)
 {
   MeshExtract_EditUvElem_Data *data = static_cast<MeshExtract_EditUvElem_Data *>(_data);
-
   int *subdiv_loop_edge_index = (int *)GPU_vertbuf_get_data(subdiv_cache->edges_orig_index);
 
   const BMFace *efa = bm_original_face_get(mr, coarse_poly - mr->mpoly);
