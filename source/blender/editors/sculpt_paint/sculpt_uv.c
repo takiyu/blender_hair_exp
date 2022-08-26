@@ -736,7 +736,7 @@ static UvSculptData *uv_sculpt_stroke_init(bContext *C, wmOperator *op, const wm
     /* Index for the UvElements. */
     int counter = -1;
 
-    const UVMap_Offsets offsets = CustomData_get_uvmap_offsets(&em->bm->ldata, NULL);
+    const UVMap_Offsets offsets = CustomData_get_active_uvmap_offsets(em->bm);
     /* initialize the unique UVs */
     for (int i = 0; i < bm->totvert; i++) {
       UvElement *element = data->elementMap->vertex[i];

@@ -37,9 +37,8 @@ static void extract_edituv_data_init_common(const MeshRenderData *mr,
   GPU_vertbuf_init_with_format(vbo, &format);
   GPU_vertbuf_data_alloc(vbo, loop_len);
 
-  CustomData *cd_ldata = (mr->extract_type == MR_EXTRACT_BMESH) ? &mr->bm->ldata : &mr->me->ldata;
   data->vbo_data = (EditLoopData *)GPU_vertbuf_get_data(vbo);
-  data->offsets = CustomData_get_uvmap_offsets(cd_ldata, NULL);
+  data->offsets = CustomData_get_active_uvmap_offsets(mr->bm);
 }
 
 static void extract_edituv_data_init(const MeshRenderData *mr,

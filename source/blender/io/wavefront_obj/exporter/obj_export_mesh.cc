@@ -327,7 +327,7 @@ void OBJMesh::store_uv_coords_and_indices()
       /* Store UV vertex coordinates. */
       uv_coords_.resize(tot_uv_vertices_);
       const int loopstart = mpoly[uv_vert->poly_index].loopstart;
-      uv_coords_[tot_uv_vertices_ - 1] = mloopuv[loopstart + uv_vert->loop_of_poly_index];
+      uv_coords_[tot_uv_vertices_ - 1] = uv_map[loopstart + uv_vert->loop_of_poly_index];
 
       /* Store UV vertex indices. */
       uv_indices_[uv_vert->poly_index].resize(vertices_in_poly);

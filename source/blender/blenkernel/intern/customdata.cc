@@ -5316,101 +5316,54 @@ void CustomData_blend_read(BlendDataReader *reader, CustomData *data, const int 
 /** \name Custom Data UVmap Handling
  * \{ */
 
-UVMap_Data CustomData_get_uvmap_data(const CustomData *ldata, char const *name)
+static UVMap_Data retrieve_uv_map_data(const CustomData &ldata, const int layer_index)
 {
   using namespace blender::bke;
+  const StringRef name = ldata.layers[layer_index].name;
+
+  const int vertsel = CustomData_get_named_layer_index(
+      &ldata, CD_PROP_BOOL, uv_sublayer_name_vert_selection(name).c_str());
+  const int edgesel = CustomData_get_named_layer_index(
+      &ldata, CD_PROP_BOOL, uv_sublayer_name_edge_selection(name).c_str());
+  const int pinned = CustomData_get_named_layer_index(
+      &ldata, CD_PROP_BOOL, uv_sublayer_name_pin(name).c_str());
+
   UVMap_Data data;
-  if (name) {
-    data.uv_index = CustomData_get_named_layer_index(ldata, CD_PROP_FLOAT2, name);
-  }
-  else {
-    data.uv_index = CustomData_get_layer_index(ldata, CD_PROP_FLOAT2);
-  }
-
-  data.uv = data.uv_index == -1 ? nullptr : (float(*)[2])ldata->layers[data.uv_index].data;
-
-  if (data.uv == nullptr) {
-    data.vertsel = data.edgesel = data.pinned = nullptr;
-    return data;
-  }
-
-  const std::string vertsel_name = uv_sublayer_name_vert_selection(
-      ldata->layers[data.uv_index].name);
-  const std::string edgesel_name = uv_sublayer_name_edge_selection(
-      ldata->layers[data.uv_index].name);
-  const std::string pinned_name = uv_sublayer_name_pin(ldata->layers[data.uv_index].name);
-
-  const int vertsel_index = CustomData_get_named_layer_index(
-      ldata, CD_PROP_BOOL, vertsel_name.c_str());
-  const int edgesel_index = CustomData_get_named_layer_index(
-      ldata, CD_PROP_BOOL, edgesel_name.c_str());
-  const int pinned_index = CustomData_get_named_layer_index(
-      ldata, CD_PROP_BOOL, pinned_name.c_str());
-
-  data.vertsel = vertsel_index == -1 ? nullptr : (bool *)ldata->layers[vertsel_index].data;
-  data.edgesel = edgesel_index == -1 ? nullptr : (bool *)ldata->layers[edgesel_index].data;
-  data.pinned = pinned_index == -1 ? nullptr : (bool *)ldata->layers[pinned_index].data;
+  data.uv = static_cast<float(*)[2]>(ldata.layers[layer_index].data);
+  data.vertsel = vertsel == -1 ? nullptr : static_cast<bool *>(ldata.layers[vertsel].data);
+  data.edgesel = edgesel == -1 ? nullptr : static_cast<bool *>(ldata.layers[edgesel].data);
+  data.pinned = pinned == -1 ? nullptr : static_cast<bool *>(ldata.layers[pinned].data);
 
   return data;
 }
 
 UVMap_Data CustomData_get_uvmap_data_n(const CustomData *ldata, const int n)
 {
-  using namespace blender::bke;
-  UVMap_Data data;
-  data.uv_index = CustomData_get_layer_index_n(ldata, CD_PROP_FLOAT2, n);
-
-  if (data.uv_index < 0) {
-    data.uv = nullptr;
-    data.vertsel = data.edgesel = data.pinned = nullptr;
-    return data;
+  const int layer_index = CustomData_get_layer_index_n(ldata, CD_PROP_FLOAT2, n);
+  if (layer_index == -1) {
+    return {};
   }
-
-  const std::string vertsel_name = uv_sublayer_name_vert_selection(
-      ldata->layers[data.uv_index].name);
-  const std::string edgesel_name = uv_sublayer_name_edge_selection(
-      ldata->layers[data.uv_index].name);
-  const std::string pinned_name = uv_sublayer_name_pin(ldata->layers[data.uv_index].name);
-
-  const int vertsel_index = CustomData_get_named_layer_index(
-      ldata, CD_PROP_BOOL, vertsel_name.c_str());
-  const int edgesel_index = CustomData_get_named_layer_index(
-      ldata, CD_PROP_BOOL, edgesel_name.c_str());
-  const int pinned_index = CustomData_get_named_layer_index(
-      ldata, CD_PROP_BOOL, pinned_name.c_str());
-
-  data.vertsel = vertsel_index == -1 ? nullptr : (bool *)ldata->layers[vertsel_index].data;
-  data.edgesel = edgesel_index == -1 ? nullptr : (bool *)ldata->layers[edgesel_index].data;
-  data.pinned = pinned_index == -1 ? nullptr : (bool *)ldata->layers[pinned_index].data;
-
-  return data;
+  return retrieve_uv_map_data(*ldata, layer_index);
 }
 
-UVMap_Offsets CustomData_get_uvmap_offsets(const CustomData *ldata, char const *name)
+UVMap_Offsets CustomData_get_active_uvmap_offsets(const BMesh *bm)
 {
   using namespace blender::bke;
+  const int layer_index = CustomData_get_layer_index(&bm->ldata, CD_PROP_FLOAT2);
+  if (layer_index == -1) {
+    return {-1, -1, -1, -1};
+  }
+
+  const StringRef name = bm->ldata.layers[layer_index].name;
+
   UVMap_Offsets offsets;
-  int index;
-  if (name) {
-    index = CustomData_get_named_layer_index(ldata, CD_PROP_FLOAT2, name);
-  }
-  else {
-    index = CustomData_get_layer_index(ldata, CD_PROP_FLOAT2);
-  }
-
-  if (index < 0) {
-    offsets.uv = offsets.vertsel = offsets.pinned = offsets.edgesel = -1;
-    return offsets;
-  }
-
-  offsets.uv = ldata->layers[index].offset;
-  std::string vertsel_name = uv_sublayer_name_vert_selection(ldata->layers[index].name);
-  std::string edgesel_name = uv_sublayer_name_edge_selection(ldata->layers[index].name);
-  std::string pinned_name = uv_sublayer_name_pin(ldata->layers[index].name);
-
-  offsets.vertsel = CustomData_get_offset_named(ldata, CD_PROP_BOOL, vertsel_name.c_str());
-  offsets.edgesel = CustomData_get_offset_named(ldata, CD_PROP_BOOL, edgesel_name.c_str());
-  offsets.pinned = CustomData_get_offset_named(ldata, CD_PROP_BOOL, pinned_name.c_str());
+  offsets.uv = bm->ldata.layers[layer_index].offset;
+  offsets.vertsel = CustomData_get_offset_named(
+      &bm->ldata, CD_PROP_BOOL, uv_sublayer_name_vert_selection(name).c_str());
+  offsets.edgesel = CustomData_get_offset_named(
+      &bm->ldata, CD_PROP_BOOL, uv_sublayer_name_edge_selection(name).c_str());
+  offsets.pinned = CustomData_get_offset_named(
+      &bm->ldata, CD_PROP_BOOL, uv_sublayer_name_pin(name).c_str());
 
   return offsets;
 }

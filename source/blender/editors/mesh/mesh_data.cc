@@ -239,7 +239,6 @@ int ED_mesh_uv_add(
       return -1;
     }
 
-    /* CD_PROP_FLOAT2 */
     BM_data_layer_add_named(em->bm, &em->bm->ldata, CD_PROP_FLOAT2, name);
     /* copy data from active UV */
     if (layernum_dst && do_init) {

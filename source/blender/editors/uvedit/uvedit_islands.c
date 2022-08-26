@@ -435,7 +435,7 @@ void ED_uvedit_pack_islands_multi(const Scene *scene,
     BMEditMesh *em = BKE_editmesh_from_object(obedit);
     BMesh *bm = em->bm;
 
-    UVMap_Offsets offsets = CustomData_get_uvmap_offsets(&bm->ldata, NULL);
+    const UVMap_Offsets offsets = CustomData_get_active_uvmap_offsets(bm);
 
     if (offsets.uv == -1) {
       continue;

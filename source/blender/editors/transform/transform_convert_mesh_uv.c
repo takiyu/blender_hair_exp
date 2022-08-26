@@ -86,7 +86,7 @@ static void uv_set_connectivity_distance(BMesh *bm, float *dists, const float as
   BLI_LINKSTACK_INIT(queue);
   BLI_LINKSTACK_INIT(queue_next);
 
-  const UVMap_Offsets offsets = CustomData_get_uvmap_offsets(&bm->ldata, NULL);
+  const UVMap_Offsets offsets = CustomData_get_active_uvmap_offsets(bm);
 
   BMIter fiter, liter;
   BMVert *f;
@@ -256,7 +256,7 @@ static void createTransUVs(bContext *C, TransInfo *t)
       int co_num;
     } *island_center = NULL;
     int count = 0, countsel = 0;
-  const  UVMap_Offsets offsets = CustomData_get_uvmap_offsets(&em->bm->ldata, NULL);
+    const UVMap_Offsets offsets = CustomData_get_active_uvmap_offsets(em->bm);
 
     if (!ED_space_image_show_uvedit(sima, tc->obedit)) {
       continue;

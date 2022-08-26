@@ -71,6 +71,7 @@ static PyObject *bpy_bmloopuv_pin_uv_get(BPy_BMLoopUV *self, void *UNUSED(closur
 static int bpy_bmloopuv_pin_uv_set(BPy_BMLoopUV *self, PyObject *value, void *UNUSED(closure))
 {
   self->pinned = PyC_Long_AsBool(value);
+  return 0;
 }
 
 static PyObject *bpy_bmloopuv_select_get(BPy_BMLoopUV *self, void *UNUSED(closure))
@@ -80,6 +81,7 @@ static PyObject *bpy_bmloopuv_select_get(BPy_BMLoopUV *self, void *UNUSED(closur
 static int bpy_bmloopuv_select_set(BPy_BMLoopUV *self, PyObject *value, void *UNUSED(closure))
 {
   self->vertsel = PyC_Long_AsBool(value);
+  return 0;
 }
 
 static PyObject *bpy_bmloopuv_select_edge_get(BPy_BMLoopUV *self, void *UNUSED(closure))
@@ -89,6 +91,7 @@ static PyObject *bpy_bmloopuv_select_edge_get(BPy_BMLoopUV *self, void *UNUSED(c
 static int bpy_bmloopuv_select_edge_set(BPy_BMLoopUV *self, PyObject *value, void *UNUSED(closure))
 {
   self->edgesel = PyC_Long_AsBool(value);
+  return 0;
 }
 
 static PyGetSetDef bpy_bmloopuv_getseters[] = {
@@ -130,7 +133,7 @@ static void bm_init_types_bmloopuv(void)
   PyType_Ready(&BPy_BMLoopUV_Type);
 }
 
-int BPy_BMLoopUV_AssignPyObject(struct BMesh *bmesh, const int loop_index, PyObject *value)
+int BPy_BMLoopUV_AssignPyObject(struct BMesh *bm, const int loop_index, PyObject *value)
 {
   if (UNLIKELY(!BPy_BMLoopUV_Check(value))) {
     PyErr_Format(PyExc_TypeError, "expected BMLoopUV, not a %.200s", Py_TYPE(value)->tp_name);
@@ -138,13 +141,13 @@ int BPy_BMLoopUV_AssignPyObject(struct BMesh *bmesh, const int loop_index, PyObj
   }
 
   BPy_BMLoopUV *src = (BPy_BMLoopUV *)value;
-  const int uv_layer_index = CustomData_get_layer_index(&bmesh->ldata, CD_PROP_FLOAT2);
-  BM_uv_layer_ensure_sublayer(bmesh, &bmesh->ldata, CD_PROP_BOOL, uv_layer_index, UV_VERTSEL_NAME);
-  BM_uv_layer_ensure_sublayer(bmesh, &bmesh->ldata, CD_PROP_BOOL, uv_layer_index, UV_EDGESEL_NAME);
-  BM_uv_layer_ensure_sublayer(bmesh, &bmesh->ldata, CD_PROP_BOOL, uv_layer_index, UV_PINNED_NAME);
-  const UVMap_Offsets offsets = CustomData_get_uvmap_offsets(&bmesh->ldata, NULL);
+  const int uv_layer_index = CustomData_get_layer_index(&bm->ldata, CD_PROP_FLOAT2);
+  BM_uv_layer_ensure_sublayer(bm, &bm->ldata, CD_PROP_BOOL, uv_layer_index, UV_VERTSEL_NAME);
+  BM_uv_layer_ensure_sublayer(bm, &bm->ldata, CD_PROP_BOOL, uv_layer_index, UV_EDGESEL_NAME);
+  BM_uv_layer_ensure_sublayer(bm, &bm->ldata, CD_PROP_BOOL, uv_layer_index, UV_PINNED_NAME);
+  const UVMap_Offsets offsets = CustomData_get_active_uvmap_offsets(bm);
 
-  BMLoop *l = BM_loop_at_index_find(bmesh, loop_index);
+  BMLoop *l = BM_loop_at_index_find(bm, loop_index);
   float *luv = BM_ELEM_CD_GET_FLOAT_P(l, offsets.uv);
   copy_v2_v2(luv, src->uv);
 
@@ -155,13 +158,13 @@ int BPy_BMLoopUV_AssignPyObject(struct BMesh *bmesh, const int loop_index, PyObj
   return 0;
 }
 
-PyObject *BPy_BMLoopUV_CreatePyObject(struct BMesh *bmesh, const int loop_index)
+PyObject *BPy_BMLoopUV_CreatePyObject(struct BMesh *bm, const int loop_index)
 {
   BPy_BMLoopUV *self = PyObject_New(BPy_BMLoopUV, &BPy_BMLoopUV_Type);
 
-  const UVMap_Offsets offsets = CustomData_get_uvmap_offsets(&bmesh->ldata, NULL);
+  const UVMap_Offsets offsets = CustomData_get_active_uvmap_offsets(bm);
 
-  BMLoop *l = BM_loop_at_index_find(bmesh, loop_index);
+  BMLoop *l = BM_loop_at_index_find(bm, loop_index);
   float *luv = BM_ELEM_CD_GET_FLOAT_P(l, offsets.uv);
   self->vertsel = BM_ELEM_CD_GET_OPT_BOOL(l, offsets.vertsel);
   self->edgesel = BM_ELEM_CD_GET_OPT_BOOL(l, offsets.edgesel);

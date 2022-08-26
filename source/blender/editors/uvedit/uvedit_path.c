@@ -568,7 +568,7 @@ static int uv_shortest_path_pick_invoke(bContext *C, wmOperator *op, const wmEve
   BMEditMesh *em = BKE_editmesh_from_object(obedit);
   BMesh *bm = em->bm;
 
-  UVMap_Offsets offsets = CustomData_get_uvmap_offsets(&bm->ldata, NULL);
+  const UVMap_Offsets offsets = CustomData_get_active_uvmap_offsets(bm);
 
   float aspect_y;
   {
@@ -679,7 +679,7 @@ static int uv_shortest_path_pick_exec(bContext *C, wmOperator *op)
   Object *obedit = CTX_data_edit_object(C);
   BMEditMesh *em = BKE_editmesh_from_object(obedit);
   BMesh *bm = em->bm;
-  UVMap_Offsets offsets = CustomData_get_uvmap_offsets(&bm->ldata, NULL);
+  const UVMap_Offsets offsets = CustomData_get_active_uvmap_offsets(bm);
 
   float aspect_y;
   {
@@ -787,7 +787,7 @@ static int uv_shortest_path_select_exec(bContext *C, wmOperator *op)
     BMEditMesh *em = BKE_editmesh_from_object(obedit);
     BMesh *bm = em->bm;
 
-    UVMap_Offsets offsets = CustomData_get_uvmap_offsets(&bm->ldata, NULL);
+    const UVMap_Offsets offsets = CustomData_get_active_uvmap_offsets(bm);
 
     BMElem *ele_src = NULL, *ele_dst = NULL;
 

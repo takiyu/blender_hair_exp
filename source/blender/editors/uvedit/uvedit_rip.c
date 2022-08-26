@@ -737,7 +737,7 @@ static bool uv_rip_object(Scene *scene, Object *obedit, const float co[2], const
   int index = CustomData_get_layer_index(&em->bm->ldata, CD_PROP_FLOAT2);
   BM_uv_layer_ensure_sublayer(em->bm, &em->bm->ldata, CD_PROP_BOOL, index, UV_VERTSEL_NAME);
   BM_uv_layer_ensure_sublayer(em->bm, &em->bm->ldata, CD_PROP_BOOL, index, UV_EDGESEL_NAME);
-  UVMap_Offsets offsets = CustomData_get_uvmap_offsets(&em->bm->ldata, NULL);
+  UVMap_Offsets offsets = CustomData_get_active_uvmap_offsets(em->bm);
 
   BMFace *efa;
   BMIter iter, liter;
