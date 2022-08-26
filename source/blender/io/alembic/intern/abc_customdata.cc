@@ -320,7 +320,7 @@ static void read_uvs(const CDStreamConfig &config,
 {
   MPoly *mpolys = config.mpoly;
   MLoop *mloops = config.mloop;
-  float(*mloopuvs)[2] = static_cast<float(*)[2]>(data);
+  float2 *mloopuvs = static_cast<float2 *>(data);
 
   unsigned int uv_index, loop_index, rev_loop_index;
 
@@ -337,7 +337,7 @@ static void read_uvs(const CDStreamConfig &config,
       uv_index = (*indices)[loop_index];
       const Imath::V2f &uv = (*uvs)[uv_index];
 
-      float *loopuv = mloopuvs[rev_loop_index];
+      float2 &loopuv = mloopuvs[rev_loop_index];
       loopuv[0] = uv[0];
       loopuv[1] = uv[1];
     }

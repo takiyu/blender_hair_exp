@@ -15,6 +15,7 @@
 
 #include "DNA_meshdata_types.h"
 
+#include "BLI_math_vec_types.hh"
 #include "BLI_utildefines.h"
 
 #include "BKE_customdata.h"
@@ -367,7 +368,6 @@ void GeometryExporter::create_mesh_primitive_list(short material_index,
     int layer_index = CustomData_get_layer_index_n(&me->ldata, CD_PROP_FLOAT2, i);
     if (!this->export_settings.get_active_uv_only() || layer_index == active_uv_index) {
 
-      // char *name = CustomData_get_layer_name(&me->ldata, CD_PROP_FLOAT2, i);
       COLLADASW::Input texcoord_input(
           COLLADASW::InputSemantic::TEXCOORD,
           makeUrl(makeTexcoordSourceId(geom_id, i, this->export_settings.get_active_uv_only())),
@@ -542,7 +542,8 @@ void GeometryExporter::createTexcoordsSource(std::string geom_id, Mesh *me)
   for (int a = 0; a < num_layers; a++) {
     int layer_index = CustomData_get_layer_index_n(&me->ldata, CD_PROP_FLOAT2, a);
     if (!this->export_settings.get_active_uv_only() || layer_index == active_uv_index) {
-      float(*mloops)[2] = (float(*)[2])CustomData_get_layer_n(&me->ldata, CD_PROP_FLOAT2, a);
+      const blender::float2 *mloops = static_cast<const blender::float2 *>(
+          CustomData_get_layer_n(&me->ldata, CD_PROP_FLOAT2, a));
 
       COLLADASW::FloatSourceF source(mSW);
       std::string layer_id = makeTexcoordSourceId(
@@ -560,7 +561,7 @@ void GeometryExporter::createTexcoordsSource(std::string geom_id, Mesh *me)
 
       for (int index = 0; index < totpoly; index++) {
         MPoly *mpoly = mpolys + index;
-        float(*mloop)[2] = mloops + mpoly->loopstart;
+        const blender::float2 *mloop = mloops + mpoly->loopstart;
         for (int j = 0; j < mpoly->totloop; j++) {
           source.appendValues(mloop[j][0], mloop[j][1]);
         }

@@ -9,6 +9,7 @@
 #include "DNA_scene_types.h"
 
 #include "BKE_attribute.h"
+#include "BKE_attribute.hh"
 #include "BKE_customdata.h"
 #include "BKE_deform.h"
 #include "BKE_material.h"
@@ -262,8 +263,9 @@ void MeshFromGeometry::create_uv_verts(Mesh *mesh)
     return;
   }
 
-  UVMap_Data data = BKE_id_attributes_create_uvmap_layers(mesh, "UVMap", NULL, 0);
-  float2 *mluv_dst = (float2 *)data.uv;
+  bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*mesh);
+  bke::SpanAttributeWriter<float2> uv_map = attributes.lookup_or_add_for_write_only_span<float2>(
+      "UVMap", ATTR_DOMAIN_CORNER);
 
   int tot_loop_idx = 0;
 
@@ -272,12 +274,13 @@ void MeshFromGeometry::create_uv_verts(Mesh *mesh)
       const PolyCorner &curr_corner = mesh_geometry_.face_corners_[curr_face.start_index_ + idx];
       if (curr_corner.uv_vert_index >= 0 &&
           curr_corner.uv_vert_index < global_vertices_.uv_vertices.size()) {
-        const float2 &mluv_src = global_vertices_.uv_vertices[curr_corner.uv_vert_index];
-        copy_v2_v2(mluv_dst[tot_loop_idx], mluv_src);
+        uv_map.span[tot_loop_idx] = global_vertices_.uv_vertices[curr_corner.uv_vert_index];
         tot_loop_idx++;
       }
     }
   }
+
+  uv_map.finish();
 }
 
 static Material *get_or_create_material(Main *bmain,

@@ -464,8 +464,7 @@ static int customdata_compare(
   CustomDataLayer *l1, *l2;
   int layer_count1 = 0, layer_count2 = 0, j;
   const uint64_t cd_mask_non_generic = CD_MASK_MVERT | CD_MASK_MEDGE | CD_MASK_MPOLY |
-                                       CD_MASK_MLOOPUV | CD_MASK_PROP_BYTE_COLOR |
-                                       CD_MASK_MDEFORMVERT;
+                                       CD_MASK_PROP_BYTE_COLOR | CD_MASK_MDEFORMVERT;
   const uint64_t cd_mask_all_attr = CD_MASK_PROP_ALL | cd_mask_non_generic;
 
   for (int i = 0; i < c1->totlayer; i++) {
@@ -575,18 +574,6 @@ static int customdata_compare(
           for (j = 0; j < ltot; j++, lp1++, lp2++) {
             if (lp1->v != lp2->v) {
               return MESHCMP_LOOPMISMATCH;
-            }
-          }
-          break;
-        }
-        case CD_MLOOPUV: {
-          MLoopUV *lp1 = (MLoopUV *)l1->data;
-          MLoopUV *lp2 = (MLoopUV *)l2->data;
-          int ltot = m1->totloop;
-
-          for (j = 0; j < ltot; j++, lp1++, lp2++) {
-            if (len_squared_v2v2(lp1->uv, lp2->uv) > thresh_sq) {
-              return MESHCMP_LOOPUVMISMATCH;
             }
           }
           break;

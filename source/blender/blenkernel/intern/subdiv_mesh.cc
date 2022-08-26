@@ -26,8 +26,6 @@
 
 #include "MEM_guardedalloc.h"
 
-using blender::float2;
-
 /* -------------------------------------------------------------------- */
 /** \name Subdivision Context
  * \{ */
@@ -49,7 +47,6 @@ struct SubdivMeshContext {
   /* Original coordinates (ORCO) interpolation. */
   float (*orco)[3];
   float (*cloth_orco)[3];
-
   /* Per-subdivided vertex counter of averaged values. */
   int *accumulated_counters;
   bool have_displacement;

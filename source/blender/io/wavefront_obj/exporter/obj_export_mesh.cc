@@ -6,6 +6,7 @@
 /* Silence warnings from copying deprecated fields. Needed for an Object copy constructor use. */
 #define DNA_DEPRECATED_ALLOW
 
+#include "BKE_attribute.hh"
 #include "BKE_customdata.h"
 #include "BKE_deform.h"
 #include "BKE_lib_id.h"
@@ -283,23 +284,26 @@ Vector<int> OBJMesh::calc_poly_vertex_indices(const int poly_index) const
 
 void OBJMesh::store_uv_coords_and_indices()
 {
+  const StringRef active_uv_name = CustomData_get_active_layer_name(&export_mesh_eval_->ldata,
+                                                                    CD_PROP_FLOAT2);
+  if (active_uv_name.is_empty()) {
+    tot_uv_vertices_ = 0;
+    return;
+  }
   const MPoly *mpoly = export_mesh_eval_->mpoly;
   const MLoop *mloop = export_mesh_eval_->mloop;
   const int totpoly = export_mesh_eval_->totpoly;
   const int totvert = export_mesh_eval_->totvert;
-  const float2 *mloopuv = static_cast<float2 *>(
-      CustomData_get_layer(&export_mesh_eval_->ldata, CD_PROP_FLOAT2));
-  if (!mloopuv) {
-    tot_uv_vertices_ = 0;
-    return;
-  }
+  const bke::AttributeAccessor attributes = bke::mesh_attributes(*export_mesh_eval_);
+  const VArraySpan<float2> uv_map = attributes.lookup<float2>(active_uv_name, ATTR_DOMAIN_CORNER);
+
   const float limit[2] = {STD_UV_CONNECT_LIMIT, STD_UV_CONNECT_LIMIT};
 
   UvVertMap *uv_vert_map = BKE_mesh_uv_vert_map_create(
       mpoly,
       nullptr,
       mloop,
-      reinterpret_cast<const float(*)[2]>(mloopuv),
+      reinterpret_cast<const float(*)[2]>(uv_map.data()),
       totpoly,
       totvert,
       limit,

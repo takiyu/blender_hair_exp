@@ -237,7 +237,7 @@ void MeshImporter::set_vcol(MLoopCol *mloopcol,
   }
 }
 
-void MeshImporter::set_face_uv(float (*mloopuv)[2],
+void MeshImporter::set_face_uv(blender::float2 *mloopuv,
                                UVDataWrapper &uvs,
                                int start_index,
                                COLLADAFW::IndexList &index_list,
@@ -703,8 +703,8 @@ void MeshImporter::read_polys(COLLADAFW::Mesh *collada_mesh, Mesh *me)
              uvset_index++) {
           /* get mtface by face index and uv set index */
           COLLADAFW::IndexList &index_list = *index_list_array_uvcoord[uvset_index];
-          float(*mloopuv)[2] = (float(*)[2])CustomData_get_layer_named(
-              &me->ldata, CD_PROP_FLOAT2, index_list.getName().c_str());
+          blender::float2 *mloopuv = static_cast<blender::float2 *>(CustomData_get_layer_named(
+              &me->ldata, CD_PROP_FLOAT2, index_list.getName().c_str()));
           if (mloopuv == nullptr) {
             fprintf(stderr,
                     "Collada import: Mesh [%s] : Unknown reference to TEXCOORD [#%s].\n",

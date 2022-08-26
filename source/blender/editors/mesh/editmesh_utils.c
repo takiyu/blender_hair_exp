@@ -863,7 +863,7 @@ UvElementMap *BM_uv_element_map_create(BMesh *bm,
   BMIter iter, liter;
   BLI_buffer_declare_static(vec2f, tf_uv_buf, BLI_BUFFER_NOP, BM_DEFAULT_NGON_STACK_SIZE);
 
-  UVMap_Offsets offsets = CustomData_get_uvmap_offsets(&bm->ldata, NULL);
+ const UVMap_Offsets offsets = CustomData_get_uvmap_offsets(&bm->ldata, NULL);
   if (offsets.uv < 0) {
     return NULL;
   }

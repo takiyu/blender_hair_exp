@@ -1458,7 +1458,7 @@ static int get_uv_index_and_layer(PointerRNA *ptr, int *r_layer)
 {
   const Mesh *mesh = rna_mesh(ptr);
 
-  /* Since we don't know from which UV layer the pointer is we need to scan them all. */
+  /* We don't know from which attribute the RNA pointer is from, so we need to scan them all. */
   const int uv_layers_num = CustomData_number_of_layers(&mesh->ldata, CD_PROP_FLOAT2);
   for (int i = 0; i < uv_layers_num; i++) {
     const float(*uv_layer)[2] = (float(*)[2])CustomData_get_layer_n(
@@ -1470,6 +1470,7 @@ static int get_uv_index_and_layer(PointerRNA *ptr, int *r_layer)
     }
   }
 
+  BLI_assert_unreachable();
   return -1;
 }
 
@@ -1479,8 +1480,6 @@ static bool rna_MeshUVLoopLayer_uvvertsel_get(PointerRNA *ptr)
 
   int layer;
   const int index = get_uv_index_and_layer(ptr, &layer);
-  BLI_assert(index >= 0);
-  BLI_assert(index < mesh->totloop);
   UVMap_Data data = CustomData_get_uvmap_data_n(&mesh->ldata, layer);
 
   return data.vertsel ? data.vertsel[index] : false;
@@ -1492,9 +1491,6 @@ static void rna_MeshUVLoopLayer_uvvertsel_set(PointerRNA *ptr, const bool value)
 
   int layer;
   const int index = get_uv_index_and_layer(ptr, &layer);
-  BLI_assert(index >= 0);
-  BLI_assert(index < mesh->totloop);
-
   UVMap_Data data = BKE_id_attributes_ensure_uvmap_layers_index(
       mesh, index, NULL, MLOOPUV_VERTSEL);
   data.vertsel[index] = value;
@@ -1506,8 +1502,6 @@ static bool rna_MeshUVLoopLayer_uvedgesel_get(PointerRNA *ptr)
 
   int layer;
   const int index = get_uv_index_and_layer(ptr, &layer);
-  BLI_assert(index >= 0);
-  BLI_assert(index < mesh->totloop);
   UVMap_Data data = CustomData_get_uvmap_data_n(&mesh->ldata, layer);
 
   return data.edgesel ? data.edgesel[index] : false;
@@ -1519,9 +1513,6 @@ static void rna_MeshUVLoopLayer_uvedgesel_set(PointerRNA *ptr, const bool value)
 
   int layer;
   const int index = get_uv_index_and_layer(ptr, &layer);
-  BLI_assert(index >= 0);
-  BLI_assert(index < mesh->totloop);
-
   UVMap_Data data = BKE_id_attributes_ensure_uvmap_layers_index(
       mesh, index, NULL, MLOOPUV_EDGESEL);
   data.edgesel[index] = value;
@@ -1533,8 +1524,6 @@ static bool rna_MeshUVLoopLayer_uvpinned_get(PointerRNA *ptr)
 
   int layer;
   const int index = get_uv_index_and_layer(ptr, &layer);
-  BLI_assert(index >= 0);
-  BLI_assert(index < mesh->totloop);
   UVMap_Data data = CustomData_get_uvmap_data_n(&mesh->ldata, layer);
 
   return data.pinned ? data.pinned[index] : false;
@@ -1546,9 +1535,6 @@ static void rna_MeshUVLoopLayer_uvpinned_set(PointerRNA *ptr, const bool value)
 
   int layer;
   const int index = get_uv_index_and_layer(ptr, &layer);
-  BLI_assert(index >= 0);
-  BLI_assert(index < mesh->totloop);
-
   UVMap_Data data = BKE_id_attributes_ensure_uvmap_layers_index(mesh, index, NULL, MLOOPUV_PINNED);
   data.pinned[index] = value;
 }

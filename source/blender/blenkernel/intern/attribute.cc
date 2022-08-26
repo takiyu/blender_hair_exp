@@ -867,61 +867,6 @@ void BKE_id_attribute_copy_domains_temp(short id_type,
   *((short *)r_id->name) = id_type;
 }
 
-UVMap_Data BKE_id_attributes_create_uvmap_layers(Mesh *mesh,
-                                                 char const *name,
-                                                 ReportList *reports,
-                                                 uint32_t needed_layer_flags)
-{
-  using namespace blender::bke;
-  UVMap_Data data;
-
-  CustomDataLayer *uvlayer = BKE_id_attribute_new(
-      &mesh->id, name, CD_PROP_FLOAT2, ATTR_DOMAIN_CORNER, reports);
-
-  data.uv = (float(*)[2])uvlayer->data;
-
-  data.uv_index = attribute_to_layerindex(
-      &mesh->id, uvlayer, ATTR_DOMAIN_MASK_CORNER, CD_MASK_PROP_FLOAT2);
-
-  if (needed_layer_flags & MLOOPUV_VERTSEL) {
-    CustomDataLayer *layer = BKE_id_attribute_new(
-        &mesh->id,
-        uv_sublayer_name_vert_selection(uvlayer->name).c_str(),
-        CD_PROP_BOOL,
-        ATTR_DOMAIN_CORNER,
-        reports);
-    data.vertsel = static_cast<bool *>(layer->data);
-  }
-  else {
-    data.vertsel = nullptr;
-  }
-  if (needed_layer_flags & MLOOPUV_EDGESEL) {
-    CustomDataLayer *layer = BKE_id_attribute_new(
-        &mesh->id,
-        uv_sublayer_name_edge_selection(uvlayer->name).c_str(),
-        CD_PROP_BOOL,
-        ATTR_DOMAIN_CORNER,
-        reports);
-    data.edgesel = static_cast<bool *>(layer->data);
-  }
-  else {
-    data.edgesel = nullptr;
-  }
-  if (needed_layer_flags & MLOOPUV_PINNED) {
-    CustomDataLayer *layer = BKE_id_attribute_new(&mesh->id,
-                                                  uv_sublayer_name_pin(uvlayer->name).c_str(),
-                                                  CD_PROP_BOOL,
-                                                  ATTR_DOMAIN_CORNER,
-                                                  reports);
-    data.pinned = static_cast<bool *>(layer->data);
-  }
-  else {
-    data.pinned = nullptr;
-  }
-
-  return data;
-}
-
 UVMap_Data BKE_id_attributes_ensure_uvmap_layers_index(Mesh *mesh,
                                                        const int index_of_uvmap,
                                                        struct ReportList *reports,

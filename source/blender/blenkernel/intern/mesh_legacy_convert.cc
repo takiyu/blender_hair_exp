@@ -28,10 +28,6 @@
 #include "BKE_mesh_legacy_convert.h"
 #include "BKE_multires.h"
 
-using blender::Array;
-using blender::float2;
-using blender::Vector;
-
 /* -------------------------------------------------------------------- */
 /** \name NGon Tessellation (NGon to MFace Conversion)
  * \{ */
@@ -51,7 +47,8 @@ static void bm_corners_to_loops_ex(ID *id,
   for (int i = 0; i < numTex; i++) {
     const MTFace *texface = (const MTFace *)CustomData_get_n(fdata, CD_MTFACE, findex, i);
 
-    float2 *uv = static_cast<float2 *>(CustomData_get_n(ldata, CD_PROP_FLOAT2, loopstart, i));
+    blender::float2 *uv = static_cast<blender::float2 *>(
+        CustomData_get_n(ldata, CD_PROP_FLOAT2, loopstart, i));
     copy_v2_v2((float *)uv, texface->uv[0]);
     uv++;
     copy_v2_v2((float *)uv, texface->uv[1]);
@@ -403,7 +400,7 @@ static void mesh_loops_to_tessdata(CustomData *fdata,
 
   for (i = 0; i < numUV; i++) {
     MTFace *texface = (MTFace *)CustomData_get_layer_n(fdata, CD_MTFACE, i);
-    const float2 *uv = static_cast<const float2 *>(
+    const blender::float2 *uv = static_cast<const blender::float2 *>(
         CustomData_get_layer_n(ldata, CD_PROP_FLOAT2, i));
 
     for (findex = 0, pidx = polyindices, lidx = loopindices; findex < num_faces;
@@ -976,7 +973,7 @@ void BKE_mesh_legacy_convert_flags_to_hide_layers(Mesh *mesh)
 void BKE_mesh_legacy_convert_uvs_to_struct(
     Mesh *mesh,
     blender::ResourceScope &temp_mloopuv_for_convert,
-    Vector<CustomDataLayer, 16> &face_corner_layers_to_write)
+    blender::Vector<CustomDataLayer, 16> &face_corner_layers_to_write)
 {
   using namespace blender;
   using namespace blender::bke;
