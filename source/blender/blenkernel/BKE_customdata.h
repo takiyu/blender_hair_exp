@@ -789,8 +789,7 @@ inline std::string uv_sublayer_name_pin(const StringRef uv_map_name)
 
 #endif
 /**
- * Get a descriptor containing offsets for layers used for user interaction with the UV map.
- * \param name: Optional layer name. When null, the default layer is returned.
+ * Get a descriptor containing offsets for layers used for user interaction with the active UV map.
  */
 UVMap_Offsets CustomData_get_active_uvmap_offsets(struct BMesh *bm);
 UVMap_Data CustomData_get_uvmap_data_n(const struct CustomData *data, int n);
