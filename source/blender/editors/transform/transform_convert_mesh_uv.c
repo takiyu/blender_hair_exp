@@ -86,7 +86,7 @@ static void uv_set_connectivity_distance(BMesh *bm, float *dists, const float as
   BLI_LINKSTACK_INIT(queue);
   BLI_LINKSTACK_INIT(queue_next);
 
-  const UVMap_Offsets offsets = CustomData_get_active_uvmap_offsets(bm);
+  const BMUVOffsets offsets = BM_uv_map_get_offsets(bm);
 
   BMIter fiter, liter;
   BMVert *f;
@@ -103,7 +103,7 @@ static void uv_set_connectivity_distance(BMesh *bm, float *dists, const float as
     BM_ITER_ELEM (l, &liter, f, BM_LOOPS_OF_FACE) {
       float dist;
 
-      bool uv_vert_sel = BM_ELEM_CD_GET_OPT_BOOL(l, offsets.vertsel);
+      bool uv_vert_sel = BM_ELEM_CD_GET_OPT_BOOL(l, offsets.select_vert);
 
       if (uv_vert_sel) {
         BLI_LINKSTACK_PUSH(queue, l);
@@ -164,7 +164,7 @@ static void uv_set_connectivity_distance(BMesh *bm, float *dists, const float as
 
         bool other_vert_sel, connected_vert_sel;
 
-        other_vert_sel = BM_ELEM_CD_GET_OPT_BOOL(l_other, offsets.vertsel);
+        other_vert_sel = BM_ELEM_CD_GET_OPT_BOOL(l_other, offsets.select_vert);
 
         BM_ITER_ELEM (l_connected, &l_connected_iter, l_other->v, BM_LOOPS_OF_VERT) {
           if (l_connected == l_other) {
@@ -176,7 +176,7 @@ static void uv_set_connectivity_distance(BMesh *bm, float *dists, const float as
           }
 
           float *luv_connected = BM_ELEM_CD_GET_FLOAT_P(l_connected, offsets.uv);
-          connected_vert_sel = BM_ELEM_CD_GET_OPT_BOOL(l_connected, offsets.vertsel);
+          connected_vert_sel = BM_ELEM_CD_GET_OPT_BOOL(l_connected, offsets.select_vert);
 
           /* Check if this loop is connected in UV space.
            * If the uv loops share the same selection state (if not, they are not connected as
@@ -256,7 +256,7 @@ static void createTransUVs(bContext *C, TransInfo *t)
       int co_num;
     } *island_center = NULL;
     int count = 0, countsel = 0;
-    const UVMap_Offsets offsets = CustomData_get_active_uvmap_offsets(em->bm);
+    const BMUVOffsets offsets = BM_uv_map_get_offsets(em->bm);
 
     if (!ED_space_image_show_uvedit(sima, tc->obedit)) {
       continue;

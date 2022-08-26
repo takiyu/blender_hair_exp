@@ -91,7 +91,7 @@ const MeshExtract *mesh_extract_override_get(const MeshExtract *extractor,
 
 void mesh_render_data_face_flag(const MeshRenderData *mr,
                                 const BMFace *efa,
-                                const UVMap_Offsets offsets,
+                                const BMUVOffsets offsets,
                                 EditLoopData *eattr)
 {
   if (efa == mr->efa_act) {
@@ -121,13 +121,13 @@ void mesh_render_data_face_flag(const MeshRenderData *mr,
 
 void mesh_render_data_loop_flag(const MeshRenderData *mr,
                                 BMLoop *l,
-                                const UVMap_Offsets offsets,
+                                const BMUVOffsets offsets,
                                 EditLoopData *eattr)
 {
   if (offsets.uv == -1) {
     return;
   }
-  if (BM_ELEM_CD_GET_OPT_BOOL(l, offsets.pinned)) {
+  if (BM_ELEM_CD_GET_OPT_BOOL(l, offsets.pin)) {
     eattr->v_flag |= VFLAG_VERT_UV_PINNED;
   }
   if (uvedit_uv_select_test_ex(mr->toolsettings, l, offsets)) {
@@ -137,7 +137,7 @@ void mesh_render_data_loop_flag(const MeshRenderData *mr,
 
 void mesh_render_data_loop_edge_flag(const MeshRenderData *mr,
                                      BMLoop *l,
-                                     const UVMap_Offsets offsets,
+                                     const BMUVOffsets offsets,
                                      EditLoopData *eattr)
 {
   if (offsets.uv == -1) {

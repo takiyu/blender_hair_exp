@@ -750,6 +750,21 @@ class CustomDataAttributes {
 AttributeAccessor mesh_attributes(const Mesh &mesh);
 MutableAttributeAccessor mesh_attributes_for_write(Mesh &mesh);
 
+inline std::string get_uv_map_vert_selection_name(const StringRef uv_map_name)
+{
+  return std::string(".") + UV_VERTSEL_NAME + "." + uv_map_name;
+}
+
+inline std::string get_uv_map_edge_selection_name(const StringRef uv_map_name)
+{
+  return std::string(".") + UV_EDGESEL_NAME + "." + uv_map_name;
+}
+
+inline std::string get_uv_map_pin_name(const StringRef uv_map_name)
+{
+  return std::string(".") + UV_PINNED_NAME + "." + uv_map_name;
+}
+
 AttributeAccessor pointcloud_attributes(const PointCloud &pointcloud);
 MutableAttributeAccessor pointcloud_attributes_for_write(PointCloud &pointcloud);
 

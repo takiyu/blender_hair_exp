@@ -139,11 +139,6 @@ struct CustomDataLayer *BKE_id_attributes_color_find(const struct ID *id, const 
 
 bool BKE_id_attribute_calc_unique_name(struct ID *id, const char *name, char *outname);
 
-UVMap_Data BKE_id_attributes_ensure_uvmap_layers_index(struct Mesh *mesh,
-                                                       int index_of_uvmap,
-                                                       struct ReportList *reports,
-                                                       uint32_t needed_layer_flags);
-
 #ifdef __cplusplus
 }
 #endif

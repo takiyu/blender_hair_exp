@@ -3485,7 +3485,6 @@ bool CustomData_set_layer_name(CustomData *data, const int type, const int n, co
 const char *CustomData_get_layer_name(const CustomData *data, const int type, const int n)
 {
   const int layer_index = CustomData_get_layer_index_n(data, type, n);
-
   return (layer_index == -1) ? nullptr : data->layers[layer_index].name;
 }
 
@@ -5308,64 +5307,6 @@ void CustomData_blend_read(BlendDataReader *reader, CustomData *data, const int 
   data->maxlayer = data->totlayer;
 
   CustomData_update_typemap(data);
-}
-
-/** \} */
-
-/* -------------------------------------------------------------------- */
-/** \name Custom Data UVmap Handling
- * \{ */
-
-static UVMap_Data retrieve_uv_map_data(const CustomData &ldata, const int layer_index)
-{
-  using namespace blender::bke;
-  const StringRef name = ldata.layers[layer_index].name;
-
-  const int vertsel = CustomData_get_named_layer_index(
-      &ldata, CD_PROP_BOOL, uv_sublayer_name_vert_selection(name).c_str());
-  const int edgesel = CustomData_get_named_layer_index(
-      &ldata, CD_PROP_BOOL, uv_sublayer_name_edge_selection(name).c_str());
-  const int pinned = CustomData_get_named_layer_index(
-      &ldata, CD_PROP_BOOL, uv_sublayer_name_pin(name).c_str());
-
-  UVMap_Data data;
-  data.uv = static_cast<float(*)[2]>(ldata.layers[layer_index].data);
-  data.vertsel = vertsel == -1 ? nullptr : static_cast<bool *>(ldata.layers[vertsel].data);
-  data.edgesel = edgesel == -1 ? nullptr : static_cast<bool *>(ldata.layers[edgesel].data);
-  data.pinned = pinned == -1 ? nullptr : static_cast<bool *>(ldata.layers[pinned].data);
-
-  return data;
-}
-
-UVMap_Data CustomData_get_uvmap_data_n(const CustomData *ldata, const int n)
-{
-  const int layer_index = CustomData_get_layer_index_n(ldata, CD_PROP_FLOAT2, n);
-  if (layer_index == -1) {
-    return {};
-  }
-  return retrieve_uv_map_data(*ldata, layer_index);
-}
-
-UVMap_Offsets CustomData_get_active_uvmap_offsets(const BMesh *bm)
-{
-  using namespace blender::bke;
-  const int layer_index = CustomData_get_layer_index(&bm->ldata, CD_PROP_FLOAT2);
-  if (layer_index == -1) {
-    return {-1, -1, -1, -1};
-  }
-
-  const StringRef name = bm->ldata.layers[layer_index].name;
-
-  UVMap_Offsets offsets;
-  offsets.uv = bm->ldata.layers[layer_index].offset;
-  offsets.vertsel = CustomData_get_offset_named(
-      &bm->ldata, CD_PROP_BOOL, uv_sublayer_name_vert_selection(name).c_str());
-  offsets.edgesel = CustomData_get_offset_named(
-      &bm->ldata, CD_PROP_BOOL, uv_sublayer_name_edge_selection(name).c_str());
-  offsets.pinned = CustomData_get_offset_named(
-      &bm->ldata, CD_PROP_BOOL, uv_sublayer_name_pin(name).c_str());
-
-  return offsets;
 }
 
 /** \} */

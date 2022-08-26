@@ -110,10 +110,10 @@ static bool ED_uvedit_ensure_uvs(Object *obedit)
     return 0;
   }
 
-  const int index = CustomData_get_layer_index(&em->bm->ldata, CD_PROP_FLOAT2);
-  BM_uv_layer_ensure_sublayer(em->bm, &em->bm->ldata, CD_PROP_BOOL, index, UV_VERTSEL_NAME);
-  BM_uv_layer_ensure_sublayer(em->bm, &em->bm->ldata, CD_PROP_BOOL, index, UV_EDGESEL_NAME);
-  const UVMap_Offsets offsets = CustomData_get_active_uvmap_offsets(em->bm);
+  const char *active_uv_name = CustomData_get_active_layer_name(&em->bm->ldata, CD_PROP_FLOAT2);
+  BM_uv_map_ensure_vert_selection_attribute(em->bm, active_uv_name);
+  BM_uv_map_ensure_edge_selection_attribute(em->bm, active_uv_name);
+  const BMUVOffsets offsets = BM_uv_map_get_offsets(em->bm);
 
   /* select new UV's (ignore UV_SYNC_SELECTION in this case) */
   BM_ITER_MESH (efa, &iter, em->bm, BM_FACES_OF_MESH) {
@@ -121,8 +121,8 @@ static bool ED_uvedit_ensure_uvs(Object *obedit)
     BMLoop *l;
 
     BM_ITER_ELEM (l, &liter, efa, BM_LOOPS_OF_FACE) {
-      BM_ELEM_CD_SET_BOOL(l, offsets.vertsel, true);
-      BM_ELEM_CD_SET_BOOL(l, offsets.edgesel, true);
+      BM_ELEM_CD_SET_BOOL(l, offsets.select_vert, true);
+      BM_ELEM_CD_SET_BOOL(l, offsets.select_edge, true);
     }
   }
 
@@ -220,7 +220,7 @@ static bool uvedit_have_selection(const Scene *scene, BMEditMesh *em, const Unwr
   BMFace *efa;
   BMLoop *l;
   BMIter iter, liter;
-  const UVMap_Offsets offsets = CustomData_get_active_uvmap_offsets(em->bm);
+  const BMUVOffsets offsets = BM_uv_map_get_offsets(em->bm);
 
   if (offsets.uv == -1) {
     return (em->bm->totfacesel != 0);
@@ -305,7 +305,7 @@ void ED_uvedit_get_aspect(Object *ob, float *r_aspx, float *r_aspy)
 static bool uvedit_is_face_affected(const Scene *scene,
                                     BMFace *efa,
                                     const UnwrapOptions *options,
-                                    const UVMap_Offsets offsets)
+                                    const BMUVOffsets offsets)
 {
   if (BM_elem_flag_test(efa, BM_ELEM_HIDDEN)) {
     return false;
@@ -335,12 +335,12 @@ static void uvedit_prepare_pinned_indices(ParamHandle *handle,
                                           const Scene *scene,
                                           BMFace *efa,
                                           const UnwrapOptions *options,
-                                          const UVMap_Offsets offsets)
+                                          const BMUVOffsets offsets)
 {
   BMIter liter;
   BMLoop *l;
   BM_ITER_ELEM (l, &liter, efa, BM_LOOPS_OF_FACE) {
-    bool pin = BM_ELEM_CD_GET_BOOL(l, offsets.pinned);
+    bool pin = BM_ELEM_CD_GET_BOOL(l, offsets.pin);
     if (options->pin_unselected && !pin) {
       pin = !uvedit_uv_select_test(scene, l, offsets);
     }
@@ -357,7 +357,7 @@ static void construct_param_handle_face_add(ParamHandle *handle,
                                             BMFace *efa,
                                             ParamKey face_index,
                                             const UnwrapOptions *options,
-                                            const UVMap_Offsets offsets)
+                                            const BMUVOffsets offsets)
 {
   ParamKey *vkeys = BLI_array_alloca(vkeys, efa->len);
   bool *pin = BLI_array_alloca(pin, efa->len);
@@ -377,7 +377,7 @@ static void construct_param_handle_face_add(ParamHandle *handle,
     vkeys[i] = GEO_uv_find_pin_index(handle, BM_elem_index_get(l->v), luv);
     co[i] = l->v->co;
     uv[i] = luv;
-    pin[i] = BM_ELEM_CD_GET_OPT_BOOL(l, offsets.pinned);
+    pin[i] = BM_ELEM_CD_GET_OPT_BOOL(l, offsets.pin);
     select[i] = uvedit_uv_select_test(scene, l, offsets);
     if (options->pin_unselected && !select[i]) {
       pin[i] = true;
@@ -396,7 +396,7 @@ static void construct_param_edge_set_seams(ParamHandle *handle,
     return; /* Seams are not required with these options. */
   }
 
-  const UVMap_Offsets offsets = CustomData_get_active_uvmap_offsets(bm);
+  const BMUVOffsets offsets = BM_uv_map_get_offsets(bm);
   if (offsets.uv == -1) {
     return; /* UVs aren't present on BMesh. Nothing to do. */
   }
@@ -454,7 +454,7 @@ static ParamHandle *construct_param_handle(const Scene *scene,
   /* we need the vert indices */
   BM_mesh_elem_index_ensure(bm, BM_VERT);
 
-  const UVMap_Offsets offsets = CustomData_get_active_uvmap_offsets(bm);
+  const BMUVOffsets offsets = BM_uv_map_get_offsets(bm);
   BM_ITER_MESH_INDEX (efa, &iter, bm, BM_FACES_OF_MESH, i) {
     if (uvedit_is_face_affected(scene, efa, options, offsets)) {
       uvedit_prepare_pinned_indices(handle, scene, efa, options, offsets);
@@ -511,7 +511,7 @@ static ParamHandle *construct_param_handle_multi(const Scene *scene,
     BMEditMesh *em = BKE_editmesh_from_object(obedit);
     BMesh *bm = em->bm;
 
-    const UVMap_Offsets offsets = CustomData_get_active_uvmap_offsets(em->bm);
+    const BMUVOffsets offsets = BM_uv_map_get_offsets(em->bm);
 
     if (offsets.uv == -1) {
       continue;
@@ -540,7 +540,7 @@ static ParamHandle *construct_param_handle_multi(const Scene *scene,
 }
 
 static void texface_from_original_index(const Scene *scene,
-                                        const UVMap_Offsets offsets,
+                                        const BMUVOffsets offsets,
                                         BMFace *efa,
                                         int index,
                                         float **r_uv,
@@ -562,7 +562,7 @@ static void texface_from_original_index(const Scene *scene,
     if (BM_elem_index_get(l->v) == index) {
       float *luv = BM_ELEM_CD_GET_FLOAT_P(l, offsets.uv);
       *r_uv = luv;
-      *r_pin = BM_ELEM_CD_GET_OPT_BOOL(l, offsets.pinned);
+      *r_pin = BM_ELEM_CD_GET_OPT_BOOL(l, offsets.pin);
       *r_select = uvedit_uv_select_test(scene, l, offsets);
       break;
     }
@@ -609,7 +609,7 @@ static ParamHandle *construct_param_handle_subsurfed(const Scene *scene,
   /* similar to the above, we need a way to map edges to their original ones */
   BMEdge **edgeMap;
 
-  const UVMap_Offsets offsets = CustomData_get_active_uvmap_offsets(em->bm);
+  const BMUVOffsets offsets = BM_uv_map_get_offsets(em->bm);
 
   ParamHandle *handle = GEO_uv_parametrizer_construct_begin();
 
@@ -1716,7 +1716,7 @@ static void uv_map_clip_correct(const Scene *scene,
     Object *ob = objects[ob_index];
 
     BMEditMesh *em = BKE_editmesh_from_object(ob);
-    const UVMap_Offsets offsets = CustomData_get_active_uvmap_offsets(em->bm);
+    const BMUVOffsets offsets = BM_uv_map_get_offsets(em->bm);
 
     /* Correct for image aspect ratio. */
     if (correct_aspect) {
@@ -1785,7 +1785,7 @@ static void uv_map_clip_correct(const Scene *scene,
       Object *ob = objects[ob_index];
 
       BMEditMesh *em = BKE_editmesh_from_object(ob);
-      const UVMap_Offsets offsets = CustomData_get_active_uvmap_offsets(em->bm);
+      const BMUVOffsets offsets = BM_uv_map_get_offsets(em->bm);
 
       BM_ITER_MESH (efa, &iter, em->bm, BM_FACES_OF_MESH) {
         if (!BM_elem_flag_test(efa, BM_ELEM_SELECT)) {
@@ -2269,7 +2269,7 @@ static int smart_project_exec(bContext *C, wmOperator *op)
       continue;
     }
 
-    const UVMap_Offsets offsets = CustomData_get_active_uvmap_offsets(em->bm);
+    const BMUVOffsets offsets = BM_uv_map_get_offsets(em->bm);
     BLI_assert(offsets.uv >= 0);
     ThickFace *thick_faces = MEM_mallocN(sizeof(*thick_faces) * em->bm->totface, __func__);
 
@@ -2797,7 +2797,7 @@ static int sphere_project_exec(bContext *C, wmOperator *op)
       continue;
     }
 
-    const UVMap_Offsets offsets = CustomData_get_active_uvmap_offsets(em->bm);
+    const BMUVOffsets offsets = BM_uv_map_get_offsets(em->bm);
     float center[3], rotmat[4][4];
 
     uv_map_transform(C, op, rotmat);
@@ -2907,7 +2907,7 @@ static int cylinder_project_exec(bContext *C, wmOperator *op)
       continue;
     }
 
-    const UVMap_Offsets offsets = CustomData_get_active_uvmap_offsets(em->bm);
+    const BMUVOffsets offsets = BM_uv_map_get_offsets(em->bm);
     float center[3], rotmat[4][4];
 
     uv_map_transform(C, op, rotmat);
@@ -2979,7 +2979,7 @@ static void uvedit_unwrap_cube_project(const Scene *scene,
   float loc[3];
   int cox, coy;
 
-  const UVMap_Offsets offsets = CustomData_get_active_uvmap_offsets(bm);
+  const BMUVOffsets offsets = BM_uv_map_get_offsets(bm);
 
   if (center) {
     copy_v3_v3(loc, center);

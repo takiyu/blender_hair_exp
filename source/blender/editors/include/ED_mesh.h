@@ -548,9 +548,17 @@ void ED_mesh_geometry_clear(struct Mesh *mesh);
 
 void ED_mesh_update(struct Mesh *mesh, struct bContext *C, bool calc_edges, bool calc_edges_loose);
 
+bool *ED_mesh_uv_map_ensure_vert_selection(struct Mesh *mesh, int uv_index);
+bool *ED_mesh_uv_map_ensure_edge_selection(struct Mesh *mesh, int uv_index);
+bool *ED_mesh_uv_map_ensure_pin(struct Mesh *mesh, int uv_index);
+const bool *ED_mesh_uv_map_get_vert_selection(const struct Mesh *mesh, int uv_index);
+const bool *ED_mesh_uv_map_get_edge_selection(const struct Mesh *mesh, int uv_index);
+const bool *ED_mesh_uv_map_get_pin(const struct Mesh *mesh, int uv_index);
+
 void ED_mesh_uv_ensure(struct Mesh *me, const char *name);
 int ED_mesh_uv_add(
     struct Mesh *me, const char *name, bool active_set, bool do_init, struct ReportList *reports);
+
 void ED_mesh_uv_loop_reset(struct bContext *C, struct Mesh *me);
 /**
  * Without a #bContext, called when UV-editing.

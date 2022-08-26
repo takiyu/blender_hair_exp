@@ -141,19 +141,19 @@ int BPy_BMLoopUV_AssignPyObject(struct BMesh *bm, const int loop_index, PyObject
   }
 
   BPy_BMLoopUV *src = (BPy_BMLoopUV *)value;
-  const int uv_layer_index = CustomData_get_layer_index(&bm->ldata, CD_PROP_FLOAT2);
-  BM_uv_layer_ensure_sublayer(bm, &bm->ldata, CD_PROP_BOOL, uv_layer_index, UV_VERTSEL_NAME);
-  BM_uv_layer_ensure_sublayer(bm, &bm->ldata, CD_PROP_BOOL, uv_layer_index, UV_EDGESEL_NAME);
-  BM_uv_layer_ensure_sublayer(bm, &bm->ldata, CD_PROP_BOOL, uv_layer_index, UV_PINNED_NAME);
-  const UVMap_Offsets offsets = CustomData_get_active_uvmap_offsets(bm);
+  const char *active_uv_name = CustomData_get_active_layer_name(&bm->ldata, CD_PROP_FLOAT2);
+  BM_uv_map_ensure_vert_selection_attribute(bm, active_uv_name);
+  BM_uv_map_ensure_edge_selection_attribute(bm, active_uv_name);
+  BM_uv_map_ensure_pin_attribute(bm, active_uv_name);
+  const BMUVOffsets offsets = BM_uv_map_get_offsets(bm);
 
   BMLoop *l = BM_loop_at_index_find(bm, loop_index);
   float *luv = BM_ELEM_CD_GET_FLOAT_P(l, offsets.uv);
   copy_v2_v2(luv, src->uv);
 
-  BM_ELEM_CD_SET_BOOL(l, offsets.vertsel, src->vertsel);
-  BM_ELEM_CD_SET_BOOL(l, offsets.edgesel, src->edgesel);
-  BM_ELEM_CD_SET_BOOL(l, offsets.pinned, src->pinned);
+  BM_ELEM_CD_SET_BOOL(l, offsets.select_vert, src->vertsel);
+  BM_ELEM_CD_SET_BOOL(l, offsets.select_edge, src->edgesel);
+  BM_ELEM_CD_SET_BOOL(l, offsets.pin, src->pinned);
 
   return 0;
 }
@@ -162,13 +162,13 @@ PyObject *BPy_BMLoopUV_CreatePyObject(struct BMesh *bm, const int loop_index)
 {
   BPy_BMLoopUV *self = PyObject_New(BPy_BMLoopUV, &BPy_BMLoopUV_Type);
 
-  const UVMap_Offsets offsets = CustomData_get_active_uvmap_offsets(bm);
+  const BMUVOffsets offsets = BM_uv_map_get_offsets(bm);
 
   BMLoop *l = BM_loop_at_index_find(bm, loop_index);
   float *luv = BM_ELEM_CD_GET_FLOAT_P(l, offsets.uv);
-  self->vertsel = BM_ELEM_CD_GET_OPT_BOOL(l, offsets.vertsel);
-  self->edgesel = BM_ELEM_CD_GET_OPT_BOOL(l, offsets.edgesel);
-  self->pinned = BM_ELEM_CD_GET_OPT_BOOL(l, offsets.pinned);
+  self->vertsel = BM_ELEM_CD_GET_OPT_BOOL(l, offsets.select_vert);
+  self->edgesel = BM_ELEM_CD_GET_OPT_BOOL(l, offsets.select_edge);
+  self->pinned = BM_ELEM_CD_GET_OPT_BOOL(l, offsets.pin);
   copy_v2_v2(self->uv, luv);
 
   return (PyObject *)self;

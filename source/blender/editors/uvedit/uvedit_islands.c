@@ -313,7 +313,7 @@ static float uv_nearest_grid_tile_distance(const int udim_grid[2],
  * \{ */
 
 struct SharedUVLoopData {
-  UVMap_Offsets offsets;
+  BMUVOffsets offsets;
   bool use_seams;
 };
 
@@ -340,7 +340,7 @@ int bm_mesh_calc_uv_islands(const Scene *scene,
                             const bool only_selected_uvs,
                             const bool use_seams,
                             const float aspect_y,
-                            const UVMap_Offsets uv_offsets)
+                            const BMUVOffsets uv_offsets)
 {
   BLI_assert(uv_offsets.uv >= 0);
   int island_added = 0;
@@ -435,7 +435,7 @@ void ED_uvedit_pack_islands_multi(const Scene *scene,
     BMEditMesh *em = BKE_editmesh_from_object(obedit);
     BMesh *bm = em->bm;
 
-    const UVMap_Offsets offsets = CustomData_get_active_uvmap_offsets(bm);
+    const BMUVOffsets offsets = BM_uv_map_get_offsets(bm);
 
     if (offsets.uv == -1) {
       continue;

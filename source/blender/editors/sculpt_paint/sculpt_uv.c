@@ -736,7 +736,7 @@ static UvSculptData *uv_sculpt_stroke_init(bContext *C, wmOperator *op, const wm
     /* Index for the UvElements. */
     int counter = -1;
 
-    const UVMap_Offsets offsets = CustomData_get_active_uvmap_offsets(em->bm);
+    const BMUVOffsets offsets = BM_uv_map_get_offsets(em->bm);
     /* initialize the unique UVs */
     for (int i = 0; i < bm->totvert; i++) {
       UvElement *element = data->elementMap->vertex[i];
@@ -756,7 +756,7 @@ static UvSculptData *uv_sculpt_stroke_init(bContext *C, wmOperator *op, const wm
           data->uv[counter].element = element;
           data->uv[counter].uv = *luv;
           if (data->tool != UV_SCULPT_TOOL_GRAB) {
-            if (BM_ELEM_CD_GET_OPT_BOOL(element->l, offsets.pinned)) {
+            if (BM_ELEM_CD_GET_OPT_BOOL(element->l, offsets.pin)) {
               data->uv[counter].is_locked = true;
             }
           }

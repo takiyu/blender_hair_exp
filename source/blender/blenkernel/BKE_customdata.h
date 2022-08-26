@@ -32,6 +32,21 @@ struct CustomData_MeshMasks;
 struct ID;
 typedef uint64_t eCustomDataMask;
 
+#define UV_VERTSEL_NAME "vs"
+#define UV_EDGESEL_NAME "es"
+#define UV_PINNED_NAME "pn"
+
+/**
+ * UV map related customdata offsets into BMesh attribute blocks. See #BM_uv_map_get_offsets.
+ * Defined in #BKE_customdata.h to avoid including bmesh.h in many unrelated areas.
+ */
+typedef struct BMUVOffsets {
+  int uv;
+  int select_vert;
+  int select_edge;
+  int pin;
+} BMUVOffsets;
+
 /* A data type large enough to hold 1 element from any custom-data layer type. */
 typedef struct {
   unsigned char data[64];
@@ -740,59 +755,6 @@ void CustomData_blend_write(BlendWriter *writer,
 #endif
 
 void CustomData_blend_read(struct BlendDataReader *reader, struct CustomData *data, int count);
-
-/**
- * UV map related customdata offsets for BMesh.
- */
-typedef struct UVMap_Offsets {
-  int uv;
-  int vertsel;
-  int edgesel;
-  int pinned;
-} UVMap_Offsets;
-
-/**
- * UV related CustomData pointers.
- * The data pointers point directly to the attributes arrays.
- */
-typedef struct UVMap_Data {
-  float (*uv)[2];
-  bool *vertsel;
-  bool *edgesel;
-  bool *pinned;
-} UVMap_Data;
-
-#define UV_VERTSEL_NAME "vs"
-#define UV_EDGESEL_NAME "es"
-#define UV_PINNED_NAME "pn"
-
-#ifdef __cplusplus
-
-namespace blender::bke {
-
-inline std::string uv_sublayer_name_vert_selection(const StringRef uv_map_name)
-{
-  return std::string(".") + UV_VERTSEL_NAME + "." + uv_map_name;
-}
-
-inline std::string uv_sublayer_name_edge_selection(const StringRef uv_map_name)
-{
-  return std::string(".") + UV_EDGESEL_NAME + "." + uv_map_name;
-}
-
-inline std::string uv_sublayer_name_pin(const StringRef uv_map_name)
-{
-  return std::string(".") + UV_PINNED_NAME + "." + uv_map_name;
-}
-
-}  // namespace blender::bke
-
-#endif
-/**
- * Get a descriptor containing offsets for layers used for user interaction with the active UV map.
- */
-UVMap_Offsets CustomData_get_active_uvmap_offsets(struct BMesh *bm);
-UVMap_Data CustomData_get_uvmap_data_n(const struct CustomData *data, int n);
 
 #ifndef NDEBUG
 struct DynStr;

@@ -55,7 +55,7 @@ static int uvedit_center(Scene *scene, Object **objects, uint objects_len, float
   for (uint ob_index = 0; ob_index < objects_len; ob_index++) {
     Object *obedit = objects[ob_index];
     BMEditMesh *em = BKE_editmesh_from_object(obedit);
-    const UVMap_Offsets offsets = CustomData_get_active_uvmap_offsets(em->bm);
+    const BMUVOffsets offsets = BM_uv_map_get_offsets(em->bm);
 
     BM_ITER_MESH (f, &iter, em->bm, BM_FACES_OF_MESH) {
       if (!uvedit_face_visible_test(scene, f)) {
@@ -94,7 +94,7 @@ static void uvedit_translate(Scene *scene,
     Object *obedit = objects[ob_index];
     BMEditMesh *em = BKE_editmesh_from_object(obedit);
 
-    const UVMap_Offsets offsets = CustomData_get_active_uvmap_offsets(em->bm);
+    const BMUVOffsets offsets = BM_uv_map_get_offsets(em->bm);
 
     BM_ITER_MESH (f, &iter, em->bm, BM_FACES_OF_MESH) {
       if (!uvedit_face_visible_test(scene, f)) {

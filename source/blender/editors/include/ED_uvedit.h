@@ -32,6 +32,7 @@ struct bContext;
 struct bNode;
 struct bNodeTree;
 struct wmKeyConfig;
+struct BMUVOffsets;
 
 /* uvedit_ops.c */
 
@@ -89,19 +90,19 @@ bool ED_uvedit_test(struct Object *obedit);
 bool uvedit_face_visible_test_ex(const struct ToolSettings *ts, struct BMFace *efa);
 bool uvedit_face_select_test_ex(const struct ToolSettings *ts,
                                 struct BMFace *efa,
-                                UVMap_Offsets offsets);
+                                BMUVOffsets offsets);
 
 bool uvedit_edge_select_test_ex(const struct ToolSettings *ts,
                                 struct BMLoop *l,
-                                UVMap_Offsets offsets);
+                                BMUVOffsets offsets);
 bool uvedit_uv_select_test_ex(const struct ToolSettings *ts,
                               struct BMLoop *l,
-                              UVMap_Offsets offsets);
+                              BMUVOffsets offsets);
 
 bool uvedit_face_visible_test(const struct Scene *scene, struct BMFace *efa);
-bool uvedit_face_select_test(const struct Scene *scene, struct BMFace *efa, UVMap_Offsets offsets);
-bool uvedit_edge_select_test(const struct Scene *scene, struct BMLoop *l, UVMap_Offsets offsets);
-bool uvedit_uv_select_test(const struct Scene *scene, struct BMLoop *l, UVMap_Offsets offsets);
+bool uvedit_face_select_test(const struct Scene *scene, struct BMFace *efa, BMUVOffsets offsets);
+bool uvedit_edge_select_test(const struct Scene *scene, struct BMLoop *l, BMUVOffsets offsets);
+bool uvedit_uv_select_test(const struct Scene *scene, struct BMLoop *l, BMUVOffsets offsets);
 
 /* Individual UV element selection functions. */
 
@@ -115,7 +116,7 @@ void uvedit_face_select_set(const struct Scene *scene,
                             struct BMFace *efa,
                             bool select,
                             bool do_history,
-                            UVMap_Offsets offsets);
+                            BMUVOffsets offsets);
 /**
  * \brief Select UV Edge
  *
@@ -126,7 +127,7 @@ void uvedit_edge_select_set(const struct Scene *scene,
                             struct BMLoop *l,
                             bool select,
                             bool do_history,
-                            UVMap_Offsets offsets);
+                            BMUVOffsets offsets);
 /**
  * \brief Select UV Vertex
  *
@@ -137,7 +138,7 @@ void uvedit_uv_select_set(const struct Scene *scene,
                           struct BMLoop *l,
                           bool select,
                           bool do_history,
-                          UVMap_Offsets offsets);
+                          BMUVOffsets offsets);
 
 /* Low level functions for (de)selecting individual UV elements. Ensure UV face visibility before
  * use. */
@@ -146,31 +147,31 @@ void uvedit_face_select_enable(const struct Scene *scene,
                                struct BMesh *bm,
                                struct BMFace *efa,
                                bool do_history,
-                               UVMap_Offsets offsets);
+                               BMUVOffsets offsets);
 void uvedit_face_select_disable(const struct Scene *scene,
                                 struct BMesh *bm,
                                 struct BMFace *efa,
-                                UVMap_Offsets offsets);
+                                BMUVOffsets offsets);
 
 void uvedit_edge_select_enable(const struct Scene *scene,
                                struct BMesh *bm,
                                struct BMLoop *l,
                                bool do_history,
-                               UVMap_Offsets offsets);
+                               BMUVOffsets offsets);
 void uvedit_edge_select_disable(const struct Scene *scene,
                                 struct BMesh *bm,
                                 struct BMLoop *l,
-                                UVMap_Offsets offsets);
+                                BMUVOffsets offsets);
 
 void uvedit_uv_select_enable(const struct Scene *scene,
                              struct BMesh *bm,
                              struct BMLoop *l,
                              bool do_history,
-                             UVMap_Offsets offsets);
+                             BMUVOffsets offsets);
 void uvedit_uv_select_disable(const struct Scene *scene,
                               struct BMesh *bm,
                               struct BMLoop *l,
-                              UVMap_Offsets offsets);
+                              BMUVOffsets offsets);
 
 /* Sticky mode UV element selection functions. */
 
@@ -179,20 +180,20 @@ void uvedit_face_select_set_with_sticky(const struct Scene *scene,
                                         struct BMFace *efa,
                                         bool select,
                                         bool do_history,
-                                        UVMap_Offsets offsets);
+                                        BMUVOffsets offsets);
 void uvedit_edge_select_set_with_sticky(const struct Scene *scene,
                                         struct BMEditMesh *em,
                                         struct BMLoop *l,
                                         bool select,
                                         bool do_history,
-                                        UVMap_Offsets offsets);
+                                        BMUVOffsets offsets);
 
 void uvedit_uv_select_set_with_sticky(const struct Scene *scene,
                                       struct BMEditMesh *em,
                                       struct BMLoop *l,
                                       bool select,
                                       bool do_history,
-                                      UVMap_Offsets offsets);
+                                      BMUVOffsets offsets);
 
 /* Low level functions for sticky element selection (sticky mode independent). Type of sticky
  * selection is specified explicitly (using sticky_flag, except for face selection). */
@@ -202,28 +203,28 @@ void uvedit_face_select_shared_vert(const struct Scene *scene,
                                     struct BMFace *efa,
                                     const bool select,
                                     const bool do_history,
-                                    UVMap_Offsets offsets);
+                                    BMUVOffsets offsets);
 void uvedit_edge_select_shared_vert(const struct Scene *scene,
                                     struct BMEditMesh *em,
                                     struct BMLoop *l,
                                     const bool select,
                                     const int sticky_flag,
                                     const bool do_history,
-                                    UVMap_Offsets offsets);
+                                    BMUVOffsets offsets);
 void uvedit_uv_select_shared_vert(const struct Scene *scene,
                                   struct BMEditMesh *em,
                                   struct BMLoop *l,
                                   const bool select,
                                   const int sticky_flag,
                                   const bool do_history,
-                                  UVMap_Offsets offsets);
+                                  BMUVOffsets offsets);
 
 /* Sets required UV edge flags as specified by the sticky_flag. */
 void uvedit_edge_select_set_noflush(const struct Scene *scene,
                                     struct BMLoop *l,
                                     const bool select,
                                     const int sticky_flag,
-                                    UVMap_Offsets offsets);
+                                    BMUVOffsets offsets);
 
 /**
  * \brief UV Select Mode set
@@ -322,7 +323,7 @@ struct FaceIsland {
    * \note While this is duplicate information,
    * it allows islands from multiple meshes to be stored in the same list.
    */
-  UVMap_Offsets offsets;
+  BMUVOffsets offsets;
   float aspect_y;
 };
 
@@ -333,7 +334,7 @@ int bm_mesh_calc_uv_islands(const Scene *scene,
                             const bool only_selected_uvs,
                             const bool use_seams,
                             const float aspect_y,
-                            UVMap_Offsets offsets);
+                            BMUVOffsets offsets);
 
 struct UVMapUDIM_Params {
   const struct Image *image;

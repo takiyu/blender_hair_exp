@@ -17,7 +17,7 @@
 #include "BLI_math.h"
 #include "BLI_utildefines.h"
 
-#include "BKE_attribute.h"
+#include "BKE_attribute.hh"
 #include "BKE_context.h"
 #include "BKE_customdata.h"
 #include "BKE_editmesh.h"
@@ -284,6 +284,62 @@ int ED_mesh_uv_add(
   WM_main_add_notifier(NC_GEOM | ND_DATA, me);
 
   return layernum_dst;
+}
+
+static const bool *get_corner_boolean_attribute(const Mesh &mesh,
+                                                const blender::StringRefNull name)
+{
+  return static_cast<const bool *>(
+      CustomData_get_layer_named(&mesh.ldata, CD_PROP_BOOL, name.c_str()));
+}
+
+const bool *ED_mesh_uv_map_get_vert_selection(const Mesh *mesh, const int uv_index)
+{
+  using namespace blender::bke;
+  const char *uv_name = CustomData_get_layer_name(&mesh->ldata, CD_PROP_FLOAT2, uv_index);
+  return get_corner_boolean_attribute(*mesh, get_uv_map_vert_selection_name(uv_name));
+}
+const bool *ED_mesh_uv_map_get_edge_selection(const Mesh *mesh, const int uv_index)
+{
+  using namespace blender::bke;
+  const char *uv_name = CustomData_get_layer_name(&mesh->ldata, CD_PROP_FLOAT2, uv_index);
+  return get_corner_boolean_attribute(*mesh, get_uv_map_edge_selection_name(uv_name));
+}
+const bool *ED_mesh_uv_map_get_pin(const Mesh *mesh, const int uv_index)
+{
+  using namespace blender::bke;
+  const char *uv_name = CustomData_get_layer_name(&mesh->ldata, CD_PROP_FLOAT2, uv_index);
+  return get_corner_boolean_attribute(*mesh, get_uv_map_pin_name(uv_name));
+}
+
+static bool *ensure_corner_boolean_attribute(Mesh &mesh, const blender::StringRefNull name)
+{
+  bool *data = static_cast<bool *>(CustomData_duplicate_referenced_layer_named(
+      &mesh.ldata, CD_PROP_BOOL, name.c_str(), mesh.totloop));
+  if (!data) {
+    data = static_cast<bool *>(CustomData_add_layer_named(
+        &mesh.ldata, CD_PROP_BOOL, CD_CALLOC, nullptr, mesh.totpoly, name.c_str()));
+  }
+  return data;
+}
+
+bool *ED_mesh_uv_map_ensure_vert_selection(Mesh *mesh, const int uv_index)
+{
+  using namespace blender::bke;
+  const char *uv_name = CustomData_get_layer_name(&mesh->ldata, CD_PROP_FLOAT2, uv_index);
+  return ensure_corner_boolean_attribute(*mesh, get_uv_map_vert_selection_name(uv_name));
+}
+bool *ED_mesh_uv_map_ensure_edge_selection(Mesh *mesh, const int uv_index)
+{
+  using namespace blender::bke;
+  const char *uv_name = CustomData_get_layer_name(&mesh->ldata, CD_PROP_FLOAT2, uv_index);
+  return ensure_corner_boolean_attribute(*mesh, get_uv_map_edge_selection_name(uv_name));
+}
+bool *ED_mesh_uv_map_ensure_pin(Mesh *mesh, const int uv_index)
+{
+  using namespace blender::bke;
+  const char *uv_name = CustomData_get_layer_name(&mesh->ldata, CD_PROP_FLOAT2, uv_index);
+  return ensure_corner_boolean_attribute(*mesh, get_uv_map_pin_name(uv_name));
 }
 
 void ED_mesh_uv_ensure(Mesh *me, const char *name)

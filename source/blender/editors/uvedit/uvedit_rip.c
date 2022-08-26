@@ -734,10 +734,10 @@ static bool uv_rip_object(Scene *scene, Object *obedit, const float co[2], const
   Mesh *me = (Mesh *)obedit->data;
   BMEditMesh *em = me->edit_mesh;
   BMesh *bm = em->bm;
-  int index = CustomData_get_layer_index(&em->bm->ldata, CD_PROP_FLOAT2);
-  BM_uv_layer_ensure_sublayer(em->bm, &em->bm->ldata, CD_PROP_BOOL, index, UV_VERTSEL_NAME);
-  BM_uv_layer_ensure_sublayer(em->bm, &em->bm->ldata, CD_PROP_BOOL, index, UV_EDGESEL_NAME);
-  UVMap_Offsets offsets = CustomData_get_active_uvmap_offsets(em->bm);
+  const char *active_uv_name = CustomData_get_active_layer_name(&bm->ldata, CD_PROP_FLOAT2);
+  BM_uv_map_ensure_vert_selection_attribute(bm, active_uv_name);
+  BM_uv_map_ensure_edge_selection_attribute(bm, active_uv_name);
+  const BMUVOffsets offsets = BM_uv_map_get_offsets(bm);
 
   BMFace *efa;
   BMIter iter, liter;
@@ -761,11 +761,11 @@ static bool uv_rip_object(Scene *scene, Object *obedit, const float co[2], const
     if (BM_elem_flag_test(efa, BM_ELEM_TAG)) {
       bool is_all = true;
       BM_ITER_ELEM (l, &liter, efa, BM_LOOPS_OF_FACE) {
-        if (BM_ELEM_CD_GET_OPT_BOOL(l, offsets.vertsel)) {
-          if (BM_ELEM_CD_GET_OPT_BOOL(l, offsets.edgesel)) {
+        if (BM_ELEM_CD_GET_OPT_BOOL(l, offsets.select_vert)) {
+          if (BM_ELEM_CD_GET_OPT_BOOL(l, offsets.select_edge)) {
             UL(l)->is_select_edge = true;
           }
-          else if (!BM_ELEM_CD_GET_OPT_BOOL(l->prev, offsets.edgesel)) {
+          else if (!BM_ELEM_CD_GET_OPT_BOOL(l->prev, offsets.select_edge)) {
             /* #bm_loop_uv_select_single_vert_validate validates below. */
             UL(l)->is_select_vert_single = true;
             is_all = false;
@@ -809,12 +809,12 @@ static bool uv_rip_object(Scene *scene, Object *obedit, const float co[2], const
     BM_ITER_MESH (efa, &iter, em->bm, BM_FACES_OF_MESH) {
       BM_ITER_ELEM (l, &liter, efa, BM_LOOPS_OF_FACE) {
         if (!UL(l)->is_select_all) {
-          if (BM_ELEM_CD_GET_OPT_BOOL(l, offsets.vertsel)) {
-            BM_ELEM_CD_SET_BOOL(l, offsets.vertsel, false);
+          if (BM_ELEM_CD_GET_OPT_BOOL(l, offsets.select_vert)) {
+            BM_ELEM_CD_SET_BOOL(l, offsets.select_vert, false);
             changed = true;
           }
-          if (BM_ELEM_CD_GET_OPT_BOOL(l, offsets.edgesel)) {
-            BM_ELEM_CD_SET_BOOL(l, offsets.edgesel, false);
+          if (BM_ELEM_CD_GET_OPT_BOOL(l, offsets.select_edge)) {
+            BM_ELEM_CD_SET_BOOL(l, offsets.select_edge, false);
             changed = true;
           }
         }

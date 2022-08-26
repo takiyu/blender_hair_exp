@@ -17,7 +17,7 @@ namespace blender::draw {
 
 struct MeshExtract_EditUVFdotData_Data {
   EditLoopData *vbo_data;
-  UVMap_Offsets offsets;
+  BMUVOffsets offsets;
 };
 
 static void extract_fdots_edituv_data_init(const MeshRenderData *mr,
@@ -36,7 +36,7 @@ static void extract_fdots_edituv_data_init(const MeshRenderData *mr,
 
   MeshExtract_EditUVFdotData_Data *data = static_cast<MeshExtract_EditUVFdotData_Data *>(tls_data);
   data->vbo_data = (EditLoopData *)GPU_vertbuf_get_data(vbo);
-  data->offsets = CustomData_get_active_uvmap_offsets(mr->bm);
+  data->offsets = BM_uv_map_get_offsets(mr->bm);
 }
 
 static void extract_fdots_edituv_data_iter_poly_bm(const MeshRenderData *mr,

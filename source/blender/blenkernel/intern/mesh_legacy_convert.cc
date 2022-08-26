@@ -984,9 +984,9 @@ void BKE_mesh_legacy_convert_uvs_to_struct(
   /* Don't write the boolean UV map sublayers which will be written in the legacy #MLoopUV type. */
   Set<std::string> uv_sublayers_to_skip;
   for (const CustomDataLayer &layer : face_corner_layers_to_write) {
-    uv_sublayers_to_skip.add_multiple_new({uv_sublayer_name_vert_selection(layer.name),
-                                           uv_sublayer_name_edge_selection(layer.name),
-                                           uv_sublayer_name_pin(layer.name)});
+    uv_sublayers_to_skip.add_multiple_new({get_uv_map_vert_selection_name(layer.name),
+                                           get_uv_map_edge_selection_name(layer.name),
+                                           get_uv_map_pin_name(layer.name)});
   }
 
   for (const CustomDataLayer &layer : face_corner_layers_to_write) {
@@ -1005,11 +1005,11 @@ void BKE_mesh_legacy_convert_uvs_to_struct(
     mloopuv_layer.data = mloopuv.data();
 
     const VArray<bool> vert_selection = attributes.lookup_or_default<bool>(
-        uv_sublayer_name_vert_selection(layer.name), ATTR_DOMAIN_CORNER, false);
+        get_uv_map_vert_selection_name(layer.name), ATTR_DOMAIN_CORNER, false);
     const VArray<bool> edge_selection = attributes.lookup_or_default<bool>(
-        uv_sublayer_name_edge_selection(layer.name), ATTR_DOMAIN_CORNER, false);
+        get_uv_map_edge_selection_name(layer.name), ATTR_DOMAIN_CORNER, false);
     const VArray<bool> pin = attributes.lookup_or_default<bool>(
-        uv_sublayer_name_pin(layer.name), ATTR_DOMAIN_CORNER, false);
+        get_uv_map_pin_name(layer.name), ATTR_DOMAIN_CORNER, false);
 
     threading::parallel_for(mloopuv.index_range(), 2048, [&](IndexRange range) {
       for (const int i : range) {
@@ -1039,14 +1039,14 @@ void BKE_mesh_legacy_convert_uvs_to_generic(Mesh *mesh)
   const std::string default_uv = StringRef(
       CustomData_get_render_layer_name(&mesh->ldata, CD_MLOOPUV));
 
-  const int uv_map_num = CustomData_number_of_layers(&mesh->ldata, CD_MLOOPUV);
-  for (const int uv_layer_i : IndexRange(uv_map_num)) {
-    const std::string name = CustomData_get_layer_name(&mesh->ldata, CD_MLOOPUV, uv_layer_i);
+  Set<std::string> uv_layers_to_convert;
+  for (const int uv_layer_i : IndexRange(CustomData_number_of_layers(&mesh->ldata, CD_MLOOPUV))) {
+    uv_layers_to_convert.add_as(CustomData_get_layer_name(&mesh->ldata, CD_MLOOPUV, uv_layer_i));
+  }
+
+  for (const StringRefNull name : uv_layers_to_convert) {
     const MLoopUV *mloopuv = static_cast<const MLoopUV *>(
-        CustomData_get_layer_n(&mesh->ldata, CD_MLOOPUV, uv_layer_i));
-    if (!mloopuv) {
-      continue;
-    }
+        CustomData_get_layer_named(&mesh->ldata, CD_MLOOPUV, name.c_str()));
     uint32_t needed_boolean_attributes = threading::parallel_reduce(
         IndexRange(mesh->totloop),
         4096,
@@ -1100,14 +1100,13 @@ void BKE_mesh_legacy_convert_uvs_to_generic(Mesh *mesh)
     CustomData_free_layer_named(&mesh->ldata, name.c_str(), mesh->totloop);
     CustomData_add_layer_named(
         &mesh->ldata, CD_PROP_FLOAT2, CD_ASSIGN, coords, mesh->totloop, name.c_str());
-
     if (vert_selection) {
       CustomData_add_layer_named(&mesh->ldata,
                                  CD_PROP_BOOL,
                                  CD_ASSIGN,
                                  vert_selection,
                                  mesh->totloop,
-                                 uv_sublayer_name_vert_selection(name).c_str());
+                                 get_uv_map_vert_selection_name(name).c_str());
     }
     if (edge_selection) {
       CustomData_add_layer_named(&mesh->ldata,
@@ -1115,7 +1114,7 @@ void BKE_mesh_legacy_convert_uvs_to_generic(Mesh *mesh)
                                  CD_ASSIGN,
                                  edge_selection,
                                  mesh->totloop,
-                                 uv_sublayer_name_edge_selection(name).c_str());
+                                 get_uv_map_edge_selection_name(name).c_str());
     }
     if (pin) {
       CustomData_add_layer_named(&mesh->ldata,
@@ -1123,7 +1122,7 @@ void BKE_mesh_legacy_convert_uvs_to_generic(Mesh *mesh)
                                  CD_ASSIGN,
                                  pin,
                                  mesh->totloop,
-                                 uv_sublayer_name_pin(name).c_str());
+                                 get_uv_map_pin_name(name).c_str());
     }
   }
 

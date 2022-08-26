@@ -171,16 +171,16 @@ bool BKE_id_attribute_rename(ID *id,
   if (layer->type == CD_PROP_FLOAT2) {
     /* Rename UV sub-attributes. */
     BKE_id_attribute_rename(id,
-                            uv_sublayer_name_vert_selection(layer->name).c_str(),
-                            uv_sublayer_name_vert_selection(result_name).c_str(),
+                            get_uv_map_vert_selection_name(layer->name).c_str(),
+                            get_uv_map_vert_selection_name(result_name).c_str(),
                             reports);
     BKE_id_attribute_rename(id,
-                            uv_sublayer_name_edge_selection(layer->name).c_str(),
-                            uv_sublayer_name_edge_selection(result_name).c_str(),
+                            get_uv_map_edge_selection_name(layer->name).c_str(),
+                            get_uv_map_edge_selection_name(result_name).c_str(),
                             reports);
     BKE_id_attribute_rename(id,
-                            uv_sublayer_name_pin(layer->name).c_str(),
-                            uv_sublayer_name_pin(result_name).c_str(),
+                            get_uv_map_pin_name(layer->name).c_str(),
+                            get_uv_map_pin_name(result_name).c_str(),
                             reports);
   }
 
@@ -595,26 +595,6 @@ CustomDataLayer *BKE_id_attribute_from_index(ID *id,
   return nullptr;
 }
 
-static CustomDataLayer *attribute_from_layerindex(ID *id,
-                                                  const int lookup_index,
-                                                  const eAttrDomain domain,
-                                                  const eCustomDataMask layer_mask)
-{
-  DomainInfo info[ATTR_DOMAIN_NUM];
-  get_domains(id, info);
-
-  CustomData *customdata = info[domain].customdata;
-
-  BLI_assert(lookup_index >= 0);
-  BLI_assert(lookup_index < customdata->totlayer);
-
-  if (!(layer_mask & CD_TYPE_AS_MASK(customdata->layers[lookup_index].type))) {
-    return nullptr;
-  }
-
-  return customdata->layers + lookup_index;
-}
-
 /** Get list of domain types but with ATTR_DOMAIN_FACE and
  * ATTR_DOMAIN_CORNER swapped.
  */
@@ -828,58 +808,4 @@ void BKE_id_attribute_copy_domains_temp(short id_type,
   }
 
   *((short *)r_id->name) = id_type;
-}
-
-UVMap_Data BKE_id_attributes_ensure_uvmap_layers_index(Mesh *mesh,
-                                                       const int index_of_uvmap,
-                                                       ReportList *reports,
-                                                       uint32_t needed_layer_flags)
-{
-  using namespace blender::bke;
-  UVMap_Data data;
-
-  const bool needvertsel = needed_layer_flags & MLOOPUV_VERTSEL;
-  const bool neededgesel = needed_layer_flags & MLOOPUV_EDGESEL;
-  const bool needpinned = needed_layer_flags & MLOOPUV_PINNED;
-
-  CustomDataLayer *uvlayer = attribute_from_layerindex(
-      &mesh->id, index_of_uvmap, ATTR_DOMAIN_CORNER, CD_MASK_PROP_FLOAT2);
-
-  data.uv = static_cast<float(*)[2]>(uvlayer->data);
-
-  std::string vertsel_name = uv_sublayer_name_vert_selection(uvlayer->name);
-  std::string edgesel_name = uv_sublayer_name_edge_selection(uvlayer->name);
-  std::string pinned_name = uv_sublayer_name_pin(uvlayer->name);
-
-  CustomDataLayer *vertsel = BKE_id_attribute_find(
-      &mesh->id, vertsel_name.c_str(), CD_PROP_BOOL, ATTR_DOMAIN_CORNER);
-  data.vertsel = vertsel ? static_cast<bool *>(vertsel->data) : nullptr;
-
-  CustomDataLayer *edgesel = BKE_id_attribute_find(
-      &mesh->id, edgesel_name.c_str(), CD_PROP_BOOL, ATTR_DOMAIN_CORNER);
-  data.edgesel = edgesel ? static_cast<bool *>(edgesel->data) : nullptr;
-
-  CustomDataLayer *pin = BKE_id_attribute_find(
-      &mesh->id, pinned_name.c_str(), CD_PROP_BOOL, ATTR_DOMAIN_CORNER);
-  data.pinned = pin ? static_cast<bool *>(pin->data) : nullptr;
-
-  if (needvertsel && data.vertsel == nullptr) {
-    CustomDataLayer *layer = BKE_id_attribute_new(
-        &mesh->id, vertsel_name.c_str(), CD_PROP_BOOL, ATTR_DOMAIN_CORNER, reports);
-    data.vertsel = static_cast<bool *>(layer->data);
-  }
-
-  if (neededgesel && data.edgesel == nullptr) {
-    CustomDataLayer *layer = BKE_id_attribute_new(
-        &mesh->id, edgesel_name.c_str(), CD_PROP_BOOL, ATTR_DOMAIN_CORNER, reports);
-    data.edgesel = static_cast<bool *>(layer->data);
-  }
-
-  if (needpinned && data.pinned == nullptr) {
-    CustomDataLayer *layer = BKE_id_attribute_new(
-        &mesh->id, pinned_name.c_str(), CD_PROP_BOOL, ATTR_DOMAIN_CORNER, reports);
-    data.pinned = static_cast<bool *>(layer->data);
-  }
-
-  return data;
 }

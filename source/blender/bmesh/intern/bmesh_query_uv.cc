@@ -12,12 +12,36 @@
 #include "BLI_math_vec_types.hh"
 #include "BLI_utildefines_stack.h"
 
+#include "BKE_attribute.hh"
 #include "BKE_customdata.h"
 
 #include "DNA_meshdata_types.h"
 
 #include "bmesh.h"
 #include "intern/bmesh_private.h"
+
+BMUVOffsets BM_uv_map_get_offsets(const BMesh *bm)
+{
+  using namespace blender;
+  using namespace blender::bke;
+  const int layer_index = CustomData_get_layer_index(&bm->ldata, CD_PROP_FLOAT2);
+  if (layer_index == -1) {
+    return {-1, -1, -1, -1};
+  }
+
+  const StringRef name = bm->ldata.layers[layer_index].name;
+
+  BMUVOffsets offsets;
+  offsets.uv = bm->ldata.layers[layer_index].offset;
+  offsets.select_vert = CustomData_get_offset_named(
+      &bm->ldata, CD_PROP_BOOL, get_uv_map_vert_selection_name(name).c_str());
+  offsets.select_edge = CustomData_get_offset_named(
+      &bm->ldata, CD_PROP_BOOL, get_uv_map_edge_selection_name(name).c_str());
+  offsets.pin = CustomData_get_offset_named(
+      &bm->ldata, CD_PROP_BOOL, get_uv_map_pin_name(name).c_str());
+
+  return offsets;
+}
 
 static void uv_aspect(const BMLoop *l,
                       const float aspect[2],

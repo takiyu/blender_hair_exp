@@ -117,13 +117,13 @@ BMLoop *uv_find_nearest_loop_from_edge(struct Scene *scene,
 
 bool uvedit_vert_is_edge_select_any_other(const struct Scene *scene,
                                           struct BMLoop *l,
-                                          UVMap_Offsets offsets);
+                                          BMUVOffsets offsets);
 bool uvedit_vert_is_face_select_any_other(const struct Scene *scene,
                                           struct BMLoop *l,
-                                          UVMap_Offsets offsets);
+                                          BMUVOffsets offsets);
 bool uvedit_vert_is_all_other_faces_selected(const struct Scene *scene,
                                              struct BMLoop *l,
-                                             UVMap_Offsets offsets);
+                                             BMUVOffsets offsets);
 
 /* utility tool functions */
 
@@ -163,7 +163,7 @@ bool uvedit_select_is_any_selected_multi(const struct Scene *scene,
  */
 const float *uvedit_first_selected_uv_from_vertex(struct Scene *scene,
                                                   struct BMVert *eve,
-                                                  UVMap_Offsets offsets);
+                                                  BMUVOffsets offsets);
 
 void UV_OT_select_all(struct wmOperatorType *ot);
 void UV_OT_select(struct wmOperatorType *ot);

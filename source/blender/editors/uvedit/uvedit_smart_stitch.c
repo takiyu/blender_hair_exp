@@ -890,7 +890,7 @@ static void stitch_propagate_uv_final_position(Scene *scene,
   BMesh *bm = state->em->bm;
   StitchPreviewer *preview = state->stitch_preview;
 
-  const UVMap_Offsets offsets = CustomData_get_active_uvmap_offsets(bm);
+  const BMUVOffsets offsets = BM_uv_map_get_offsets(bm);
 
   if (element->flag & STITCH_STITCHABLE) {
     UvElement *element_iter = element;
@@ -1828,7 +1828,7 @@ static StitchState *stitch_init(bContext *C,
   float aspx, aspy;
 
   BMEditMesh *em = BKE_editmesh_from_object(obedit);
-  const UVMap_Offsets offsets = CustomData_get_active_uvmap_offsets(em->bm);
+  const BMUVOffsets offsets = BM_uv_map_get_offsets(em->bm);
 
   state = MEM_callocN(sizeof(StitchState), "stitch state obj");
 

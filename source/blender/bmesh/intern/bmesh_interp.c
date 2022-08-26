@@ -880,14 +880,25 @@ void BM_data_layer_ensure_named(BMesh *bm, CustomData *data, int type, const cha
   }
 }
 
-void BM_uv_layer_ensure_sublayer(
-    BMesh *bm, CustomData *data, int type, int index_of_parent, const char *prefix)
+void BM_uv_map_ensure_vert_selection_attribute(BMesh *bm, const char *uv_map_name)
 {
   char name[MAX_CUSTOMDATA_LAYER_NAME];
-  /* If you change the naming scheme here, change it in #uv_sublayer_name* as well. */
-  BLI_snprintf(
-      name, MAX_CUSTOMDATA_LAYER_NAME, ".%s.%s", prefix, data->layers[index_of_parent].name);
-  BM_data_layer_ensure_named(bm, data, type, name);
+  BLI_snprintf(name, MAX_CUSTOMDATA_LAYER_NAME, ".%s.%s", UV_VERTSEL_NAME, uv_map_name);
+  BM_data_layer_ensure_named(bm, &bm->ldata, CD_PROP_FLOAT2, name);
+}
+
+void BM_uv_map_ensure_edge_selection_attribute(BMesh *bm, const char *uv_map_name)
+{
+  char name[MAX_CUSTOMDATA_LAYER_NAME];
+  BLI_snprintf(name, MAX_CUSTOMDATA_LAYER_NAME, ".%s.%s", UV_EDGESEL_NAME, uv_map_name);
+  BM_data_layer_ensure_named(bm, &bm->ldata, CD_PROP_FLOAT2, name);
+}
+
+void BM_uv_map_ensure_pin_attribute(BMesh *bm, const char *uv_map_name)
+{
+  char name[MAX_CUSTOMDATA_LAYER_NAME];
+  BLI_snprintf(name, MAX_CUSTOMDATA_LAYER_NAME, ".%s.%s", UV_PINNED_NAME, uv_map_name);
+  BM_data_layer_ensure_named(bm, &bm->ldata, CD_PROP_FLOAT2, name);
 }
 
 void BM_data_layer_free(BMesh *bm, CustomData *data, int type)
