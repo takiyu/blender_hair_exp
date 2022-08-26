@@ -1045,9 +1045,8 @@ void BKE_mesh_legacy_convert_uvs_to_generic(Mesh *mesh)
   }
 
   for (const StringRefNull name : uv_layers_to_convert) {
-    const MLoopUV *mloopuv = static_cast<const MLoopUV *>(
-        CustomData_get_layer_named(&mesh->ldata, CD_MLOOPUV, name.c_str()));
-    uint32_t needed_boolean_attributes = threading::parallel_reduce(
+    const MLoopUV *mloopuv = static_cast<const MLoopUV *>(CustomData_get_layer_named(&mesh->ldata, CD_MLOOPUV, name.c_str()));
+    const uint32_t needed_boolean_attributes = threading::parallel_reduce(
         IndexRange(mesh->totloop),
         4096,
         0,

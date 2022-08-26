@@ -321,16 +321,16 @@ typedef enum eMVertSkinFlag {
 /** \name Custom Data (Loop)
  * \{ */
 
+#ifdef DNA_DEPRECATED_ALLOW
+
 /**
  * UV coordinate for a polygon face & flag for selection & other options.
  * Deprecated, but kept to read old files. UV coordinates are now stored as #CD_PROP_FLOAT2 layers.
  */
-#ifdef DNA_DEPRECATED_ALLOW
 typedef struct MLoopUV {
   float uv[2];
   int flag;
 } MLoopUV;
-#endif
 
 /** #MLoopUV.flag */
 enum {
@@ -338,6 +338,8 @@ enum {
   MLOOPUV_VERTSEL = (1 << 1),
   MLOOPUV_PINNED = (1 << 2),
 };
+
+#endif
 
 /**
  * \note While alpha is not currently in the 3D Viewport,

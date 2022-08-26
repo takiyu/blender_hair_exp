@@ -1207,14 +1207,11 @@ bool uvedit_vert_is_all_other_faces_selected(const Scene *scene,
   return true;
 }
 
-/**
- * Clear specified UV flag (vert/edge/pinned).
- */
-static void bm_uv_flag_clear(const Scene *scene,
-                             BMesh *bm,
-                             const int flag,
-                             const BMUVOffsets offsets)
+static void bm_clear_uv_vert_selection(const Scene *scene, BMesh *bm, const BMUVOffsets offsets)
 {
+  if (offsets.select_vert == -1) {
+    return;
+  }
   BMFace *efa;
   BMLoop *l;
   BMIter iter, liter;
@@ -1223,15 +1220,7 @@ static void bm_uv_flag_clear(const Scene *scene,
       continue;
     }
     BM_ITER_ELEM (l, &liter, efa, BM_LOOPS_OF_FACE) {
-      if (flag & MLOOPUV_EDGESEL) {
-        BM_ELEM_CD_SET_BOOL(l, offsets.select_edge, false);
-      }
-      if (flag & MLOOPUV_VERTSEL) {
-        BM_ELEM_CD_SET_BOOL(l, offsets.select_vert, false);
-      }
-      if (flag & MLOOPUV_PINNED) {
-        BM_ELEM_CD_SET_BOOL(l, offsets.pin, false);
-      }
+      BM_ELEM_CD_SET_BOOL(l, offsets.select_vert, false);
     }
   }
 }
@@ -2266,12 +2255,12 @@ static void uv_select_invert(const Scene *scene, BMEditMesh *em)
     }
     BM_ITER_ELEM (l, &liter, efa, BM_LOOPS_OF_FACE) {
       if ((uv_selectmode == UV_SELECT_EDGE) || (uv_selectmode == UV_SELECT_FACE)) {
-        /* Use #MLOOPUV_EDGESEL to flag edges that must be selected. */
+        /* Use UV edge selection to find vertices and edges that must be selected. */
         bool es = BM_ELEM_CD_GET_OPT_BOOL(l, offsets.select_edge);
         BM_ELEM_CD_SET_BOOL(l, offsets.select_edge, !es);
         BM_ELEM_CD_SET_BOOL(l, offsets.select_vert, false);
       }
-      /* Use #MLOOPUV_VERTSEL to flag verts that must be selected. */
+      /* Use UV vertex selection to find vertices and edges that must be selected. */
       else if ((uv_selectmode == UV_SELECT_VERTEX) || (uv_selectmode == UV_SELECT_ISLAND)) {
         bool vs = BM_ELEM_CD_GET_OPT_BOOL(l, offsets.select_vert);
         BM_ELEM_CD_SET_BOOL(l, offsets.select_vert, !vs);
@@ -3403,10 +3392,10 @@ static void uv_select_flush_from_tag_loop(const Scene *scene, Object *obedit, co
 }
 
 /**
- * Flush the selection from UV edge flags based on sticky modes.
+ * Flush the selection from UV edges based on sticky modes.
  *
  * Useful when performing edge selections in different sticky modes, since setting the required
- * edge flags (#MLOOPUV_EDGESEL) is done manually or using #uvedit_edge_select_set_noflush,
+ * edge selection is done manually or using #uvedit_edge_select_set_noflush,
  * but dealing with sticky modes for vertex selections is best done in a separate function.
  *
  * \note Current behavior is selecting only; deselecting can be added but the behavior isn't
@@ -3426,11 +3415,11 @@ static void uv_select_flush_from_loop_edge_flag(const Scene *scene, BMEditMesh *
 
   if ((ts->uv_flag & UV_SYNC_SELECTION) == 0 &&
       ELEM(ts->uv_sticky, SI_STICKY_LOC, SI_STICKY_VERTEX)) {
-    /* Use the #MLOOPUV_EDGESEL flag to identify which verts must to be selected */
+    /* Use UV edge selection to identify which verts must to be selected */
     struct UvVertMap *vmap;
     uint efa_index;
     /* Clear UV vert flags */
-    bm_uv_flag_clear(scene, em->bm, MLOOPUV_VERTSEL, offsets);
+    bm_clear_uv_vert_selection(scene, em->bm, offsets);
 
     BM_mesh_elem_table_ensure(em->bm, BM_FACE);
     vmap = BM_uv_vert_map_create(em->bm, false, false);
