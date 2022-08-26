@@ -1000,104 +1000,8 @@ static int layerMaxNum_mloopcol()
 /** \} */
 
 /* -------------------------------------------------------------------- */
-/** \name Callbacks for (#MLoopUV, #CD_MLOOPUV)
+/** \name Callbacks for #OrigSpaceLoop
  * \{ */
-
-static void layerCopyValue_mloopuv(const void *source,
-                                   void *dest,
-                                   const int mixmode,
-                                   const float mixfactor)
-{
-  const MLoopUV *luv1 = static_cast<const MLoopUV *>(source);
-  MLoopUV *luv2 = static_cast<MLoopUV *>(dest);
-
-  /* We only support a limited subset of advanced mixing here -
-   * namely the mixfactor interpolation. */
-
-  if (mixmode == CDT_MIX_NOMIX) {
-    copy_v2_v2(luv2->uv, luv1->uv);
-  }
-  else {
-    interp_v2_v2v2(luv2->uv, luv2->uv, luv1->uv, mixfactor);
-  }
-}
-
-static bool layerEqual_mloopuv(const void *data1, const void *data2)
-{
-  const MLoopUV *luv1 = static_cast<const MLoopUV *>(data1);
-  const MLoopUV *luv2 = static_cast<const MLoopUV *>(data2);
-
-  return len_squared_v2v2(luv1->uv, luv2->uv) < 0.00001f;
-}
-
-static void layerMultiply_mloopuv(void *data, const float fac)
-{
-  MLoopUV *luv = static_cast<MLoopUV *>(data);
-
-  mul_v2_fl(luv->uv, fac);
-}
-
-static void layerInitMinMax_mloopuv(void *vmin, void *vmax)
-{
-  MLoopUV *min = static_cast<MLoopUV *>(vmin);
-  MLoopUV *max = static_cast<MLoopUV *>(vmax);
-
-  INIT_MINMAX2(min->uv, max->uv);
-}
-
-static void layerDoMinMax_mloopuv(const void *data, void *vmin, void *vmax)
-{
-  const MLoopUV *luv = static_cast<const MLoopUV *>(data);
-  MLoopUV *min = static_cast<MLoopUV *>(vmin);
-  MLoopUV *max = static_cast<MLoopUV *>(vmax);
-
-  minmax_v2v2_v2(min->uv, max->uv, luv->uv);
-}
-
-static void layerAdd_mloopuv(void *data1, const void *data2)
-{
-  MLoopUV *l1 = static_cast<MLoopUV *>(data1);
-  const MLoopUV *l2 = static_cast<const MLoopUV *>(data2);
-
-  add_v2_v2(l1->uv, l2->uv);
-}
-
-static void layerInterp_mloopuv(const void **sources,
-                                const float *weights,
-                                const float *UNUSED(sub_weights),
-                                int count,
-                                void *dest)
-{
-  float uv[2];
-
-  zero_v2(uv);
-
-  for (int i = 0; i < count; i++) {
-    const float interp_weight = weights[i];
-    const MLoopUV *src = static_cast<const MLoopUV *>(sources[i]);
-    madd_v2_v2fl(uv, src->uv, interp_weight);
-  }
-
-  /* Delay writing to the destination in case dest is in sources. */
-  copy_v2_v2(((MLoopUV *)dest)->uv, uv);
-}
-
-static bool layerValidate_mloopuv(void *data, const uint totitems, const bool do_fixes)
-{
-  MLoopUV *uv = static_cast<MLoopUV *>(data);
-  bool has_errors = false;
-
-  for (int i = 0; i < totitems; i++, uv++) {
-    if (!is_finite_v2(uv->uv)) {
-      if (do_fixes) {
-        zero_v2(uv->uv);
-      }
-      has_errors = true;
-    }
-  }
-
-  return has_errors;
-}
 
 /* origspace is almost exact copy of mloopuv's, keep in sync */
 static void layerCopyValue_mloop_origspace(const void *source,
@@ -1787,26 +1691,7 @@ static const LayerTypeInfo LAYERTYPEINFO[CD_NUMTYPES] = {
      * change this back to face Texture. */
     {sizeof(int), "", 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr},
     /* 16: CD_MLOOPUV */
-    {sizeof(MLoopUV),
-     "MLoopUV",
-     1,
-     N_("UVMap"),
-     nullptr,
-     nullptr,
-     layerInterp_mloopuv,
-     nullptr,
-     nullptr,
-     layerValidate_mloopuv,
-     layerEqual_mloopuv,
-     layerMultiply_mloopuv,
-     layerInitMinMax_mloopuv,
-     layerAdd_mloopuv,
-     layerDoMinMax_mloopuv,
-     layerCopyValue_mloopuv,
-     nullptr,
-     nullptr,
-     nullptr,
-     layerMaxNum_tface},
+    {sizeof(MLoopUV), "MLoopUV", 1, N_("UVMap")},
     /* 17: CD_PROP_BYTE_COLOR */
     {sizeof(MLoopCol),
      "MLoopCol",

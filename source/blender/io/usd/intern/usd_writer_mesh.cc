@@ -122,10 +122,10 @@ void USDGenericMeshWriter::write_uv_maps(const Mesh *mesh, pxr::UsdGeomMesh usd_
     pxr::UsdGeomPrimvar uv_coords_primvar = usd_mesh.CreatePrimvar(
         primvar_name, pxr::SdfValueTypeNames->TexCoord2fArray, pxr::UsdGeomTokens->faceVarying);
 
-    float2 *mloopuv = static_cast<float2 *>(layer->data);
+    const float2 *mloopuv = static_cast<const float2 *>(layer->data);
     pxr::VtArray<pxr::GfVec2f> uv_coords;
     for (int loop_idx = 0; loop_idx < mesh->totloop; loop_idx++) {
-      uv_coords.push_back(pxr::GfVec2f((float *)(mloopuv[loop_idx])));
+      uv_coords.push_back(pxr::GfVec2f((const float *)(mloopuv[loop_idx])));
     }
 
     if (!uv_coords_primvar.HasValue()) {

@@ -445,7 +445,7 @@ static void relaxation_iteration_uv(BMEditMesh *em,
 
     {
       const float(*luv)[2] = BM_ELEM_CD_GET_FLOAT2_P(adj_el->element->l, cd_loop_uv_offset);
-      BLI_assert(adj_el->uv == luv); /* Only true for head. */
+      BLI_assert(adj_el->uv == (float *)luv); /* Only true for head. */
       adj_el->uv[0] = (*luv)[0] + strength * safe_divide(delta_sum[0], delta_sum[2]);
       adj_el->uv[1] = (*luv)[1] + strength * safe_divide(delta_sum[1], delta_sum[2]);
       apply_sculpt_data_constraints(sculptdata, adj_el->uv);

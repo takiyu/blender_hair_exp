@@ -166,25 +166,22 @@ bool BKE_id_attribute_rename(ID *id,
   }
 
   char result_name[MAX_CUSTOMDATA_LAYER_NAME];
-
   BKE_id_attribute_calc_unique_name(id, new_name, result_name);
 
   if (layer->type == CD_PROP_FLOAT2) {
-    /* Scan for and rename uv sublayers layers. */
-    std::string old_vertsel_layer_name = uv_sublayer_name_vert_selection(layer->name);
-    std::string old_edgesel_layer_name = uv_sublayer_name_edge_selection(layer->name);
-    std::string old_pinned_layer_name = uv_sublayer_name_pin(layer->name);
-
-    std::string new_vertsel_layer_name = uv_sublayer_name_vert_selection(result_name);
-    std::string new_edgesel_layer_name = uv_sublayer_name_edge_selection(result_name);
-    std::string new_pinned_layer_name = uv_sublayer_name_pin(result_name);
-
-    BKE_id_attribute_rename(
-        id, old_vertsel_layer_name.c_str(), new_vertsel_layer_name.c_str(), reports);
-    BKE_id_attribute_rename(
-        id, old_edgesel_layer_name.c_str(), new_edgesel_layer_name.c_str(), reports);
-    BKE_id_attribute_rename(
-        id, old_pinned_layer_name.c_str(), new_pinned_layer_name.c_str(), reports);
+    /* Rename UV sub-attributes. */
+    BKE_id_attribute_rename(id,
+                            uv_sublayer_name_vert_selection(layer->name).c_str(),
+                            uv_sublayer_name_vert_selection(result_name).c_str(),
+                            reports);
+    BKE_id_attribute_rename(id,
+                            uv_sublayer_name_edge_selection(layer->name).c_str(),
+                            uv_sublayer_name_edge_selection(result_name).c_str(),
+                            reports);
+    BKE_id_attribute_rename(id,
+                            uv_sublayer_name_pin(layer->name).c_str(),
+                            uv_sublayer_name_pin(result_name).c_str(),
+                            reports);
   }
 
   BLI_strncpy_utf8(layer->name, result_name, sizeof(layer->name));
@@ -885,8 +882,6 @@ UVMap_Data BKE_id_attributes_create_uvmap_layers(Mesh *mesh,
 
   data.uv_index = attribute_to_layerindex(
       &mesh->id, uvlayer, ATTR_DOMAIN_MASK_CORNER, CD_MASK_PROP_FLOAT2);
-
-  /* TODO(@Baardaap): martijn still need to handle if one of the names is already taken. */
 
   if (needed_layer_flags & MLOOPUV_VERTSEL) {
     CustomDataLayer *layer = BKE_id_attribute_new(

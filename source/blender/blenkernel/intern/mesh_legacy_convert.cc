@@ -974,7 +974,7 @@ void BKE_mesh_legacy_convert_flags_to_hide_layers(Mesh *mesh)
  * \{ */
 
 void BKE_mesh_legacy_convert_uvs_to_struct(
-    const Mesh *mesh,
+    Mesh *mesh,
     blender::ResourceScope &temp_mloopuv_for_convert,
     Vector<CustomDataLayer, 16> &face_corner_layers_to_write)
 {
@@ -982,59 +982,60 @@ void BKE_mesh_legacy_convert_uvs_to_struct(
   using namespace blender::bke;
   const AttributeAccessor attributes = mesh_attributes(*mesh);
 
-  Vector<CustomDataLayer> new_layer_to_write;
+  Vector<CustomDataLayer, 16> new_layer_to_write;
+
+  /* Don't write the boolean UV map sublayers which will be written in the legacy #MLoopUV type. */
+  Set<std::string> uv_sublayers_to_skip;
+  for (const CustomDataLayer &layer : face_corner_layers_to_write) {
+    uv_sublayers_to_skip.add_multiple_new({uv_sublayer_name_vert_selection(layer.name),
+                                           uv_sublayer_name_edge_selection(layer.name),
+                                           uv_sublayer_name_pin(layer.name)});
+  }
 
   for (const CustomDataLayer &layer : face_corner_layers_to_write) {
-    if (layer.type == CD_PROP_FLOAT2) {
-      const Span<float2> coords{static_cast<const float2 *>(layer.data), mesh->totloop};
-      CustomDataLayer mloopuv_layer;
-      mloopuv_layer.type = CD_MLOOPUV;
-      STRNCPY(mloopuv_layer.name, layer.name);
-      MutableSpan<MLoopUV> mloopuv = temp_mloopuv_for_convert.construct<Array<MLoopUV>>(
-          mesh->totloop);
-      mloopuv_layer.data = mloopuv.data();
-      mloopuv_layer.flag = layer.flag;
-
-      const VArray<bool> vert_selection = attributes.lookup_or_default<bool>(
-          uv_sublayer_name_vert_selection(layer.name), ATTR_DOMAIN_CORNER, false);
-      const VArray<bool> edge_selection = attributes.lookup_or_default<bool>(
-          uv_sublayer_name_edge_selection(layer.name), ATTR_DOMAIN_CORNER, false);
-      const VArray<bool> pin = attributes.lookup_or_default<bool>(
-          uv_sublayer_name_pin(layer.name), ATTR_DOMAIN_CORNER, false);
-
-      threading::parallel_for(mloopuv.index_range(), 2048, [&](IndexRange range) {
-        for (const int i : range) {
-          copy_v2_v2(mloopuv[i].uv, coords[i]);
-          SET_FLAG_FROM_TEST(mloopuv[i].flag, vert_selection[i], MLOOPUV_VERTSEL);
-          SET_FLAG_FROM_TEST(mloopuv[i].flag, edge_selection[i], MLOOPUV_EDGESEL);
-          SET_FLAG_FROM_TEST(mloopuv[i].flag, pin[i], MLOOPUV_PINNED);
-        }
-      });
-      new_layer_to_write.append(mloopuv_layer);
+    if (uv_sublayers_to_skip.contains_as(layer.name)) {
       continue;
     }
-    if (layer.type == CD_PROP_BOOL) {
-      StringRef name = layer.name;
-      if (name.startswith("." UV_VERTSEL_NAME ".") || name.startswith("." UV_EDGESEL_NAME ".") ||
-          name.startswith("." UV_PINNED_NAME ".")) {
-        /* Don't write the UV sublayers to files, since we're already writing the legacy UV layer
-         * with that information. */
-        continue;
-      }
+    if (layer.type != CD_PROP_FLOAT2) {
+      new_layer_to_write.append(layer);
+      continue;
     }
-    new_layer_to_write.append(layer);
+    const Span<float2> coords{static_cast<const float2 *>(layer.data), mesh->totloop};
+    CustomDataLayer mloopuv_layer = layer;
+    mloopuv_layer.type = CD_MLOOPUV;
+    MutableSpan<MLoopUV> mloopuv = temp_mloopuv_for_convert.construct<Array<MLoopUV>>(
+        mesh->totloop);
+    mloopuv_layer.data = mloopuv.data();
+
+    const VArray<bool> vert_selection = attributes.lookup_or_default<bool>(
+        uv_sublayer_name_vert_selection(layer.name), ATTR_DOMAIN_CORNER, false);
+    const VArray<bool> edge_selection = attributes.lookup_or_default<bool>(
+        uv_sublayer_name_edge_selection(layer.name), ATTR_DOMAIN_CORNER, false);
+    const VArray<bool> pin = attributes.lookup_or_default<bool>(
+        uv_sublayer_name_pin(layer.name), ATTR_DOMAIN_CORNER, false);
+
+    threading::parallel_for(mloopuv.index_range(), 2048, [&](IndexRange range) {
+      for (const int i : range) {
+        copy_v2_v2(mloopuv[i].uv, coords[i]);
+        SET_FLAG_FROM_TEST(mloopuv[i].flag, vert_selection[i], MLOOPUV_VERTSEL);
+        SET_FLAG_FROM_TEST(mloopuv[i].flag, edge_selection[i], MLOOPUV_EDGESEL);
+        SET_FLAG_FROM_TEST(mloopuv[i].flag, pin[i], MLOOPUV_PINNED);
+      }
+    });
+    new_layer_to_write.append(mloopuv_layer);
   }
 
   face_corner_layers_to_write = new_layer_to_write;
+  mesh->ldata.totlayer = new_layer_to_write.size();
+  mesh->ldata.maxlayer = mesh->ldata.totlayer;
 }
 
 void BKE_mesh_legacy_convert_uvs_to_generic(Mesh *mesh)
 {
   using namespace blender;
   using namespace blender::bke;
-  MutableAttributeAccessor attributes = mesh_attributes_for_write(*mesh);
 
-  /* Store layer names since they will be removed.
+  /* Store layer names since they will be removed, used to set the active status of new layers.
    * Use intermediate #StringRef because the names can be null. */
   const std::string active_uv = StringRef(
       CustomData_get_active_layer_name(&mesh->ldata, CD_MLOOPUV));
@@ -1071,14 +1072,14 @@ void BKE_mesh_legacy_convert_uvs_to_generic(Mesh *mesh)
           MEM_malloc_arrayN(mesh->totloop, sizeof(bool), __func__));
     }
     if (needed_boolean_attributes & MLOOPUV_EDGESEL) {
-      vert_selection = static_cast<bool *>(
+      edge_selection = static_cast<bool *>(
           MEM_malloc_arrayN(mesh->totloop, sizeof(bool), __func__));
     }
     if (needed_boolean_attributes & MLOOPUV_PINNED) {
       pin = static_cast<bool *>(MEM_malloc_arrayN(mesh->totloop, sizeof(bool), __func__));
     }
 
-    threading::parallel_for(IndexRange(mesh->totvert), 4096, [&](IndexRange range) {
+    threading::parallel_for(IndexRange(mesh->totloop), 4096, [&](IndexRange range) {
       for (const int i : range) {
         coords[i] = mloopuv[i].uv;
       }
@@ -1099,31 +1100,33 @@ void BKE_mesh_legacy_convert_uvs_to_generic(Mesh *mesh)
       }
     });
 
-    attributes.remove(name);
-    attributes.add(name, ATTR_DOMAIN_CORNER, CD_PROP_FLOAT2, AttributeInitMove(coords));
+    CustomData_free_layer_named(&mesh->ldata, name.c_str(), mesh->totloop);
+    CustomData_add_layer_named(
+        &mesh->ldata, CD_PROP_FLOAT2, CD_ASSIGN, coords, mesh->totloop, name.c_str());
+
     if (vert_selection) {
-      if (!attributes.add(uv_sublayer_name_vert_selection(name),
-                          ATTR_DOMAIN_CORNER,
-                          CD_PROP_FLOAT2,
-                          AttributeInitMove(vert_selection))) {
-        MEM_freeN(vert_selection);
-      }
+      CustomData_add_layer_named(&mesh->ldata,
+                                 CD_PROP_BOOL,
+                                 CD_ASSIGN,
+                                 vert_selection,
+                                 mesh->totloop,
+                                 uv_sublayer_name_vert_selection(name).c_str());
     }
     if (edge_selection) {
-      if (!attributes.add(uv_sublayer_name_edge_selection(name),
-                          ATTR_DOMAIN_CORNER,
-                          CD_PROP_FLOAT2,
-                          AttributeInitMove(edge_selection))) {
-        MEM_freeN(edge_selection);
-      }
+      CustomData_add_layer_named(&mesh->ldata,
+                                 CD_PROP_BOOL,
+                                 CD_ASSIGN,
+                                 edge_selection,
+                                 mesh->totloop,
+                                 uv_sublayer_name_edge_selection(name).c_str());
     }
     if (pin) {
-      if (!attributes.add(uv_sublayer_name_pin(name),
-                          ATTR_DOMAIN_CORNER,
-                          CD_PROP_FLOAT2,
-                          AttributeInitMove(pin))) {
-        MEM_freeN(pin);
-      }
+      CustomData_add_layer_named(&mesh->ldata,
+                                 CD_PROP_BOOL,
+                                 CD_ASSIGN,
+                                 pin,
+                                 mesh->totloop,
+                                 uv_sublayer_name_pin(name).c_str());
     }
   }
 

@@ -308,7 +308,7 @@ void GPU_pbvh_mesh_buffers_update(PBVHGPUFormat *vbo_id,
 
           GPUAttrRef *ref = cd_uvs + uv_i;
           CustomDataLayer *layer = mesh->ldata.layers + ref->layer_idx;
-          float(*muv)[2] = layer->data;
+          const float(*muv)[2] = layer->data;
 
           for (uint i = 0; i < buffers->face_indices_len; i++) {
             const MLoopTri *lt = &buffers->looptri[buffers->face_indices[i]];
@@ -318,9 +318,9 @@ void GPU_pbvh_mesh_buffers_update(PBVHGPUFormat *vbo_id,
             }
 
             for (uint j = 0; j < 3; j++) {
-              float(*muv2)[2] = muv + lt->tri[j];
+              const float(*muv2)[2] = muv + lt->tri[j];
 
-              memcpy(GPU_vertbuf_raw_step(&uv_step), muv2, sizeof(float) * 2);
+              memcpy(GPU_vertbuf_raw_step(&uv_step), muv2, sizeof(float[2]));
             }
           }
         }

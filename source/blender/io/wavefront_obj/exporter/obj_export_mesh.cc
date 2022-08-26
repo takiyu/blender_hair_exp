@@ -287,7 +287,7 @@ void OBJMesh::store_uv_coords_and_indices()
   const MLoop *mloop = export_mesh_eval_->mloop;
   const int totpoly = export_mesh_eval_->totpoly;
   const int totvert = export_mesh_eval_->totvert;
-  const float(*mloopuv)[2] = static_cast<float(*)[2]>(
+  const float2 *mloopuv = static_cast<float2 *>(
       CustomData_get_layer(&export_mesh_eval_->ldata, CD_PROP_FLOAT2));
   if (!mloopuv) {
     tot_uv_vertices_ = 0;
@@ -296,7 +296,15 @@ void OBJMesh::store_uv_coords_and_indices()
   const float limit[2] = {STD_UV_CONNECT_LIMIT, STD_UV_CONNECT_LIMIT};
 
   UvVertMap *uv_vert_map = BKE_mesh_uv_vert_map_create(
-      mpoly, nullptr, mloop, mloopuv, totpoly, totvert, limit, false, false);
+      mpoly,
+      nullptr,
+      mloop,
+      reinterpret_cast<const float(*)[2]>(mloopuv),
+      totpoly,
+      totvert,
+      limit,
+      false,
+      false);
 
   uv_indices_.resize(totpoly);
   /* At least total vertices of a mesh will be present in its texture map. So
@@ -315,8 +323,7 @@ void OBJMesh::store_uv_coords_and_indices()
       /* Store UV vertex coordinates. */
       uv_coords_.resize(tot_uv_vertices_);
       const int loopstart = mpoly[uv_vert->poly_index].loopstart;
-      Span<float> vert_uv_coords(mloopuv[loopstart + uv_vert->loop_of_poly_index], 2);
-      uv_coords_[tot_uv_vertices_ - 1] = float2(vert_uv_coords[0], vert_uv_coords[1]);
+      uv_coords_[tot_uv_vertices_ - 1] = mloopuv[loopstart + uv_vert->loop_of_poly_index];
 
       /* Store UV vertex indices. */
       uv_indices_[uv_vert->poly_index].resize(vertices_in_poly);
