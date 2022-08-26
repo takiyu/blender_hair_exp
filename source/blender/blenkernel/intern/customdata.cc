@@ -1690,7 +1690,7 @@ static const LayerTypeInfo LAYERTYPEINFO[CD_NUMTYPES] = {
     /* NOTE: when we expose the UV Map / TexFace split to the user,
      * change this back to face Texture. */
     {sizeof(int), "", 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr},
-    /* 16: CD_MLOOPUV */
+    /* 16: CD_MLOOPUV */ /* DEPRECATED */
     {sizeof(MLoopUV), "MLoopUV", 1, N_("UVMap")},
     /* 17: CD_PROP_BYTE_COLOR */
     {sizeof(MLoopCol),
