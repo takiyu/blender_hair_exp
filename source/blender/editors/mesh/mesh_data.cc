@@ -104,33 +104,6 @@ static CustomData *mesh_customdata_get_type(Mesh *me, const char htype, int *r_t
 }
 
 #define GET_CD_DATA(me, data) ((me)->edit_mesh ? &(me)->edit_mesh->bm->data : &(me)->data)
-static void delete_customdata_layer(Mesh *me, CustomDataLayer *layer)
-{
-  const int type = layer->type;
-  CustomData *data;
-  int layer_index, tot, n;
-
-  char htype = BM_FACE;
-  if (ELEM(type, CD_PROP_BYTE_COLOR, CD_PROP_FLOAT2)) {
-    htype = BM_LOOP;
-  }
-  else if (ELEM(type, CD_PROP_COLOR)) {
-    htype = BM_VERT;
-  }
-
-  data = mesh_customdata_get_type(me, htype, &tot);
-  layer_index = CustomData_get_layer_index(data, type);
-  n = (layer - &data->layers[layer_index]);
-  BLI_assert(n >= 0 && (n + layer_index) < data->totlayer);
-
-  if (me->edit_mesh) {
-    BM_data_layer_free_n(me->edit_mesh->bm, data, type, n);
-  }
-  else {
-    CustomData_free_layer(data, type, tot, layer_index + n);
-    BKE_mesh_update_customdata_pointers(me, true);
-  }
-}
 
 static void mesh_uv_reset_array(float **fuv, const int len)
 {
@@ -335,46 +308,6 @@ void ED_mesh_uv_ensure(Mesh *me, const char *name)
   }
 }
 
-bool ED_mesh_uv_remove_index(Mesh *me, const int n)
-{
-  CustomData *ldata = GET_CD_DATA(me, ldata);
-  CustomDataLayer *cdlu;
-  int index;
-
-  index = CustomData_get_layer_index_n(ldata, CD_PROP_FLOAT2, n);
-  cdlu = (index == -1) ? nullptr : &ldata->layers[index];
-
-  if (!cdlu) {
-    return false;
-  }
-
-  delete_customdata_layer(me, cdlu);
-
-  DEG_id_tag_update(&me->id, 0);
-  WM_main_add_notifier(NC_GEOM | ND_DATA, me);
-
-  return true;
-}
-bool ED_mesh_uv_remove_active(Mesh *me)
-{
-  CustomData *ldata = GET_CD_DATA(me, ldata);
-  const int n = CustomData_get_active_layer(ldata, CD_PROP_FLOAT2);
-
-  if (n != -1) {
-    return ED_mesh_uv_remove_index(me, n);
-  }
-  return false;
-}
-bool ED_mesh_uv_remove_named(Mesh *me, const char *name)
-{
-  CustomData *ldata = GET_CD_DATA(me, ldata);
-  const int n = CustomData_get_named_layer(ldata, CD_PROP_FLOAT2, name);
-  if (n != -1) {
-    return ED_mesh_uv_remove_index(me, n);
-  }
-  return false;
-}
-
 int ED_mesh_color_add(
     Mesh *me, const char *name, const bool active_set, const bool do_init, ReportList *reports)
 {
@@ -575,12 +508,14 @@ void MESH_OT_uv_texture_add(wmOperatorType *ot)
   ot->flag = OPTYPE_REGISTER | OPTYPE_UNDO;
 }
 
-static int mesh_uv_texture_remove_exec(bContext *C, wmOperator *UNUSED(op))
+static int mesh_uv_texture_remove_exec(bContext *C, wmOperator *op)
 {
   Object *ob = ED_object_context(C);
   Mesh *me = static_cast<Mesh *>(ob->data);
 
-  if (!ED_mesh_uv_remove_active(me)) {
+  CustomData *ldata = GET_CD_DATA(me, ldata);
+  const char *name = CustomData_get_active_layer_name(ldata, CD_PROP_FLOAT2);
+  if (!BKE_id_attribute_remove(&me->id, name, op->reports)) {
     return OPERATOR_CANCELLED;
   }
 

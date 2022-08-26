@@ -1876,9 +1876,7 @@ static PointerRNA rna_Mesh_uv_layers_new(struct Mesh *me,
 
 static void rna_Mesh_uv_layers_remove(struct Mesh *me, ReportList *reports, CustomDataLayer *layer)
 {
-  if (ED_mesh_uv_remove_named(me, layer->name) == false) {
-    BKE_reportf(reports, RPT_ERROR, "Texture layer '%s' not found", layer->name);
-  }
+  BKE_id_attribute_remove(&me->id, layer->name, reports);
 }
 
 static bool rna_Mesh_is_editmode_get(PointerRNA *ptr)
