@@ -316,8 +316,7 @@ static void dm_ts_GetTextureCoordinate(const SMikkTSpaceContext *pContext,
 
 finally:
   if (pMesh->mloopuv != NULL) {
-    const float *uv = pMesh->mloopuv[loop_index];
-    copy_v2_v2(r_uv, uv);
+    copy_v2_v2(r_uv, pMesh->mloopuv[loop_index]);
   }
   else {
     const float *orco = pMesh->orco[pMesh->mloop[loop_index].v];

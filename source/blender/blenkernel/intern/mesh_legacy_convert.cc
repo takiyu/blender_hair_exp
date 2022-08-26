@@ -1133,7 +1133,7 @@ void BKE_mesh_legacy_convert_uvs_to_generic(Mesh *mesh)
   CustomData_set_layer_render_index(
       &mesh->ldata,
       CD_PROP_FLOAT2,
-      CustomData_get_named_layer_index(&mesh->ldata, CD_PROP_FLOAT2, active_uv.c_str()));
+      CustomData_get_named_layer_index(&mesh->ldata, CD_PROP_FLOAT2, default_uv.c_str()));
 
   BKE_mesh_update_customdata_pointers(mesh, false);
 }

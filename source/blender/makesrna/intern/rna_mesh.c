@@ -1454,10 +1454,12 @@ static char *rna_MeshUVLoop_path(const PointerRNA *ptr)
   return rna_LoopCustomData_data_path(ptr, "uv_layers", CD_PROP_FLOAT2);
 }
 
-static void get_uv_index_and_layer(PointerRNA *ptr, int *r_uv_map_index, int *r_index_in_attribute)
+static void get_uv_index_and_layer(const PointerRNA *ptr,
+                                   int *r_uv_map_index,
+                                   int *r_index_in_attribute)
 {
   const Mesh *mesh = rna_mesh(ptr);
-  const float(*uv_coord)[2] = (float(*)[2])ptr->data;
+  const float(*uv_coord)[2] = (const float(*)[2])ptr->data;
 
   /* We don't know from which attribute the RNA pointer is from, so we need to scan them all. */
   const int uv_layers_num = CustomData_number_of_layers(&mesh->ldata, CD_PROP_FLOAT2);
