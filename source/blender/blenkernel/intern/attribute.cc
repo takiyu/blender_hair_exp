@@ -869,7 +869,7 @@ void BKE_id_attribute_copy_domains_temp(short id_type,
 
 UVMap_Data BKE_id_attributes_ensure_uvmap_layers_index(Mesh *mesh,
                                                        const int index_of_uvmap,
-                                                       struct ReportList *reports,
+                                                       ReportList *reports,
                                                        uint32_t needed_layer_flags)
 {
   using namespace blender::bke;
