@@ -6,9 +6,10 @@
 
 #include "MEM_guardedalloc.h"
 
-#include "BLI_alloca.h"
+#include "BLI_array.hh"
 #include "BLI_linklist.h"
 #include "BLI_math.h"
+#include "BLI_math_vec_types.hh"
 #include "BLI_utildefines_stack.h"
 
 #include "BKE_customdata.h"
@@ -89,16 +90,15 @@ void BM_face_uv_calc_center_median(const BMFace *f, const int cd_loop_uv_offset,
 
 float BM_face_uv_calc_cross(const BMFace *f, const int cd_loop_uv_offset)
 {
-  float(*uvs)[2] = BLI_array_alloca(uvs, f->len);
+  blender::Array<blender::float2, BM_DEFAULT_NGON_STACK_SIZE> uvs(f->len);
   const BMLoop *l_iter;
   const BMLoop *l_first;
   int i = 0;
   l_iter = l_first = BM_FACE_FIRST_LOOP(f);
   do {
-    const float *luv = BM_ELEM_CD_GET_FLOAT_P(l_iter, cd_loop_uv_offset);
-    copy_v2_v2(uvs[i++], luv);
+    uvs[i++] = BM_ELEM_CD_GET_FLOAT2_P(l_iter, cd_loop_uv_offset);
   } while ((l_iter = l_iter->next) != l_first);
-  return cross_poly_v2(uvs, f->len);
+  return cross_poly_v2(reinterpret_cast<const float(*)[2]>(uvs.data()), f->len);
 }
 
 void BM_face_uv_minmax(const BMFace *f, float min[2], float max[2], const int cd_loop_uv_offset)
@@ -131,7 +131,7 @@ bool BM_loop_uv_share_edge_check(BMLoop *l_a, BMLoop *l_b, const int cd_loop_uv_
   float *luv_b_curr = BM_ELEM_CD_GET_FLOAT_P(l_b, cd_loop_uv_offset);
   float *luv_b_next = BM_ELEM_CD_GET_FLOAT_P(l_b->next, cd_loop_uv_offset);
   if (l_a->v != l_b->v) {
-    SWAP(float *, luv_b_curr, luv_b_next);
+    std::swap(luv_b_curr, luv_b_next);
   }
   return (equals_v2v2(luv_a_curr, luv_b_curr) && equals_v2v2(luv_a_next, luv_b_next));
 }
@@ -171,7 +171,7 @@ bool BM_edge_uv_share_vert_check(BMEdge *e, BMLoop *l_a, BMLoop *l_b, const int 
 
 bool BM_face_uv_point_inside_test(const BMFace *f, const float co[2], const int cd_loop_uv_offset)
 {
-  float(*projverts)[2] = BLI_array_alloca(projverts, f->len);
+  blender::Array<blender::float2, BM_DEFAULT_NGON_STACK_SIZE> projverts(f->len);
 
   BMLoop *l_iter;
   int i;
@@ -179,8 +179,9 @@ bool BM_face_uv_point_inside_test(const BMFace *f, const float co[2], const int 
   BLI_assert(BM_face_is_normal_valid(f));
 
   for (i = 0, l_iter = BM_FACE_FIRST_LOOP(f); i < f->len; i++, l_iter = l_iter->next) {
-    copy_v2_v2(projverts[i], BM_ELEM_CD_GET_FLOAT_P(l_iter, cd_loop_uv_offset));
+    projverts[i] = BM_ELEM_CD_GET_FLOAT2_P(l_iter, cd_loop_uv_offset);
   }
 
-  return isect_point_poly_v2(co, projverts, f->len, false);
+  return isect_point_poly_v2(
+      co, reinterpret_cast<const float(*)[2]>(projverts.data()), f->len, false);
 }
