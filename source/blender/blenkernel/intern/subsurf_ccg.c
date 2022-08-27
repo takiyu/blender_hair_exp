@@ -1134,15 +1134,12 @@ static void ccgDM_copyFinalPolyArray(DerivedMesh *dm, MPoly *mpoly)
     CCGFace *f = ccgdm->faceMap[index].face;
     int x, y, S, numVerts = ccgSubSurf_getFaceNumVerts(f);
     int flag = (faceFlags) ? faceFlags[index].flag : ME_SMOOTH;
-    int mat_nr = (faceFlags) ? faceFlags[index].mat_nr : 0;
 
     for (S = 0; S < numVerts; S++) {
       for (y = 0; y < gridSize - 1; y++) {
         for (x = 0; x < gridSize - 1; x++) {
           MPoly *mp = &mpoly[i];
 
-          /* TODO: Unbreak multires materials :( */
-          // mp->mat_nr = mat_nr;
           mp->flag = flag;
           mp->loopstart = k;
           mp->totloop = 4;
