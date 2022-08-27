@@ -229,13 +229,10 @@ static void mesh_render_data_polys_sorted_build(MeshRenderData *mr, MeshBufferCa
     }
   }
   else {
-    const blender::VArraySpan<int> material_indices =
-        blender::bke::mesh_attributes(*mr->me).lookup_or_default<int>(
-            "material_index", ATTR_DOMAIN_FACE, 0);
     for (int i = 0; i < mr->poly_len; i++) {
       if (!(mr->use_hide && mr->hide_poly && mr->hide_poly[i])) {
         const MPoly *mp = &mr->mpoly[i];
-        const int mat = min_ii(material_indices[i], mat_last);
+        const int mat = min_ii(mr->material_indices ? mr->material_indices[i] : 0, mat_last);
         tri_first_index[i] = mat_tri_offs[mat];
         mat_tri_offs[mat] += mp->totloop - 2;
       }
@@ -271,13 +268,10 @@ static void mesh_render_data_mat_tri_len_mesh_range_fn(void *__restrict userdata
 {
   MeshRenderData *mr = static_cast<MeshRenderData *>(userdata);
   int *mat_tri_len = static_cast<int *>(tls->userdata_chunk);
-  const blender::VArraySpan<int> material_indices =
-      blender::bke::mesh_attributes(*mr->me).lookup_or_default<int>(
-          "material_index", ATTR_DOMAIN_FACE, 0);
 
   const MPoly *mp = &mr->mpoly[iter];
   if (!(mr->use_hide && mr->hide_poly && mr->hide_poly[iter])) {
-    int mat = min_ii(material_indices[iter], mr->mat_len - 1);
+    int mat = min_ii(mr->material_indices ? mr->material_indices[iter] : 0, mr->mat_len - 1);
     mat_tri_len[mat] += mp->totloop - 2;
   }
 }
@@ -582,6 +576,9 @@ MeshRenderData *mesh_render_data_create(Object *object,
     mr->v_origindex = static_cast<const int *>(CustomData_get_layer(&mr->me->vdata, CD_ORIGINDEX));
     mr->e_origindex = static_cast<const int *>(CustomData_get_layer(&mr->me->edata, CD_ORIGINDEX));
     mr->p_origindex = static_cast<const int *>(CustomData_get_layer(&mr->me->pdata, CD_ORIGINDEX));
+
+    mr->material_indices = static_cast<const int *>(
+        CustomData_get_layer_named(&me->pdata, CD_PROP_INT32, "material_index"));
 
     mr->hide_vert = static_cast<const bool *>(
         CustomData_get_layer_named(&me->vdata, CD_PROP_BOOL, ".hide_vert"));
