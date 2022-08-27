@@ -562,7 +562,7 @@ static void rna_MeshPolygon_hide_set(PointerRNA *ptr, bool value)
   hide_poly[index] = value;
 }
 
-static bool rna_MeshPolygon_material_index_get(PointerRNA *ptr)
+static int rna_MeshPolygon_material_index_get(PointerRNA *ptr)
 {
   const Mesh *mesh = rna_mesh(ptr);
   const int *material_indices = BKE_mesh_material_indices(mesh);
