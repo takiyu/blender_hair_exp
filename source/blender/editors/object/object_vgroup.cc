@@ -670,7 +670,6 @@ static void vgroup_copy_active_to_sel(Object *ob, eVGroupSelect subset_type)
         ".selection_vert", ATTR_DOMAIN_POINT, false);
 
     MDeformVert *dv;
-
     int v_act;
 
     dvert_act = ED_mesh_active_dvert_get_ob(ob, &v_act);
@@ -2462,7 +2461,6 @@ void ED_vgroup_mirror(Object *ob,
     }
     else {
       /* object mode / weight paint */
-      MVert *mv;
       int vidx, vidx_mirr;
       const bool use_vert_sel = (me->editflag & ME_EDIT_PAINT_VERT_SEL) != 0;
 
@@ -2480,7 +2478,7 @@ void ED_vgroup_mirror(Object *ob,
       const VArray<bool> selection_vert = attributes.lookup_or_default<bool>(
           ".selection_vert", ATTR_DOMAIN_POINT, false);
 
-      for (vidx = 0, mv = me->mvert; vidx < me->totvert; vidx++, mv++) {
+      for (vidx = 0; vidx < me->totvert; vidx++) {
         if (!BLI_BITMAP_TEST(vert_tag, vidx)) {
           if ((vidx_mirr = mesh_get_x_mirror_vert(ob, nullptr, vidx, use_topology)) != -1) {
             if (vidx != vidx_mirr) {

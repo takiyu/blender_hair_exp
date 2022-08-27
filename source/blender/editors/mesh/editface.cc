@@ -414,7 +414,6 @@ bool paintface_mouse_select(bContext *C,
                             Object *ob)
 {
   using namespace blender;
-  MPoly *mpoly_sel = nullptr;
   uint index;
   bool changed = false;
   bool found = false;
@@ -430,7 +429,6 @@ bool paintface_mouse_select(bContext *C,
 
   if (ED_mesh_pick_face(C, ob, mval, ED_MESH_PICK_DEFAULT_FACE_DIST, &index)) {
     if (index < me->totpoly) {
-      mpoly_sel = me->mpoly + index;
       if (!hide_poly[index]) {
         found = true;
       }
