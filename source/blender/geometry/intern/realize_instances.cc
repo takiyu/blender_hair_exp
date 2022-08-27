@@ -907,10 +907,10 @@ static void execute_realize_mesh_task(const RealizeInstancesOptions &options,
   const IndexRange dst_poly_range(task.start_indices.poly, src_polys.size());
   const IndexRange dst_loop_range(task.start_indices.loop, src_loops.size());
 
-  MutableSpan<MVert> dst_verts = MutableSpan(dst_mesh.mvert, mesh.totvert).slice(dst_vert_range);
-  MutableSpan<MEdge> dst_edges = MutableSpan(dst_mesh.medge, mesh.totedge).slice(dst_edge_range);
-  MutableSpan<MPoly> dst_polys = MutableSpan(dst_mesh.mpoly, mesh.totpoly).slice(dst_poly_range);
-  MutableSpan<MLoop> dst_loops = MutableSpan(dst_mesh.mloop, mesh.totloop).slice(dst_loop_range);
+  MutableSpan dst_verts = MutableSpan(dst_mesh.mvert, dst_mesh.totvert).slice(dst_vert_range);
+  MutableSpan dst_edges = MutableSpan(dst_mesh.medge, dst_mesh.totedge).slice(dst_edge_range);
+  MutableSpan dst_polys = MutableSpan(dst_mesh.mpoly, dst_mesh.totpoly).slice(dst_poly_range);
+  MutableSpan dst_loops = MutableSpan(dst_mesh.mloop, dst_mesh.totloop).slice(dst_loop_range);
 
   const Span<int> material_index_map = mesh_info.material_index_map;
 
