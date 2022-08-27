@@ -1150,6 +1150,7 @@ void BM_mesh_bm_to_me(Main *bmain, BMesh *bm, Mesh *me, const struct BMeshToMesh
   }
 
   if (need_material_index) {
+    BM_mesh_elem_table_ensure(bm, BM_FACE);
     write_fn_to_attribute<int>(
         blender::bke::mesh_attributes_for_write(*me),
         "material_index",
