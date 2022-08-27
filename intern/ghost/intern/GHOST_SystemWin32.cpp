@@ -227,7 +227,7 @@ GHOST_IWindow *GHOST_SystemWin32::createWindow(const char *title,
       state,
       type,
       ((glSettings.flags & GHOST_glStereoVisual) != 0),
-      ((glSettings.flags & GHOST_glAlphaBackground) != 0),
+      false,
       (GHOST_WindowWin32 *)parentWindow,
       ((glSettings.flags & GHOST_glDebugContext) != 0),
       is_dialog);
@@ -272,7 +272,7 @@ GHOST_IContext *GHOST_SystemWin32::createOffscreenContext(GHOST_GLSettings glSet
   HDC mHDC = GetDC(wnd);
   HDC prev_hdc = wglGetCurrentDC();
   HGLRC prev_context = wglGetCurrentContext();
-#if defined(WITH_GL_PROFILE_CORE)
+
   for (int minor = 5; minor >= 0; --minor) {
     context = new GHOST_ContextWGL(false,
                                    true,
@@ -310,29 +310,6 @@ GHOST_IContext *GHOST_SystemWin32::createOffscreenContext(GHOST_GLSettings glSet
     return NULL;
   }
 
-#elif defined(WITH_GL_PROFILE_COMPAT)
-  // ask for 2.1 context, driver gives any GL version >= 2.1
-  // (hopefully the latest compatibility profile)
-  // 2.1 ignores the profile bit & is incompatible with core profile
-  context = new GHOST_ContextWGL(false,
-                                 true,
-                                 NULL,
-                                 NULL,
-                                 0,  // no profile bit
-                                 2,
-                                 1,
-                                 (debug_context ? WGL_CONTEXT_DEBUG_BIT_ARB : 0),
-                                 GHOST_OPENGL_WGL_RESET_NOTIFICATION_STRATEGY);
-
-  if (context->initializeDrawingContext()) {
-    return context;
-  }
-  else {
-    delete context;
-  }
-#else
-#  error  // must specify either core or compat at build time
-#endif
 finished:
   wglMakeCurrent(prev_hdc, prev_context);
   return context;
@@ -557,16 +534,9 @@ GHOST_TSuccess GHOST_SystemWin32::exit()
   return GHOST_System::exit();
 }
 
-GHOST_TKey GHOST_SystemWin32::hardKey(RAWINPUT const &raw,
-                                      bool *r_keyDown,
-                                      bool *r_is_repeated_modifier)
+GHOST_TKey GHOST_SystemWin32::hardKey(RAWINPUT const &raw, bool *r_keyDown)
 {
-  bool is_repeated_modifier = false;
-
-  GHOST_SystemWin32 *system = (GHOST_SystemWin32 *)getSystem();
   GHOST_TKey key = GHOST_kKeyUnknown;
-  GHOST_ModifierKeys modifiers;
-  system->retrieveModifierKeys(modifiers);
 
   // RI_KEY_BREAK doesn't work for sticky keys release, so we also
   // check for the up message
@@ -576,56 +546,6 @@ GHOST_TKey GHOST_SystemWin32::hardKey(RAWINPUT const &raw,
   key = this->convertKey(raw.data.keyboard.VKey,
                          raw.data.keyboard.MakeCode,
                          (raw.data.keyboard.Flags & (RI_KEY_E1 | RI_KEY_E0)));
-
-  // extra handling of modifier keys: don't send repeats out from GHOST
-  if (key >= GHOST_kKeyLeftShift && key <= GHOST_kKeyRightAlt) {
-    bool changed = false;
-    GHOST_TModifierKey modifier;
-    switch (key) {
-      case GHOST_kKeyLeftShift: {
-        changed = (modifiers.get(GHOST_kModifierKeyLeftShift) != *r_keyDown);
-        modifier = GHOST_kModifierKeyLeftShift;
-        break;
-      }
-      case GHOST_kKeyRightShift: {
-        changed = (modifiers.get(GHOST_kModifierKeyRightShift) != *r_keyDown);
-        modifier = GHOST_kModifierKeyRightShift;
-        break;
-      }
-      case GHOST_kKeyLeftControl: {
-        changed = (modifiers.get(GHOST_kModifierKeyLeftControl) != *r_keyDown);
-        modifier = GHOST_kModifierKeyLeftControl;
-        break;
-      }
-      case GHOST_kKeyRightControl: {
-        changed = (modifiers.get(GHOST_kModifierKeyRightControl) != *r_keyDown);
-        modifier = GHOST_kModifierKeyRightControl;
-        break;
-      }
-      case GHOST_kKeyLeftAlt: {
-        changed = (modifiers.get(GHOST_kModifierKeyLeftAlt) != *r_keyDown);
-        modifier = GHOST_kModifierKeyLeftAlt;
-        break;
-      }
-      case GHOST_kKeyRightAlt: {
-        changed = (modifiers.get(GHOST_kModifierKeyRightAlt) != *r_keyDown);
-        modifier = GHOST_kModifierKeyRightAlt;
-        break;
-      }
-      default:
-        break;
-    }
-
-    if (changed) {
-      modifiers.set(modifier, *r_keyDown);
-      system->storeModifierKeys(modifiers);
-    }
-    else {
-      is_repeated_modifier = true;
-    }
-  }
-
-  *r_is_repeated_modifier = is_repeated_modifier;
   return key;
 }
 
@@ -1122,6 +1042,12 @@ GHOST_EventCursor *GHOST_SystemWin32::processCursorEvent(GHOST_WindowWin32 *wind
   system->getCursorPosition(x_screen, y_screen);
 
   if (window->getCursorGrabModeIsWarp()) {
+    /* WORKAROUND:
+     * Sometimes Windows ignores `SetCursorPos()` or `SendInput()` calls or the mouse event is
+     * outdated. Identify these cases by checking if the cursor is not yet within bounds. */
+    static bool is_warping_x = false;
+    static bool is_warping_y = false;
+
     int32_t x_new = x_screen;
     int32_t y_new = y_screen;
     int32_t x_accum, y_accum;
@@ -1138,29 +1064,41 @@ GHOST_EventCursor *GHOST_SystemWin32::processCursorEvent(GHOST_WindowWin32 *wind
 
     window->getCursorGrabAccum(x_accum, y_accum);
     if (x_new != x_screen || y_new != y_screen) {
+      system->setCursorPosition(x_new, y_new); /* wrap */
+
+      /* Do not update the accum values if we are an outdated or failed pos-warp event. */
+      if (!is_warping_x) {
+        is_warping_x = x_new != x_screen;
+        if (is_warping_x) {
+          x_accum += (x_screen - x_new);
+        }
+      }
+
+      if (!is_warping_y) {
+        is_warping_y = y_new != y_screen;
+        if (is_warping_y) {
+          y_accum += (y_screen - y_new);
+        }
+      }
+      window->setCursorGrabAccum(x_accum, y_accum);
+
       /* When wrapping we don't need to add an event because the setCursorPosition call will cause
        * a new event after. */
-      system->setCursorPosition(x_new, y_new); /* wrap */
-      window->setCursorGrabAccum(x_accum + (x_screen - x_new), y_accum + (y_screen - y_new));
+      return NULL;
     }
-    else {
-      return new GHOST_EventCursor(system->getMilliSeconds(),
-                                   GHOST_kEventCursorMove,
-                                   window,
-                                   x_screen + x_accum,
-                                   y_screen + y_accum,
-                                   GHOST_TABLET_DATA_NONE);
-    }
+
+    is_warping_x = false;
+    is_warping_y = false;
+    x_screen += x_accum;
+    y_screen += y_accum;
   }
-  else {
-    return new GHOST_EventCursor(system->getMilliSeconds(),
-                                 GHOST_kEventCursorMove,
-                                 window,
-                                 x_screen,
-                                 y_screen,
-                                 GHOST_TABLET_DATA_NONE);
-  }
-  return NULL;
+
+  return new GHOST_EventCursor(system->getMilliSeconds(),
+                               GHOST_kEventCursorMove,
+                               window,
+                               x_screen,
+                               y_screen,
+                               GHOST_TABLET_DATA_NONE);
 }
 
 void GHOST_SystemWin32::processWheelEvent(GHOST_WindowWin32 *window, WPARAM wParam, LPARAM lParam)
@@ -1187,34 +1125,33 @@ void GHOST_SystemWin32::processWheelEvent(GHOST_WindowWin32 *window, WPARAM wPar
 
 GHOST_EventKey *GHOST_SystemWin32::processKeyEvent(GHOST_WindowWin32 *window, RAWINPUT const &raw)
 {
+  const char vk = raw.data.keyboard.VKey;
   bool keyDown = false;
-  bool is_repeated_modifier = false;
   GHOST_SystemWin32 *system = (GHOST_SystemWin32 *)getSystem();
-  GHOST_TKey key = system->hardKey(raw, &keyDown, &is_repeated_modifier);
+  GHOST_TKey key = system->hardKey(raw, &keyDown);
   GHOST_EventKey *event;
+
+  bool is_repeat = false;
+  bool is_repeated_modifier = false;
+  if (keyDown) {
+    if (system->m_keycode_last_repeat_key == vk) {
+      is_repeat = true;
+      is_repeated_modifier = (key >= GHOST_kKeyLeftShift && key <= GHOST_kKeyRightAlt);
+    }
+    system->m_keycode_last_repeat_key = vk;
+  }
+  else {
+    if (system->m_keycode_last_repeat_key == vk) {
+      system->m_keycode_last_repeat_key = 0;
+    }
+  }
 
   /* We used to check `if (key != GHOST_kKeyUnknown)`, but since the message
    * values `WM_SYSKEYUP`, `WM_KEYUP` and `WM_CHAR` are ignored, we capture
    * those events here as well. */
   if (!is_repeated_modifier) {
-    char vk = raw.data.keyboard.VKey;
     char utf8_char[6] = {0};
     char ascii = 0;
-    bool is_repeat = false;
-
-    /* Unlike on Linux, not all keys can send repeat events. E.g. modifier keys don't. */
-    if (keyDown) {
-      if (system->m_keycode_last_repeat_key == vk) {
-        is_repeat = true;
-      }
-      system->m_keycode_last_repeat_key = vk;
-    }
-    else {
-      if (system->m_keycode_last_repeat_key == vk) {
-        system->m_keycode_last_repeat_key = 0;
-      }
-    }
-
     wchar_t utf16[3] = {0};
     BYTE state[256] = {0};
     int r;
@@ -1912,9 +1849,6 @@ LRESULT WINAPI GHOST_SystemWin32::s_wndProc(HWND hwnd, UINT msg, WPARAM wParam, 
            * If the windows use different input queues, the message is sent asynchronously,
            * so the window is activated immediately. */
           {
-            GHOST_ModifierKeys modifiers;
-            modifiers.clear();
-            system->storeModifierKeys(modifiers);
             system->m_wheelDeltaAccum = 0;
             system->m_keycode_last_repeat_key = 0;
             event = processWindowEvent(LOWORD(wParam) ? GHOST_kEventWindowActivate :

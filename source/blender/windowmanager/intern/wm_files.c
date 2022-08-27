@@ -296,6 +296,12 @@ static void wm_window_match_keep_current_wm(const bContext *C,
     }
   }
 
+  /* we'll be using the current wm list directly; make sure
+   * the names are validated and in the name map. */
+  LISTBASE_FOREACH (wmWindowManager *, wm_item, current_wm_list) {
+    BKE_main_namemap_get_name(bmain, &wm_item->id, wm_item->id.name + 2);
+  }
+
   *r_new_wm_list = *current_wm_list;
 }
 
@@ -696,6 +702,14 @@ static void wm_file_read_post(bContext *C, const struct wmFileReadPost_Params *p
   if (use_userdef) {
     if (is_factory_startup) {
       BKE_callback_exec_null(bmain, BKE_CB_EVT_LOAD_FACTORY_USERDEF_POST);
+    }
+  }
+
+  if (is_factory_startup && BLT_translate_new_dataname()) {
+    /* Translate workspace names */
+    LISTBASE_FOREACH_MUTABLE (WorkSpace *, workspace, &bmain->workspaces) {
+      BKE_libblock_rename(
+          bmain, &workspace->id, CTX_DATA_(BLT_I18NCONTEXT_ID_WORKSPACE, workspace->id.name + 2));
     }
   }
 
@@ -1768,9 +1782,11 @@ static bool wm_file_write(bContext *C,
   /* Enforce full override check/generation on file save. */
   BKE_lib_override_library_main_operations_create(bmain, true);
 
-  /* NOTE: Ideally we would call `WM_redraw_windows` here to remove any open menus. But we
-   * can crash if saving from a script, see T92704 & T97627. Just checking `!G.background
-   * && BLI_thread_is_main()` is not sufficient to fix this. */
+  /* NOTE: Ideally we would call `WM_redraw_windows` here to remove any open menus.
+   * But we can crash if saving from a script, see T92704 & T97627.
+   * Just checking `!G.background && BLI_thread_is_main()` is not sufficient to fix this.
+   * Additionally some some EGL configurations don't support reading the front-buffer
+   * immediately after drawing, see: T98462. In that case off-screen drawing is necessary. */
 
   /* don't forget not to return without! */
   WM_cursor_wait(true);
