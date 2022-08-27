@@ -2113,8 +2113,7 @@ Mesh *MOD_solidify_nonmanifold_modifyMesh(ModifierData *md,
 
   /* Make boundary edges/faces. */
   {
-    if (!dst_material_index)
-      gs_ptr = orig_vert_groups_arr;
+    gs_ptr = orig_vert_groups_arr;
     mv = orig_mvert;
     for (uint i = 0; i < verts_num; i++, gs_ptr++, mv++) {
       EdgeGroup *gs = *gs_ptr;
