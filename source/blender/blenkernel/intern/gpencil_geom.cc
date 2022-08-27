@@ -2663,6 +2663,8 @@ bool BKE_gpencil_convert_mesh(Main *bmain,
                               const bool use_faces,
                               const bool use_vgroups)
 {
+  using namespace blender;
+  using namespace blender::bke;
   if (ELEM(nullptr, ob_gp, ob_mesh) || (ob_gp->type != OB_GPENCIL) || (ob_gp->data == nullptr)) {
     return false;
   }
@@ -2710,9 +2712,8 @@ bool BKE_gpencil_convert_mesh(Main *bmain,
         gpl_fill, scene->r.cfra + frame_offset, GP_GETFRAME_ADD_NEW);
     int i;
 
-    const blender::VArray<int> mesh_material_indices =
-        blender::bke::mesh_attributes(*me_eval).lookup_or_default<int>(
-            "material_index", ATTR_DOMAIN_FACE, 0);
+    const VArray<int> mesh_material_indices = mesh_attributes(*me_eval).lookup_or_default<int>(
+        "material_index", ATTR_DOMAIN_FACE, 0);
     for (i = 0; i < mpoly_len; i++) {
       const MPoly *mp = &mpoly[i];
 
