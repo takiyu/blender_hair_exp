@@ -425,7 +425,6 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
   } \
   (void)0
 
-  /* TODO: Handle null src indices. */
   int *dst_material_index = BKE_mesh_material_indices_for_write(result);
 
   /* flip normals */

@@ -2108,7 +2108,6 @@ Mesh *MOD_solidify_nonmanifold_modifyMesh(ModifierData *md,
   }
 #endif
 
-  /* TODO: Handle null src indices. */
   const int *src_material_index = BKE_mesh_material_indices(mesh);
   int *dst_material_index = BKE_mesh_material_indices_for_write(result);
 
@@ -2240,16 +2239,20 @@ Mesh *MOD_solidify_nonmanifold_modifyMesh(ModifierData *md,
                 for (EdgeGroup *g3 = g2; g3->valid && k < j; g3++) {
                   if ((do_rim && !g3->is_orig_closed) || (do_shell && g3->split)) {
                     /* Check both far ends in terms of faces of an edge group. */
-                    if (src_material_index[g3->edges[0]->faces[0]->index] == l) {
+                    if ((src_material_index ? src_material_index[g3->edges[0]->faces[0]->index] :
+                                              0) == l) {
                       face = g3->edges[0]->faces[0]->index;
                       count++;
                     }
                     NewEdgeRef *le = g3->edges[g3->edges_len - 1];
-                    if (le->faces[1] && src_material_index[le->faces[1]->index] == l) {
+                    if (le->faces[1] &&
+                        (src_material_index ? src_material_index[le->faces[1]->index] : 0) == l) {
                       face = le->faces[1]->index;
                       count++;
                     }
-                    else if (!le->faces[1] && src_material_index[le->faces[0]->index] == l) {
+                    else if (!le->faces[1] &&
+                             (src_material_index ? src_material_index[le->faces[0]->index] : 0) ==
+                                 l) {
                       face = le->faces[0]->index;
                       count++;
                     }
@@ -2345,7 +2348,8 @@ Mesh *MOD_solidify_nonmanifold_modifyMesh(ModifierData *md,
             &mesh->pdata, &result->pdata, (int)(*new_edges)->faces[0]->index, (int)poly_index, 1);
         mpoly[poly_index].loopstart = (int)loop_index;
         mpoly[poly_index].totloop = 4 - (int)(v1_singularity || v2_singularity);
-        dst_material_index[poly_index] = src_material_index[orig_face_index] + mat_ofs_rim;
+        dst_material_index[poly_index] =
+            (src_material_index ? src_material_index[orig_face_index] : 0) + mat_ofs_rim;
         CLAMP(dst_material_index[poly_index], 0, mat_nr_max);
         mpoly[poly_index].flag = face->flag;
         poly_index++;
@@ -2536,7 +2540,8 @@ Mesh *MOD_solidify_nonmanifold_modifyMesh(ModifierData *md,
           CustomData_copy_data(&mesh->pdata, &result->pdata, (int)(i / 2), (int)poly_index, 1);
           mpoly[poly_index].loopstart = (int)loop_index;
           mpoly[poly_index].totloop = (int)k;
-          dst_material_index[poly_index] = src_material_index[fr->index] +
+          dst_material_index[poly_index] = (src_material_index ? src_material_index[fr->index] :
+                                                                 0) +
                                            (fr->reversed != do_flip ? mat_ofs : 0);
           CLAMP(dst_material_index[poly_index], 0, mat_nr_max);
           mpoly[poly_index].flag = fr->face->flag;

@@ -35,10 +35,11 @@ static void select_mesh_by_material(const Mesh &mesh,
   const AttributeAccessor attributes = bke::mesh_attributes(mesh);
   const VArray<int> material_indices = attributes.lookup_or_default<int>(
       "material_index", ATTR_DOMAIN_FACE, 0);
-  /* TODO: What about null materials? */
   if (material_indices.is_single() && material_indices.get_internal_single() == 0) {
-    r_selection.fill_indices(mask, false);
-    return;
+    if (material != nullptr) {
+      r_selection.fill_indices(mask, false);
+      return;
+    }
   }
 
   const VArraySpan<int> material_indices_span(material_indices);
