@@ -1274,10 +1274,6 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
       need_hide_vert = true;
     }
 
-    if (cd_vert_bweight_offset != -1) {
-      mv->bweight = BM_ELEM_CD_GET_FLOAT_AS_UCHAR(eve, cd_vert_bweight_offset);
-    }
-
     CustomData_from_bmesh_block(&bm->vdata, &me->vdata, eve->head.data, i);
   }
   bm->elem_index_dirty &= ~BM_VERT;

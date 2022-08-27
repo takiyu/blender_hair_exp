@@ -885,7 +885,8 @@ void BKE_mesh_legacy_bevel_weight_from_layers(Mesh *mesh)
 {
   using namespace blender;
   MutableSpan<MVert> vertices(mesh->mvert, mesh->totvert);
-  if (const float *weights = (const float *)CustomData_get_layer(&mesh->vdata, CD_BWEIGHT)) {
+  if (const float *weights = static_cast<const float *>(
+          CustomData_get_layer(&mesh->vdata, CD_BWEIGHT))) {
     mesh->cd_flag |= ME_CDFLAG_VERT_BWEIGHT;
     for (const int i : vertices.index_range()) {
       vertices[i].bweight = std::clamp(weights[i], 0.0f, 1.0f) * 255.0f;
@@ -898,7 +899,8 @@ void BKE_mesh_legacy_bevel_weight_from_layers(Mesh *mesh)
     }
   }
   MutableSpan<MEdge> edges(mesh->medge, mesh->totedge);
-  if (const float *weights = (const float *)CustomData_get_layer(&mesh->edata, CD_BWEIGHT)) {
+  if (const float *weights = static_cast<const float *>(
+          CustomData_get_layer(&mesh->edata, CD_BWEIGHT))) {
     mesh->cd_flag |= ME_CDFLAG_EDGE_BWEIGHT;
     for (const int i : edges.index_range()) {
       edges[i].bweight = std::clamp(weights[i], 0.0f, 1.0f) * 255.0f;
@@ -917,8 +919,8 @@ void BKE_mesh_legacy_bevel_weight_to_layers(Mesh *mesh)
   using namespace blender;
   const Span<MVert> vertices(mesh->mvert, mesh->totvert);
   if (mesh->cd_flag & ME_CDFLAG_VERT_BWEIGHT) {
-    float *weights = (float *)CustomData_add_layer(
-        &mesh->vdata, CD_BWEIGHT, CD_DEFAULT, nullptr, vertices.size());
+    float *weights = static_cast<float *>(
+        CustomData_add_layer(&mesh->vdata, CD_BWEIGHT, CD_DEFAULT, nullptr, vertices.size()));
     for (const int i : vertices.index_range()) {
       weights[i] = vertices[i].bweight / 255.0f;
     }
@@ -926,8 +928,8 @@ void BKE_mesh_legacy_bevel_weight_to_layers(Mesh *mesh)
 
   const Span<MEdge> edges(mesh->medge, mesh->totedge);
   if (mesh->cd_flag & ME_CDFLAG_EDGE_BWEIGHT) {
-    float *weights = (float *)CustomData_add_layer(
-        &mesh->edata, CD_BWEIGHT, CD_DEFAULT, nullptr, edges.size());
+    float *weights = static_cast<float *>(
+        CustomData_add_layer(&mesh->edata, CD_BWEIGHT, CD_DEFAULT, nullptr, edges.size()));
     for (const int i : edges.index_range()) {
       weights[i] = edges[i].bweight / 255.0f;
     }
