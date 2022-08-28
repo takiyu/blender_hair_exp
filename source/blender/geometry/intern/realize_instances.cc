@@ -1038,12 +1038,11 @@ static void execute_realize_mesh_tasks(const RealizeInstancesOptions &options,
   if (all_meshes_info.create_id_attribute) {
     vertex_ids = dst_attributes.lookup_or_add_for_write_only_span<int>("id", ATTR_DOMAIN_POINT);
   }
-
   /* Prepare material indices. */
   SpanAttributeWriter<int> material_indices;
   if (all_meshes_info.create_material_index_attribute) {
-    vertex_ids = dst_attributes.lookup_or_add_for_write_only_span<int>("material_index",
-                                                                       ATTR_DOMAIN_FACE);
+    material_indices = dst_attributes.lookup_or_add_for_write_only_span<int>("material_index",
+                                                                             ATTR_DOMAIN_FACE);
   }
 
   /* Prepare generic output attributes. */
@@ -1076,6 +1075,9 @@ static void execute_realize_mesh_tasks(const RealizeInstancesOptions &options,
   }
   if (vertex_ids) {
     vertex_ids.finish();
+  }
+  if (material_indices) {
+    material_indices.finish();
   }
 }
 
