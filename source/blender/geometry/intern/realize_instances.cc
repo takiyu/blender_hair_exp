@@ -843,9 +843,15 @@ static AllMeshesInfo preprocess_meshes(const GeometrySet &geometry_set,
 
   gather_meshes_to_realize(geometry_set, info.order);
   for (const Mesh *mesh : info.order) {
-    for (const int slot_index : IndexRange(mesh->totcol)) {
-      Material *material = mesh->mat[slot_index];
-      info.materials.add(material);
+    if (mesh->totcol == 0) {
+      /* Add an empty material slot for the default material. */
+      info.materials.add(nullptr);
+    }
+    else {
+      for (const int slot_index : IndexRange(mesh->totcol)) {
+        Material *material = mesh->mat[slot_index];
+        info.materials.add(material);
+      }
     }
   }
   info.realize_info.reinitialize(info.order.size());
@@ -855,11 +861,16 @@ static AllMeshesInfo preprocess_meshes(const GeometrySet &geometry_set,
     mesh_info.mesh = mesh;
 
     /* Create material index mapping. */
-    mesh_info.material_index_map.reinitialize(mesh->totcol);
-    for (const int old_slot_index : IndexRange(mesh->totcol)) {
-      Material *material = mesh->mat[old_slot_index];
-      const int new_slot_index = info.materials.index_of(material);
-      mesh_info.material_index_map[old_slot_index] = new_slot_index;
+    mesh_info.material_index_map.reinitialize(std::max<int>(mesh->totcol, 1));
+    if (mesh->totcol == 0) {
+      mesh_info.material_index_map.first() = info.materials.index_of(nullptr);
+    }
+    else {
+      for (const int old_slot_index : IndexRange(mesh->totcol)) {
+        Material *material = mesh->mat[old_slot_index];
+        const int new_slot_index = info.materials.index_of(material);
+        mesh_info.material_index_map[old_slot_index] = new_slot_index;
+      }
     }
 
     /* Access attributes. */
@@ -950,20 +961,26 @@ static void execute_realize_mesh_task(const RealizeInstancesOptions &options,
   });
   if (!all_dst_material_indices.is_empty()) {
     MutableSpan<int> dst_material_indices = all_dst_material_indices.slice(dst_poly_range);
-    if (mesh_info.material_indices.is_single()) {
-      const int src_index = mesh_info.material_indices.get_internal_single();
-      const bool valid = IndexRange(mesh.totcol).contains(src_index);
-      dst_material_indices.fill(valid ? material_index_map[src_index] : 0);
+    if (mesh.totcol == 0) {
+      /* The material index map contains the index of the null material in the result. */
+      dst_material_indices.fill(material_index_map.first());
     }
     else {
-      VArraySpan<int> indices_span(mesh_info.material_indices);
-      threading::parallel_for(src_polys.index_range(), 1024, [&](const IndexRange poly_range) {
-        for (const int i : poly_range) {
-          const int src_index = indices_span[i];
-          const bool valid = IndexRange(mesh.totcol).contains(src_index);
-          dst_material_indices[i] = valid ? material_index_map[src_index] : 0;
-        }
-      });
+      if (mesh_info.material_indices.is_single()) {
+        const int src_index = mesh_info.material_indices.get_internal_single();
+        const bool valid = IndexRange(mesh.totcol).contains(src_index);
+        dst_material_indices.fill(valid ? material_index_map[src_index] : 0);
+      }
+      else {
+        VArraySpan<int> indices_span(mesh_info.material_indices);
+        threading::parallel_for(src_polys.index_range(), 1024, [&](const IndexRange poly_range) {
+          for (const int i : poly_range) {
+            const int src_index = indices_span[i];
+            const bool valid = IndexRange(mesh.totcol).contains(src_index);
+            dst_material_indices[i] = valid ? material_index_map[src_index] : 0;
+          }
+        });
+      }
     }
   }
 
