@@ -973,7 +973,7 @@ void BKE_mesh_legacy_convert_material_indices_to_mpoly(Mesh *mesh)
   const AttributeAccessor attributes = mesh_attributes(*mesh);
   MutableSpan<MPoly> polys(mesh->mpoly, mesh->totpoly);
   const VArray<int> material_indices = attributes.lookup_or_default<int>(
-      "material_indices", ATTR_DOMAIN_FACE, false);
+      "material_index", ATTR_DOMAIN_FACE, 0);
   threading::parallel_for(polys.index_range(), 4096, [&](IndexRange range) {
     for (const int i : range) {
       polys[i].mat_nr = material_indices[i];
