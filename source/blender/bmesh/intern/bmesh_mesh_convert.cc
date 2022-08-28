@@ -1422,6 +1422,7 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
   bm->elem_index_dirty &= ~(BM_FACE | BM_LOOP);
 
   if (need_material_index) {
+    BM_mesh_elem_table_ensure(bm, BM_FACE);
     write_fn_to_attribute<int>(
         blender::bke::mesh_attributes_for_write(*me),
         "material_index",
