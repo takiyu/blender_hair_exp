@@ -1445,7 +1445,7 @@ bool BKE_mesh_material_index_used(Mesh *me, short index)
   using namespace blender::bke;
   const AttributeAccessor attributes = mesh_attributes(*me);
   const VArray<int> material_indices = attributes.lookup_or_default<int>(
-      "material_index", ATTR_DOMAIN_POINT, 0);
+      "material_index", ATTR_DOMAIN_FACE, 0);
   if (material_indices.is_single()) {
     return material_indices.get_internal_single() == index;
   }
