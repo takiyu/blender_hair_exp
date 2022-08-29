@@ -1423,6 +1423,10 @@ void BKE_mesh_material_index_remove(Mesh *me, short index)
   if (!material_indices) {
     return;
   }
+  if (material_indices.domain != ATTR_DOMAIN_FACE) {
+    BLI_assert_unreachable();
+    return;
+  }
   MutableVArraySpan<int> indices_span(material_indices.varray);
   for (const int i : indices_span.index_range()) {
     if (indices_span[i] > 0 && indices_span[i] > index) {
@@ -1485,6 +1489,10 @@ void BKE_mesh_material_remap(Mesh *me, const uint *remap, uint remap_len)
     MutableAttributeAccessor attributes = mesh_attributes_for_write(*me);
     AttributeWriter<int> material_indices = attributes.lookup_for_write<int>("material_index");
     if (!material_indices) {
+      return;
+    }
+    if (material_indices.domain != ATTR_DOMAIN_FACE) {
+      BLI_assert_unreachable();
       return;
     }
     MutableVArraySpan<int> indices_span(material_indices.varray);
