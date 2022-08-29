@@ -148,7 +148,9 @@ static void update_node_vb(PBVH *pbvh, PBVHNode *node)
 static bool face_materials_match(const PBVH *pbvh, const int a, const int b)
 {
   if (pbvh->material_indices) {
-    return pbvh->material_indices[a] == pbvh->material_indices[b];
+    if (pbvh->material_indices[a] != pbvh->material_indices[b]) {
+      return false;
+    }
   }
   return (pbvh->mpoly[a].flag & ME_SMOOTH) == (pbvh->mpoly[b].flag & ME_SMOOTH);
 }
