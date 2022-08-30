@@ -972,7 +972,7 @@ static void create_mesh(Scene *scene,
   std::optional<BL::IntAttribute> material_indices = find_material_index_attribute(b_mesh);
   auto get_material_index = [&](const int poly_index) -> int {
     if (material_indices) {
-      return clamp(material_indices->data[poly_index], 0, used_shaders.size() - 1);
+      return clamp(material_indices->data[poly_index].value(), 0, used_shaders.size() - 1);
     }
     return 0;
   };
