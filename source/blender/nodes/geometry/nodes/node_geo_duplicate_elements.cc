@@ -334,11 +334,10 @@ static void duplicate_curves(GeometrySet &geometry_set,
   geometry_set.keep_only_during_modify({GEO_COMPONENT_TYPE_CURVE});
   GeometryComponentEditData::remember_deformed_curve_positions_if_necessary(geometry_set);
 
-  const CurveComponent &src_component = *geometry_set.get_component_for_read<CurveComponent>();
-  const Curves &curves_id = *src_component.get_for_read();
+  const Curves &curves_id = *geometry_set.get_curves_for_read();
   const bke::CurvesGeometry &curves = bke::CurvesGeometry::wrap(curves_id.geometry);
 
-  GeometryComponentFieldContext field_context{src_component, ATTR_DOMAIN_CURVE};
+  bke::CurvesFieldContext field_context{curves, ATTR_DOMAIN_CURVE};
   FieldEvaluator evaluator{field_context, curves.curves_num()};
   evaluator.add(count_field);
   evaluator.set_selection(selection_field);
@@ -522,14 +521,13 @@ static void duplicate_faces(GeometrySet &geometry_set,
   }
   geometry_set.keep_only_during_modify({GEO_COMPONENT_TYPE_MESH});
 
-  const MeshComponent &src_component = *geometry_set.get_component_for_read<MeshComponent>();
-  const Mesh &mesh = *src_component.get_for_read();
+  const Mesh &mesh = *geometry_set.get_mesh_for_read();
   const Span<MVert> verts = bke::mesh_vertices(mesh);
   const Span<MEdge> edges = bke::mesh_edges(mesh);
   const Span<MPoly> polys = bke::mesh_polygons(mesh);
   const Span<MLoop> loops = bke::mesh_loops(mesh);
 
-  GeometryComponentFieldContext field_context{src_component, ATTR_DOMAIN_FACE};
+  bke::MeshFieldContext field_context{mesh, ATTR_DOMAIN_FACE};
   FieldEvaluator evaluator(field_context, polys.size());
   evaluator.add(count_field);
   evaluator.set_selection(selection_field);
@@ -724,11 +722,10 @@ static void duplicate_edges(GeometrySet &geometry_set,
     geometry_set.remove_geometry_during_modify();
     return;
   };
-  const MeshComponent &src_component = *geometry_set.get_component_for_read<MeshComponent>();
-  const Mesh &mesh = *src_component.get_for_read();
+  const Mesh &mesh = *geometry_set.get_mesh_for_read();
   const Span<MEdge> edges = bke::mesh_edges(mesh);
 
-  GeometryComponentFieldContext field_context{src_component, ATTR_DOMAIN_EDGE};
+  bke::MeshFieldContext field_context{mesh, ATTR_DOMAIN_EDGE};
   FieldEvaluator evaluator{field_context, edges.size()};
   evaluator.add(count_field);
   evaluator.set_selection(selection_field);
@@ -803,14 +800,13 @@ static void duplicate_points_curve(GeometrySet &geometry_set,
                                    const Field<bool> &selection_field,
                                    const IndexAttributes &attribute_outputs)
 {
-  const CurveComponent &src_component = *geometry_set.get_component_for_read<CurveComponent>();
-  const Curves &src_curves_id = *src_component.get_for_read();
+  const Curves &src_curves_id = *geometry_set.get_curves_for_read();
   const bke::CurvesGeometry &src_curves = bke::CurvesGeometry::wrap(src_curves_id.geometry);
   if (src_curves.points_num() == 0) {
     return;
   }
 
-  GeometryComponentFieldContext field_context{src_component, ATTR_DOMAIN_POINT};
+  bke::CurvesFieldContext field_context{src_curves, ATTR_DOMAIN_POINT};
   FieldEvaluator evaluator{field_context, src_curves.points_num()};
   evaluator.add(count_field);
   evaluator.set_selection(selection_field);
@@ -843,7 +839,7 @@ static void duplicate_points_curve(GeometrySet &geometry_set,
 
   for (const Map<AttributeIDRef, AttributeKind>::Item entry : attributes.items()) {
     const AttributeIDRef attribute_id = entry.key;
-    GAttributeReader src_attribute = src_component.attributes()->lookup(attribute_id);
+    GAttributeReader src_attribute = src_curves.attributes().lookup(attribute_id);
     if (!src_attribute) {
       continue;
     }
@@ -907,11 +903,10 @@ static void duplicate_points_mesh(GeometrySet &geometry_set,
                                   const Field<bool> &selection_field,
                                   const IndexAttributes &attribute_outputs)
 {
-  const MeshComponent &src_component = *geometry_set.get_component_for_read<MeshComponent>();
   const Mesh &mesh = *geometry_set.get_mesh_for_read();
   const Span<MVert> src_verts = bke::mesh_vertices(mesh);
 
-  GeometryComponentFieldContext field_context{src_component, ATTR_DOMAIN_POINT};
+  bke::MeshFieldContext field_context{mesh, ATTR_DOMAIN_POINT};
   FieldEvaluator evaluator{field_context, src_verts.size()};
   evaluator.add(count_field);
   evaluator.set_selection(selection_field);
@@ -959,12 +954,10 @@ static void duplicate_points_pointcloud(GeometrySet &geometry_set,
                                         const Field<bool> &selection_field,
                                         const IndexAttributes &attribute_outputs)
 {
-  const PointCloudComponent &src_points =
-      *geometry_set.get_component_for_read<PointCloudComponent>();
-  const int point_num = src_points.attribute_domain_size(ATTR_DOMAIN_POINT);
+  const PointCloud &src_points = *geometry_set.get_pointcloud_for_read();
 
-  GeometryComponentFieldContext field_context{src_points, ATTR_DOMAIN_POINT};
-  FieldEvaluator evaluator{field_context, point_num};
+  bke::PointCloudFieldContext field_context{src_points};
+  FieldEvaluator evaluator{field_context, src_points.totpoint};
   evaluator.add(count_field);
   evaluator.set_selection(selection_field);
   evaluator.evaluate();
@@ -980,11 +973,12 @@ static void duplicate_points_pointcloud(GeometrySet &geometry_set,
                              ATTR_DOMAIN_POINT,
                              offsets,
                              selection,
-                             *src_points.attributes(),
+                             bke::pointcloud_attributes(src_points),
                              bke::pointcloud_attributes_for_write(*pointcloud));
 
-  copy_stable_id_point(
-      offsets, *src_points.attributes(), bke::pointcloud_attributes_for_write(*pointcloud));
+  copy_stable_id_point(offsets,
+                       bke::pointcloud_attributes(src_points),
+                       bke::pointcloud_attributes_for_write(*pointcloud));
 
   if (attribute_outputs.duplicate_index) {
     create_duplicate_index_attribute(bke::pointcloud_attributes_for_write(*pointcloud),
@@ -1053,7 +1047,7 @@ static void duplicate_instances(GeometrySet &geometry_set,
   const InstancesComponent &src_instances =
       *geometry_set.get_component_for_read<InstancesComponent>();
 
-  GeometryComponentFieldContext field_context{src_instances, ATTR_DOMAIN_INSTANCE};
+  bke::GeometryFieldContext field_context{src_instances, ATTR_DOMAIN_INSTANCE};
   FieldEvaluator evaluator{field_context, src_instances.instances_num()};
   evaluator.add(count_field);
   evaluator.set_selection(selection_field);

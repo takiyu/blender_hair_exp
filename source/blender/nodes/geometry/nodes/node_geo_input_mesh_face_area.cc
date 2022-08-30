@@ -16,43 +16,33 @@ static void node_declare(NodeDeclarationBuilder &b)
       .description(N_("The surface area of each of the mesh's faces"));
 }
 
-static VArray<float> construct_face_area_gvarray(const MeshComponent &component,
-                                                 const eAttrDomain domain)
+static VArray<float> construct_face_area_varray(const Mesh &mesh, const eAttrDomain domain)
 {
-  const Mesh *mesh = component.get_for_read();
-  if (mesh == nullptr) {
-    return {};
-  }
-
-  const Span<MVert> verts = bke::mesh_vertices(*mesh);
-  const Span<MPoly> polys = bke::mesh_polygons(*mesh);
-  const Span<MLoop> loops = bke::mesh_loops(*mesh);
+  const Span<MVert> verts = bke::mesh_vertices(mesh);
+  const Span<MPoly> polys = bke::mesh_polygons(mesh);
+  const Span<MLoop> loops = bke::mesh_loops(mesh);
 
   auto area_fn = [verts, polys, loops](const int i) -> float {
-    const MPoly *mp = &polys[i];
-    return BKE_mesh_calc_poly_area(mp, &loops[mp->loopstart], verts.data());
+    const MPoly &poly = polys[i];
+    return BKE_mesh_calc_poly_area(&poly, &loops[poly.loopstart], verts.data());
   };
 
-  return component.attributes()->adapt_domain<float>(
-      VArray<float>::ForFunc(mesh->totpoly, area_fn), ATTR_DOMAIN_FACE, domain);
+  return bke::mesh_attributes(mesh).adapt_domain<float>(
+      VArray<float>::ForFunc(polys.size(), area_fn), ATTR_DOMAIN_FACE, domain);
 }
 
-class FaceAreaFieldInput final : public GeometryFieldInput {
+class FaceAreaFieldInput final : public bke::MeshFieldInput {
  public:
-  FaceAreaFieldInput() : GeometryFieldInput(CPPType::get<float>(), "Face Area Field")
+  FaceAreaFieldInput() : bke::MeshFieldInput(CPPType::get<float>(), "Face Area Field")
   {
     category_ = Category::Generated;
   }
 
-  GVArray get_varray_for_context(const GeometryComponent &component,
+  GVArray get_varray_for_context(const Mesh &mesh,
                                  const eAttrDomain domain,
                                  IndexMask UNUSED(mask)) const final
   {
-    if (component.type() == GEO_COMPONENT_TYPE_MESH) {
-      const MeshComponent &mesh_component = static_cast<const MeshComponent &>(component);
-      return construct_face_area_gvarray(mesh_component, domain);
-    }
-    return {};
+    return construct_face_area_varray(mesh, domain);
   }
 
   uint64_t hash() const override

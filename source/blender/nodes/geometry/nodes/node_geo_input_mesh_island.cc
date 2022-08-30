@@ -22,40 +22,32 @@ static void node_declare(NodeDeclarationBuilder &b)
       .description(N_("The total number of mesh islands"));
 }
 
-class IslandFieldInput final : public GeometryFieldInput {
+class IslandFieldInput final : public bke::MeshFieldInput {
  public:
-  IslandFieldInput() : GeometryFieldInput(CPPType::get<int>(), "Island Index")
+  IslandFieldInput() : bke::MeshFieldInput(CPPType::get<int>(), "Island Index")
   {
     category_ = Category::Generated;
   }
 
-  GVArray get_varray_for_context(const GeometryComponent &component,
+  GVArray get_varray_for_context(const Mesh &mesh,
                                  const eAttrDomain domain,
                                  IndexMask UNUSED(mask)) const final
   {
-    if (component.type() != GEO_COMPONENT_TYPE_MESH) {
-      return {};
-    }
-    const MeshComponent &mesh_component = static_cast<const MeshComponent &>(component);
-    const Mesh *mesh = mesh_component.get_for_read();
-    if (mesh == nullptr) {
-      return {};
-    }
-    const Span<MEdge> edges = bke::mesh_edges(*mesh);
+    const Span<MEdge> edges = bke::mesh_edges(mesh);
 
-    DisjointSet islands(mesh->totvert);
-    for (const int i : IndexRange(mesh->totedge)) {
+    DisjointSet islands(mesh.totvert);
+    for (const int i : edges.index_range()) {
       islands.join(edges[i].v1, edges[i].v2);
     }
 
-    Array<int> output(mesh->totvert);
+    Array<int> output(mesh.totvert);
     VectorSet<int> ordered_roots;
-    for (const int i : IndexRange(mesh->totvert)) {
+    for (const int i : IndexRange(mesh.totvert)) {
       const int64_t root = islands.find_root(i);
       output[i] = ordered_roots.index_of_or_add(root);
     }
 
-    return mesh_component.attributes()->adapt_domain<int>(
+    return bke::mesh_attributes(mesh).adapt_domain<int>(
         VArray<int>::ForContainer(std::move(output)), ATTR_DOMAIN_POINT, domain);
   }
 
@@ -71,40 +63,32 @@ class IslandFieldInput final : public GeometryFieldInput {
   }
 };
 
-class IslandCountFieldInput final : public GeometryFieldInput {
+class IslandCountFieldInput final : public bke::MeshFieldInput {
  public:
-  IslandCountFieldInput() : GeometryFieldInput(CPPType::get<int>(), "Island Count")
+  IslandCountFieldInput() : bke::MeshFieldInput(CPPType::get<int>(), "Island Count")
   {
     category_ = Category::Generated;
   }
 
-  GVArray get_varray_for_context(const GeometryComponent &component,
+  GVArray get_varray_for_context(const Mesh &mesh,
                                  const eAttrDomain domain,
                                  IndexMask UNUSED(mask)) const final
   {
-    if (component.type() != GEO_COMPONENT_TYPE_MESH) {
-      return {};
-    }
-    const MeshComponent &mesh_component = static_cast<const MeshComponent &>(component);
-    const Mesh *mesh = mesh_component.get_for_read();
-    if (mesh == nullptr) {
-      return {};
-    }
-    const Span<MEdge> edges = bke::mesh_edges(*mesh);
+    const Span<MEdge> edges = bke::mesh_edges(mesh);
 
-    DisjointSet islands(mesh->totvert);
-    for (const int i : IndexRange(mesh->totedge)) {
+    DisjointSet islands(mesh.totvert);
+    for (const int i : edges.index_range()) {
       islands.join(edges[i].v1, edges[i].v2);
     }
 
     Set<int> island_list;
-    for (const int i_vert : IndexRange(mesh->totvert)) {
+    for (const int i_vert : IndexRange(mesh.totvert)) {
       const int64_t root = islands.find_root(i_vert);
       island_list.add(root);
     }
 
     return VArray<int>::ForSingle(island_list.size(),
-                                  mesh_component.attribute_domain_size(domain));
+                                  bke::mesh_attributes(mesh).domain_size(domain));
   }
 
   uint64_t hash() const override

@@ -54,7 +54,7 @@ static void node_init(bNodeTree *UNUSED(tree), bNode *node)
   node->storage = data;
 }
 
-static VArray<float3> construct_uv_gvarray(const MeshComponent &component,
+static VArray<float3> construct_uv_gvarray(const Mesh &mesh,
                                            const Field<bool> selection_field,
                                            const Field<bool> seam_field,
                                            const bool fill_holes,
@@ -62,16 +62,12 @@ static VArray<float3> construct_uv_gvarray(const MeshComponent &component,
                                            const GeometryNodeUVUnwrapMethod method,
                                            const eAttrDomain domain)
 {
-  const Mesh *mesh = component.get_for_read();
-  if (mesh == nullptr) {
-    return {};
-  }
-  const Span<MVert> verts = bke::mesh_vertices(*mesh);
-  const Span<MEdge> edges = bke::mesh_edges(*mesh);
-  const Span<MPoly> polys = bke::mesh_polygons(*mesh);
-  const Span<MLoop> loops = bke::mesh_loops(*mesh);
+  const Span<MVert> verts = bke::mesh_vertices(mesh);
+  const Span<MEdge> edges = bke::mesh_edges(mesh);
+  const Span<MPoly> polys = bke::mesh_polygons(mesh);
+  const Span<MLoop> loops = bke::mesh_loops(mesh);
 
-  GeometryComponentFieldContext face_context{component, ATTR_DOMAIN_FACE};
+  bke::MeshFieldContext face_context{mesh, ATTR_DOMAIN_FACE};
   FieldEvaluator face_evaluator{face_context, polys.size()};
   face_evaluator.add(selection_field);
   face_evaluator.evaluate();
@@ -80,13 +76,13 @@ static VArray<float3> construct_uv_gvarray(const MeshComponent &component,
     return {};
   }
 
-  GeometryComponentFieldContext edge_context{component, ATTR_DOMAIN_EDGE};
+  bke::MeshFieldContext edge_context{mesh, ATTR_DOMAIN_EDGE};
   FieldEvaluator edge_evaluator{edge_context, edges.size()};
   edge_evaluator.add(seam_field);
   edge_evaluator.evaluate();
   const IndexMask seam = edge_evaluator.get_evaluated_as_mask(0);
 
-  Array<float3> uv(mesh->totloop, float3(0));
+  Array<float3> uv(loops.size(), float3(0));
 
   ParamHandle *handle = GEO_uv_parametrizer_construct_begin();
   for (const int mp_index : selection) {
@@ -130,11 +126,11 @@ static VArray<float3> construct_uv_gvarray(const MeshComponent &component,
   GEO_uv_parametrizer_flush(handle);
   GEO_uv_parametrizer_delete(handle);
 
-  return component.attributes()->adapt_domain<float3>(
+  return bke::mesh_attributes(mesh).adapt_domain<float3>(
       VArray<float3>::ForContainer(std::move(uv)), ATTR_DOMAIN_CORNER, domain);
 }
 
-class UnwrapFieldInput final : public GeometryFieldInput {
+class UnwrapFieldInput final : public bke::MeshFieldInput {
  private:
   const Field<bool> selection;
   const Field<bool> seam;
@@ -148,7 +144,7 @@ class UnwrapFieldInput final : public GeometryFieldInput {
                    const bool fill_holes,
                    const float margin,
                    const GeometryNodeUVUnwrapMethod method)
-      : GeometryFieldInput(CPPType::get<float3>(), "UV Unwrap Field"),
+      : bke::MeshFieldInput(CPPType::get<float3>(), "UV Unwrap Field"),
         selection(selection),
         seam(seam),
         fill_holes(fill_holes),
@@ -158,16 +154,11 @@ class UnwrapFieldInput final : public GeometryFieldInput {
     category_ = Category::Generated;
   }
 
-  GVArray get_varray_for_context(const GeometryComponent &component,
+  GVArray get_varray_for_context(const Mesh &mesh,
                                  const eAttrDomain domain,
                                  IndexMask UNUSED(mask)) const final
   {
-    if (component.type() == GEO_COMPONENT_TYPE_MESH) {
-      const MeshComponent &mesh_component = static_cast<const MeshComponent &>(component);
-      return construct_uv_gvarray(
-          mesh_component, selection, seam, fill_holes, margin, method, domain);
-    }
-    return {};
+    return construct_uv_gvarray(mesh, selection, seam, fill_holes, margin, method, domain);
   }
 };
 

@@ -1371,7 +1371,7 @@ static int modifier_move_to_index_exec(bContext *C, wmOperator *op)
   ModifierData *md = edit_modifier_property_get(op, ob, 0);
   int index = RNA_int_get(op->ptr, "index");
 
-  if (!ED_object_modifier_move_to_index(op->reports, ob, md, index)) {
+  if (!(md && ED_object_modifier_move_to_index(op->reports, ob, md, index))) {
     return OPERATOR_CANCELLED;
   }
 
@@ -3357,6 +3357,7 @@ void OBJECT_OT_geometry_nodes_input_attribute_toggle(wmOperatorType *ot)
   ot->idname = "OBJECT_OT_geometry_nodes_input_attribute_toggle";
 
   ot->exec = geometry_nodes_input_attribute_toggle_exec;
+  ot->poll = ED_operator_object_active;
 
   ot->flag = OPTYPE_REGISTER | OPTYPE_UNDO | OPTYPE_INTERNAL;
 
@@ -3374,9 +3375,8 @@ static int geometry_node_tree_copy_assign_exec(bContext *C, wmOperator *UNUSED(o
 {
   Main *bmain = CTX_data_main(C);
   Object *ob = ED_object_active_context(C);
-
   ModifierData *md = BKE_object_active_modifier(ob);
-  if (md->type != eModifierType_Nodes) {
+  if (!(md && md->type == eModifierType_Nodes)) {
     return OPERATOR_CANCELLED;
   }
 
@@ -3408,6 +3408,7 @@ void OBJECT_OT_geometry_node_tree_copy_assign(wmOperatorType *ot)
   ot->idname = "OBJECT_OT_geometry_node_tree_copy_assign";
 
   ot->exec = geometry_node_tree_copy_assign_exec;
+  ot->poll = ED_operator_object_active;
 
   ot->flag = OPTYPE_REGISTER | OPTYPE_UNDO;
 }

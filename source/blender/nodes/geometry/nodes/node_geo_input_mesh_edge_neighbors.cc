@@ -16,35 +16,26 @@ static void node_declare(NodeDeclarationBuilder &b)
       .description(N_("The number of faces that use each edge as one of their sides"));
 }
 
-class EdgeNeighborCountFieldInput final : public GeometryFieldInput {
+class EdgeNeighborCountFieldInput final : public bke::MeshFieldInput {
  public:
   EdgeNeighborCountFieldInput()
-      : GeometryFieldInput(CPPType::get<int>(), "Edge Neighbor Count Field")
+      : bke::MeshFieldInput(CPPType::get<int>(), "Edge Neighbor Count Field")
   {
     category_ = Category::Generated;
   }
 
-  GVArray get_varray_for_context(const GeometryComponent &component,
+  GVArray get_varray_for_context(const Mesh &mesh,
                                  const eAttrDomain domain,
                                  IndexMask UNUSED(mask)) const final
   {
-    if (component.type() == GEO_COMPONENT_TYPE_MESH) {
-      const MeshComponent &mesh_component = static_cast<const MeshComponent &>(component);
-      const Mesh *mesh = mesh_component.get_for_read();
-      if (mesh == nullptr) {
-        return {};
-      }
-      const Span<MLoop> loops = bke::mesh_loops(*mesh);
-
-      Array<int> face_count(mesh->totedge, 0);
-      for (const int i : loops.index_range()) {
-        face_count[loops[i].e]++;
-      }
-
-      return mesh_component.attributes()->adapt_domain<int>(
-          VArray<int>::ForContainer(std::move(face_count)), ATTR_DOMAIN_EDGE, domain);
+    const Span<MLoop> loops = bke::mesh_loops(mesh);
+    Array<int> face_count(mesh.totedge, 0);
+    for (const int i : loops.index_range()) {
+      face_count[loops[i].e]++;
     }
-    return {};
+
+    return bke::mesh_attributes(mesh).adapt_domain<int>(
+        VArray<int>::ForContainer(std::move(face_count)), ATTR_DOMAIN_EDGE, domain);
   }
 
   uint64_t hash() const override

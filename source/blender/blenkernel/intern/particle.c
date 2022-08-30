@@ -171,7 +171,7 @@ static void particle_settings_foreach_id(ID *id, LibraryForeachIDData *data)
   }
 
   if (psett->effector_weights) {
-    BKE_LIB_FOREACHID_PROCESS_IDSUPER(data, psett->effector_weights->group, IDWALK_CB_NOP);
+    BKE_LIB_FOREACHID_PROCESS_IDSUPER(data, psett->effector_weights->group, IDWALK_CB_USER);
   }
 
   if (psett->pd) {
@@ -3499,7 +3499,7 @@ void psys_cache_paths(ParticleSimulationData *sim, float cfra, const bool use_re
      * initial tangent, but taking that in to account will allow
      * the possibility of flipping again. -jahka
      */
-    mat3_to_quat_is_ok(cache[p]->rot, rotmat);
+    mat3_to_quat_legacy(cache[p]->rot, rotmat);
   }
 
   psys->totcached = totpart;
@@ -3689,7 +3689,7 @@ static void psys_cache_edit_paths_iter(void *__restrict iter_data_v,
      * initial tangent, but taking that in to account will allow
      * the possibility of flipping again. -jahka
      */
-    mat3_to_quat_is_ok(cache[iter]->rot, rotmat);
+    mat3_to_quat_legacy(cache[iter]->rot, rotmat);
   }
 }
 

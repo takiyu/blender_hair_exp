@@ -22,48 +22,39 @@ static void node_declare(NodeDeclarationBuilder &b)
   b.add_output<decl::Bool>("Planar").field_source();
 }
 
-class PlanarFieldInput final : public GeometryFieldInput {
+class PlanarFieldInput final : public bke::MeshFieldInput {
  private:
   Field<float> threshold_;
 
  public:
   PlanarFieldInput(Field<float> threshold)
-      : GeometryFieldInput(CPPType::get<bool>(), "Planar"), threshold_(threshold)
+      : bke::MeshFieldInput(CPPType::get<bool>(), "Planar"), threshold_(threshold)
   {
     category_ = Category::Generated;
   }
 
-  GVArray get_varray_for_context(const GeometryComponent &component,
+  GVArray get_varray_for_context(const Mesh &mesh,
                                  const eAttrDomain domain,
-                                 [[maybe_unused]] IndexMask mask) const final
+                                 IndexMask /*mask*/) const final
   {
-    if (component.type() != GEO_COMPONENT_TYPE_MESH) {
-      return {};
-    }
+    const Span<MVert> verts = bke::mesh_vertices(mesh);
+    const Span<MPoly> polys = bke::mesh_polygons(mesh);
+    const Span<MLoop> loops = bke::mesh_loops(mesh);
+    const Span<float3> poly_normals{(float3 *)BKE_mesh_poly_normals_ensure(&mesh), mesh.totpoly};
 
-    const MeshComponent &mesh_component = static_cast<const MeshComponent &>(component);
-    const Mesh *mesh = mesh_component.get_for_read();
-    if (mesh == nullptr) {
-      return {};
-    }
-
-    GeometryComponentFieldContext context{mesh_component, ATTR_DOMAIN_FACE};
-    fn::FieldEvaluator evaluator{context, mesh->totpoly};
+    bke::MeshFieldContext context{mesh, ATTR_DOMAIN_FACE};
+    fn::FieldEvaluator evaluator{context, polys.size()};
     evaluator.add(threshold_);
     evaluator.evaluate();
     const VArray<float> thresholds = evaluator.get_evaluated<float>(0);
-    const Span<MVert> verts = bke::mesh_vertices(*mesh);
-    const Span<MPoly> polys = bke::mesh_polygons(*mesh);
-    const Span<MLoop> loops = bke::mesh_loops(*mesh);
-    const Span<float3> poly_normals{(float3 *)BKE_mesh_poly_normals_ensure(mesh), mesh->totpoly};
 
-    auto planar_fn = [polys, loops, verts, thresholds, poly_normals](const int i_poly) -> bool {
-      if (polys[i_poly].totloop <= 3) {
+    auto planar_fn = [verts, polys, loops, thresholds, poly_normals](const int i) -> bool {
+      const MPoly &poly = polys[i];
+      if (poly.totloop <= 3) {
         return true;
       }
-      const MPoly &poly = polys[i_poly];
       const Span<MLoop> poly_loops = loops.slice(poly.loopstart, poly.totloop);
-      const float3 &reference_normal = poly_normals[i_poly];
+      const float3 &reference_normal = poly_normals[i];
 
       float min = FLT_MAX;
       float max = -FLT_MAX;
@@ -78,11 +69,11 @@ class PlanarFieldInput final : public GeometryFieldInput {
           min = dot;
         }
       }
-      return max - min < thresholds[i_poly] / 2.0f;
+      return max - min < thresholds[i] / 2.0f;
     };
 
-    return component.attributes()->adapt_domain<bool>(
-        VArray<bool>::ForFunc(mesh->totpoly, planar_fn), ATTR_DOMAIN_FACE, domain);
+    return bke::mesh_attributes(mesh).adapt_domain<bool>(
+        VArray<bool>::ForFunc(polys.size(), planar_fn), ATTR_DOMAIN_FACE, domain);
   }
 
   uint64_t hash() const override

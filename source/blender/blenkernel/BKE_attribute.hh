@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <optional>
+
 #include "BLI_color.hh"
 #include "BLI_function_ref.hh"
 #include "BLI_generic_span.hh"
@@ -150,7 +152,7 @@ template<typename T> struct AttributeReader {
 };
 
 /**
- * Result when looking up an attribute from some geometry with read an write access. After writing
+ * Result when looking up an attribute from some geometry with read and write access. After writing
  * to the attribute, the #finish method has to be called. This may invalidate caches based on this
  * attribute.
  */
