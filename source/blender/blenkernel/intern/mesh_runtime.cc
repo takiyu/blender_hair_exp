@@ -355,7 +355,7 @@ bool BKE_mesh_runtime_is_valid(Mesh *me_eval)
       verts.size(),
       edges.data(),
       edges.size(),
-      me_eval->mface,
+      static_cast<MFace *>(CustomData_get_layer(&me_eval->fdata, CD_MFACE)),
       me_eval->totface,
       loops.data(),
       loops.size(),

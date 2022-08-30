@@ -81,7 +81,8 @@ static void make_edges_mdata_extend(Mesh &mesh)
   const MPoly *mp;
   int i;
 
-  Span<MPoly> polys = blender::bke::mesh_polygons(mesh);
+  MutableSpan<MEdge> edges = blender::bke::mesh_edges_for_write(mesh);
+  const Span<MPoly> polys = blender::bke::mesh_polygons(mesh);
   MutableSpan<MLoop> loops = blender::bke::mesh_loops_for_write(mesh);
 
   const int eh_reserve = max_ii(totedge, BLI_EDGEHASH_SIZE_GUESS_FROM_POLYS(mesh.totpoly));
@@ -96,9 +97,8 @@ static void make_edges_mdata_extend(Mesh &mesh)
 #ifdef DEBUG
   /* ensure that there's no overlap! */
   if (totedge_new) {
-    MEdge *medge = mesh.medge;
-    for (i = 0; i < totedge; i++, medge++) {
-      BLI_assert(BLI_edgehash_haskey(eh, medge->v1, medge->v2) == false);
+    for (const MEdge &edge : edges) {
+      BLI_assert(BLI_edgehash_haskey(eh, edge.v1, edge.v2) == false);
     }
   }
 #endif
@@ -106,7 +106,7 @@ static void make_edges_mdata_extend(Mesh &mesh)
   if (totedge_new) {
     CustomData_realloc(&mesh.edata, totedge + totedge_new);
 
-    MEdge *medge = &blender::bke::mesh_edges_for_write(mesh)[totedge];
+    MEdge *medge = &edges[totedge];
 
     mesh.totedge += totedge_new;
 
