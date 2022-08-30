@@ -1624,7 +1624,7 @@ static void sculpt_update_object(Depsgraph *depsgraph,
   Scene *scene = DEG_get_input_scene(depsgraph);
   Sculpt *sd = scene->toolsettings->sculpt;
   SculptSession *ss = ob->sculpt;
-  const Mesh *me = BKE_object_get_original_mesh(ob);
+  Mesh *me = BKE_object_get_original_mesh(ob);
   Mesh *me_eval = BKE_object_get_evaluated_mesh(ob_eval);
   MultiresModifierData *mmd = BKE_sculpt_multires_active(scene, ob);
   const bool use_face_sets = (ob->mode & OB_MODE_SCULPT) != 0;
@@ -1748,7 +1748,10 @@ static void sculpt_update_object(Depsgraph *depsgraph,
       /* If the fully evaluated mesh has the same topology as the deform-only version, use it.
        * This matters because 'deform eval' is very restrictive and excludes even modifiers that
        * simply recompute vertex weights. */
-      if (me_eval_deform->mpoly == me_eval->mpoly && me_eval_deform->mloop == me_eval->mloop &&
+      if (blender::bke::mesh_polygons(*me_eval_deform).data() ==
+              blender::bke::mesh_polygons(*me_eval).data() &&
+          blender::bke::mesh_loops(*me_eval_deform).data() ==
+              blender::bke::mesh_loops(*me_eval).data() &&
           me_eval_deform->totvert == me_eval->totvert) {
         me_eval_deform = me_eval;
       }
