@@ -187,9 +187,9 @@ static bool unique_name_cb(void *arg, const char *name)
       continue;
     }
 
-    CustomData *cdata = info[domain].customdata;
+    const CustomData *cdata = info[domain].customdata;
     for (int i = 0; i < cdata->totlayer; i++) {
-      CustomDataLayer *layer = cdata->layers + i;
+      const CustomDataLayer *layer = cdata->layers + i;
 
       if (STREQ(layer->name, name)) {
         return true;
@@ -247,7 +247,7 @@ CustomDataLayer *BKE_id_attribute_new(
     return nullptr;
   }
 
-  attributes->add(uniquename, domain, eCustomDataType(type), AttributeInitDefault());
+  attributes->add(uniquename, domain, eCustomDataType(type), AttributeInitDefaultValue());
 
   const int index = CustomData_get_named_layer_index(customdata, type, uniquename);
   return (index == -1) ? nullptr : &(customdata->layers[index]);
@@ -421,6 +421,7 @@ int BKE_id_attribute_data_length(ID *id, CustomDataLayer *layer)
       if (mesh->edit_mesh != nullptr) {
         return 0;
       }
+      break;
     }
     default:
       break;
@@ -493,10 +494,10 @@ void BKE_id_attributes_active_set(ID *id, CustomDataLayer *active_layer)
   int index = 0;
 
   for (const int domain : IndexRange(ATTR_DOMAIN_NUM)) {
-    CustomData *customdata = info[domain].customdata;
+    const CustomData *customdata = info[domain].customdata;
     if (customdata) {
       for (int i = 0; i < customdata->totlayer; i++) {
-        CustomDataLayer *layer = &customdata->layers[i];
+        const CustomDataLayer *layer = &customdata->layers[i];
         if (layer == active_layer) {
           *BKE_id_attributes_active_index_p(id) = index;
           return;
