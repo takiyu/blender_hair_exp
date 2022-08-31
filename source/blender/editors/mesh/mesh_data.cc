@@ -404,7 +404,7 @@ int ED_mesh_color_add(Mesh *me,
   else {
     layernum = CustomData_number_of_layers(&me->ldata, CD_PROP_BYTE_COLOR);
 
-    if (CustomData_get_active_layer(&me->ldata, CD_PROP_BYTE_COLOR) && do_init) {
+    if (CustomData_get_active_layer(&me->ldata, CD_PROP_BYTE_COLOR) != -1 && do_init) {
       CustomData_add_layer_named(&me->ldata,
                                  CD_PROP_BYTE_COLOR,
                                  CD_DUPLICATE,
