@@ -244,10 +244,10 @@ static SnapData_Mesh *snap_object_data_mesh_get(SnapObjectContext *sctx,
   SnapData_Mesh *sod;
   bool init = false;
 
-  const Span<MVert> verts = blender::bke::mesh_vertices(*me_eval);
-  const Span<MEdge> edges = blender::bke::mesh_edges(*me_eval);
-  const Span<MPoly> polys = blender::bke::mesh_polygons(*me_eval);
-  const Span<MLoop> loops = blender::bke::mesh_loops(*me_eval);
+  const Span<MVert> verts = me_eval->vertices();
+  const Span<MEdge> edges = me_eval->edges();
+  const Span<MPoly> polys = me_eval->polygons();
+  const Span<MLoop> loops = me_eval->loops();
 
   if (std::unique_ptr<SnapData_Mesh> *sod_p = sctx->mesh_caches.lookup_ptr(ob_eval)) {
     sod = sod_p->get();

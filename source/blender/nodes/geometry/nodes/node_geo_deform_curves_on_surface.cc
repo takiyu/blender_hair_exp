@@ -66,11 +66,11 @@ static void deform_curves(const CurvesGeometry &curves,
 
   const float4x4 curves_to_surface = surface_to_curves.inverted();
 
-  const Span<MVert> surface_verts_old = bke::mesh_vertices(surface_mesh_old);
-  const Span<MLoop> surface_loops_old = bke::mesh_loops(surface_mesh_old);
+  const Span<MVert> surface_verts_old = surface_mesh_old.vertices();
+  const Span<MLoop> surface_loops_old = surface_mesh_old.loops();
 
-  const Span<MVert> surface_verts_new = bke::mesh_vertices(surface_mesh_new);
-  const Span<MLoop> surface_loops_new = bke::mesh_loops(surface_mesh_new);
+  const Span<MVert> surface_verts_new = surface_mesh_new.vertices();
+  const Span<MLoop> surface_loops_new = surface_mesh_new.loops();
 
   threading::parallel_for(curves.curves_range(), 256, [&](const IndexRange range) {
     for (const int curve_i : range) {

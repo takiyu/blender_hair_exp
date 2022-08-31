@@ -1249,10 +1249,10 @@ BVHTree *BKE_bvhtree_from_mesh_get(struct BVHTreeFromMesh *data,
     looptri = BKE_mesh_runtime_looptri_ensure(mesh);
     looptri_len = BKE_mesh_runtime_looptri_len(mesh);
   }
-  const Span<MVert> verts = blender::bke::mesh_vertices(*mesh);
-  const Span<MEdge> edges = blender::bke::mesh_edges(*mesh);
-  const Span<MPoly> polys = blender::bke::mesh_polygons(*mesh);
-  const Span<MLoop> loops = blender::bke::mesh_loops(*mesh);
+  const Span<MVert> verts = mesh->vertices();
+  const Span<MEdge> edges = mesh->edges();
+  const Span<MPoly> polys = mesh->polygons();
+  const Span<MLoop> loops = mesh->loops();
 
   /* Setup BVHTreeFromMesh */
   bvhtree_from_mesh_setup_data(nullptr,
@@ -1316,7 +1316,7 @@ BVHTree *BKE_bvhtree_from_mesh_get(struct BVHTreeFromMesh *data,
     case BVHTREE_FROM_LOOPTRI_NO_HIDDEN: {
       blender::bke::AttributeAccessor attributes = blender::bke::mesh_attributes(*mesh);
       mask = looptri_no_hidden_map_get(
-          blender::bke::mesh_polygons(*mesh).data(),
+          mesh->polygons().data(),
           attributes.lookup_or_default(".hide_poly", ATTR_DOMAIN_FACE, false),
           looptri_len,
           &mask_bits_act_len);

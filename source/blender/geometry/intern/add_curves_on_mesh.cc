@@ -245,8 +245,8 @@ AddCurvesOnMeshOutputs add_curves_on_mesh(CurvesGeometry &curves,
   Vector<float2> used_uvs;
 
   /* Find faces that the passed in uvs belong to. */
-  const Span<MVert> surface_verts = bke::mesh_vertices(*inputs.surface);
-  const Span<MLoop> surface_loops = bke::mesh_loops(*inputs.surface);
+  const Span<MVert> surface_verts = inputs.surface->vertices();
+  const Span<MLoop> surface_loops = inputs.surface->loops();
   for (const int i : inputs.uvs.index_range()) {
     const float2 &uv = inputs.uvs[i];
     const ReverseUVSampler::Result result = inputs.reverse_uv_sampler->sample(uv);

@@ -28,7 +28,7 @@ struct EdgeVertMap {
 
   EdgeVertMap(const Mesh &mesh)
   {
-    const Span<MEdge> edges = bke::mesh_edges(mesh);
+    const Span<MEdge> edges = mesh.edges();
     edges_by_vertex_map.reinitialize(mesh.totvert);
     for (const int edge_i : edges.index_range()) {
       const MEdge &edge = edges[edge_i];
@@ -45,7 +45,7 @@ static void shortest_paths(const Mesh &mesh,
                            MutableSpan<int> r_next_index,
                            MutableSpan<float> r_cost)
 {
-  const Span<MEdge> edges = bke::mesh_edges(mesh);
+  const Span<MEdge> edges = mesh.edges();
   Array<bool> visited(mesh.totvert, false);
 
   std::priority_queue<VertPriority, std::vector<VertPriority>, std::greater<VertPriority>> queue;

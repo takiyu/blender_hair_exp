@@ -1067,10 +1067,10 @@ bool BKE_mesh_validate(Mesh *me, const bool do_verbose, const bool cddata_check_
                                    do_verbose,
                                    true,
                                    &changed);
-  MutableSpan<MVert> verts = blender::bke::mesh_vertices_for_write(*me);
-  MutableSpan<MEdge> edges = blender::bke::mesh_edges_for_write(*me);
-  MutableSpan<MPoly> polys = blender::bke::mesh_polygons_for_write(*me);
-  MutableSpan<MLoop> loops = blender::bke::mesh_loops_for_write(*me);
+  MutableSpan<MVert> verts = me->vertices_for_write();
+  MutableSpan<MEdge> edges = me->edges_for_write();
+  MutableSpan<MPoly> polys = me->polygons_for_write();
+  MutableSpan<MLoop> loops = me->loops_for_write();
 
   BKE_mesh_validate_arrays(me,
                            verts.data(),
@@ -1120,10 +1120,10 @@ bool BKE_mesh_is_valid(Mesh *me)
       do_fixes,
       &changed);
 
-  MutableSpan<MVert> verts = blender::bke::mesh_vertices_for_write(*me);
-  MutableSpan<MEdge> edges = blender::bke::mesh_edges_for_write(*me);
-  MutableSpan<MPoly> polys = blender::bke::mesh_polygons_for_write(*me);
-  MutableSpan<MLoop> loops = blender::bke::mesh_loops_for_write(*me);
+  MutableSpan<MVert> verts = me->vertices_for_write();
+  MutableSpan<MEdge> edges = me->edges_for_write();
+  MutableSpan<MPoly> polys = me->polygons_for_write();
+  MutableSpan<MLoop> loops = me->loops_for_write();
 
   is_valid &= BKE_mesh_validate_arrays(
       me,
@@ -1202,8 +1202,8 @@ void BKE_mesh_strip_loose_faces(Mesh *me)
 
 void BKE_mesh_strip_loose_polysloops(Mesh *me)
 {
-  MutableSpan<MPoly> polys = blender::bke::mesh_polygons_for_write(*me);
-  MutableSpan<MLoop> loops = blender::bke::mesh_loops_for_write(*me);
+  MutableSpan<MPoly> polys = me->polygons_for_write();
+  MutableSpan<MLoop> loops = me->loops_for_write();
 
   MPoly *p;
   MLoop *l;
@@ -1279,7 +1279,7 @@ void BKE_mesh_strip_loose_edges(Mesh *me)
   MEdge *e;
   int a, b;
   uint *new_idx = (uint *)MEM_mallocN(sizeof(int) * me->totedge, __func__);
-  MutableSpan<MEdge> edges = blender::bke::mesh_edges_for_write(*me);
+  MutableSpan<MEdge> edges = me->edges_for_write();
 
   for (a = b = 0, e = edges.data(); a < me->totedge; a++, e++) {
     if (e->v1 != e->v2) {
@@ -1302,7 +1302,7 @@ void BKE_mesh_strip_loose_edges(Mesh *me)
   /* And now, update loops' edge indices. */
   /* XXX We hope no loop was pointing to a striped edge!
    *     Else, its e will be set to INVALID_LOOP_EDGE_MARKER :/ */
-  MutableSpan<MLoop> loops = blender::bke::mesh_loops_for_write(*me);
+  MutableSpan<MLoop> loops = me->loops_for_write();
   for (MLoop &loop : loops) {
     loop.e = new_idx[loop.e];
   }
@@ -1498,9 +1498,9 @@ void BKE_mesh_calc_edges_legacy(Mesh *me, const bool use_old)
 {
   MEdge *medge;
   int totedge = 0;
-  const Span<MVert> verts = blender::bke::mesh_vertices(*me);
-  const Span<MPoly> polys = blender::bke::mesh_polygons(*me);
-  MutableSpan<MLoop> loops = blender::bke::mesh_loops_for_write(*me);
+  const Span<MVert> verts = me->vertices();
+  const Span<MPoly> polys = me->polygons();
+  MutableSpan<MLoop> loops = me->loops_for_write();
 
   mesh_calc_edges_mdata(verts.data(),
                         (MFace *)CustomData_get_layer(&me->fdata, CD_MFACE),
@@ -1528,8 +1528,8 @@ void BKE_mesh_calc_edges_legacy(Mesh *me, const bool use_old)
 
 void BKE_mesh_calc_edges_loose(Mesh *mesh)
 {
-  const Span<MLoop> loops = blender::bke::mesh_loops(*mesh);
-  MutableSpan<MEdge> edges = blender::bke::mesh_edges_for_write(*mesh);
+  const Span<MLoop> loops = mesh->loops();
+  MutableSpan<MEdge> edges = mesh->edges_for_write();
 
   for (const int i : edges.index_range()) {
     edges[i].flag |= ME_LOOSEEDGE;

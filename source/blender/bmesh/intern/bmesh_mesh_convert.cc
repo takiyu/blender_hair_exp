@@ -366,7 +366,7 @@ void BM_mesh_bm_from_me(BMesh *bm, const Mesh *me, const struct BMeshFromMeshPar
   const int *material_indices = (const int *)CustomData_get_layer_named(
       &me->pdata, CD_PROP_INT32, "material_index");
 
-  Span<MVert> mvert = blender::bke::mesh_vertices(*me);
+  Span<MVert> mvert = me->vertices();
   Array<BMVert *> vtable(me->totvert);
   for (const int i : mvert.index_range()) {
     BMVert *v = vtable[i] = BM_vert_create(
@@ -412,7 +412,7 @@ void BM_mesh_bm_from_me(BMesh *bm, const Mesh *me, const struct BMeshFromMeshPar
     bm->elem_index_dirty &= ~BM_VERT; /* Added in order, clear dirty flag. */
   }
 
-  const Span<MEdge> medge = blender::bke::mesh_edges(*me);
+  const Span<MEdge> medge = me->edges();
   Array<BMEdge *> etable(me->totedge);
   for (const int i : medge.index_range()) {
     BMEdge *e = etable[i] = BM_edge_create(
@@ -444,8 +444,8 @@ void BM_mesh_bm_from_me(BMesh *bm, const Mesh *me, const struct BMeshFromMeshPar
     bm->elem_index_dirty &= ~BM_EDGE; /* Added in order, clear dirty flag. */
   }
 
-  const Span<MPoly> mpoly = blender::bke::mesh_polygons(*me);
-  const Span<MLoop> mloop = blender::bke::mesh_loops(*me);
+  const Span<MPoly> mpoly = me->polygons();
+  const Span<MLoop> mloop = me->loops();
 
   /* Only needed for selection. */
 
@@ -1302,10 +1302,10 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
   BMVert *eve;
   BMEdge *eed;
   BMFace *efa;
-  MutableSpan<MVert> mvert = blender::bke::mesh_vertices_for_write(*me);
-  MutableSpan<MEdge> medge = blender::bke::mesh_edges_for_write(*me);
-  MutableSpan<MPoly> mpoly = blender::bke::mesh_polygons_for_write(*me);
-  MutableSpan<MLoop> loops = blender::bke::mesh_loops_for_write(*me);
+  MutableSpan<MVert> mvert = me->vertices_for_write();
+  MutableSpan<MEdge> medge = me->edges_for_write();
+  MutableSpan<MPoly> mpoly = me->polygons_for_write();
+  MutableSpan<MLoop> loops = me->loops_for_write();
   MLoop *mloop = loops.data();
   unsigned int i, j;
 

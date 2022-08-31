@@ -21,7 +21,7 @@ BLI_NOINLINE static void sample_point_attribute(const Mesh &mesh,
                                                 const IndexMask mask,
                                                 const MutableSpan<T> dst)
 {
-  const Span<MLoop> loops = mesh_loops(mesh);
+  const Span<MLoop> loops = mesh.loops();
   const Span<MLoopTri> looptris{BKE_mesh_runtime_looptri_ensure(&mesh),
                                 BKE_mesh_runtime_looptri_len(&mesh)};
 
@@ -159,8 +159,8 @@ Span<float3> MeshAttributeInterpolator::ensure_barycentric_coords()
   }
   bary_coords_.reinitialize(mask_.min_array_size());
 
-  const Span<MVert> verts = mesh_vertices(*mesh_);
-  const Span<MLoop> loops = mesh_loops(*mesh_);
+  const Span<MVert> verts = mesh_->vertices();
+  const Span<MLoop> loops = mesh_->loops();
   const Span<MLoopTri> looptris{BKE_mesh_runtime_looptri_ensure(mesh_),
                                 BKE_mesh_runtime_looptri_len(mesh_)};
 
@@ -189,8 +189,8 @@ Span<float3> MeshAttributeInterpolator::ensure_nearest_weights()
   }
   nearest_weights_.reinitialize(mask_.min_array_size());
 
-  const Span<MVert> verts = mesh_vertices(*mesh_);
-  const Span<MLoop> loops = mesh_loops(*mesh_);
+  const Span<MVert> verts = mesh_->vertices();
+  const Span<MLoop> loops = mesh_->loops();
   const Span<MLoopTri> looptris{BKE_mesh_runtime_looptri_ensure(mesh_),
                                 BKE_mesh_runtime_looptri_len(mesh_)};
 
@@ -263,8 +263,8 @@ int sample_surface_points_spherical(RandomNumberGenerator &rng,
                                     Vector<int> &r_looptri_indices,
                                     Vector<float3> &r_positions)
 {
-  const Span<MVert> verts = mesh_vertices(mesh);
-  const Span<MLoop> loops = mesh_loops(mesh);
+  const Span<MVert> verts = mesh.vertices();
+  const Span<MLoop> loops = mesh.loops();
   const Span<MLoopTri> looptris{BKE_mesh_runtime_looptri_ensure(&mesh),
                                 BKE_mesh_runtime_looptri_len(&mesh)};
 
@@ -361,8 +361,8 @@ int sample_surface_points_projected(
     Vector<int> &r_looptri_indices,
     Vector<float3> &r_positions)
 {
-  const Span<MVert> verts = mesh_vertices(mesh);
-  const Span<MLoop> loops = mesh_loops(mesh);
+  const Span<MVert> verts = mesh.vertices();
+  const Span<MLoop> loops = mesh.loops();
   const Span<MLoopTri> looptris{BKE_mesh_runtime_looptri_ensure(&mesh),
                                 BKE_mesh_runtime_looptri_len(&mesh)};
 

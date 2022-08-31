@@ -905,7 +905,7 @@ static bool ed_mesh_mirror_topo_table_update(Object *ob, Mesh *me_eval)
 static int mesh_get_x_mirror_vert_spatial(Object *ob, Mesh *me_eval, int index)
 {
   Mesh *me = static_cast<Mesh *>(ob->data);
-  const Span<MVert> verts = blender::bke::mesh_vertices(me_eval ? *me_eval : *me);
+  const Span<MVert> verts = me_eval ? me_eval->vertices() : me->vertices();
 
   float vec[3];
 
@@ -1142,7 +1142,7 @@ int *mesh_get_x_mirror_faces(Object *ob, BMEditMesh *em, Mesh *me_eval)
   mirrorverts = static_cast<int *>(MEM_callocN(sizeof(int) * totvert, "MirrorVerts"));
   mirrorfaces = static_cast<int *>(MEM_callocN(sizeof(int[2]) * totface, "MirrorFaces"));
 
-  const Span<MVert> verts = blender::bke::mesh_vertices(me_eval ? *me_eval : *me);
+  const Span<MVert> verts = me_eval ? me_eval->vertices() : me->vertices();
   MFace *mface = (MFace *)CustomData_get_layer(&(me_eval ? me_eval : me)->fdata, CD_MFACE);
 
   ED_mesh_mirror_spatial_table_begin(ob, em, me_eval);
@@ -1274,9 +1274,9 @@ bool ED_mesh_pick_face_vert(
     const float mval_f[2] = {(float)mval[0], (float)mval[1]};
     float len_best = FLT_MAX;
 
-    const Span<MVert> verts = blender::bke::mesh_vertices(*me_eval);
-    const Span<MPoly> polys = blender::bke::mesh_polygons(*me_eval);
-    const Span<MLoop> loops = blender::bke::mesh_loops(*me_eval);
+    const Span<MVert> verts = me_eval->vertices();
+    const Span<MPoly> polys = me_eval->polygons();
+    const Span<MLoop> loops = me_eval->loops();
 
     const int *index_mp_to_orig = (const int *)CustomData_get_layer(&me_eval->pdata, CD_ORIGINDEX);
 
@@ -1410,7 +1410,7 @@ bool ED_mesh_pick_vert(
     }
 
     /* setup data */
-    const Span<MVert> verts = blender::bke::mesh_vertices(*me);
+    const Span<MVert> verts = me->vertices();
     data.mvert = verts.data();
     data.region = region;
     data.mval_f = mval_f;

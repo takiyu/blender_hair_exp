@@ -209,9 +209,9 @@ static void calc_boundaries(const Mesh &mesh,
 {
   BLI_assert(r_vertex_types.size() == mesh.totvert);
   BLI_assert(r_edge_types.size() == mesh.totedge);
-  const Span<MEdge> edges = bke::mesh_edges(mesh);
-  const Span<MPoly> polys = bke::mesh_polygons(mesh);
-  const Span<MLoop> loops = bke::mesh_loops(mesh);
+  const Span<MEdge> edges = mesh.edges();
+  const Span<MPoly> polys = mesh.polygons();
+  const Span<MLoop> loops = mesh.loops();
 
   r_vertex_types.fill(VertexType::Loose);
   r_edge_types.fill(EdgeType::Loose);
@@ -263,8 +263,8 @@ static void calc_boundaries(const Mesh &mesh,
 static void create_vertex_poly_map(const Mesh &mesh,
                                    MutableSpan<Vector<int>> r_vertex_poly_indices)
 {
-  const Span<MPoly> polygons = bke::mesh_polygons(mesh);
-  const Span<MLoop> loops = bke::mesh_loops(mesh);
+  const Span<MPoly> polygons = mesh.polygons();
+  const Span<MLoop> loops = mesh.loops();
   for (const int i : polygons.index_range()) {
     const MPoly &poly = polygons[i];
     const Span<MLoop> poly_loops = loops.slice(poly.loopstart, poly.totloop);
@@ -635,10 +635,10 @@ static void calc_dual_mesh(GeometrySet &geometry_set,
                            const bool keep_boundaries)
 {
   const Mesh &mesh_in = *in_component.get_for_read();
-  const Span<MVert> src_verts = bke::mesh_vertices(mesh_in);
-  const Span<MEdge> src_edges = bke::mesh_edges(mesh_in);
-  const Span<MPoly> src_polys = bke::mesh_polygons(mesh_in);
-  const Span<MLoop> src_loops = bke::mesh_loops(mesh_in);
+  const Span<MVert> src_verts = mesh_in.vertices();
+  const Span<MEdge> src_edges = mesh_in.edges();
+  const Span<MPoly> src_polys = mesh_in.polygons();
+  const Span<MLoop> src_loops = mesh_in.loops();
 
   Map<AttributeIDRef, AttributeKind> attributes;
   geometry_set.gather_attributes_for_propagation(
@@ -921,10 +921,10 @@ static void calc_dual_mesh(GeometrySet &geometry_set,
                       bke::mesh_attributes(mesh_in),
                       bke::mesh_attributes_for_write(*mesh_out));
 
-  MutableSpan<MVert> dst_verts = bke::mesh_vertices_for_write(*mesh_out);
-  MutableSpan<MEdge> dst_edges = bke::mesh_edges_for_write(*mesh_out);
-  MutableSpan<MPoly> dst_polys = bke::mesh_polygons_for_write(*mesh_out);
-  MutableSpan<MLoop> dst_loops = bke::mesh_loops_for_write(*mesh_out);
+  MutableSpan<MVert> dst_verts = mesh_out->vertices_for_write();
+  MutableSpan<MEdge> dst_edges = mesh_out->edges_for_write();
+  MutableSpan<MPoly> dst_polys = mesh_out->polygons_for_write();
+  MutableSpan<MLoop> dst_loops = mesh_out->loops_for_write();
 
   int loop_start = 0;
   for (const int i : IndexRange(mesh_out->totpoly)) {

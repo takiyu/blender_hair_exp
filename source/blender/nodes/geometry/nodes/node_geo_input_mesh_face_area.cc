@@ -18,9 +18,9 @@ static void node_declare(NodeDeclarationBuilder &b)
 
 static VArray<float> construct_face_area_varray(const Mesh &mesh, const eAttrDomain domain)
 {
-  const Span<MVert> verts = bke::mesh_vertices(mesh);
-  const Span<MPoly> polys = bke::mesh_polygons(mesh);
-  const Span<MLoop> loops = bke::mesh_loops(mesh);
+  const Span<MVert> verts = mesh.vertices();
+  const Span<MPoly> polys = mesh.polygons();
+  const Span<MLoop> loops = mesh.loops();
 
   auto area_fn = [verts, polys, loops](const int i) -> float {
     const MPoly &poly = polys[i];

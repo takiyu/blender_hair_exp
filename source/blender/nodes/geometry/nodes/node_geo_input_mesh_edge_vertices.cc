@@ -31,7 +31,7 @@ static VArray<int> construct_edge_vertices_gvarray(const Mesh &mesh,
                                                    const VertexNumber vertex,
                                                    const eAttrDomain domain)
 {
-  const Span<MEdge> edges = bke::mesh_edges(mesh);
+  const Span<MEdge> edges = mesh.edges();
   if (domain == ATTR_DOMAIN_EDGE) {
     if (vertex == VERTEX_ONE) {
       return VArray<int>::ForFunc(edges.size(),
@@ -79,8 +79,8 @@ static VArray<float3> construct_edge_positions_gvarray(const Mesh &mesh,
                                                        const VertexNumber vertex,
                                                        const eAttrDomain domain)
 {
-  const Span<MVert> verts = bke::mesh_vertices(mesh);
-  const Span<MEdge> edges = bke::mesh_edges(mesh);
+  const Span<MVert> verts = mesh.vertices();
+  const Span<MEdge> edges = mesh.edges();
 
   if (vertex == VERTEX_ONE) {
     return bke::mesh_attributes(mesh).adapt_domain<float3>(

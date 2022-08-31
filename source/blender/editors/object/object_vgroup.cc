@@ -197,7 +197,7 @@ bool ED_vgroup_parray_alloc(ID *id,
           return true;
         }
         if (CustomData_has_layer(&me->vdata, CD_MDEFORMVERT)) {
-          const blender::Span<MVert> verts = blender::bke::mesh_vertices(*me);
+          const blender::Span<MVert> verts = me->vertices();
           MDeformVert *dvert = (MDeformVert *)CustomData_get_layer(&me->vdata, CD_MDEFORMVERT);
 
           *dvert_tot = me->totvert;
@@ -660,7 +660,7 @@ static void vgroup_copy_active_to_sel(Object *ob, eVGroupSelect subset_type)
     }
   }
   else {
-    const blender::Span<MVert> verts = blender::bke::mesh_vertices(*me);
+    const blender::Span<MVert> verts = me->vertices();
     MDeformVert *dv;
     int v_act;
 
@@ -1054,7 +1054,7 @@ static void vgroup_select_verts(Object *ob, int select)
         MDeformVert *dv;
         int i;
 
-        mv = blender::bke::mesh_vertices_for_write(*me).data();
+        mv = me->vertices_for_write().data();
         dv = BKE_mesh_deform_verts_for_write(me);
 
         for (i = 0; i < me->totvert; i++, mv++, dv++) {
@@ -1217,8 +1217,8 @@ static bool vgroup_normalize(Object *ob)
  * count is an int passed by reference so it can be assigned the value of the length here. */
 static blender::Vector<int> getSurroundingVerts(Mesh *me, int vert)
 {
-  const MPoly *mp = blender::bke::mesh_polygons(*me).data();
-  const MLoop *loops = blender::bke::mesh_loops(*me).data();
+  const MPoly *mp = me->polygons().data();
+  const MLoop *loops = me->loops().data();
   int i = me->totpoly;
 
   blender::Vector<int> verts;
@@ -1352,7 +1352,7 @@ static void moveCloserToDistanceFromPlane(Depsgraph *depsgraph,
   Mesh *me_deform;
   MDeformWeight *dw, *dw_eval;
   MVert m;
-  const blender::Span<MVert> verts = blender::bke::mesh_vertices(*me_deform);
+  const blender::Span<MVert> verts = me_deform->vertices();
   MDeformVert *dvert = (MDeformVert *)CustomData_get_layer(&me->vdata, CD_MDEFORMVERT) + index;
   MDeformVert *dvert_eval = (MDeformVert *)CustomData_get_layer(&mesh_eval->vdata,
                                                                 CD_MDEFORMVERT) +
@@ -1526,7 +1526,7 @@ static void vgroup_fix(
   int i;
 
   Mesh *me = static_cast<Mesh *>(ob->data);
-  MVert *mvert = blender::bke::mesh_vertices_for_write(*me).data();
+  MVert *mvert = me->vertices_for_write().data();
   if (!(me->editflag & ME_EDIT_PAINT_VERT_SEL)) {
     return;
   }
@@ -1541,7 +1541,7 @@ static void vgroup_fix(
 
         Mesh *me_deform = mesh_get_eval_deform(
             depsgraph, scene_eval, object_eval, &CD_MASK_BAREMESH);
-        const blender::Span<MVert> verts_deform = blender::bke::mesh_vertices(*me_deform);
+        const blender::Span<MVert> verts_deform = me_deform->vertices();
         k = count;
         while (k--) {
           p[k] = verts_deform[verts[k]];
@@ -1937,8 +1937,7 @@ static void vgroup_smooth_subset(Object *ob,
     emap_mem = nullptr;
   }
   else {
-    BKE_mesh_vert_edge_map_create(
-        &emap, &emap_mem, blender::bke::mesh_edges(*me).data(), me->totvert, me->totedge);
+    BKE_mesh_vert_edge_map_create(&emap, &emap_mem, me->edges().data(), me->totvert, me->totedge);
   }
 
   weight_accum_prev = static_cast<float *>(
@@ -1977,8 +1976,8 @@ static void vgroup_smooth_subset(Object *ob,
     }
   }
   else {
-    const blender::Span<MVert> verts = blender::bke::mesh_vertices(*me);
-    const blender::Span<MEdge> edges = blender::bke::mesh_edges(*me);
+    const blender::Span<MVert> verts = me->vertices();
+    const blender::Span<MEdge> edges = me->edges();
     for (int i = 0; i < dvert_tot; i++) {
       const MVert *v = &verts[i];
       if (IS_ME_VERT_WRITE(v)) {
@@ -2052,10 +2051,10 @@ static void vgroup_smooth_subset(Object *ob,
         }
         else {
           int j;
-          const blender::Span<MEdge> edges = blender::bke::mesh_edges(*me);
+          const blender::Span<MEdge> edges = me->edges();
 
           /* checked already */
-          BLI_assert(IS_ME_VERT_WRITE(&blender::bke::mesh_vertices(*me)[i]));
+          BLI_assert(IS_ME_VERT_WRITE(&me->vertices()[i]));
 
           for (j = 0; j < emap[i].count; j++) {
             const MEdge *e = &edges[emap[i].indices[j]];
@@ -2473,7 +2472,7 @@ void ED_vgroup_mirror(Object *ob,
       }
 
       BLI_bitmap *vert_tag = BLI_BITMAP_NEW(me->totvert, __func__);
-      const MVert *verts = blender::bke::mesh_vertices(*me).data();
+      const MVert *verts = me->vertices().data();
       MDeformVert *dverts = BKE_mesh_deform_verts_for_write(me);
 
       for (vidx = 0, mv = verts; vidx < me->totvert; vidx++, mv++) {
@@ -2627,7 +2626,7 @@ static void vgroup_assign_verts(Object *ob, const float weight)
       }
     }
     else {
-      const blender::Span<MVert> verts = blender::bke::mesh_vertices(*me);
+      const blender::Span<MVert> verts = me->vertices();
       MDeformVert *dvert = BKE_mesh_deform_verts_for_write(me);
       MDeformVert *dv = dvert;
 
@@ -4356,7 +4355,7 @@ static void vgroup_copy_active_to_sel_single(Object *ob, const int def_nr)
       return;
     }
 
-    const blender::Span<MVert> verts = blender::bke::mesh_vertices(*me);
+    const blender::Span<MVert> verts = me->vertices();
     MDeformVert *dvert = BKE_mesh_deform_verts_for_write(me);
 
     dv = dvert;

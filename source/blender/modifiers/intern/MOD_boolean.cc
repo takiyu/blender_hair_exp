@@ -144,7 +144,7 @@ static Mesh *get_quick_mesh(
           invert_m4_m4(imat, ob_self->obmat);
           mul_m4_m4m4(omat, imat, ob_operand_ob->obmat);
 
-          MutableSpan<MVert> verts = blender::bke::mesh_vertices_for_write(*result);
+          MutableSpan<MVert> verts = result->vertices_for_write();
           for (const int i : verts.index_range()) {
             mul_m4_v3(omat, verts[i].co);
           }

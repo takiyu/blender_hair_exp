@@ -150,9 +150,9 @@ void BKE_mesh_runtime_looptri_recalc(Mesh *mesh)
 {
   mesh_ensure_looptri_data(mesh);
   BLI_assert(mesh->totpoly == 0 || mesh->runtime.looptris.array_wip != nullptr);
-  const Span<MVert> verts = blender::bke::mesh_vertices(*mesh);
-  const Span<MPoly> polys = blender::bke::mesh_polygons(*mesh);
-  const Span<MLoop> loops = blender::bke::mesh_loops(*mesh);
+  const Span<MVert> verts = mesh->vertices();
+  const Span<MPoly> polys = mesh->polygons();
+  const Span<MLoop> loops = mesh->loops();
 
   BKE_mesh_recalc_looptri(loops.data(),
                           polys.data(),
@@ -330,10 +330,10 @@ bool BKE_mesh_runtime_is_valid(Mesh *me_eval)
     printf("MESH: %s\n", me_eval->id.name + 2);
   }
 
-  MutableSpan<MVert> verts = blender::bke::mesh_vertices_for_write(*me_eval);
-  MutableSpan<MEdge> edges = blender::bke::mesh_edges_for_write(*me_eval);
-  MutableSpan<MPoly> polys = blender::bke::mesh_polygons_for_write(*me_eval);
-  MutableSpan<MLoop> loops = blender::bke::mesh_loops_for_write(*me_eval);
+  MutableSpan<MVert> verts = me_eval->vertices_for_write();
+  MutableSpan<MEdge> edges = me_eval->edges_for_write();
+  MutableSpan<MPoly> polys = me_eval->polygons_for_write();
+  MutableSpan<MLoop> loops = me_eval->loops_for_write();
 
   is_valid &= BKE_mesh_validate_all_customdata(
       &me_eval->vdata,

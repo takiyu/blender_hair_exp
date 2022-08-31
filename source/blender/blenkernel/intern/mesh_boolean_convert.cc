@@ -162,7 +162,7 @@ const MPoly *MeshesToIMeshInfo::input_mpoly_for_orig_index(int orig_index,
   int orig_mesh_index = input_mesh_for_imesh_face(orig_index);
   BLI_assert(0 <= orig_mesh_index && orig_mesh_index < meshes.size());
   const Mesh *me = meshes[orig_mesh_index];
-  const Span<MPoly> polys = bke::mesh_polygons(*me);
+  const Span<MPoly> polys = me->polygons();
   int index_in_mesh = orig_index - mesh_poly_offset[orig_mesh_index];
   BLI_assert(0 <= index_in_mesh && index_in_mesh < me->totpoly);
   const MPoly *mp = &polys[index_in_mesh];
@@ -189,7 +189,7 @@ const MVert *MeshesToIMeshInfo::input_mvert_for_orig_index(int orig_index,
   int orig_mesh_index = input_mesh_for_imesh_vert(orig_index);
   BLI_assert(0 <= orig_mesh_index && orig_mesh_index < meshes.size());
   const Mesh *me = meshes[orig_mesh_index];
-  const Span<MVert> verts = bke::mesh_vertices(*me);
+  const Span<MVert> verts = me->vertices();
   int index_in_mesh = orig_index - mesh_vert_offset[orig_mesh_index];
   BLI_assert(0 <= index_in_mesh && index_in_mesh < me->totvert);
   const MVert *mv = &verts[index_in_mesh];
@@ -210,7 +210,7 @@ const MEdge *MeshesToIMeshInfo::input_medge_for_orig_index(int orig_index,
   int orig_mesh_index = input_mesh_for_imesh_edge(orig_index);
   BLI_assert(0 <= orig_mesh_index && orig_mesh_index < meshes.size());
   const Mesh *me = meshes[orig_mesh_index];
-  const Span<MEdge> edges = blender::bke::mesh_edges(*me);
+  const Span<MEdge> edges = me->edges();
   int index_in_mesh = orig_index - mesh_edge_offset[orig_mesh_index];
   BLI_assert(0 <= index_in_mesh && index_in_mesh < me->totedge);
   const MEdge *medge = &edges[index_in_mesh];
@@ -309,9 +309,9 @@ static IMesh meshes_to_imesh(Span<const Mesh *> meshes,
     bool need_face_flip = r_info->has_negative_transform[mi] != r_info->has_negative_transform[0];
 
     Vector<Vert *> verts(me->totvert);
-    const Span<MVert> mesh_verts = bke::mesh_vertices(*me);
-    const Span<MPoly> polys = bke::mesh_polygons(*me);
-    const Span<MLoop> loops = bke::mesh_loops(*me);
+    const Span<MVert> mesh_verts = me->vertices();
+    const Span<MPoly> polys = me->polygons();
+    const Span<MLoop> loops = me->loops();
 
     /* Allocate verts
      * Skip the matrix multiplication for each point when there is no transform for a mesh,
@@ -487,7 +487,7 @@ static int fill_orig_loops(const Face *f,
                            MutableSpan<int> r_orig_loops)
 {
   r_orig_loops.fill(-1);
-  const Span<MLoop> orig_loops = bke::mesh_loops(*orig_me);
+  const Span<MLoop> orig_loops = orig_me->loops();
 
   int orig_mplen = orig_mp->totloop;
   if (f->size() != orig_mplen) {
@@ -563,8 +563,8 @@ static void get_poly2d_cos(const Mesh *me,
                            const float4x4 &trans_mat,
                            float r_axis_mat[3][3])
 {
-  const Span<MVert> verts = bke::mesh_vertices(*me);
-  const Span<MLoop> loops = bke::mesh_loops(*me);
+  const Span<MVert> verts = me->vertices();
+  const Span<MLoop> loops = me->loops();
   const Span<MLoop> poly_loops = loops.slice(mp->loopstart, mp->totloop);
 
   /* Project coordinates to 2d in cos_2d, using normal as projection axis. */
@@ -609,8 +609,8 @@ static void copy_or_interp_loop_attributes(Mesh *dest_mesh,
     get_poly2d_cos(orig_me, orig_mp, cos_2d, mim.to_target_transform[orig_me_index], axis_mat);
   }
   CustomData *target_cd = &dest_mesh->ldata;
-  const Span<MVert> dst_vertices = bke::mesh_vertices(*dest_mesh);
-  const Span<MLoop> dst_loops = bke::mesh_loops(*dest_mesh);
+  const Span<MVert> dst_vertices = dest_mesh->vertices();
+  const Span<MLoop> dst_loops = dest_mesh->loops();
   for (int i = 0; i < mp->totloop; ++i) {
     int loop_index = mp->loopstart + i;
     int orig_loop_index = norig > 0 ? orig_loops[i] : -1;
@@ -723,7 +723,7 @@ static Mesh *imesh_to_mesh(IMesh *im, MeshesToIMeshInfo &mim)
 
   merge_vertex_loop_poly_customdata_layers(result, mim);
   /* Set the vertex coordinate values and other data. */
-  MutableSpan<MVert> vertices = bke::mesh_vertices_for_write(*result);
+  MutableSpan<MVert> vertices = result->vertices_for_write();
   for (int vi : im->vert_index_range()) {
     const Vert *v = im->vert(vi);
     MVert *mv = &vertices[vi];
@@ -742,8 +742,8 @@ static Mesh *imesh_to_mesh(IMesh *im, MeshesToIMeshInfo &mim)
       bke::mesh_attributes_for_write(*result).lookup_or_add_for_write_only_span<int>(
           "material_index", ATTR_DOMAIN_FACE);
   int cur_loop_index = 0;
-  MutableSpan<MLoop> dst_loops = bke::mesh_loops_for_write(*result);
-  MutableSpan<MPoly> dst_polys = bke::mesh_polygons_for_write(*result);
+  MutableSpan<MLoop> dst_loops = result->loops_for_write();
+  MutableSpan<MPoly> dst_polys = result->polygons_for_write();
   MLoop *l = dst_loops.data();
   for (int fi : im->face_index_range()) {
     const Face *f = im->face(fi);
@@ -784,7 +784,7 @@ static Mesh *imesh_to_mesh(IMesh *im, MeshesToIMeshInfo &mim)
 
   /* Now that the MEdges are populated, we can copy over the required attributes and custom layers.
    */
-  MutableSpan<MEdge> edges = bke::mesh_edges_for_write(*result);
+  MutableSpan<MEdge> edges = result->edges_for_write();
   for (int fi : im->face_index_range()) {
     const Face *f = im->face(fi);
     const MPoly *mp = &dst_polys[fi];
@@ -857,8 +857,8 @@ Mesh *direct_mesh_boolean(Span<const Mesh *> meshes,
 
   /* Store intersecting edge indices. */
   if (r_intersecting_edges != nullptr) {
-    const Span<MPoly> polys = bke::mesh_polygons(*result);
-    const Span<MLoop> loops = bke::mesh_loops(*result);
+    const Span<MPoly> polys = result->polygons();
+    const Span<MLoop> loops = result->loops();
     for (int fi : m_out.face_index_range()) {
       const Face &face = *m_out.face(fi);
       const MPoly &poly = polys[fi];

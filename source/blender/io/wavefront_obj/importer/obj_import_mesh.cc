@@ -157,7 +157,7 @@ void MeshFromGeometry::fixup_invalid_faces()
 
 void MeshFromGeometry::create_vertices(Mesh *mesh)
 {
-  MutableSpan<MVert> verts = bke::mesh_vertices_for_write(*mesh);
+  MutableSpan<MVert> verts = mesh->vertices_for_write();
   /* Go through all the global vertex indices from min to max,
    * checking which ones are actually and building a global->local
    * index mapping. Write out the used vertex positions into the Mesh
@@ -184,8 +184,8 @@ void MeshFromGeometry::create_polys_loops(Mesh *mesh, bool use_vertex_groups)
     dvert = BKE_mesh_deform_verts_for_write(mesh);
   }
 
-  MutableSpan<MPoly> polys = bke::mesh_polygons_for_write(*mesh);
-  MutableSpan<MLoop> loops = bke::mesh_loops_for_write(*mesh);
+  MutableSpan<MPoly> polys = mesh->polygons_for_write();
+  MutableSpan<MLoop> loops = mesh->loops_for_write();
   bke::SpanAttributeWriter<int> material_indices =
       bke::mesh_attributes_for_write(*mesh).lookup_or_add_for_write_only_span<int>(
           "material_index", ATTR_DOMAIN_FACE);
@@ -246,7 +246,7 @@ void MeshFromGeometry::create_vertex_groups(Object *obj)
 
 void MeshFromGeometry::create_edges(Mesh *mesh)
 {
-  MutableSpan<MEdge> edges = bke::mesh_edges_for_write(*mesh);
+  MutableSpan<MEdge> edges = mesh->edges_for_write();
 
   const int64_t tot_edges{mesh_geometry_.edges_.size()};
   const int64_t total_verts{mesh_geometry_.get_vertex_count()};

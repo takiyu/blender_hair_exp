@@ -2465,8 +2465,8 @@ static void gpencil_generate_edgeloops(Object *ob,
     return;
   }
   const float(*vert_normals)[3] = BKE_mesh_vertex_normals_ensure(me);
-  const Span<MVert> verts = blender::bke::mesh_vertices(*me);
-  const Span<MEdge> edges = blender::bke::mesh_edges(*me);
+  const Span<MVert> verts = me->vertices();
+  const Span<MEdge> edges = me->edges();
 
   /* Arrays for all edge vertices (forward and backward) that form a edge loop.
    * This is reused for each edge-loop to create gpencil stroke. */
@@ -2677,9 +2677,9 @@ bool BKE_gpencil_convert_mesh(Main *bmain,
   /* Use evaluated data to get mesh with all modifiers on top. */
   Object *ob_eval = (Object *)DEG_get_evaluated_object(depsgraph, ob_mesh);
   const Mesh *me_eval = BKE_object_get_evaluated_mesh(ob_eval);
-  const Span<MVert> verts = blender::bke::mesh_vertices(*me_eval);
-  const Span<MPoly> polys = blender::bke::mesh_polygons(*me_eval);
-  const Span<MLoop> loops = blender::bke::mesh_loops(*me_eval);
+  const Span<MVert> verts = me_eval->vertices();
+  const Span<MPoly> polys = me_eval->polygons();
+  const Span<MLoop> loops = me_eval->loops();
   int mpoly_len = me_eval->totpoly;
   char element_name[200];
 

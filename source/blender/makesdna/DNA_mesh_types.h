@@ -10,7 +10,16 @@
 #include "DNA_ID.h"
 #include "DNA_customdata_types.h"
 #include "DNA_defs.h"
+#include "DNA_meshdata_types.h"
 #include "DNA_session_uuid_types.h"
+
+/** Workaround to forward-declare C++ type in C header. */
+#ifdef __cplusplus
+namespace blender {
+template<typename T> class Span;
+template<typename T> class MutableSpan;
+}  // namespace blender
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -301,6 +310,20 @@ typedef struct Mesh {
   void *_pad2;
 
   Mesh_Runtime runtime;
+
+#ifdef __cplusplus
+  blender::Span<MVert> vertices() const;
+  blender::MutableSpan<MVert> vertices_for_write();
+
+  blender::Span<MEdge> edges() const;
+  blender::MutableSpan<MEdge> edges_for_write();
+
+  blender::Span<MPoly> polygons() const;
+  blender::MutableSpan<MPoly> polygons_for_write();
+
+  blender::Span<MLoop> loops() const;
+  blender::MutableSpan<MLoop> loops_for_write();
+#endif
 } Mesh;
 
 /* deprecated by MTFace, only here for file reading */

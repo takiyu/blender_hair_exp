@@ -30,8 +30,8 @@ static void mesh_flip_faces(Mesh &mesh, const Field<bool> &selection_field)
   evaluator.evaluate();
   const IndexMask selection = evaluator.get_evaluated_as_mask(0);
 
-  const Span<MPoly> polys = bke::mesh_polygons(mesh);
-  MutableSpan<MLoop> loops = bke::mesh_loops_for_write(mesh);
+  const Span<MPoly> polys = mesh.polygons();
+  MutableSpan<MLoop> loops = mesh.loops_for_write();
 
   for (const int i : selection.index_range()) {
     const MPoly &poly = polys[selection[i]];

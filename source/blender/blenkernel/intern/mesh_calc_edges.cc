@@ -80,7 +80,7 @@ static void add_existing_edges_to_hash_maps(Mesh *mesh,
                                             uint32_t parallel_mask)
 {
   /* Assume existing edges are valid. */
-  const Span<MEdge> edges = bke::mesh_edges(*mesh);
+  const Span<MEdge> edges = mesh->edges();
   threading::parallel_for_each(edge_maps, [&](EdgeMap &edge_map) {
     const int task_index = &edge_map - edge_maps.data();
     for (const MEdge &edge : edges) {
@@ -97,8 +97,8 @@ static void add_polygon_edges_to_hash_maps(Mesh *mesh,
                                            MutableSpan<EdgeMap> edge_maps,
                                            uint32_t parallel_mask)
 {
-  const Span<MPoly> polys = mesh_polygons(*mesh);
-  const Span<MLoop> loops = mesh_loops(*mesh);
+  const Span<MPoly> polys = mesh->polygons();
+  const Span<MLoop> loops = mesh->loops();
   threading::parallel_for_each(edge_maps, [&](EdgeMap &edge_map) {
     const int task_index = &edge_map - edge_maps.data();
     for (const MPoly &poly : polys) {
@@ -159,8 +159,8 @@ static void update_edge_indices_in_poly_loops(Mesh *mesh,
                                               Span<EdgeMap> edge_maps,
                                               uint32_t parallel_mask)
 {
-  const Span<MPoly> polys = bke::mesh_polygons(*mesh);
-  MutableSpan<MLoop> loops = mesh_loops_for_write(*mesh);
+  const Span<MPoly> polys = mesh->polygons();
+  MutableSpan<MLoop> loops = mesh->loops_for_write();
   threading::parallel_for(IndexRange(mesh->totpoly), 100, [&](IndexRange range) {
     for (const int poly_index : range) {
       const MPoly &poly = polys[poly_index];

@@ -152,7 +152,7 @@ static void read_mverts(CDStreamConfig &config, const AbcMeshData &mesh_data)
 
 void read_mverts(Mesh &mesh, const P3fArraySamplePtr positions, const N3fArraySamplePtr normals)
 {
-  MutableSpan<MVert> verts = bke::mesh_vertices_for_write(mesh);
+  MutableSpan<MVert> verts = mesh.vertices_for_write();
   for (int i = 0; i < positions->size(); i++) {
     MVert &mvert = verts[i];
     Imath::V3f pos_in = (*positions)[i];
@@ -270,7 +270,7 @@ static void process_loop_normals(CDStreamConfig &config, const N3fArraySamplePtr
   float(*lnors)[3] = static_cast<float(*)[3]>(
       MEM_malloc_arrayN(loop_count, sizeof(float[3]), "ABC::FaceNormals"));
 
-  MutableSpan<MPoly> polys = bke::mesh_polygons_for_write(*mesh);
+  MutableSpan<MPoly> polys = mesh->polygons_for_write();
   MPoly *mpoly = polys.data();
   const N3fArraySample &loop_normals = *loop_normals_ptr;
   int abc_index = 0;
@@ -517,9 +517,9 @@ CDStreamConfig get_config(Mesh *mesh, const bool use_vertex_interpolation)
 {
   CDStreamConfig config;
   config.mesh = mesh;
-  config.verts = bke::mesh_vertices_for_write(*mesh);
-  config.loops = bke::mesh_loops_for_write(*mesh);
-  config.polys = bke::mesh_polygons_for_write(*mesh);
+  config.verts = mesh->vertices_for_write();
+  config.loops = mesh->loops_for_write();
+  config.polys = mesh->polygons_for_write();
   config.loopdata = &mesh->ldata;
   config.add_customdata_cb = add_customdata_cb;
   config.use_vertex_interpolation = use_vertex_interpolation;
@@ -759,7 +759,7 @@ Mesh *AbcMeshReader::read_mesh(Mesh *existing_mesh,
     /* Here we assume that the number of materials doesn't change, i.e. that
      * the material slots that were created when the object was loaded from
      * Alembic are still valid now. */
-    MutableSpan<MPoly> polys = bke::mesh_polygons_for_write(*new_mesh);
+    MutableSpan<MPoly> polys = new_mesh->polygons_for_write();
     if (!polys.is_empty()) {
       std::map<std::string, int> mat_map;
       bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*new_mesh);
@@ -916,7 +916,7 @@ static void read_edge_creases(Mesh *mesh,
     return;
   }
 
-  MutableSpan<MEdge> edges = blender::bke::mesh_edges_for_write(*mesh);
+  MutableSpan<MEdge> edges = mesh->edges_for_write();
   EdgeHash *edge_hash = BLI_edgehash_new_ex(__func__, edges.size());
 
   for (const int i : edges.index_range()) {

@@ -188,9 +188,9 @@ void OBJMesh::ensure_mesh_edges() const
 
 void OBJMesh::calc_smooth_groups(const bool use_bitflags)
 {
-  const Span<MEdge> edges = bke::mesh_edges(*export_mesh_eval_);
-  const Span<MPoly> polys = bke::mesh_polygons(*export_mesh_eval_);
-  const Span<MLoop> loops = bke::mesh_loops(*export_mesh_eval_);
+  const Span<MEdge> edges = export_mesh_eval_->edges();
+  const Span<MPoly> polys = export_mesh_eval_->polygons();
+  const Span<MLoop> loops = export_mesh_eval_->loops();
   poly_smooth_groups_ = BKE_mesh_calc_smoothgroups(edges.data(),
                                                    edges.size(),
                                                    polys.data(),
@@ -242,7 +242,7 @@ const Material *OBJMesh::get_object_material(const int16_t mat_nr) const
 
 bool OBJMesh::is_ith_poly_smooth(const int poly_index) const
 {
-  const Span<MPoly> polygons = bke::mesh_polygons(*export_mesh_eval_);
+  const Span<MPoly> polygons = export_mesh_eval_->polygons();
   return polygons[poly_index].flag & ME_SMOOTH;
 }
 
@@ -268,7 +268,7 @@ const char *OBJMesh::get_object_material_name(const int16_t mat_nr) const
 float3 OBJMesh::calc_vertex_coords(const int vert_index, const float scaling_factor) const
 {
   float3 r_coords;
-  const Span<MVert> verts = bke::mesh_vertices(*export_mesh_eval_);
+  const Span<MVert> verts = export_mesh_eval_->vertices();
   copy_v3_v3(r_coords, verts[vert_index].co);
   mul_m4_v3(world_and_axes_transform_, r_coords);
   mul_v3_fl(r_coords, scaling_factor);
@@ -277,8 +277,8 @@ float3 OBJMesh::calc_vertex_coords(const int vert_index, const float scaling_fac
 
 Vector<int> OBJMesh::calc_poly_vertex_indices(const int poly_index) const
 {
-  const Span<MPoly> polys = bke::mesh_polygons(*export_mesh_eval_);
-  const Span<MLoop> loops = bke::mesh_loops(*export_mesh_eval_);
+  const Span<MPoly> polys = export_mesh_eval_->polygons();
+  const Span<MLoop> loops = export_mesh_eval_->loops();
   const MPoly &mpoly = polys[poly_index];
   const MLoop *mloop = &loops[mpoly.loopstart];
   const int totloop = mpoly.totloop;
@@ -291,8 +291,8 @@ Vector<int> OBJMesh::calc_poly_vertex_indices(const int poly_index) const
 
 void OBJMesh::store_uv_coords_and_indices()
 {
-  const Span<MPoly> polys = bke::mesh_polygons(*export_mesh_eval_);
-  const Span<MLoop> loops = bke::mesh_loops(*export_mesh_eval_);
+  const Span<MPoly> polys = export_mesh_eval_->polygons();
+  const Span<MLoop> loops = export_mesh_eval_->loops();
   const int totvert = export_mesh_eval_->totvert;
   const MLoopUV *mloopuv = static_cast<const MLoopUV *>(
       CustomData_get_layer(&export_mesh_eval_->ldata, CD_MLOOPUV));
@@ -347,9 +347,9 @@ Span<int> OBJMesh::calc_poly_uv_indices(const int poly_index) const
 float3 OBJMesh::calc_poly_normal(const int poly_index) const
 {
   float3 r_poly_normal;
-  const Span<MVert> verts = blender::bke::mesh_vertices(*export_mesh_eval_);
-  const Span<MPoly> polys = blender::bke::mesh_polygons(*export_mesh_eval_);
-  const Span<MLoop> loops = blender::bke::mesh_loops(*export_mesh_eval_);
+  const Span<MVert> verts = export_mesh_eval_->vertices();
+  const Span<MPoly> polys = export_mesh_eval_->polygons();
+  const Span<MLoop> loops = export_mesh_eval_->loops();
   const MPoly &poly = polys[poly_index];
   BKE_mesh_calc_poly_normal(&poly, &loops[poly.loopstart], verts.data(), r_poly_normal);
   mul_m3_v3(world_and_axes_normal_transform_, r_poly_normal);
@@ -375,7 +375,7 @@ static float3 round_float3_to_n_digits(const float3 &v, int round_digits)
 
 void OBJMesh::store_normal_coords_and_indices()
 {
-  const Span<MPoly> polys = bke::mesh_polygons(*export_mesh_eval_);
+  const Span<MPoly> polys = export_mesh_eval_->polygons();
 
   /* We'll round normal components to 4 digits.
    * This will cover up some minor differences
@@ -436,7 +436,7 @@ Vector<int> OBJMesh::calc_poly_normal_indices(const int poly_index) const
   if (loop_to_normal_index_.is_empty()) {
     return {};
   }
-  const Span<MPoly> polys = bke::mesh_polygons(*export_mesh_eval_);
+  const Span<MPoly> polys = export_mesh_eval_->polygons();
   const MPoly &mpoly = polys[poly_index];
   const int totloop = mpoly.totloop;
   Vector<int> r_poly_normal_indices(totloop);
@@ -460,8 +460,8 @@ int16_t OBJMesh::get_poly_deform_group_index(const int poly_index,
 {
   BLI_assert(poly_index < export_mesh_eval_->totpoly);
   BLI_assert(group_weights.size() == BKE_object_defgroup_count(&export_object_eval_));
-  const Span<MPoly> polys = bke::mesh_polygons(*export_mesh_eval_);
-  const Span<MLoop> loops = bke::mesh_loops(*export_mesh_eval_);
+  const Span<MPoly> polys = export_mesh_eval_->polygons();
+  const Span<MLoop> loops = export_mesh_eval_->loops();
   const MDeformVert *dvert = BKE_mesh_deform_verts(export_mesh_eval_);
   if (!dvert) {
     return NOT_FOUND;
@@ -500,7 +500,7 @@ const char *OBJMesh::get_poly_deform_group_name(const int16_t def_group_index) c
 
 std::optional<std::array<int, 2>> OBJMesh::calc_loose_edge_vert_indices(const int edge_index) const
 {
-  const Span<MEdge> edges = bke::mesh_edges(*export_mesh_eval_);
+  const Span<MEdge> edges = export_mesh_eval_->edges();
   const MEdge &edge = edges[edge_index];
   if (edge.flag & ME_LOOSEEDGE) {
     return std::array<int, 2>{static_cast<int>(edge.v1), static_cast<int>(edge.v2)};

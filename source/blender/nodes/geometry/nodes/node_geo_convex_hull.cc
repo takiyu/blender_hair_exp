@@ -46,7 +46,7 @@ static Mesh *hull_from_bullet(const Mesh *mesh, Span<float3> coords)
   }
 
   /* Copy vertices. */
-  MutableSpan<MVert> dst_verts = bke::mesh_vertices_for_write(*result);
+  MutableSpan<MVert> dst_verts = result->vertices_for_write();
   for (const int i : IndexRange(verts_num)) {
     float co[3];
     int original_index;
@@ -74,7 +74,7 @@ static Mesh *hull_from_bullet(const Mesh *mesh, Span<float3> coords)
    * to a loop and edges need to be created from that. */
   Array<MLoop> mloop_src(loops_num);
   uint edge_index = 0;
-  MutableSpan<MEdge> edges = bke::mesh_edges_for_write(*result);
+  MutableSpan<MEdge> edges = result->edges_for_write();
 
   for (const int i : IndexRange(loops_num)) {
     int v_from;
@@ -109,8 +109,8 @@ static Mesh *hull_from_bullet(const Mesh *mesh, Span<float3> coords)
   /* Copy faces. */
   Array<int> loops;
   int j = 0;
-  MutableSpan<MPoly> polys = bke::mesh_polygons_for_write(*result);
-  MutableSpan<MLoop> mesh_loops = bke::mesh_loops_for_write(*result);
+  MutableSpan<MPoly> polys = result->polygons_for_write();
+  MutableSpan<MLoop> mesh_loops = result->loops_for_write();
   MLoop *loop = mesh_loops.data();
 
   for (const int i : IndexRange(faces_num)) {

@@ -168,9 +168,9 @@ std::unique_ptr<ColumnValues> GeometryDataSource::get_column_values(
   else if (G.debug_value == 4001 && component_->type() == GEO_COMPONENT_TYPE_MESH) {
     const MeshComponent &component = static_cast<const MeshComponent &>(*component_);
     if (const Mesh *mesh = component.get_for_read()) {
-      const Span<MEdge> edges = bke::mesh_edges(*mesh);
-      const Span<MPoly> polys = bke::mesh_polygons(*mesh);
-      const Span<MLoop> loops = bke::mesh_loops(*mesh);
+      const Span<MEdge> edges = mesh->edges();
+      const Span<MPoly> polys = mesh->polygons();
+      const Span<MLoop> loops = mesh->loops();
 
       if (domain_ == ATTR_DOMAIN_EDGE) {
         if (STREQ(column_id.name, "Vertex 1")) {

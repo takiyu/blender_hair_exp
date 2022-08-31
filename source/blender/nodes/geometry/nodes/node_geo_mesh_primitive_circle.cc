@@ -109,10 +109,10 @@ static Mesh *create_circle_mesh(const float radius,
                                    circle_corner_total(fill_type, verts_num),
                                    circle_face_total(fill_type, verts_num));
   BKE_id_material_eval_ensure_default_slot(&mesh->id);
-  MutableSpan<MVert> verts = bke::mesh_vertices_for_write(*mesh);
-  MutableSpan<MEdge> edges = bke::mesh_edges_for_write(*mesh);
-  MutableSpan<MPoly> polys = bke::mesh_polygons_for_write(*mesh);
-  MutableSpan<MLoop> loops = bke::mesh_loops_for_write(*mesh);
+  MutableSpan<MVert> verts = mesh->vertices_for_write();
+  MutableSpan<MEdge> edges = mesh->edges_for_write();
+  MutableSpan<MPoly> polys = mesh->polygons_for_write();
+  MutableSpan<MLoop> loops = mesh->loops_for_write();
 
   /* Assign vertex coordinates. */
   const float angle_delta = 2.0f * (M_PI / static_cast<float>(verts_num));

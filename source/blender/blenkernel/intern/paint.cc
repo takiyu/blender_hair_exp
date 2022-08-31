@@ -1748,10 +1748,8 @@ static void sculpt_update_object(Depsgraph *depsgraph,
       /* If the fully evaluated mesh has the same topology as the deform-only version, use it.
        * This matters because 'deform eval' is very restrictive and excludes even modifiers that
        * simply recompute vertex weights. */
-      if (blender::bke::mesh_polygons(*me_eval_deform).data() ==
-              blender::bke::mesh_polygons(*me_eval).data() &&
-          blender::bke::mesh_loops(*me_eval_deform).data() ==
-              blender::bke::mesh_loops(*me_eval).data() &&
+      if (me_eval_deform->polygons().data() == me_eval->polygons().data() &&
+          me_eval_deform->loops().data() == me_eval->loops().data() &&
           me_eval_deform->totvert == me_eval->totvert) {
         me_eval_deform = me_eval;
       }
@@ -1952,8 +1950,8 @@ void BKE_sculpt_update_object_for_edit(
 int BKE_sculpt_mask_layers_ensure(Object *ob, MultiresModifierData *mmd)
 {
   Mesh *me = static_cast<Mesh *>(ob->data);
-  const blender::Span<MPoly> polys = blender::bke::mesh_polygons(*me);
-  const blender::Span<MLoop> loops = blender::bke::mesh_loops(*me);
+  const blender::Span<MPoly> polys = me->polygons();
+  const blender::Span<MLoop> loops = me->loops();
   int ret = 0;
 
   const float *paint_mask = static_cast<const float *>(
@@ -2244,9 +2242,9 @@ static PBVH *build_pbvh_from_regular_mesh(Object *ob, Mesh *me_eval_deform, bool
   PBVH *pbvh = BKE_pbvh_new();
   BKE_pbvh_respect_hide_set(pbvh, respect_hide);
 
-  blender::MutableSpan<MVert> verts = blender::bke::mesh_vertices_for_write(*me);
-  const blender::Span<MPoly> polys = blender::bke::mesh_polygons(*me);
-  const blender::Span<MLoop> loops = blender::bke::mesh_loops(*me);
+  blender::MutableSpan<MVert> verts = me->vertices_for_write();
+  const blender::Span<MPoly> polys = me->polygons();
+  const blender::Span<MLoop> loops = me->loops();
 
   MLoopTri *looptri = static_cast<MLoopTri *>(
       MEM_malloc_arrayN(looptris_num, sizeof(*looptri), __func__));

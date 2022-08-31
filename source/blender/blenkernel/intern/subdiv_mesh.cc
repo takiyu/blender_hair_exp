@@ -965,7 +965,7 @@ static void find_edge_neighbors(const Mesh *coarse_mesh,
                                 const MEdge *edge,
                                 const MEdge *neighbors[2])
 {
-  const blender::Span<MEdge> coarse_edges = blender::bke::mesh_edges(*coarse_mesh);
+  const blender::Span<MEdge> coarse_edges = coarse_mesh->edges();
   neighbors[0] = nullptr;
   neighbors[1] = nullptr;
   int neighbor_counters[2] = {0, 0};

@@ -486,7 +486,7 @@ static void copy_stable_id_faces(const Mesh &mesh,
   VArraySpan<int> src{src_attribute.varray.typed<int>()};
   MutableSpan<int> dst = dst_attribute.span.typed<int>();
 
-  const Span<MPoly> polys = bke::mesh_polygons(mesh);
+  const Span<MPoly> polys = mesh.polygons();
   int loop_index = 0;
   for (const int i_poly : selection.index_range()) {
     const IndexRange range = range_for_offsets_index(poly_offsets, i_poly);
@@ -522,10 +522,10 @@ static void duplicate_faces(GeometrySet &geometry_set,
   geometry_set.keep_only_during_modify({GEO_COMPONENT_TYPE_MESH});
 
   const Mesh &mesh = *geometry_set.get_mesh_for_read();
-  const Span<MVert> verts = bke::mesh_vertices(mesh);
-  const Span<MEdge> edges = bke::mesh_edges(mesh);
-  const Span<MPoly> polys = bke::mesh_polygons(mesh);
-  const Span<MLoop> loops = bke::mesh_loops(mesh);
+  const Span<MVert> verts = mesh.vertices();
+  const Span<MEdge> edges = mesh.edges();
+  const Span<MPoly> polys = mesh.polygons();
+  const Span<MLoop> loops = mesh.loops();
 
   bke::MeshFieldContext field_context{mesh, ATTR_DOMAIN_FACE};
   FieldEvaluator evaluator(field_context, polys.size());
@@ -547,10 +547,10 @@ static void duplicate_faces(GeometrySet &geometry_set,
   offsets[selection.size()] = total_polys;
 
   Mesh *new_mesh = BKE_mesh_new_nomain(total_loops, total_loops, 0, total_loops, total_polys);
-  MutableSpan<MVert> new_verts = bke::mesh_vertices_for_write(*new_mesh);
-  MutableSpan<MEdge> new_edges = bke::mesh_edges_for_write(*new_mesh);
-  MutableSpan<MPoly> new_polys = bke::mesh_polygons_for_write(*new_mesh);
-  MutableSpan<MLoop> new_loops = bke::mesh_loops_for_write(*new_mesh);
+  MutableSpan<MVert> new_verts = new_mesh->vertices_for_write();
+  MutableSpan<MEdge> new_edges = new_mesh->edges_for_write();
+  MutableSpan<MPoly> new_polys = new_mesh->polygons_for_write();
+  MutableSpan<MLoop> new_loops = new_mesh->loops_for_write();
 
   Array<int> vert_mapping(new_verts.size());
   Array<int> edge_mapping(new_edges.size());
@@ -689,7 +689,7 @@ static void copy_stable_id_edges(const Mesh &mesh,
     return;
   }
 
-  const Span<MEdge> edges = bke::mesh_edges(mesh);
+  const Span<MEdge> edges = mesh.edges();
 
   VArraySpan<int> src{src_attribute.varray.typed<int>()};
   MutableSpan<int> dst = dst_attribute.span.typed<int>();
@@ -723,7 +723,7 @@ static void duplicate_edges(GeometrySet &geometry_set,
     return;
   };
   const Mesh &mesh = *geometry_set.get_mesh_for_read();
-  const Span<MEdge> edges = bke::mesh_edges(mesh);
+  const Span<MEdge> edges = mesh.edges();
 
   bke::MeshFieldContext field_context{mesh, ATTR_DOMAIN_EDGE};
   FieldEvaluator evaluator{field_context, edges.size()};
@@ -736,7 +736,7 @@ static void duplicate_edges(GeometrySet &geometry_set,
   Array<int> edge_offsets = accumulate_counts_to_offsets(selection, counts);
 
   Mesh *new_mesh = BKE_mesh_new_nomain(edge_offsets.last() * 2, edge_offsets.last(), 0, 0, 0);
-  MutableSpan<MEdge> new_edges = bke::mesh_edges_for_write(*new_mesh);
+  MutableSpan<MEdge> new_edges = new_mesh->edges_for_write();
 
   Array<int> vert_orig_indices(edge_offsets.last() * 2);
   threading::parallel_for(selection.index_range(), 1024, [&](IndexRange range) {
@@ -904,7 +904,7 @@ static void duplicate_points_mesh(GeometrySet &geometry_set,
                                   const IndexAttributes &attribute_outputs)
 {
   const Mesh &mesh = *geometry_set.get_mesh_for_read();
-  const Span<MVert> src_verts = bke::mesh_vertices(mesh);
+  const Span<MVert> src_verts = mesh.vertices();
 
   bke::MeshFieldContext field_context{mesh, ATTR_DOMAIN_POINT};
   FieldEvaluator evaluator{field_context, src_verts.size()};
@@ -917,7 +917,7 @@ static void duplicate_points_mesh(GeometrySet &geometry_set,
   Array<int> offsets = accumulate_counts_to_offsets(selection, counts);
 
   Mesh *new_mesh = BKE_mesh_new_nomain(offsets.last(), 0, 0, 0, 0);
-  MutableSpan<MVert> dst_verts = bke::mesh_vertices_for_write(*new_mesh);
+  MutableSpan<MVert> dst_verts = new_mesh->vertices_for_write();
 
   threaded_slice_fill(offsets.as_span(), selection, src_verts, dst_verts);
 

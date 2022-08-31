@@ -264,9 +264,9 @@ static void get_closest_mesh_corners(const Mesh &mesh,
                                      const MutableSpan<float> r_distances_sq,
                                      const MutableSpan<float3> r_positions)
 {
-  const Span<MVert> verts = bke::mesh_vertices(mesh);
-  const Span<MPoly> polys = bke::mesh_polygons(mesh);
-  const Span<MLoop> loops = bke::mesh_loops(mesh);
+  const Span<MVert> verts = mesh.vertices();
+  const Span<MPoly> polys = mesh.polygons();
+  const Span<MLoop> loops = mesh.loops();
 
   BLI_assert(mesh.totloop > 0);
   Array<int> poly_indices(positions.size());

@@ -178,12 +178,12 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
   }
 
   if (me != nullptr) {
-    const Span<MVert> mesh_verts = blender::bke::mesh_vertices(*mesh);
-    const Span<MEdge> mesh_edges = blender::bke::mesh_edges(*mesh);
-    const Span<MPoly> mesh_polys = blender::bke::mesh_polygons(*mesh);
-    const Span<MVert> me_vertices = blender::bke::mesh_vertices(*me);
-    const Span<MEdge> me_edges = blender::bke::mesh_edges(*me);
-    const Span<MPoly> me_polygons = blender::bke::mesh_polygons(*me);
+    const Span<MVert> mesh_verts = mesh->vertices();
+    const Span<MEdge> mesh_edges = mesh->edges();
+    const Span<MPoly> mesh_polys = mesh->polygons();
+    const Span<MVert> me_vertices = me->vertices();
+    const Span<MEdge> me_edges = me->edges();
+    const Span<MPoly> me_polygons = me->polygons();
 
     /* TODO(sybren+bastien): possibly check relevant custom data layers (UV/color depending on
      * flags) and duplicate those too.

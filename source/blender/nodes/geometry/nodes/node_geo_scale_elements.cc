@@ -158,10 +158,10 @@ static void scale_vertex_islands_uniformly(Mesh &mesh,
                                            const UniformScaleParams &params,
                                            const GetVertexIndicesFn get_vertex_indices)
 {
-  MutableSpan<MVert> verts = bke::mesh_vertices_for_write(mesh);
-  const Span<MEdge> edges = bke::mesh_edges(mesh);
-  const Span<MPoly> polys = bke::mesh_polygons(mesh);
-  const Span<MLoop> loops = bke::mesh_loops(mesh);
+  MutableSpan<MVert> verts = mesh.vertices_for_write();
+  const Span<MEdge> edges = mesh.edges();
+  const Span<MPoly> polys = mesh.polygons();
+  const Span<MLoop> loops = mesh.loops();
 
   threading::parallel_for(islands.index_range(), 256, [&](const IndexRange range) {
     for (const int island_index : range) {
@@ -199,10 +199,10 @@ static void scale_vertex_islands_on_axis(Mesh &mesh,
                                          const AxisScaleParams &params,
                                          const GetVertexIndicesFn get_vertex_indices)
 {
-  MutableSpan<MVert> verts = bke::mesh_vertices_for_write(mesh);
-  const Span<MEdge> edges = bke::mesh_edges(mesh);
-  const Span<MPoly> polys = bke::mesh_polygons(mesh);
-  const Span<MLoop> loops = bke::mesh_loops(mesh);
+  MutableSpan<MVert> verts = mesh.vertices_for_write();
+  const Span<MEdge> edges = mesh.edges();
+  const Span<MPoly> polys = mesh.polygons();
+  const Span<MLoop> loops = mesh.loops();
 
   threading::parallel_for(islands.index_range(), 256, [&](const IndexRange range) {
     for (const int island_index : range) {
@@ -245,8 +245,8 @@ static void scale_vertex_islands_on_axis(Mesh &mesh,
 
 static Vector<ElementIsland> prepare_face_islands(const Mesh &mesh, const IndexMask face_selection)
 {
-  const Span<MPoly> polys = bke::mesh_polygons(mesh);
-  const Span<MLoop> loops = bke::mesh_loops(mesh);
+  const Span<MPoly> polys = mesh.polygons();
+  const Span<MLoop> loops = mesh.loops();
 
   /* Use the disjoint set data structure to determine which vertices have to be scaled together. */
   DisjointSet disjoint_set(mesh.totvert);
@@ -342,7 +342,7 @@ static void scale_faces_uniformly(Mesh &mesh, const UniformScaleFields &fields)
 
 static Vector<ElementIsland> prepare_edge_islands(const Mesh &mesh, const IndexMask edge_selection)
 {
-  const Span<MEdge> edges = bke::mesh_edges(mesh);
+  const Span<MEdge> edges = mesh.edges();
 
   /* Use the disjoint set data structure to determine which vertices have to be scaled together. */
   DisjointSet disjoint_set(mesh.totvert);

@@ -25,7 +25,7 @@ static void edge_paths_to_selection(const Mesh &src_mesh,
                                     const Span<int> next_indices,
                                     MutableSpan<bool> r_selection)
 {
-  const Span<MEdge> edges = bke::mesh_edges(src_mesh);
+  const Span<MEdge> edges = src_mesh.edges();
 
   Array<bool> selection(src_mesh.totvert, false);
 

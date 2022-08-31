@@ -431,7 +431,7 @@ static void get_vertices(struct Mesh *mesh, std::vector<Imath::V3f> &points)
   points.clear();
   points.resize(mesh->totvert);
 
-  const Span<MVert> vertices = bke::mesh_vertices(*mesh);
+  const Span<MVert> vertices = mesh->vertices();
   for (int i = 0, e = mesh->totvert; i < e; i++) {
     copy_yup_from_zup(points[i].getValue(), vertices[i].co);
   }
@@ -442,8 +442,8 @@ static void get_topology(struct Mesh *mesh,
                          std::vector<int32_t> &loop_counts,
                          bool &r_has_flat_shaded_poly)
 {
-  const Span<MPoly> polys = bke::mesh_polygons(*mesh);
-  const Span<MLoop> loops = bke::mesh_loops(*mesh);
+  const Span<MPoly> polys = mesh->polygons();
+  const Span<MLoop> loops = mesh->loops();
   r_has_flat_shaded_poly = false;
 
   poly_verts.clear();
@@ -477,7 +477,7 @@ static void get_edge_creases(struct Mesh *mesh,
   lengths.clear();
   sharpnesses.clear();
 
-  const Span<MEdge> edges = bke::mesh_edges(*mesh);
+  const Span<MEdge> edges = mesh->edges();
 
   for (const int i : edges.index_range()) {
     const float sharpness = static_cast<float>(edges[i].crease) * factor;
@@ -536,7 +536,7 @@ static void get_loop_normals(struct Mesh *mesh,
 
   /* NOTE: data needs to be written in the reverse order. */
   int abc_index = 0;
-  const Span<MPoly> polys = bke::mesh_polygons(*mesh);
+  const Span<MPoly> polys = mesh->polygons();
 
   for (const int i : polys.index_range()) {
     const MPoly *mp = &polys[i];

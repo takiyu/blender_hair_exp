@@ -380,8 +380,8 @@ int BlenderFileLoader::testDegenerateTriangle(float v1[3], float v2[3], float v3
 
 static bool testEdgeMark(Mesh *me, const FreestyleEdge *fed, const MLoopTri *lt, int i)
 {
-  const Span<MEdge> edges = blender::bke::mesh_edges(*me);
-  const Span<MLoop> loops = blender::bke::mesh_loops(*me);
+  const Span<MEdge> edges = me->edges();
+  const Span<MLoop> loops = me->loops();
 
   const MLoop *mloop = &loops[lt->tri[i]];
   const MLoop *mloop_next = &loops[lt->tri[(i + 1) % 3]];
@@ -399,9 +399,9 @@ void BlenderFileLoader::insertShapeNode(Object *ob, Mesh *me, int id)
 {
   char *name = ob->id.name + 2;
 
-  const Span<MVert> mesh_verts = blender::bke::mesh_vertices(*me);
-  const Span<MPoly> mesh_polys = blender::bke::mesh_polygons(*me);
-  const Span<MLoop> mesh_loops = blender::bke::mesh_loops(*me);
+  const Span<MVert> mesh_verts = me->vertices();
+  const Span<MPoly> mesh_polys = me->polygons();
+  const Span<MLoop> mesh_loops = me->loops();
 
   // Compute loop triangles
   int tottri = poly_to_tri_count(me->totpoly, me->totloop);

@@ -505,8 +505,8 @@ static void generate_margin(ImBuf *ibuf,
     totpoly = me->totpoly;
     totloop = me->totloop;
     totedge = me->totedge;
-    mpoly = bke::mesh_polygons(*me).data();
-    mloop = bke::mesh_loops(*me).data();
+    mpoly = me->polygons().data();
+    mloop = me->loops().data();
 
     if ((uv_layer == nullptr) || (uv_layer[0] == '\0')) {
       mloopuv = static_cast<const MLoopUV *>(CustomData_get_layer(&me->ldata, CD_MLOOPUV));
@@ -520,7 +520,7 @@ static void generate_margin(ImBuf *ibuf,
     tottri = poly_to_tri_count(me->totpoly, me->totloop);
     looptri_mem = static_cast<MLoopTri *>(MEM_mallocN(sizeof(*looptri) * tottri, __func__));
     BKE_mesh_recalc_looptri(
-        mloop, mpoly, bke::mesh_vertices(*me).data(), me->totloop, me->totpoly, looptri_mem);
+        mloop, mpoly, me->vertices().data(), me->totloop, me->totpoly, looptri_mem);
     looptri = looptri_mem;
   }
   else {

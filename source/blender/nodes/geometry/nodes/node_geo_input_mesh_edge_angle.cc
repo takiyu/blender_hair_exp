@@ -64,9 +64,9 @@ class AngleFieldInput final : public bke::MeshFieldInput {
                                  const eAttrDomain domain,
                                  IndexMask UNUSED(mask)) const final
   {
-    const Span<MVert> verts = bke::mesh_vertices(mesh);
-    const Span<MPoly> polys = bke::mesh_polygons(mesh);
-    const Span<MLoop> loops = bke::mesh_loops(mesh);
+    const Span<MVert> verts = mesh.vertices();
+    const Span<MPoly> polys = mesh.polygons();
+    const Span<MLoop> loops = mesh.loops();
     Array<EdgeMapEntry> edge_map = create_edge_map(polys, loops, mesh.totedge);
 
     auto angle_fn = [edge_map = std::move(edge_map), verts, polys, loops](const int i) -> float {
@@ -109,10 +109,10 @@ class SignedAngleFieldInput final : public bke::MeshFieldInput {
                                  const eAttrDomain domain,
                                  IndexMask UNUSED(mask)) const final
   {
-    const Span<MVert> verts = bke::mesh_vertices(mesh);
-    const Span<MEdge> edges = bke::mesh_edges(mesh);
-    const Span<MPoly> polys = bke::mesh_polygons(mesh);
-    const Span<MLoop> loops = bke::mesh_loops(mesh);
+    const Span<MVert> verts = mesh.vertices();
+    const Span<MEdge> edges = mesh.edges();
+    const Span<MPoly> polys = mesh.polygons();
+    const Span<MLoop> loops = mesh.loops();
     Array<EdgeMapEntry> edge_map = create_edge_map(polys, loops, mesh.totedge);
 
     auto angle_fn =

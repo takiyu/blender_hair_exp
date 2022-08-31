@@ -1165,9 +1165,9 @@ static void weld_mesh_context_create(const Mesh &mesh,
                                      WeldMesh *r_weld_mesh)
 {
   const int mvert_len = mesh.totvert;
-  const Span<MEdge> edges = bke::mesh_edges(mesh);
-  const Span<MPoly> polys = bke::mesh_polygons(mesh);
-  const Span<MLoop> loops = bke::mesh_loops(mesh);
+  const Span<MEdge> edges = mesh.edges();
+  const Span<MPoly> polys = mesh.polygons();
+  const Span<MLoop> loops = mesh.loops();
 
   Vector<WeldVert> wvert = weld_vert_ctx_alloc_and_setup(vert_dest_map, vert_kill_len);
   r_weld_mesh->vert_kill_len = vert_kill_len;
@@ -1360,8 +1360,8 @@ static Mesh *create_merged_mesh(const Mesh &mesh,
                                 MutableSpan<int> vert_dest_map,
                                 const int removed_vertex_count)
 {
-  const Span<MPoly> src_polys = bke::mesh_polygons(mesh);
-  const Span<MLoop> src_loops = bke::mesh_loops(mesh);
+  const Span<MPoly> src_polys = mesh.polygons();
+  const Span<MLoop> src_loops = mesh.loops();
   const int totvert = mesh.totvert;
   const int totedge = mesh.totedge;
 
@@ -1375,9 +1375,9 @@ static Mesh *create_merged_mesh(const Mesh &mesh,
 
   Mesh *result = BKE_mesh_new_nomain_from_template(
       &mesh, result_nverts, result_nedges, 0, result_nloops, result_npolys);
-  MutableSpan<MEdge> dst_edges = bke::mesh_edges_for_write(*result);
-  MutableSpan<MPoly> dst_polys = bke::mesh_polygons_for_write(*result);
-  MutableSpan<MLoop> dst_loops = bke::mesh_loops_for_write(*result);
+  MutableSpan<MEdge> dst_edges = result->edges_for_write();
+  MutableSpan<MPoly> dst_polys = result->polygons_for_write();
+  MutableSpan<MLoop> dst_loops = result->loops_for_write();
 
   /* Vertices. */
 
@@ -1570,7 +1570,7 @@ std::optional<Mesh *> mesh_merge_by_distance_all(const Mesh &mesh,
 
   KDTree_3d *tree = BLI_kdtree_3d_new(selection.size());
 
-  const Span<MVert> verts = bke::mesh_vertices(mesh);
+  const Span<MVert> verts = mesh.vertices();
   for (const int i : selection) {
     BLI_kdtree_3d_insert(tree, i, verts[i].co);
   }
@@ -1597,8 +1597,8 @@ std::optional<Mesh *> mesh_merge_by_distance_connected(const Mesh &mesh,
                                                        const float merge_distance,
                                                        const bool only_loose_edges)
 {
-  const Span<MVert> verts = bke::mesh_vertices(mesh);
-  const Span<MEdge> edges = bke::mesh_edges(mesh);
+  const Span<MVert> verts = mesh.vertices();
+  const Span<MEdge> edges = mesh.edges();
 
   int vert_kill_len = 0;
 

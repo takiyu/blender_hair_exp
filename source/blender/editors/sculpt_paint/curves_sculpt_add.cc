@@ -138,8 +138,8 @@ struct AddOperationExecutor {
       return;
     }
     surface_eval_ = BKE_object_get_evaluated_mesh(surface_ob_eval_);
-    surface_verts_eval_ = bke::mesh_vertices(*surface_eval_);
-    surface_loops_eval_ = bke::mesh_loops(*surface_eval_);
+    surface_verts_eval_ = surface_eval_->vertices();
+    surface_loops_eval_ = surface_eval_->loops();
     surface_looptris_eval_ = {BKE_mesh_runtime_looptri_ensure(surface_eval_),
                               BKE_mesh_runtime_looptri_len(surface_eval_)};
     BKE_bvhtree_from_mesh_get(&surface_bvh_eval_, surface_eval_, BVHTREE_FROM_LOOPTRI, 2);

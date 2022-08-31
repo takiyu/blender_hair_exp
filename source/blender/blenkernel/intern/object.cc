@@ -4757,7 +4757,7 @@ bool BKE_object_shapekey_remove(Main *bmain, Object *ob, KeyBlock *kb)
       switch (ob->type) {
         case OB_MESH: {
           Mesh *mesh = (Mesh *)ob->data;
-          MutableSpan<MVert> verts = blender::bke::mesh_vertices_for_write(*mesh);
+          MutableSpan<MVert> verts = mesh->vertices_for_write();
           BKE_keyblock_convert_to_mesh(key->refkey, verts.data(), mesh->totvert);
           break;
         }
@@ -5254,7 +5254,7 @@ KDTree_3d *BKE_object_as_kdtree(Object *ob, int *r_tot)
       const int *index;
 
       if (me_eval && (index = (const int *)CustomData_get_layer(&me_eval->vdata, CD_ORIGINDEX))) {
-        const Span<MVert> verts = blender::bke::mesh_vertices(*me);
+        const Span<MVert> verts = me->vertices();
 
         /* Tree over-allocates in case where some verts have #ORIGINDEX_NONE. */
         tot = 0;
@@ -5271,7 +5271,7 @@ KDTree_3d *BKE_object_as_kdtree(Object *ob, int *r_tot)
         }
       }
       else {
-        const Span<MVert> verts = blender::bke::mesh_vertices(*me);
+        const Span<MVert> verts = me->vertices();
 
         tot = verts.size();
         tree = BLI_kdtree_3d_new(tot);

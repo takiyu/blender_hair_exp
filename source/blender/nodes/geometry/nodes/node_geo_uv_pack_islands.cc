@@ -37,9 +37,9 @@ static VArray<float3> construct_uv_gvarray(const Mesh &mesh,
                                            const float margin,
                                            const eAttrDomain domain)
 {
-  const Span<MVert> verts = bke::mesh_vertices(mesh);
-  const Span<MPoly> polys = bke::mesh_polygons(mesh);
-  const Span<MLoop> loops = bke::mesh_loops(mesh);
+  const Span<MVert> verts = mesh.vertices();
+  const Span<MPoly> polys = mesh.polygons();
+  const Span<MLoop> loops = mesh.loops();
 
   bke::MeshFieldContext face_context{mesh, ATTR_DOMAIN_FACE};
   FieldEvaluator face_evaluator{face_context, polys.size()};

@@ -292,7 +292,7 @@ static void update_pixels(PBVH *pbvh, Mesh *mesh, Image *image, ImageUser *image
 
   for (PBVHNode *node : nodes_to_update) {
     NodeData *node_data = static_cast<NodeData *>(node->pixels.node_data);
-    const Span<MLoop> loops = blender::bke::mesh_loops(*mesh);
+    const Span<MLoop> loops = mesh->loops();
     init_triangles(pbvh, node, node_data, loops.data());
   }
 

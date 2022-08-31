@@ -187,9 +187,9 @@ void BKE_crazyspace_set_quats_mesh(Mesh *me,
   BLI_bitmap *vert_tag = BLI_BITMAP_NEW(me->totvert, __func__);
 
   /* first store two sets of tangent vectors in vertices, we derive it just from the face-edges */
-  const Span<MVert> verts = mesh_vertices(*me);
-  const Span<MPoly> polys = mesh_polygons(*me);
-  const Span<MLoop> loops = mesh_loops(*me);
+  const Span<MVert> verts = me->vertices();
+  const Span<MPoly> polys = me->polygons();
+  const Span<MLoop> loops = me->loops();
 
   for (int i = 0; i < me->totpoly; i++) {
     const MPoly *poly = &polys[i];

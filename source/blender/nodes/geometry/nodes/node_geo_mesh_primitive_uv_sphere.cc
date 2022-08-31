@@ -301,10 +301,10 @@ static Mesh *create_uv_sphere_mesh(const float radius, const int segments, const
                                    sphere_corner_total(segments, rings),
                                    sphere_face_total(segments, rings));
   BKE_id_material_eval_ensure_default_slot(&mesh->id);
-  MutableSpan<MVert> verts = bke::mesh_vertices_for_write(*mesh);
-  MutableSpan<MEdge> edges = bke::mesh_edges_for_write(*mesh);
-  MutableSpan<MPoly> polys = bke::mesh_polygons_for_write(*mesh);
-  MutableSpan<MLoop> loops = bke::mesh_loops_for_write(*mesh);
+  MutableSpan<MVert> verts = mesh->vertices_for_write();
+  MutableSpan<MEdge> edges = mesh->edges_for_write();
+  MutableSpan<MPoly> polys = mesh->polygons_for_write();
+  MutableSpan<MLoop> loops = mesh->loops_for_write();
 
   threading::parallel_invoke(
       1024 < segments * rings,

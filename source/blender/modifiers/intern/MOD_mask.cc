@@ -169,7 +169,7 @@ static void computed_masked_edges(const Mesh *mesh,
                                   uint *r_edges_masked_num)
 {
   BLI_assert(mesh->totedge == r_edge_map.size());
-  const Span<MEdge> edges = blender::bke::mesh_edges(*mesh);
+  const Span<MEdge> edges = mesh->edges();
 
   uint edges_masked_num = 0;
   for (int i : IndexRange(mesh->totedge)) {
@@ -195,7 +195,7 @@ static void computed_masked_edges_smooth(const Mesh *mesh,
                                          uint *r_verts_add_num)
 {
   BLI_assert(mesh->totedge == r_edge_map.size());
-  const Span<MEdge> edges = blender::bke::mesh_edges(*mesh);
+  const Span<MEdge> edges = mesh->edges();
 
   uint edges_masked_num = 0;
   uint verts_add_num = 0;
@@ -231,8 +231,8 @@ static void computed_masked_polygons(const Mesh *mesh,
                                      uint *r_loops_masked_num)
 {
   BLI_assert(mesh->totvert == vertex_mask.size());
-  const Span<MPoly> polys = blender::bke::mesh_polygons(*mesh);
-  const Span<MLoop> loops = blender::bke::mesh_loops(*mesh);
+  const Span<MPoly> polys = mesh->polygons();
+  const Span<MLoop> loops = mesh->loops();
 
   r_masked_poly_indices.reserve(mesh->totpoly);
   r_loop_starts.reserve(mesh->totpoly);
@@ -277,8 +277,8 @@ static void compute_interpolated_polygons(const Mesh *mesh,
   /* NOTE: this reserve can only lift the capacity if there are ngons, which get split. */
   r_masked_poly_indices.reserve(r_masked_poly_indices.size() + verts_add_num);
   r_loop_starts.reserve(r_loop_starts.size() + verts_add_num);
-  const Span<MPoly> polys = blender::bke::mesh_polygons(*mesh);
-  const Span<MLoop> loops = blender::bke::mesh_loops(*mesh);
+  const Span<MPoly> polys = mesh->polygons();
+  const Span<MLoop> loops = mesh->loops();
 
   uint edges_add_num = 0;
   uint polys_add_num = 0;
@@ -338,8 +338,8 @@ static void copy_masked_vertices_to_new_mesh(const Mesh &src_mesh,
                                              Span<int> vertex_map)
 {
   BLI_assert(src_mesh.totvert == vertex_map.size());
-  const Span<MVert> src_verts = blender::bke::mesh_vertices(src_mesh);
-  MutableSpan<MVert> dst_verts = blender::bke::mesh_vertices_for_write(dst_mesh);
+  const Span<MVert> src_verts = src_mesh.vertices();
+  MutableSpan<MVert> dst_verts = dst_mesh.vertices_for_write();
 
   for (const int i_src : vertex_map.index_range()) {
     const int i_dst = vertex_map[i_src];
@@ -378,10 +378,10 @@ static void add_interp_verts_copy_edges_to_new_mesh(const Mesh &src_mesh,
 {
   BLI_assert(src_mesh.totvert == vertex_mask.size());
   BLI_assert(src_mesh.totedge == r_edge_map.size());
-  const Span<MVert> src_verts = blender::bke::mesh_vertices(src_mesh);
-  const Span<MEdge> src_edges = blender::bke::mesh_edges(src_mesh);
-  MutableSpan<MVert> dst_verts = blender::bke::mesh_vertices_for_write(dst_mesh);
-  MutableSpan<MEdge> dst_edges = blender::bke::mesh_edges_for_write(dst_mesh);
+  const Span<MVert> src_verts = src_mesh.vertices();
+  const Span<MEdge> src_edges = src_mesh.edges();
+  MutableSpan<MVert> dst_verts = dst_mesh.vertices_for_write();
+  MutableSpan<MEdge> dst_edges = dst_mesh.edges_for_write();
 
   uint vert_index = dst_mesh.totvert - verts_add_num;
   uint edge_index = edges_masked_num - verts_add_num;
@@ -437,8 +437,8 @@ static void copy_masked_edges_to_new_mesh(const Mesh &src_mesh,
                                           Span<int> vertex_map,
                                           Span<int> edge_map)
 {
-  const Span<MEdge> src_edges = blender::bke::mesh_edges(src_mesh);
-  MutableSpan<MEdge> dst_edges = blender::bke::mesh_edges_for_write(dst_mesh);
+  const Span<MEdge> src_edges = src_mesh.edges();
+  MutableSpan<MEdge> dst_edges = dst_mesh.edges_for_write();
 
   BLI_assert(src_mesh.totvert == vertex_map.size());
   BLI_assert(src_mesh.totedge == edge_map.size());
@@ -466,10 +466,10 @@ static void copy_masked_polys_to_new_mesh(const Mesh &src_mesh,
                                           Span<int> new_loop_starts,
                                           int polys_masked_num)
 {
-  const Span<MPoly> src_polys = blender::bke::mesh_polygons(src_mesh);
-  const Span<MLoop> src_loops = blender::bke::mesh_loops(src_mesh);
-  MutableSpan<MPoly> dst_polys = blender::bke::mesh_polygons_for_write(dst_mesh);
-  MutableSpan<MLoop> dst_loops = blender::bke::mesh_loops_for_write(dst_mesh);
+  const Span<MPoly> src_polys = src_mesh.polygons();
+  const Span<MLoop> src_loops = src_mesh.loops();
+  MutableSpan<MPoly> dst_polys = dst_mesh.polygons_for_write();
+  MutableSpan<MLoop> dst_loops = dst_mesh.loops_for_write();
 
   for (const int i_dst : IndexRange(polys_masked_num)) {
     const int i_src = masked_poly_indices[i_dst];
@@ -507,11 +507,11 @@ static void add_interpolated_polys_to_new_mesh(const Mesh &src_mesh,
                                                int polys_masked_num,
                                                int edges_add_num)
 {
-  const Span<MPoly> src_polys = blender::bke::mesh_polygons(src_mesh);
-  const Span<MLoop> src_loops = blender::bke::mesh_loops(src_mesh);
-  MutableSpan<MEdge> dst_edges = blender::bke::mesh_edges_for_write(dst_mesh);
-  MutableSpan<MPoly> dst_polys = blender::bke::mesh_polygons_for_write(dst_mesh);
-  MutableSpan<MLoop> dst_loops = blender::bke::mesh_loops_for_write(dst_mesh);
+  const Span<MPoly> src_polys = src_mesh.polygons();
+  const Span<MLoop> src_loops = src_mesh.loops();
+  MutableSpan<MEdge> dst_edges = dst_mesh.edges_for_write();
+  MutableSpan<MPoly> dst_polys = dst_mesh.polygons_for_write();
+  MutableSpan<MLoop> dst_loops = dst_mesh.loops_for_write();
 
   int edge_index = dst_mesh.totedge - edges_add_num;
   int sub_poly_index = 0;

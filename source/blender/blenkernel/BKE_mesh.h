@@ -1113,44 +1113,40 @@ BLI_INLINE MDeformVert *BKE_mesh_deform_verts_for_write(Mesh *mesh)
 
 #  include "BLI_span.hh"
 
-namespace blender::bke {
-
-inline Span<MVert> mesh_vertices(const Mesh &mesh)
+inline blender::Span<MVert> Mesh::vertices() const
 {
-  return {BKE_mesh_vertices(&mesh), mesh.totvert};
+  return {BKE_mesh_vertices(this), this->totvert};
 }
-inline MutableSpan<MVert> mesh_vertices_for_write(Mesh &mesh)
+inline blender::MutableSpan<MVert> Mesh::vertices_for_write()
 {
-  return {BKE_mesh_vertices_for_write(&mesh), mesh.totvert};
+  return {BKE_mesh_vertices_for_write(this), this->totvert};
 }
 
-inline Span<MEdge> mesh_edges(const Mesh &mesh)
+inline blender::Span<MEdge> Mesh::edges() const
 {
-  return {BKE_mesh_edges(&mesh), mesh.totedge};
+  return {BKE_mesh_edges(this), this->totedge};
 }
-inline MutableSpan<MEdge> mesh_edges_for_write(Mesh &mesh)
+inline blender::MutableSpan<MEdge> Mesh::edges_for_write()
 {
-  return {BKE_mesh_edges_for_write(&mesh), mesh.totedge};
-}
-
-inline Span<MPoly> mesh_polygons(const Mesh &mesh)
-{
-  return {BKE_mesh_polygons(&mesh), mesh.totpoly};
-}
-inline MutableSpan<MPoly> mesh_polygons_for_write(Mesh &mesh)
-{
-  return {BKE_mesh_polygons_for_write(&mesh), mesh.totpoly};
+  return {BKE_mesh_edges_for_write(this), this->totedge};
 }
 
-inline Span<MLoop> mesh_loops(const Mesh &mesh)
+inline blender::Span<MPoly> Mesh::polygons() const
 {
-  return {BKE_mesh_loops(&mesh), mesh.totloop};
+  return {BKE_mesh_polygons(this), this->totpoly};
 }
-inline MutableSpan<MLoop> mesh_loops_for_write(Mesh &mesh)
+inline blender::MutableSpan<MPoly> Mesh::polygons_for_write()
 {
-  return {BKE_mesh_loops_for_write(&mesh), mesh.totloop};
+  return {BKE_mesh_polygons_for_write(this), this->totpoly};
 }
 
-}  // namespace blender::bke
+inline blender::Span<MLoop> Mesh::loops() const
+{
+  return {BKE_mesh_loops(this), this->totloop};
+}
+inline blender::MutableSpan<MLoop> Mesh::loops_for_write()
+{
+  return {BKE_mesh_loops_for_write(this), this->totloop};
+}
 
 #endif

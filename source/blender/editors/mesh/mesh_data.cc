@@ -776,10 +776,10 @@ static int mesh_customdata_custom_splitnormals_add_exec(bContext *C, wmOperator 
       /* Tag edges as sharp according to smooth threshold if needed,
        * to preserve autosmooth shading. */
       if (me->flag & ME_AUTOSMOOTH) {
-        const Span<MVert> verts = blender::bke::mesh_vertices(*me);
-        MutableSpan<MEdge> edges = blender::bke::mesh_edges_for_write(*me);
-        const Span<MPoly> polys = blender::bke::mesh_polygons(*me);
-        const Span<MLoop> loops = blender::bke::mesh_loops(*me);
+        const Span<MVert> verts = me->vertices();
+        MutableSpan<MEdge> edges = me->edges_for_write();
+        const Span<MPoly> polys = me->polygons();
+        const Span<MLoop> loops = me->loops();
 
         BKE_edges_sharp_from_angle_set(verts.data(),
                                        verts.size(),
@@ -893,7 +893,7 @@ static void mesh_add_verts(Mesh *mesh, int len)
   const int old_vertex_num = mesh->totvert;
   mesh->totvert = totvert;
 
-  MutableSpan<MVert> verts = blender::bke::mesh_vertices_for_write(*mesh);
+  MutableSpan<MVert> verts = mesh->vertices_for_write();
   for (MVert &vert : verts.drop_front(old_vertex_num)) {
     vert.flag = SELECT;
   }
@@ -926,7 +926,7 @@ static void mesh_add_edges(Mesh *mesh, int len)
   const int old_edges_num = mesh->totedge;
   mesh->totedge = totedge;
 
-  MutableSpan<MEdge> edges = blender::bke::mesh_edges_for_write(*mesh);
+  MutableSpan<MEdge> edges = mesh->edges_for_write();
   for (MEdge &edge : edges.drop_front(old_edges_num)) {
     edge.flag = ME_EDGEDRAW | ME_EDGERENDER | SELECT;
   }
@@ -986,7 +986,7 @@ static void mesh_add_polys(Mesh *mesh, int len)
   const int old_polys_num = mesh->totpoly;
   mesh->totpoly = totpoly;
 
-  MutableSpan<MPoly> polys = blender::bke::mesh_polygons_for_write(*mesh);
+  MutableSpan<MPoly> polys = mesh->polygons_for_write();
   for (MPoly &poly : polys.drop_front(old_polys_num)) {
     poly.flag = ME_FACE_SEL;
   }
