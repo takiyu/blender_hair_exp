@@ -188,7 +188,7 @@ static void vertex_interpolation_init(const SubdivMeshContext *ctx,
     CustomData_copy(&ctx->coarse_mesh->vdata,
                     &vertex_interpolation->vertex_data_storage,
                     CD_MASK_EVERYTHING.vmask,
-                    CD_CALLOC,
+                    CD_SET_DEFAULT,
                     4);
     /* Initialize indices. */
     vertex_interpolation->vertex_indices[0] = 0;
@@ -323,7 +323,7 @@ static void loop_interpolation_init(const SubdivMeshContext *ctx,
     CustomData_copy(&ctx->coarse_mesh->ldata,
                     &loop_interpolation->loop_data_storage,
                     CD_MASK_EVERYTHING.lmask,
-                    CD_CALLOC,
+                    CD_SET_DEFAULT,
                     4);
     /* Initialize indices. */
     loop_interpolation->loop_indices[0] = 0;

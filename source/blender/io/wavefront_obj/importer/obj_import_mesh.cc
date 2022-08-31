@@ -182,7 +182,7 @@ void MeshFromGeometry::create_polys_loops(Mesh *mesh, bool use_vertex_groups)
   const int64_t total_verts = mesh_geometry_.get_vertex_count();
   if (use_vertex_groups && total_verts && mesh_geometry_.has_vertex_groups_) {
     mesh->dvert = static_cast<MDeformVert *>(
-        CustomData_add_layer(&mesh->vdata, CD_MDEFORMVERT, CD_CALLOC, nullptr, total_verts));
+        CustomData_add_layer(&mesh->vdata, CD_MDEFORMVERT, CD_SET_DEFAULT, nullptr, total_verts));
   }
 
   const int64_t tot_face_elems{mesh->totpoly};

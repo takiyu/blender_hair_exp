@@ -154,9 +154,15 @@ struct LayerTypeInfo {
   void (*swap)(void *data, const int *corner_indices);
 
   /**
-   * a function to set a layer's data to default values. if null, the
-   * default is assumed to be all zeros */
-  void (*set_default)(void *data, int count);
+   * Set values to the type's default. If undefined, the default is assumed to be zeroes.
+   * Memory pointed to by #data is expected to be uninitialized.
+   */
+  void (*set_default_value)(void *data, int count);
+  /**
+   * Construct and fill a valid value for the type. Necessary for non-trivial types.
+   * Memory pointed to by #data is expected to be uninitialized.
+   */
+  void (*construct)(void *data, int count);
 
   /** A function used by mesh validating code, must ensures passed item has valid data. */
   cd_validate validate;
@@ -310,6 +316,11 @@ static void layerInterp_mdeformvert(const void **sources,
   else {
     memset(dvert, 0, sizeof(*dvert));
   }
+}
+
+static void layerConstruct_mdeformvert(void *data, const int count)
+{
+  memset(data, 0, sizeof(MDeformVert) * count);
 }
 
 /** \} */
@@ -497,11 +508,6 @@ static bool layerValidate_propFloat(void *data, const uint totitems, const bool 
 /** \name Callbacks for (#MIntProperty, #CD_PROP_INT32)
  * \{ */
 
-static void layerCopy_propInt(const void *source, void *dest, const int count)
-{
-  memcpy(dest, source, sizeof(MIntProperty) * count);
-}
-
 static void layerInterp_propInt(const void **sources,
                                 const float *weights,
                                 const float *UNUSED(sub_weights),
@@ -671,6 +677,11 @@ static void layerFree_mdisps(void *data, const int count, const int UNUSED(size)
   }
 }
 
+static void layerConstruct_mdisps(void *data, const int count)
+{
+  memset(data, 0, sizeof(MDisps) * count);
+}
+
 static bool layerRead_mdisps(CDataFile *cdf, void *data, const int count)
 {
   MDisps *d = static_cast<MDisps *>(data);
@@ -801,6 +812,11 @@ static void layerFree_grid_paint_mask(void *data, const int count, const int UNU
     MEM_SAFE_FREE(gpm[i].data);
     gpm[i].level = 0;
   }
+}
+
+static void layerConstruct_grid_paint_mask(void *data, const int count)
+{
+  memset(data, 0, sizeof(GridPaintMask) * count);
 }
 
 /** \} */
@@ -1588,41 +1604,43 @@ static const LayerTypeInfo LAYERTYPEINFO[CD_NUMTYPES] = {
      layerFree_mdeformvert,
      layerInterp_mdeformvert,
      nullptr,
+     layerConstruct_mdeformvert,
      nullptr},
     /* 3: CD_MEDGE */
     {sizeof(MEdge), "MEdge", 1, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr},
     /* 4: CD_MFACE */
     {sizeof(MFace), "MFace", 1, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr},
     /* 5: CD_MTFACE */
-    {sizeof(MTFace),    "MTFace",         1,
-     N_("UVMap"),       layerCopy_tface,  nullptr,
-     layerInterp_tface, layerSwap_tface,  layerDefault_tface,
-     nullptr,           nullptr,          nullptr,
-     nullptr,           nullptr,          nullptr,
-     nullptr,           nullptr,          nullptr,
-     nullptr,           layerMaxNum_tface},
+    {sizeof(MTFace),
+     "MTFace",
+     1,
+     N_("UVMap"),
+     layerCopy_tface,
+     nullptr,
+     layerInterp_tface,
+     layerSwap_tface,
+     nullptr,
+     layerDefault_tface,
+     nullptr,
+     nullptr,
+     nullptr,
+     nullptr,
+     nullptr,
+     nullptr,
+     nullptr,
+     nullptr,
+     nullptr,
+     nullptr,
+     layerMaxNum_tface},
     /* 6: CD_MCOL */
     /* 4 MCol structs per face */
-    {sizeof(MCol[4]),
-     "MCol",
-     4,
-     N_("Col"),
-     nullptr,
-     nullptr,
-     layerInterp_mcol,
-     layerSwap_mcol,
-     layerDefault_mcol,
-     nullptr,
-     nullptr,
-     nullptr,
-     nullptr,
-     nullptr,
-     nullptr,
-     nullptr,
-     nullptr,
-     nullptr,
-     nullptr,
-     layerMaxNum_mloopcol},
+    {sizeof(MCol[4]),  "MCol",         4,
+     N_("Col"),        nullptr,        nullptr,
+     layerInterp_mcol, layerSwap_mcol, layerDefault_mcol,
+     nullptr,          nullptr,        nullptr,
+     nullptr,          nullptr,        nullptr,
+     nullptr,          nullptr,        nullptr,
+     nullptr,          nullptr,        layerMaxNum_mloopcol},
     /* 7: CD_ORIGINDEX */
     {sizeof(int), "", 0, nullptr, nullptr, nullptr, nullptr, nullptr, layerDefault_origindex},
     /* 8: CD_NORMAL */
@@ -1634,6 +1652,7 @@ static const LayerTypeInfo LAYERTYPEINFO[CD_NUMTYPES] = {
      nullptr,
      nullptr,
      layerInterp_normal,
+     nullptr,
      nullptr,
      nullptr,
      nullptr,
@@ -1655,13 +1674,14 @@ static const LayerTypeInfo LAYERTYPEINFO[CD_NUMTYPES] = {
      layerInterp_propFloat,
      nullptr,
      nullptr,
+     nullptr,
      layerValidate_propFloat},
     /* 11: CD_PROP_INT32 */
     {sizeof(MIntProperty),
      "MIntProperty",
      1,
      N_("Int"),
-     layerCopy_propInt,
+     nullptr,
      nullptr,
      layerInterp_propInt,
      nullptr},
@@ -1703,6 +1723,7 @@ static const LayerTypeInfo LAYERTYPEINFO[CD_NUMTYPES] = {
      nullptr,
      layerDefault_mloopcol,
      nullptr,
+     nullptr,
      layerEqual_mloopcol,
      layerMultiply_mloopcol,
      layerInitMinMax_mloopcol,
@@ -1725,6 +1746,7 @@ static const LayerTypeInfo LAYERTYPEINFO[CD_NUMTYPES] = {
      nullptr,
      layerSwap_mdisps,
      nullptr,
+     layerConstruct_mdisps,
      nullptr,
      nullptr,
      nullptr,
@@ -1794,6 +1816,7 @@ static const LayerTypeInfo LAYERTYPEINFO[CD_NUMTYPES] = {
      nullptr,
      nullptr,
      nullptr,
+     nullptr,
      layerEqual_mloop_origspace,
      layerMultiply_mloop_origspace,
      layerInitMinMax_mloop_origspace,
@@ -1810,6 +1833,7 @@ static const LayerTypeInfo LAYERTYPEINFO[CD_NUMTYPES] = {
      layerInterp_mloopcol,
      nullptr,
      layerDefault_mloopcol,
+     nullptr,
      nullptr,
      layerEqual_mloopcol,
      layerMultiply_mloopcol,
@@ -1838,7 +1862,8 @@ static const LayerTypeInfo LAYERTYPEINFO[CD_NUMTYPES] = {
      layerFree_grid_paint_mask,
      nullptr,
      nullptr,
-     nullptr},
+     nullptr,
+     layerConstruct_grid_paint_mask},
     /* 36: CD_MVERT_SKIN */
     {sizeof(MVertSkin),
      "MVertSkin",
@@ -1896,6 +1921,7 @@ static const LayerTypeInfo LAYERTYPEINFO[CD_NUMTYPES] = {
      nullptr,
      layerDefault_propcol,
      nullptr,
+     nullptr,
      layerEqual_propcol,
      layerMultiply_propcol,
      layerInitMinMax_propcol,
@@ -1916,6 +1942,7 @@ static const LayerTypeInfo LAYERTYPEINFO[CD_NUMTYPES] = {
      layerInterp_propfloat3,
      nullptr,
      nullptr,
+     nullptr,
      layerValidate_propfloat3,
      nullptr,
      layerMultiply_propfloat3,
@@ -1929,6 +1956,7 @@ static const LayerTypeInfo LAYERTYPEINFO[CD_NUMTYPES] = {
      nullptr,
      nullptr,
      layerInterp_propfloat2,
+     nullptr,
      nullptr,
      nullptr,
      layerValidate_propfloat2,
@@ -2690,48 +2718,60 @@ static CustomDataLayer *customData_add_layer__internal(CustomData *data,
   const LayerTypeInfo *typeInfo = layerType_getInfo(type);
   int flag = 0;
 
-  /* Passing a layer-data to copy from with an alloctype that won't copy is
-   * most likely a bug */
-  BLI_assert(!layerdata || ELEM(alloctype, CD_ASSIGN, CD_DUPLICATE, CD_REFERENCE));
-
   if (!typeInfo->defaultname && CustomData_has_layer(data, type)) {
     return &data->layers[CustomData_get_layer_index(data, type)];
   }
 
   void *newlayerdata = nullptr;
-  if (ELEM(alloctype, CD_ASSIGN, CD_REFERENCE)) {
-    newlayerdata = layerdata;
-  }
-  else if (totelem > 0 && typeInfo->size > 0) {
-    if (alloctype == CD_DUPLICATE && layerdata) {
-      newlayerdata = MEM_malloc_arrayN((size_t)totelem, typeInfo->size, layerType_getName(type));
-    }
-    else {
-      newlayerdata = MEM_calloc_arrayN((size_t)totelem, typeInfo->size, layerType_getName(type));
-    }
-
-    if (!newlayerdata) {
-      return nullptr;
-    }
-  }
-
-  if (alloctype == CD_DUPLICATE && layerdata) {
-    if (totelem > 0) {
-      if (typeInfo->copy) {
-        typeInfo->copy(layerdata, newlayerdata, totelem);
+  switch (alloctype) {
+    case CD_SET_DEFAULT:
+      if (totelem > 0) {
+        if (typeInfo->set_default_value) {
+          newlayerdata = MEM_malloc_arrayN(totelem, typeInfo->size, layerType_getName(type));
+          typeInfo->set_default_value(newlayerdata, totelem);
+        }
+        else {
+          newlayerdata = MEM_calloc_arrayN(totelem, typeInfo->size, layerType_getName(type));
+        }
+      }
+      break;
+    case CD_CONSTRUCT:
+      if (totelem > 0) {
+        newlayerdata = MEM_malloc_arrayN(totelem, typeInfo->size, layerType_getName(type));
+        if (typeInfo->construct) {
+          typeInfo->construct(newlayerdata, totelem);
+        }
+      }
+      break;
+    case CD_ASSIGN:
+      if (totelem > 0) {
+        BLI_assert(layerdata != nullptr);
+        newlayerdata = layerdata;
       }
       else {
-        memcpy(newlayerdata, layerdata, (size_t)totelem * typeInfo->size);
+        MEM_SAFE_FREE(layerdata);
       }
-    }
-  }
-  else if (alloctype == CD_DEFAULT) {
-    if (typeInfo->set_default) {
-      typeInfo->set_default(newlayerdata, totelem);
-    }
-  }
-  else if (alloctype == CD_REFERENCE) {
-    flag |= CD_FLAG_NOFREE;
+      break;
+    case CD_REFERENCE:
+      if (totelem > 0) {
+        BLI_assert(layerdata != nullptr);
+        newlayerdata = layerdata;
+        flag |= CD_FLAG_NOFREE;
+      }
+      break;
+    case CD_DUPLICATE:
+      if (totelem > 0) {
+        newlayerdata = MEM_malloc_arrayN(totelem, typeInfo->size, layerType_getName(type));
+        if (typeInfo->copy) {
+          typeInfo->copy(layerdata, newlayerdata, totelem);
+        }
+        else {
+          BLI_assert(layerdata != nullptr);
+          BLI_assert(newlayerdata != nullptr);
+          memcpy(newlayerdata, layerdata, totelem * typeInfo->size);
+        }
+      }
+      break;
   }
 
   int index = data->totlayer;
@@ -3774,8 +3814,8 @@ static void CustomData_bmesh_set_default_n(CustomData *data, void **block, const
   int offset = data->layers[n].offset;
   const LayerTypeInfo *typeInfo = layerType_getInfo(data->layers[n].type);
 
-  if (typeInfo->set_default) {
-    typeInfo->set_default(POINTER_OFFSET(*block, offset), 1);
+  if (typeInfo->set_default_value) {
+    typeInfo->set_default_value(POINTER_OFFSET(*block, offset), 1);
   }
   else {
     memset(POINTER_OFFSET(*block, offset), 0, typeInfo->size);
@@ -4482,8 +4522,8 @@ static bool CustomData_layer_ensure_data_exists(CustomDataLayer *layer, size_t c
     case CD_MLOOPUV:   /* See T90620. */
       layer->data = MEM_calloc_arrayN(count, typeInfo->size, layerType_getName(layer->type));
       BLI_assert(layer->data);
-      if (typeInfo->set_default) {
-        typeInfo->set_default(layer->data, count);
+      if (typeInfo->set_default_value) {
+        typeInfo->set_default_value(layer->data, count);
       }
       return true;
       break;
