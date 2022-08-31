@@ -92,6 +92,7 @@ static void make_edges_mdata_extend(Mesh &mesh)
     BKE_mesh_poly_edgehash_insert(eh, &poly, &loops[poly.loopstart]);
   }
 
+  const int totedge_old = mesh.totedge;
   const int totedge_new = BLI_edgehash_len(eh);
 
 #ifdef DEBUG
@@ -106,9 +107,9 @@ static void make_edges_mdata_extend(Mesh &mesh)
   if (totedge_new) {
     CustomData_realloc(&mesh.edata, totedge + totedge_new);
 
-    MEdge *medge = &edges[totedge];
-
     mesh.totedge += totedge_new;
+    edges = mesh.edges_for_write();
+    MEdge *medge = &edges[totedge_old];
 
     EdgeHashIterator *ehi;
     uint e_index = totedge;
