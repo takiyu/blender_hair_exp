@@ -1066,7 +1066,7 @@ static void vgroup_select_verts(Object *ob, int select)
         const MDeformVert *dverts = me->dvert;
 
         for (const int i : selection_vert.span.index_range()) {
-          if (hide_vert[i]) {
+          if (!hide_vert[i]) {
             if (BKE_defvert_find_index(&dverts[i], def_nr)) {
               selection_vert.span[i] = select;
             }
