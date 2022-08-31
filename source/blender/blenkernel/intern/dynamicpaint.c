@@ -1944,7 +1944,7 @@ static Mesh *dynamicPaint_Modifier_apply(DynamicPaintModifierData *pmd, Object *
             if (!mloopcol && dynamicPaint_outputLayerExists(surface, ob, 0)) {
               mloopcol = CustomData_add_layer_named(&result->ldata,
                                                     CD_PROP_BYTE_COLOR,
-                                                    CD_CALLOC,
+                                                    CD_SET_DEFAULT,
                                                     NULL,
                                                     totloop,
                                                     surface->output_name);
@@ -1957,7 +1957,7 @@ static Mesh *dynamicPaint_Modifier_apply(DynamicPaintModifierData *pmd, Object *
             if (!mloopcol_wet && dynamicPaint_outputLayerExists(surface, ob, 1)) {
               mloopcol_wet = CustomData_add_layer_named(&result->ldata,
                                                         CD_PROP_BYTE_COLOR,
-                                                        CD_CALLOC,
+                                                        CD_SET_DEFAULT,
                                                         NULL,
                                                         totloop,
                                                         surface->output_name2);

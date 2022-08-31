@@ -40,9 +40,9 @@ class AbcMeshReader final : public AbcObjectReader {
                           Mesh *mesh,
                           const Alembic::AbcGeom::ISampleSelector &sample_sel);
 
-  void assign_facesets_to_mpoly(const Alembic::Abc::ISampleSelector &sample_sel,
-                                MutableSpan<MPoly> polys,
-                                std::map<std::string, int> &r_mat_map);
+  void assign_facesets_to_material_indices(const Alembic::Abc::ISampleSelector &sample_sel,
+                                           MutableSpan<int> material_indices,
+                                           std::map<std::string, int> &r_mat_map);
 };
 
 class AbcSubDReader final : public AbcObjectReader {

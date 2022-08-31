@@ -293,7 +293,8 @@ int ED_mesh_uv_add(
       is_init = true;
     }
     else {
-      CustomData_add_layer_named(&me->ldata, CD_MLOOPUV, CD_DEFAULT, nullptr, me->totloop, name);
+      CustomData_add_layer_named(
+          &me->ldata, CD_MLOOPUV, CD_SET_DEFAULT, nullptr, me->totloop, name);
     }
 
     if (active_set || layernum_dst == 0) {
@@ -373,8 +374,11 @@ bool ED_mesh_uv_remove_named(Mesh *me, const char *name)
   return false;
 }
 
-int ED_mesh_color_add(
-    Mesh *me, const char *name, const bool active_set, const bool do_init, ReportList *reports)
+int ED_mesh_color_add(Mesh *me,
+                      const char *name,
+                      const bool active_set,
+                      const bool do_init,
+                      ReportList *UNUSED(reports))
 {
   /* NOTE: keep in sync with #ED_mesh_uv_add. */
 
@@ -385,10 +389,6 @@ int ED_mesh_color_add(
     em = me->edit_mesh;
 
     layernum = CustomData_number_of_layers(&em->bm->ldata, CD_PROP_BYTE_COLOR);
-    if (layernum >= MAX_MCOL) {
-      BKE_reportf(reports, RPT_WARNING, "Cannot add more than %i vertex color layers", MAX_MCOL);
-      return -1;
-    }
 
     /* CD_PROP_BYTE_COLOR */
     BM_data_layer_add_named(em->bm, &em->bm->ldata, CD_PROP_BYTE_COLOR, name);
@@ -403,10 +403,6 @@ int ED_mesh_color_add(
   }
   else {
     layernum = CustomData_number_of_layers(&me->ldata, CD_PROP_BYTE_COLOR);
-    if (layernum >= MAX_MCOL) {
-      BKE_reportf(reports, RPT_WARNING, "Cannot add more than %i vertex color layers", MAX_MCOL);
-      return -1;
-    }
 
     if (CustomData_get_active_layer(&me->ldata, CD_PROP_BYTE_COLOR) && do_init) {
       CustomData_add_layer_named(&me->ldata,
@@ -418,7 +414,7 @@ int ED_mesh_color_add(
     }
     else {
       CustomData_add_layer_named(
-          &me->ldata, CD_PROP_BYTE_COLOR, CD_DEFAULT, nullptr, me->totloop, name);
+          &me->ldata, CD_PROP_BYTE_COLOR, CD_SET_DEFAULT, nullptr, me->totloop, name);
     }
 
     if (active_set || layernum == 0) {
@@ -441,7 +437,7 @@ bool ED_mesh_color_ensure(Mesh *me, const char *name)
 
   if (!layer) {
     CustomData_add_layer_named(
-        &me->ldata, CD_PROP_BYTE_COLOR, CD_DEFAULT, nullptr, me->totloop, name);
+        &me->ldata, CD_PROP_BYTE_COLOR, CD_SET_DEFAULT, nullptr, me->totloop, name);
     layer = me->ldata.layers + CustomData_get_layer_index(&me->ldata, CD_PROP_BYTE_COLOR);
 
     BKE_id_attributes_active_color_set(&me->id, layer);
@@ -465,7 +461,10 @@ static bool layers_poll(bContext *C)
 
 /*********************** Sculpt Vertex colors operators ************************/
 
-int ED_mesh_sculpt_color_add(Mesh *me, const char *name, const bool do_init, ReportList *reports)
+int ED_mesh_sculpt_color_add(Mesh *me,
+                             const char *name,
+                             const bool do_init,
+                             ReportList *UNUSED(reports))
 {
   /* NOTE: keep in sync with #ED_mesh_uv_add. */
 
@@ -476,11 +475,6 @@ int ED_mesh_sculpt_color_add(Mesh *me, const char *name, const bool do_init, Rep
     em = me->edit_mesh;
 
     layernum = CustomData_number_of_layers(&em->bm->vdata, CD_PROP_COLOR);
-    if (layernum >= MAX_MCOL) {
-      BKE_reportf(
-          reports, RPT_WARNING, "Cannot add more than %i sculpt vertex color layers", MAX_MCOL);
-      return -1;
-    }
 
     /* CD_PROP_COLOR */
     BM_data_layer_add_named(em->bm, &em->bm->vdata, CD_PROP_COLOR, name);
@@ -495,11 +489,6 @@ int ED_mesh_sculpt_color_add(Mesh *me, const char *name, const bool do_init, Rep
   }
   else {
     layernum = CustomData_number_of_layers(&me->vdata, CD_PROP_COLOR);
-    if (layernum >= MAX_MCOL) {
-      BKE_reportf(
-          reports, RPT_WARNING, "Cannot add more than %i sculpt vertex color layers", MAX_MCOL);
-      return -1;
-    }
 
     if (CustomData_has_layer(&me->vdata, CD_PROP_COLOR) && do_init) {
       const MPropCol *color_data = (const MPropCol *)CustomData_get_layer(&me->vdata,
@@ -509,7 +498,7 @@ int ED_mesh_sculpt_color_add(Mesh *me, const char *name, const bool do_init, Rep
     }
     else {
       CustomData_add_layer_named(
-          &me->vdata, CD_PROP_COLOR, CD_DEFAULT, nullptr, me->totvert, name);
+          &me->vdata, CD_PROP_COLOR, CD_SET_DEFAULT, nullptr, me->totvert, name);
     }
 
     if (layernum == 0) {
@@ -804,7 +793,7 @@ static int mesh_customdata_custom_splitnormals_add_exec(bContext *C, wmOperator 
                                        me->smoothresh);
       }
 
-      CustomData_add_layer(data, CD_CUSTOMLOOPNORMAL, CD_DEFAULT, nullptr, me->totloop);
+      CustomData_add_layer(data, CD_CUSTOMLOOPNORMAL, CD_SET_DEFAULT, nullptr, me->totloop);
     }
 
     DEG_id_tag_update(&me->id, 0);
@@ -889,11 +878,11 @@ static void mesh_add_verts(Mesh *mesh, int len)
 
   int totvert = mesh->totvert + len;
   CustomData vdata;
-  CustomData_copy(&mesh->vdata, &vdata, CD_MASK_MESH.vmask, CD_DEFAULT, totvert);
+  CustomData_copy(&mesh->vdata, &vdata, CD_MASK_MESH.vmask, CD_SET_DEFAULT, totvert);
   CustomData_copy_data(&mesh->vdata, &vdata, 0, 0, mesh->totvert);
 
   if (!CustomData_has_layer(&vdata, CD_MVERT)) {
-    CustomData_add_layer(&vdata, CD_MVERT, CD_CALLOC, nullptr, totvert);
+    CustomData_add_layer(&vdata, CD_MVERT, CD_SET_DEFAULT, nullptr, totvert);
   }
 
   CustomData_free(&mesh->vdata, mesh->totvert);
@@ -922,11 +911,11 @@ static void mesh_add_edges(Mesh *mesh, int len)
   totedge = mesh->totedge + len;
 
   /* Update custom-data. */
-  CustomData_copy(&mesh->edata, &edata, CD_MASK_MESH.emask, CD_DEFAULT, totedge);
+  CustomData_copy(&mesh->edata, &edata, CD_MASK_MESH.emask, CD_SET_DEFAULT, totedge);
   CustomData_copy_data(&mesh->edata, &edata, 0, 0, mesh->totedge);
 
   if (!CustomData_has_layer(&edata, CD_MEDGE)) {
-    CustomData_add_layer(&edata, CD_MEDGE, CD_CALLOC, nullptr, totedge);
+    CustomData_add_layer(&edata, CD_MEDGE, CD_SET_DEFAULT, nullptr, totedge);
   }
 
   CustomData_free(&mesh->edata, mesh->totedge);
@@ -955,11 +944,11 @@ static void mesh_add_loops(Mesh *mesh, int len)
   totloop = mesh->totloop + len; /* new face count */
 
   /* update customdata */
-  CustomData_copy(&mesh->ldata, &ldata, CD_MASK_MESH.lmask, CD_DEFAULT, totloop);
+  CustomData_copy(&mesh->ldata, &ldata, CD_MASK_MESH.lmask, CD_SET_DEFAULT, totloop);
   CustomData_copy_data(&mesh->ldata, &ldata, 0, 0, mesh->totloop);
 
   if (!CustomData_has_layer(&ldata, CD_MLOOP)) {
-    CustomData_add_layer(&ldata, CD_MLOOP, CD_CALLOC, nullptr, totloop);
+    CustomData_add_layer(&ldata, CD_MLOOP, CD_SET_DEFAULT, nullptr, totloop);
   }
 
   BKE_mesh_runtime_clear_cache(mesh);
@@ -982,11 +971,11 @@ static void mesh_add_polys(Mesh *mesh, int len)
   totpoly = mesh->totpoly + len; /* new face count */
 
   /* update customdata */
-  CustomData_copy(&mesh->pdata, &pdata, CD_MASK_MESH.pmask, CD_DEFAULT, totpoly);
+  CustomData_copy(&mesh->pdata, &pdata, CD_MASK_MESH.pmask, CD_SET_DEFAULT, totpoly);
   CustomData_copy_data(&mesh->pdata, &pdata, 0, 0, mesh->totpoly);
 
   if (!CustomData_has_layer(&pdata, CD_MPOLY)) {
-    CustomData_add_layer(&pdata, CD_MPOLY, CD_CALLOC, nullptr, totpoly);
+    CustomData_add_layer(&pdata, CD_MPOLY, CD_SET_DEFAULT, nullptr, totpoly);
   }
 
   CustomData_free(&mesh->pdata, mesh->totpoly);

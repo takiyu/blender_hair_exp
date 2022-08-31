@@ -344,7 +344,6 @@ void MeshImporter::read_vertices(COLLADAFW::Mesh *mesh, Mesh *me)
 
   me->totvert = pos.getFloatValues()->getCount() / stride;
   CustomData_add_layer(&me->vdata, CD_MVERT, CD_CALLOC, nullptr, me->totvert);
-
   MutableSpan<MVert> verts = blender::bke::mesh_vertices_for_write(*me);
   for (const int i : verts.index_range()) {
     get_vector(verts[i].co, pos, i, stride);
@@ -448,8 +447,10 @@ void MeshImporter::allocate_poly_data(COLLADAFW::Mesh *collada_mesh, Mesh *me)
   if (total_poly_count > 0) {
     me->totpoly = total_poly_count;
     me->totloop = total_loop_count;
-    CustomData_add_layer(&me->pdata, CD_MPOLY, CD_CALLOC, nullptr, me->totpoly);
-    CustomData_add_layer(&me->ldata, CD_MLOOP, CD_CALLOC, nullptr, me->totloop);
+    me->mpoly = (MPoly *)CustomData_add_layer(
+        &me->pdata, CD_MPOLY, CD_CALLOC, nullptr, me->totpoly);
+    me->mloop = (MLoop *)CustomData_add_layer(
+        &me->ldata, CD_MLOOP, CD_CALLOC, nullptr, me->totloop);
 
     unsigned int totuvset = collada_mesh->getUVCoords().getInputInfosArray().getCount();
     for (int i = 0; i < totuvset; i++) {
@@ -466,7 +467,7 @@ void MeshImporter::allocate_poly_data(COLLADAFW::Mesh *collada_mesh, Mesh *me)
         COLLADAFW::String &uvname = info->mName;
         /* Allocate space for UV_data */
         CustomData_add_layer_named(
-            &me->ldata, CD_MLOOPUV, CD_DEFAULT, nullptr, me->totloop, uvname.c_str());
+            &me->ldata, CD_MLOOPUV, CD_SET_DEFAULT, nullptr, me->totloop, uvname.c_str());
       }
       /* activate the first uv map */
       CustomData_set_layer_active(&me->ldata, CD_MLOOPUV, 0);
@@ -479,7 +480,7 @@ void MeshImporter::allocate_poly_data(COLLADAFW::Mesh *collada_mesh, Mesh *me)
             collada_mesh->getColors().getInputInfosArray()[i];
         COLLADAFW::String colname = extract_vcolname(info->mName);
         CustomData_add_layer_named(
-            &me->ldata, CD_PROP_BYTE_COLOR, CD_DEFAULT, nullptr, me->totloop, colname.c_str());
+            &me->ldata, CD_PROP_BYTE_COLOR, CD_SET_DEFAULT, nullptr, me->totloop, colname.c_str());
       }
       CustomData_set_layer_active(&me->ldata, CD_PROP_BYTE_COLOR, 0);
     }
@@ -544,11 +545,11 @@ void MeshImporter::mesh_add_edges(Mesh *mesh, int len)
   totedge = mesh->totedge + len;
 
   /* Update custom-data. */
-  CustomData_copy(&mesh->edata, &edata, CD_MASK_MESH.emask, CD_DEFAULT, totedge);
+  CustomData_copy(&mesh->edata, &edata, CD_MASK_MESH.emask, CD_SET_DEFAULT, totedge);
   CustomData_copy_data(&mesh->edata, &edata, 0, 0, mesh->totedge);
 
   if (!CustomData_has_layer(&edata, CD_MEDGE)) {
-    CustomData_add_layer(&edata, CD_MEDGE, CD_CALLOC, nullptr, totedge);
+    CustomData_add_layer(&edata, CD_MEDGE, CD_SET_DEFAULT, nullptr, totedge);
   }
 
   CustomData_free(&mesh->edata, mesh->totedge);
@@ -616,6 +617,9 @@ void MeshImporter::read_polys(COLLADAFW::Mesh *collada_mesh, Mesh *me)
 
   MaterialIdPrimitiveArrayMap mat_prim_map;
 
+  int *material_indices = (int *)CustomData_add_layer_named(
+      &me->pdata, CD_PROP_INT32, CD_SET_DEFAULT, nullptr, me->totpoly, "material_index");
+
   COLLADAFW::MeshPrimitiveArray &prim_arr = collada_mesh->getMeshPrimitives();
   COLLADAFW::MeshVertexData &nor = collada_mesh->getNormals();
 
@@ -634,7 +638,7 @@ void MeshImporter::read_polys(COLLADAFW::Mesh *collada_mesh, Mesh *me)
     int collada_meshtype = mp->getPrimitiveType();
 
     /* since we cannot set mpoly->mat_nr here, we store a portion of me->mpoly in Primitive */
-    Primitive prim = {mpoly, 0};
+    Primitive prim = {mpoly, material_indices, 0};
 
     /* If MeshPrimitive is TRIANGLE_FANS we split it into triangles
      * The first triangle-fan vertex will be the first vertex in every triangle
@@ -664,6 +668,9 @@ void MeshImporter::read_polys(COLLADAFW::Mesh *collada_mesh, Mesh *me)
           }
 
           mpoly++;
+          if (material_indices) {
+            material_indices++;
+          }
           mloop += 3;
           loop_index += 3;
           prim.totpoly++;
@@ -1008,10 +1015,9 @@ void MeshImporter::assign_material_to_geom(
 
     for (it = prims.begin(); it != prims.end(); it++) {
       Primitive &prim = *it;
-      MPoly *mpoly = prim.mpoly;
 
-      for (int i = 0; i < prim.totpoly; i++, mpoly++) {
-        mpoly->mat_nr = mat_index;
+      for (int i = 0; i < prim.totpoly; i++) {
+        prim.material_indices[i] = mat_index;
       }
     }
   }

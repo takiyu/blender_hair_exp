@@ -2061,7 +2061,7 @@ static void mesh_set_custom_normals(Mesh *mesh, float (*r_custom_nors)[3], const
   }
   else {
     clnors = (short(*)[2])CustomData_add_layer(
-        &mesh->ldata, CD_CUSTOMLOOPNORMAL, CD_CALLOC, nullptr, numloops);
+        &mesh->ldata, CD_CUSTOMLOOPNORMAL, CD_SET_DEFAULT, nullptr, numloops);
   }
   const Span<MVert> verts = blender::bke::mesh_vertices(*mesh);
   MutableSpan<MEdge> edges = blender::bke::mesh_edges_for_write(*mesh);

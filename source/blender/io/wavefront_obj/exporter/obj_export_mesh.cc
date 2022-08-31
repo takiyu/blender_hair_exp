@@ -6,6 +6,7 @@
 /* Silence warnings from copying deprecated fields. Needed for an Object copy constructor use. */
 #define DNA_DEPRECATED_ALLOW
 
+#include "BKE_attribute.hh"
 #include "BKE_customdata.h"
 #include "BKE_deform.h"
 #include "BKE_lib_id.h"
@@ -202,16 +203,23 @@ void OBJMesh::calc_smooth_groups(const bool use_bitflags)
 
 void OBJMesh::calc_poly_order()
 {
-  const int tot_polys = tot_polygons();
-  poly_order_.resize(tot_polys);
-  for (int i = 0; i < tot_polys; ++i) {
+  const bke::AttributeAccessor attributes = bke::mesh_attributes(*export_mesh_eval_);
+  const VArray<int> material_indices = attributes.lookup_or_default<int>(
+      "material_index", ATTR_DOMAIN_FACE, 0);
+  if (material_indices.is_single() && material_indices.get_internal_single() == 0) {
+    return;
+  }
+  const VArraySpan<int> material_indices_span(material_indices);
+
+  poly_order_.resize(material_indices_span.size());
+  for (const int i : material_indices_span.index_range()) {
     poly_order_[i] = i;
   }
-  const Span<MPoly> polys = bke::mesh_polygons(*export_mesh_eval_);
+
   /* Sort polygons by their material index. */
   blender::parallel_sort(poly_order_.begin(), poly_order_.end(), [&](int a, int b) {
-    int mat_a = polys[a].mat_nr;
-    int mat_b = polys[b].mat_nr;
+    int mat_a = material_indices_span[a];
+    int mat_b = material_indices_span[b];
     if (mat_a != mat_b) {
       return mat_a < mat_b;
     }
@@ -240,9 +248,8 @@ bool OBJMesh::is_ith_poly_smooth(const int poly_index) const
 
 int16_t OBJMesh::ith_poly_matnr(const int poly_index) const
 {
-  const Span<MPoly> polygons = bke::mesh_polygons(*export_mesh_eval_);
   BLI_assert(poly_index < export_mesh_eval_->totpoly);
-  const int16_t r_mat_nr = polygons[poly_index].mat_nr;
+  const int16_t r_mat_nr = export_mesh_eval_->mpoly[poly_index].mat_nr;
   return r_mat_nr >= 0 ? r_mat_nr : NOT_FOUND;
 }
 

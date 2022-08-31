@@ -422,7 +422,7 @@ static void rna_MeshVertex_hide_set(PointerRNA *ptr, bool value)
       return;
     }
     hide_vert = (bool *)CustomData_add_layer_named(
-        &mesh->vdata, CD_PROP_BOOL, CD_CALLOC, NULL, mesh->totvert, ".hide_vert");
+        &mesh->vdata, CD_PROP_BOOL, CD_SET_DEFAULT, NULL, mesh->totvert, ".hide_vert");
   }
   const int index = rna_MeshVertex_index_get(ptr);
   hide_vert[index] = value;
@@ -557,10 +557,26 @@ static void rna_MeshPolygon_hide_set(PointerRNA *ptr, bool value)
       return;
     }
     hide_poly = (bool *)CustomData_add_layer_named(
-        &mesh->pdata, CD_PROP_BOOL, CD_CALLOC, NULL, mesh->totpoly, ".hide_poly");
+        &mesh->pdata, CD_PROP_BOOL, CD_SET_DEFAULT, NULL, mesh->totpoly, ".hide_poly");
   }
   const int index = rna_MeshPolygon_index_get(ptr);
   hide_poly[index] = value;
+}
+
+static int rna_MeshPolygon_material_index_get(PointerRNA *ptr)
+{
+  const Mesh *mesh = rna_mesh(ptr);
+  const int *material_indices = BKE_mesh_material_indices(mesh);
+  const int index = rna_MeshPolygon_index_get(ptr);
+  return material_indices == NULL ? 0 : material_indices[index];
+}
+
+static void rna_MeshPolygon_material_index_set(PointerRNA *ptr, int value)
+{
+  Mesh *mesh = rna_mesh(ptr);
+  int *material_indices = BKE_mesh_material_indices_for_write(mesh);
+  const int index = rna_MeshPolygon_index_get(ptr);
+  material_indices[index] = value;
 }
 
 static void rna_MeshPolygon_center_get(PointerRNA *ptr, float *values)
@@ -639,14 +655,11 @@ static float rna_MeshLoopTriangle_area_get(PointerRNA *ptr)
 {
   Mesh *me = rna_mesh(ptr);
   MLoopTri *lt = (MLoopTri *)ptr->data;
-  const MVert *verts = BKE_mesh_vertices(me);
-  const MLoop *loops = BKE_mesh_loops(me);
+  unsigned int v1 = me->mloop[lt->tri[0]].v;
+  unsigned int v2 = me->mloop[lt->tri[1]].v;
+  unsigned int v3 = me->mloop[lt->tri[2]].v;
 
-  unsigned int v1 = loops[lt->tri[0]].v;
-  unsigned int v2 = loops[lt->tri[1]].v;
-  unsigned int v3 = loops[lt->tri[2]].v;
-
-  return area_tri_v3(verts[v1].co, verts[v2].co, verts[v3].co);
+  return area_tri_v3(me->mvert[v1].co, me->mvert[v2].co, me->mvert[v3].co);
 }
 
 static void rna_MeshLoopColor_color_get(PointerRNA *ptr, float *values)
@@ -794,7 +807,7 @@ static void rna_MEdge_freestyle_edge_mark_set(PointerRNA *ptr, bool value)
   FreestyleEdge *fed = CustomData_get(&me->edata, index, CD_FREESTYLE_EDGE);
 
   if (!fed) {
-    fed = CustomData_add_layer(&me->edata, CD_FREESTYLE_EDGE, CD_CALLOC, NULL, me->totedge);
+    fed = CustomData_add_layer(&me->edata, CD_FREESTYLE_EDGE, CD_SET_DEFAULT, NULL, me->totedge);
   }
   if (value) {
     fed->flag |= FREESTYLE_EDGE_MARK;
@@ -820,7 +833,7 @@ static void rna_MPoly_freestyle_face_mark_set(PointerRNA *ptr, bool value)
   FreestyleFace *ffa = CustomData_get(&me->pdata, index, CD_FREESTYLE_FACE);
 
   if (!ffa) {
-    ffa = CustomData_add_layer(&me->pdata, CD_FREESTYLE_FACE, CD_CALLOC, NULL, me->totpoly);
+    ffa = CustomData_add_layer(&me->pdata, CD_FREESTYLE_FACE, CD_SET_DEFAULT, NULL, me->totpoly);
   }
   if (value) {
     ffa->flag |= FREESTYLE_FACE_MARK;
@@ -1307,7 +1320,7 @@ static void rna_MeshEdge_hide_set(PointerRNA *ptr, bool value)
       return;
     }
     hide_edge = (bool *)CustomData_add_layer_named(
-        &mesh->edata, CD_PROP_BOOL, CD_CALLOC, NULL, mesh->totedge, ".hide_edge");
+        &mesh->edata, CD_PROP_BOOL, CD_SET_DEFAULT, NULL, mesh->totedge, ".hide_edge");
   }
   const int index = rna_MeshEdge_index_get(ptr);
   hide_edge[index] = value;
@@ -1316,9 +1329,9 @@ static void rna_MeshEdge_hide_set(PointerRNA *ptr, bool value)
 static int rna_MeshLoopTriangle_material_index_get(PointerRNA *ptr)
 {
   const Mesh *me = rna_mesh(ptr);
+  const int *material_indices = BKE_mesh_material_indices(me);
   const MLoopTri *ltri = (MLoopTri *)ptr->data;
-  const MPoly *polys = BKE_mesh_polygons(me);
-  return polys[ltri->poly].mat_nr;
+  return material_indices == NULL ? 0 : material_indices[ltri->poly];
 }
 
 static bool rna_MeshLoopTriangle_use_smooth_get(PointerRNA *ptr)
@@ -1800,7 +1813,8 @@ static void rna_Mesh_sculpt_vertex_color_remove(struct Mesh *me,
       CustomDataLayer *cdl = NULL; \
       int index; \
 \
-      CustomData_add_layer_named(&me->cdata, cd_prop_type, CD_DEFAULT, NULL, me->countvar, name); \
+      CustomData_add_layer_named( \
+          &me->cdata, cd_prop_type, CD_SET_DEFAULT, NULL, me->countvar, name); \
       index = CustomData_get_named_layer_index(&me->cdata, cd_prop_type, name); \
 \
       cdl = (index == -1) ? NULL : &(me->cdata.layers[index]); \
@@ -2260,7 +2274,8 @@ static void rna_def_mpolygon(BlenderRNA *brna)
   RNA_def_property_ui_text(prop, "Loop Total", "Number of loops used by this polygon");
 
   prop = RNA_def_property(srna, "material_index", PROP_INT, PROP_UNSIGNED);
-  RNA_def_property_int_sdna(prop, NULL, "mat_nr");
+  RNA_def_property_int_funcs(
+      prop, "rna_MeshPolygon_material_index_get", "rna_MeshPolygon_material_index_set", false);
   RNA_def_property_ui_text(prop, "Material Index", "Material slot index of this polygon");
 #  if 0
   RNA_def_property_int_funcs(prop, NULL, NULL, "rna_MeshPoly_material_index_range");

@@ -12,6 +12,7 @@
 #include "BLI_math_vector.h"
 
 #include "BKE_attribute.h"
+#include "BKE_attribute.hh"
 #include "BKE_customdata.h"
 #include "BKE_lib_id.h"
 #include "BKE_material.h"
@@ -385,11 +386,12 @@ void ABCGenericMeshWriter::get_geo_groups(Object *object,
                                           struct Mesh *mesh,
                                           std::map<std::string, std::vector<int32_t>> &geo_groups)
 {
-  const Span<MPoly> polys = bke::mesh_polygons(*mesh);
+  const bke::AttributeAccessor attributes = bke::mesh_attributes(*mesh);
+  const VArraySpan<int> material_indices = attributes.lookup_or_default<int>(
+      "material_index", ATTR_DOMAIN_FACE, 0);
 
-  for (const int i : polys.index_range()) {
-    const MPoly &current_poly = polys[i];
-    short mnr = current_poly.mat_nr;
+  for (const int i : material_indices.index_range()) {
+    short mnr = material_indices[i];
 
     Material *mat = BKE_object_material_get(object, mnr + 1);
 

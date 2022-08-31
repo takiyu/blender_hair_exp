@@ -17,6 +17,7 @@
 
 #include "BLI_utildefines.h"
 
+#include "BKE_attribute.hh"
 #include "BKE_customdata.h"
 #include "BKE_global.h"
 #include "BKE_lib_id.h"
@@ -286,15 +287,17 @@ static bool collect_vertex_counts_per_poly(Mesh *me,
                                            int material_index,
                                            std::vector<unsigned long> &vcount_list)
 {
-  int totpolys = me->totpoly;
-  bool is_triangulated = true;
   const Span<MPoly> polys = blender::bke::mesh_polygons(*me);
+  const blender::bke::AttributeAccessor attributes = blender::bke::mesh_attributes(*me);
+  const blender::VArray<int> material_indices = attributes.lookup_or_default<int>(
+      "material_index", ATTR_DOMAIN_FACE, 0);
+  bool is_triangulated = true;
 
-  /* Expecting that p->mat_nr is always 0 if the mesh has no materials assigned */
+  /* Expecting that the material index is always 0 if the mesh has no materials assigned */
   for (const int i : polys.index_range()) {
-    const MPoly *p = &polys[i];
-    if (p->mat_nr == material_index) {
-      int vertex_count = p->totloop;
+    if (material_indices[i] == material_index) {
+      const MPoly &poly = polys[i];
+      const int vertex_count = poly.totloop;
       vcount_list.push_back(vertex_count);
       if (vertex_count != 3) {
         is_triangulated = false;
@@ -396,13 +399,17 @@ void GeometryExporter::create_mesh_primitive_list(short material_index,
   /* performs the actual writing */
   prepareToAppendValues(is_triangulated, *primitive_list, vcount_list);
 
+  const blender::bke::AttributeAccessor attributes = blender::bke::mesh_attributes(*me);
+  const blender::VArray<int> material_indices = attributes.lookup_or_default<int>(
+      "material_index", ATTR_DOMAIN_FACE, 0);
+
   /* <p> */
   int texindex = 0;
   for (const int i : polys.index_range()) {
     const MPoly *p = &polys[i];
     int loop_count = p->totloop;
 
-    if (p->mat_nr == material_index) {
+    if (material_indices[i] == material_index) {
       const MLoop *l = &loops[p->loopstart];
       BCPolygonNormalsIndices normal_indices = norind[i];
 

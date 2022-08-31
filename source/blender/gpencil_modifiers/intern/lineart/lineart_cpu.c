@@ -1472,6 +1472,7 @@ typedef struct EdgeFeatData {
   Mesh *me;
   Object *ob_eval; /* For evaluated materials. */
   const MLoopTri *mlooptri;
+  const int *material_indices;
   LineartTriangle *tri_array;
   LineartVert *v_array;
   float crease_threshold;
@@ -1503,6 +1504,7 @@ static void lineart_identify_mlooptri_feature_edges(void *__restrict userdata,
   EdgeFeatData *e_feat_data = (EdgeFeatData *)userdata;
   EdgeFeatReduceData *reduce_data = (EdgeFeatReduceData *)tls->userdata_chunk;
   Mesh *me = e_feat_data->me;
+  const int *material_indices = e_feat_data->material_indices;
   Object *ob_eval = e_feat_data->ob_eval;
   LineartEdgeNeighbor *edge_nabr = e_feat_data->edge_nabr;
   const MLoopTri *mlooptri = e_feat_data->mlooptri;
@@ -1651,8 +1653,8 @@ static void lineart_identify_mlooptri_feature_edges(void *__restrict userdata,
       }
     }
 
-    int mat1 = polys[mlooptri[f1].poly].mat_nr;
-    int mat2 = polys[mlooptri[f2].poly].mat_nr;
+    int mat1 = material_indices ? material_indices[mlooptri[f1].poly] : 0;
+    int mat2 = material_indices ? material_indices[mlooptri[f2].poly] : 0;
 
     if (mat1 != mat2) {
       Material *m1 = BKE_object_material_get_eval(ob_eval, mat1 + 1);
@@ -1846,6 +1848,7 @@ static void lineart_triangle_adjacent_assign(LineartTriangle *tri,
 typedef struct TriData {
   LineartObjectInfo *ob_info;
   const MLoopTri *mlooptri;
+  const int *material_indices;
   LineartVert *vert_arr;
   LineartTriangle *tri_arr;
   int lineart_triangle_size;
@@ -1860,6 +1863,7 @@ static void lineart_load_tri_task(void *__restrict userdata,
   Mesh *me = tri_task_data->ob_info->original_me;
   LineartObjectInfo *ob_info = tri_task_data->ob_info;
   const MLoopTri *mlooptri = &tri_task_data->mlooptri[i];
+  const int *material_indices = tri_task_data->material_indices;
   LineartVert *vert_arr = tri_task_data->vert_arr;
   LineartTriangle *tri = tri_task_data->tri_arr;
   const MLoop *loops = BKE_mesh_loops(me);
@@ -1875,9 +1879,8 @@ static void lineart_load_tri_task(void *__restrict userdata,
   tri->v[2] = &vert_arr[v3];
 
   /* Material mask bits and occlusion effectiveness assignment. */
-  const MPoly *polygons = BKE_mesh_polygons(me);
-  Material *mat = BKE_object_material_get_eval(ob_info->original_ob,
-                                               polygons[mlooptri->poly].mat_nr + 1);
+  Material *mat = BKE_object_material_get(
+      ob_info->original_ob_eval, material_indices ? material_indices[mlooptri->poly] + 1 : 1);
   tri->material_mask_bits |= ((mat && (mat->lineart.flags & LRT_MATERIAL_MASK_ENABLED)) ?
                                   mat->lineart.material_mask_bits :
                                   0);
@@ -2000,6 +2003,9 @@ static void lineart_geometry_object_load(LineartObjectInfo *ob_info,
   const MLoopTri *mlooptri = BKE_mesh_runtime_looptri_ensure(me);
   const int tot_tri = BKE_mesh_runtime_looptri_len(me);
 
+  const int *material_indices = (const int *)CustomData_get_layer_named(
+      &me->pdata, CD_PROP_INT32, "material_index");
+
   /* Check if we should look for custom data tags like Freestyle edges or faces. */
   bool can_find_freestyle_edge = false;
   int layer_index = CustomData_get_active_layer_index(&me->edata, CD_FREESTYLE_EDGE);
@@ -2103,6 +2109,7 @@ static void lineart_geometry_object_load(LineartObjectInfo *ob_info,
   TriData tri_data;
   tri_data.ob_info = ob_info;
   tri_data.mlooptri = mlooptri;
+  tri_data.material_indices = material_indices;
   tri_data.vert_arr = la_v_arr;
   tri_data.tri_arr = la_tri_arr;
   tri_data.lineart_triangle_size = la_data->sizeof_triangle;
@@ -2130,6 +2137,7 @@ static void lineart_geometry_object_load(LineartObjectInfo *ob_info,
   edge_feat_data.me = me;
   edge_feat_data.ob_eval = ob_info->original_ob_eval;
   edge_feat_data.mlooptri = mlooptri;
+  edge_feat_data.material_indices = material_indices;
   edge_feat_data.edge_nabr = lineart_build_edge_neighbor(me, total_edges);
   edge_feat_data.tri_array = la_tri_arr;
   edge_feat_data.v_array = la_v_arr;
@@ -2659,6 +2667,7 @@ void lineart_main_load_geometries(Depsgraph *depsgraph,
       }
       LineartVert *v = (LineartVert *)obi->v_eln->pointer;
       int v_count = obi->v_eln->element_count;
+      obi->v_eln->global_index_offset = global_i;
       for (int vi = 0; vi < v_count; vi++) {
         v[vi].index += global_i;
       }
@@ -5113,6 +5122,8 @@ bool MOD_lineart_compute_feature_lines(Depsgraph *depsgraph,
 
     /* At last, we need to clear flags so we don't confuse GPencil generation calls. */
     MOD_lineart_chain_clear_picked_flag(lc);
+
+    MOD_lineart_finalize_chains(ld);
   }
 
   lineart_mem_destroy(&lc->shadow_data_pool);

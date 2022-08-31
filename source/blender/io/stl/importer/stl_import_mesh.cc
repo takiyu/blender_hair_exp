@@ -76,11 +76,10 @@ Mesh *STLMeshHelper::to_mesh(Main *bmain, char *mesh_name)
   id_us_min(&mesh->id);
 
   mesh->totvert = verts_.size();
-
-  CustomData_add_layer(&mesh->vdata, CD_MVERT, CD_CALLOC, nullptr, mesh->totvert);
-  MutableSpan<MVert> verts = bke::mesh_vertices_for_write(*mesh);
-  for (const int i : verts.index_range()) {
-    copy_v3_v3(verts[i].co, verts_[i]);
+  mesh->mvert = static_cast<MVert *>(
+      CustomData_add_layer(&mesh->vdata, CD_MVERT, CD_SET_DEFAULT, nullptr, mesh->totvert));
+  for (int i = 0; i < mesh->totvert; i++) {
+    copy_v3_v3(mesh->mvert[i].co, verts_[i]);
   }
 
   mesh->totpoly = tris_.size();

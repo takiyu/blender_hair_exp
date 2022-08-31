@@ -139,6 +139,7 @@ static void make_edges_mdata_extend(Mesh &mesh)
 
 static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispbase)
 {
+  using namespace blender::bke;
   const float *data;
   int a, b, ofs, vertcount, startvert, totvert = 0, totedge = 0, totloop = 0, totpoly = 0;
   int p1, p2, p3, p4, *index;
@@ -193,8 +194,11 @@ static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispba
   MEdge *medge = edges.data();
   MPoly *mpoly = polys.data();
   MLoop *mloop = loops.data();
+  MutableAttributeAccessor attributes = mesh_attributes_for_write(*mesh);
+  SpanAttributeWriter<int> material_indices = attributes.lookup_or_add_for_write_only_span<int>(
+      "material_index", ATTR_DOMAIN_FACE);
   MLoopUV *mloopuv = static_cast<MLoopUV *>(CustomData_add_layer_named(
-      &mesh->ldata, CD_MLOOPUV, CD_CALLOC, nullptr, mesh->totloop, "UVMap"));
+      &mesh->ldata, CD_MLOOPUV, CD_SET_DEFAULT, nullptr, mesh->totloop, "UVMap"));
 
   /* verts and faces */
   vertcount = 0;
@@ -271,7 +275,7 @@ static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispba
         mloop[2].v = startvert + index[1];
         mpoly->loopstart = (int)(mloop - loops.data());
         mpoly->totloop = 3;
-        mpoly->mat_nr = dl->col;
+        material_indices.span[mpoly - polys.data()] = dl->col;
 
         if (mloopuv) {
           for (int i = 0; i < 3; i++, mloopuv++) {
@@ -331,7 +335,7 @@ static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispba
           mloop[3].v = p2;
           mpoly->loopstart = (int)(mloop - loops.data());
           mpoly->totloop = 4;
-          mpoly->mat_nr = dl->col;
+          material_indices.span[mpoly - polys.data()] = dl->col;
 
           if (mloopuv) {
             int orco_sizeu = dl->nr - 1;
@@ -383,6 +387,8 @@ static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispba
   if (totpoly) {
     make_edges_mdata_extend(*mesh);
   }
+
+  material_indices.finish();
 
   return mesh;
 }
@@ -678,8 +684,7 @@ void BKE_mesh_from_pointcloud(const PointCloud *pointcloud, Mesh *me)
       &pointcloud->pdata, &me->vdata, CD_MASK_PROP_ALL, CD_DUPLICATE, pointcloud->totpoint);
 
   /* Convert the Position attribute to a mesh vertex. */
-  (MVert *)CustomData_add_layer(&me->vdata, CD_MVERT, CD_CALLOC, nullptr, me->totvert);
-  CustomData_update_typemap(&me->vdata);
+  CustomData_add_layer(&me->vdata, CD_MVERT, CD_SET_DEFAULT, nullptr, me->totvert);
 
   const int layer_idx = CustomData_get_named_layer_index(
       &me->vdata, CD_PROP_FLOAT3, POINTCLOUD_ATTR_POSITION);

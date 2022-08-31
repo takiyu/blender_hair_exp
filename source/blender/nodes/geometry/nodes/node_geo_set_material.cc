@@ -50,11 +50,11 @@ static void assign_material_to_faces(Mesh &mesh, const IndexMask selection, Mate
     BKE_id_material_eval_assign(&mesh.id, new_material_index + 1, material);
   }
 
-  MutableSpan<MPoly> polys = bke::mesh_polygons_for_write(mesh);
-  for (const int i : selection) {
-    MPoly &poly = polys[i];
-    poly.mat_nr = new_material_index;
-  }
+  MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(mesh);
+  SpanAttributeWriter<int> material_indices = attributes.lookup_or_add_for_write_span<int>(
+      "material_index", ATTR_DOMAIN_FACE);
+  material_indices.span.fill_indices(selection, new_material_index);
+  material_indices.finish();
 }
 
 static void node_geo_exec(GeoNodeExecParams params)
