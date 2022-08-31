@@ -372,11 +372,11 @@ static Mesh *doOcean(ModifierData *md, const ModifierEvalContext *ctx, Mesh *mes
   /* add vcols before displacement - allows lookup based on position */
 
   if (omd->flag & MOD_OCEAN_GENERATE_FOAM) {
-      const int polys_num = result->totpoly;
-      const int loops_num = result->totloop;
-      MLoop *mloops = BKE_mesh_loops_for_write(result);
-      MLoopCol *mloopcols = CustomData_add_layer_named(
-          &result->ldata, CD_PROP_BYTE_COLOR, CD_CALLOC, NULL, loops_num, omd->foamlayername);
+    const int polys_num = result->totpoly;
+    const int loops_num = result->totloop;
+    MLoop *mloops = BKE_mesh_loops_for_write(result);
+    MLoopCol *mloopcols = CustomData_add_layer_named(
+        &result->ldata, CD_PROP_BYTE_COLOR, CD_SET_DEFAULT, NULL, loops_num, omd->foamlayername);
 
     MLoopCol *mloopcols_spray = NULL;
     if (omd->flag & MOD_OCEAN_GENERATE_SPRAY) {
@@ -388,12 +388,12 @@ static Mesh *doOcean(ModifierData *md, const ModifierEvalContext *ctx, Mesh *mes
                                                    omd->spraylayername);
     }
 
-      if (mloopcols) { /* unlikely to fail */
-        MPoly *mp;
+    if (mloopcols) { /* unlikely to fail */
+      MPoly *mp;
 
-        for (i = 0, mp = polys; i < polys_num; i++, mp++) {
-          MLoop *ml = &mloops[mp->loopstart];
-          MLoopCol *mlcol = &mloopcols[mp->loopstart];
+      for (i = 0, mp = polys; i < polys_num; i++, mp++) {
+        MLoop *ml = &mloops[mp->loopstart];
+        MLoopCol *mlcol = &mloopcols[mp->loopstart];
 
         MLoopCol *mlcolspray = NULL;
         if (omd->flag & MOD_OCEAN_GENERATE_SPRAY) {
@@ -416,9 +416,9 @@ static Mesh *doOcean(ModifierData *md, const ModifierEvalContext *ctx, Mesh *mes
             foam = BKE_ocean_jminus_to_foam(ocr.Jminus, omd->foam_coverage);
           }
 
-            mlcol->r = mlcol->g = mlcol->b = (char)(foam * 255);
-            /* This needs to be set (render engine uses) */
-            mlcol->a = 255;
+          mlcol->r = mlcol->g = mlcol->b = (char)(foam * 255);
+          /* This needs to be set (render engine uses) */
+          mlcol->a = 255;
 
           if (omd->flag & MOD_OCEAN_GENERATE_SPRAY) {
             if (omd->flag & MOD_OCEAN_INVERT_SPRAY) {

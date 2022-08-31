@@ -1988,7 +1988,7 @@ static Mesh *dynamicPaint_Modifier_apply(DynamicPaintModifierData *pmd, Object *
             /* apply weights into a vertex group, if doesn't exists add a new layer */
             if (defgrp_index != -1 && !dvert && (surface->output_name[0] != '\0')) {
               dvert = CustomData_add_layer(
-                  &result->vdata, CD_MDEFORMVERT, CD_CALLOC, NULL, sData->total_points);
+                  &result->vdata, CD_MDEFORMVERT, CD_SET_DEFAULT, NULL, sData->total_points);
             }
             if (defgrp_index != -1 && dvert) {
               for (int i = 0; i < sData->total_points; i++) {

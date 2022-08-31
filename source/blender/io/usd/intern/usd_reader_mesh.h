@@ -10,8 +10,6 @@
 
 #include "pxr/usd/usdGeom/mesh.h"
 
-#include "DNA_meshdata_types.h"
-
 namespace blender::io::usd {
 
 class USDMeshReader : public USDGeomReader {

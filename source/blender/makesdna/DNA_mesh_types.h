@@ -297,6 +297,7 @@ typedef struct Mesh {
   int face_sets_color_default;
 
   char _pad1[4];
+
   void *_pad2;
 
   Mesh_Runtime runtime;

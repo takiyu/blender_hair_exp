@@ -577,27 +577,26 @@ void BlenderStrokeRenderer::GenerateStrokeMesh(StrokeGroup *group, bool hasTex)
   mesh->totcol = group->materials.size();
 
   MVert *vertices = (MVert *)CustomData_add_layer(
-      &mesh->vdata, CD_MVERT, CD_CALLOC, nullptr, mesh->totvert);
+      &mesh->vdata, CD_MVERT, CD_SET_DEFAULT, nullptr, mesh->totvert);
   MEdge *edges = (MEdge *)CustomData_add_layer(
-      &mesh->edata, CD_MEDGE, CD_CALLOC, nullptr, mesh->totedge);
+      &mesh->edata, CD_MEDGE, CD_SET_DEFAULT, nullptr, mesh->totedge);
   MPoly *polys = (MPoly *)CustomData_add_layer(
-      &mesh->pdata, CD_MPOLY, CD_CALLOC, nullptr, mesh->totpoly);
+      &mesh->pdata, CD_MPOLY, CD_SET_DEFAULT, nullptr, mesh->totpoly);
   MLoop *loops = (MLoop *)CustomData_add_layer(
-      &mesh->ldata, CD_MLOOP, CD_CALLOC, nullptr, mesh->totloop);
+      &mesh->ldata, CD_MLOOP, CD_SET_DEFAULT, nullptr, mesh->totloop);
   int *material_indices = (int *)CustomData_add_layer_named(
       &mesh->pdata, CD_PROP_INT32, CD_SET_DEFAULT, nullptr, mesh->totpoly, "material_index");
-
   MLoopUV *loopsuv[2] = {nullptr};
 
   if (hasTex) {
     // First UV layer
     loopsuv[0] = static_cast<MLoopUV *>(CustomData_add_layer_named(
-        &mesh->ldata, CD_MLOOPUV, CD_CALLOC, nullptr, mesh->totloop, uvNames[0]));
+        &mesh->ldata, CD_MLOOPUV, CD_SET_DEFAULT, nullptr, mesh->totloop, uvNames[0]));
     CustomData_set_layer_active(&mesh->ldata, CD_MLOOPUV, 0);
 
     // Second UV layer
     loopsuv[1] = static_cast<MLoopUV *>(CustomData_add_layer_named(
-        &mesh->ldata, CD_MLOOPUV, CD_CALLOC, nullptr, mesh->totloop, uvNames[1]));
+        &mesh->ldata, CD_MLOOPUV, CD_SET_DEFAULT, nullptr, mesh->totloop, uvNames[1]));
     CustomData_set_layer_active(&mesh->ldata, CD_MLOOPUV, 1);
   }
 
@@ -605,7 +604,7 @@ void BlenderStrokeRenderer::GenerateStrokeMesh(StrokeGroup *group, bool hasTex)
   MLoopCol *colors = (MLoopCol *)CustomData_add_layer_named(
       &mesh->ldata, CD_PROP_BYTE_COLOR, CD_SET_DEFAULT, nullptr, mesh->totloop, "Color");
   MLoopCol *transp = (MLoopCol *)CustomData_add_layer_named(
-      &mesh->ldata, CD_PROP_BYTE_COLOR, CD_CALLOC, nullptr, mesh->totloop, "Alpha");
+      &mesh->ldata, CD_PROP_BYTE_COLOR, CD_SET_DEFAULT, nullptr, mesh->totloop, "Alpha");
   CustomData_set_layer_active(&mesh->ldata, CD_PROP_BYTE_COLOR, 0);
 
   mesh->mat = (Material **)MEM_mallocN(sizeof(Material *) * mesh->totcol, "MaterialList");

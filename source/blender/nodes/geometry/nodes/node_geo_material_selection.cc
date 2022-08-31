@@ -11,7 +11,6 @@
 #include "BLI_task.hh"
 
 #include "BKE_material.h"
-#include "BKE_mesh.h"
 
 namespace blender::nodes::node_geo_material_selection_cc {
 

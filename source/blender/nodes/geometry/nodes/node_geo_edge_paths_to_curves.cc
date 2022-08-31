@@ -1,7 +1,8 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 
 #include "BKE_curves.hh"
-#include "BKE_mesh.h"
+
+#include "DNA_mesh_types.h"
 
 #include "GEO_mesh_to_curve.hh"
 

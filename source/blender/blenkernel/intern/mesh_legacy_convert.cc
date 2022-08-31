@@ -184,7 +184,7 @@ static void convert_mfaces_to_mpolys(ID *id,
   CustomData_free(pdata, totpoly_i);
 
   totpoly = totface_i;
-  mpoly = (MPoly *)CustomData_add_layer(pdata, CD_MPOLY, CD_CALLOC, nullptr, totpoly);
+  mpoly = (MPoly *)CustomData_add_layer(pdata, CD_MPOLY, CD_SET_DEFAULT, nullptr, totpoly);
 
   numTex = CustomData_number_of_layers(fdata, CD_MTFACE);
   numCol = CustomData_number_of_layers(fdata, CD_MCOL);
@@ -195,7 +195,7 @@ static void convert_mfaces_to_mpolys(ID *id,
     totloop += mf->v4 ? 4 : 3;
   }
 
-  mloop = (MLoop *)CustomData_add_layer(ldata, CD_MLOOP, CD_CALLOC, nullptr, totloop);
+  mloop = (MLoop *)CustomData_add_layer(ldata, CD_MLOOP, CD_SET_DEFAULT, nullptr, totloop);
 
   CustomData_to_bmeshpoly(fdata, ldata, totloop);
 
@@ -1003,7 +1003,7 @@ void BKE_mesh_legacy_convert_material_indices_to_mpoly(Mesh *mesh)
   using namespace blender;
   using namespace blender::bke;
   const AttributeAccessor attributes = mesh_attributes(*mesh);
-  MutableSpan<MPoly> polys(mesh->mpoly, mesh->totpoly);
+  MutableSpan<MPoly> polys = mesh_polygons_for_write(*mesh);
   const VArray<int> material_indices = attributes.lookup_or_default<int>(
       "material_index", ATTR_DOMAIN_FACE, 0);
   threading::parallel_for(polys.index_range(), 4096, [&](IndexRange range) {
@@ -1018,7 +1018,7 @@ void BKE_mesh_legacy_convert_mpoly_to_material_indices(Mesh *mesh)
   using namespace blender;
   using namespace blender::bke;
   MutableAttributeAccessor attributes = mesh_attributes_for_write(*mesh);
-  const Span<MPoly> polys(mesh->mpoly, mesh->totpoly);
+  const Span<MPoly> polys = mesh_polygons(*mesh);
   if (std::any_of(
           polys.begin(), polys.end(), [](const MPoly &poly) { return poly.mat_nr != 0; })) {
     SpanAttributeWriter<int> material_indices = attributes.lookup_or_add_for_write_only_span<int>(

@@ -1641,7 +1641,6 @@ static void lineart_identify_mlooptri_feature_edges(void *__restrict userdata,
     const MPoly *polys = BKE_mesh_polygons(me);
 
     if (ld->conf.use_crease) {
-
       bool do_crease = true;
       if (!ld->conf.force_crease && !e_feat_data->use_auto_smooth &&
           (polys[mlooptri[f1].poly].flag & ME_SMOOTH) &&

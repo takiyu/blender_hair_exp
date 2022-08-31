@@ -148,7 +148,6 @@ static int find_mface_for_root_position(const Span<MVert> verts,
   if (possible_mface_indices.size() == 1) {
     return possible_mface_indices.first();
   }
-
   /* Find the closest #MFace to #root_pos. */
   int mface_i;
   float best_distance_sq = FLT_MAX;

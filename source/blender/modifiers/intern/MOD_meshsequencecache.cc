@@ -186,7 +186,8 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
     const Span<MPoly> me_polygons = blender::bke::mesh_polygons(*me);
 
     /* TODO(sybren+bastien): possibly check relevant custom data layers (UV/color depending on
-     * flags) and duplicate those too. */
+     * flags) and duplicate those too.
+     * XXX(Hans): This probably isn't true anymore with various CoW improvements, etc. */
     if ((me_vertices.data() == mesh_verts.data()) || (me_edges.data() == mesh_edges.data()) ||
         (me_polygons.data() == mesh_polys.data())) {
       /* We need to duplicate data here, otherwise we'll modify org mesh, see T51701. */

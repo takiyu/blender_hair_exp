@@ -30,8 +30,8 @@ class EdgeNeighborCountFieldInput final : public bke::MeshFieldInput {
   {
     const Span<MLoop> loops = bke::mesh_loops(mesh);
     Array<int> face_count(mesh.totedge, 0);
-    for (const int i : loops.index_range()) {
-      face_count[loops[i].e]++;
+    for (const MLoop &loop : loops) {
+      face_count[loop.e]++;
     }
 
     return bke::mesh_attributes(mesh).adapt_domain<int>(

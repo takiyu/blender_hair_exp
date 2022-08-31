@@ -76,16 +76,16 @@ Mesh *STLMeshHelper::to_mesh(Main *bmain, char *mesh_name)
   id_us_min(&mesh->id);
 
   mesh->totvert = verts_.size();
-  mesh->mvert = static_cast<MVert *>(
-      CustomData_add_layer(&mesh->vdata, CD_MVERT, CD_SET_DEFAULT, nullptr, mesh->totvert));
+  CustomData_add_layer(&mesh->vdata, CD_MVERT, CD_SET_DEFAULT, nullptr, mesh->totvert);
+  MutableSpan<MVert> verts = bke::mesh_vertices_for_write(*mesh);
   for (int i = 0; i < mesh->totvert; i++) {
-    copy_v3_v3(mesh->mvert[i].co, verts_[i]);
+    copy_v3_v3(verts[i].co, verts_[i]);
   }
 
   mesh->totpoly = tris_.size();
   mesh->totloop = tris_.size() * 3;
-  CustomData_add_layer(&mesh->pdata, CD_MPOLY, CD_CALLOC, nullptr, mesh->totpoly);
-  CustomData_add_layer(&mesh->ldata, CD_MLOOP, CD_CALLOC, nullptr, mesh->totloop);
+  CustomData_add_layer(&mesh->pdata, CD_MPOLY, CD_SET_DEFAULT, nullptr, mesh->totpoly);
+  CustomData_add_layer(&mesh->ldata, CD_MLOOP, CD_SET_DEFAULT, nullptr, mesh->totloop);
   MutableSpan<MPoly> polys = bke::mesh_polygons_for_write(*mesh);
   MutableSpan<MLoop> loops = bke::mesh_loops_for_write(*mesh);
   threading::parallel_for(tris_.index_range(), 2048, [&](IndexRange tris_range) {
