@@ -318,7 +318,7 @@ static bool *ensure_corner_boolean_attribute(Mesh &mesh, const blender::StringRe
       &mesh.ldata, CD_PROP_BOOL, name.c_str(), mesh.totloop));
   if (!data) {
     data = static_cast<bool *>(CustomData_add_layer_named(
-        &mesh.ldata, CD_PROP_BOOL, CD_CALLOC, nullptr, mesh.totpoly, name.c_str()));
+        &mesh.ldata, CD_PROP_BOOL, CD_SET_DEFAULT, nullptr, mesh.totpoly, name.c_str()));
   }
   return data;
 }

@@ -20,7 +20,6 @@ struct CustomData;
 struct CustomDataLayer;
 struct ID;
 struct ReportList;
-struct Mesh;
 
 /** #Attribute.domain */
 typedef enum eAttrDomain {
