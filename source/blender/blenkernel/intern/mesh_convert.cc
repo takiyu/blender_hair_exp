@@ -81,7 +81,6 @@ static void make_edges_mdata_extend(Mesh &mesh)
   const MPoly *mp;
   int i;
 
-  MutableSpan<MEdge> edges = mesh.edges_for_write();
   const Span<MPoly> polys = mesh.polygons();
   MutableSpan<MLoop> loops = mesh.loops_for_write();
 
@@ -92,13 +91,12 @@ static void make_edges_mdata_extend(Mesh &mesh)
     BKE_mesh_poly_edgehash_insert(eh, &poly, &loops[poly.loopstart]);
   }
 
-  const int totedge_old = mesh.totedge;
   const int totedge_new = BLI_edgehash_len(eh);
 
 #ifdef DEBUG
   /* ensure that there's no overlap! */
   if (totedge_new) {
-    for (const MEdge &edge : edges) {
+    for (const MEdge &edge : mesh.edges()) {
       BLI_assert(BLI_edgehash_haskey(eh, edge.v1, edge.v2) == false);
     }
   }
@@ -108,8 +106,8 @@ static void make_edges_mdata_extend(Mesh &mesh)
     CustomData_realloc(&mesh.edata, totedge + totedge_new);
 
     mesh.totedge += totedge_new;
-    edges = mesh.edges_for_write();
-    MEdge *medge = &edges[totedge_old];
+    MutableSpan<MEdge> edges = mesh.edges_for_write();
+    MEdge *medge = &edges[totedge];
 
     EdgeHashIterator *ehi;
     uint e_index = totedge;
