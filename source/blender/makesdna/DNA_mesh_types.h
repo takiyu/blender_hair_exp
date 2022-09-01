@@ -272,6 +272,11 @@ typedef struct Mesh {
   char subdivr DNA_DEPRECATED;
   char subsurftype DNA_DEPRECATED;
 
+  /** Deprecated pointer to mesh polygons, kept for forward compatibility. */
+  struct MPoly *mpoly DNA_DEPRECATED;
+  /** Deprecated pointer to face corners, kept for forward compatibility. */
+  struct MLoop *mloop DNA_DEPRECATED;
+
   /** Deprecated array of mesh vertices, kept for reading old files, now stored in #CustomData. */
   struct MVert *mvert DNA_DEPRECATED;
   /** Deprecated array of mesh edges, kept for reading old files, now stored in #CustomData. */
@@ -286,6 +291,7 @@ typedef struct Mesh {
   struct MCol *mcol DNA_DEPRECATED;
   /** Deprecated face storage (quads & triangles only). Kept for reading old files. */
   struct MFace *mface DNA_DEPRECATED;
+
   /**
    * Deprecated storage of old faces (only triangles or quads).
    *

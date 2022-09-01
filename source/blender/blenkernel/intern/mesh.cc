@@ -248,10 +248,17 @@ static void mesh_blend_write(BlendWriter *writer, ID *id, const void *id_address
   else {
     Set<std::string> names_to_skip;
     if (!BLO_write_is_undo(writer)) {
+
       BKE_mesh_legacy_convert_hide_layers_to_flags(mesh);
       BKE_mesh_legacy_convert_material_indices_to_mpoly(mesh);
       /* When converting to the old mesh format, don't save redundant attributes. */
       names_to_skip.add_multiple_new({".hide_vert", ".hide_edge", ".hide_poly"});
+
+      /* Set deprecated mesh data pointers for forward compatibility. */
+      mesh->mvert = const_cast<MVert *>(mesh->vertices().data());
+      mesh->medge = const_cast<MEdge *>(mesh->edges().data());
+      mesh->mpoly = const_cast<MPoly *>(mesh->polygons().data());
+      mesh->mloop = const_cast<MLoop *>(mesh->loops().data());
     }
 
     CustomData_blend_write_prepare(mesh->vdata, vert_layers, names_to_skip);
