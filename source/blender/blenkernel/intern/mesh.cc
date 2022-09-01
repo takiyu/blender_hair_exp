@@ -1542,11 +1542,10 @@ void BKE_mesh_transform(Mesh *me, const float mat[4][4], bool do_keys)
     mul_m4_v3(mat, vert.co);
   }
 
-  int i;
   if (do_keys && me->key) {
     LISTBASE_FOREACH (KeyBlock *, kb, &me->key->block) {
       float *fp = (float *)kb->data;
-      for (i = kb->totelem; i--; fp += 3) {
+      for (int i = kb->totelem; i--; fp += 3) {
         mul_m4_v3(mat, fp);
       }
     }
@@ -1562,7 +1561,7 @@ void BKE_mesh_transform(Mesh *me, const float mat[4][4], bool do_keys)
 
     copy_m3_m4(m3, mat);
     normalize_m3(m3);
-    for (i = 0; i < me->totloop; i++, lnors++) {
+    for (int i = 0; i < me->totloop; i++, lnors++) {
       mul_m3_v3(m3, *lnors);
     }
   }
