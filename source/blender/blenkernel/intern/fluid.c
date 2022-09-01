@@ -1093,7 +1093,7 @@ static void obstacles_from_mesh(Object *coll_ob,
     if (vert_vel) {
       MEM_freeN(vert_vel);
     }
-    MEM_freeN(verts);
+    MEM_SAFE_FREE(verts);
     BKE_id_free(NULL, me);
   }
 }
@@ -2174,8 +2174,8 @@ static void emit_from_mesh(
     if (vert_vel) {
       MEM_freeN(vert_vel);
     }
-    MEM_freeN(verts);
-    MEM_freeN(vert_normals);
+    MEM_SAFE_FREE(verts);
+    MEM_SAFE_FREE(vert_normals);
     BKE_id_free(NULL, me);
   }
 }
