@@ -2078,7 +2078,7 @@ static void emit_from_mesh(
     const MLoop *mloop = BKE_mesh_loops(me);
     const MLoopTri *mlooptri = BKE_mesh_runtime_looptri_ensure(me);
     const int numverts = me->totvert;
-    const MDeformVert *dvert = CustomData_get_layer(&me->vdata, CD_MDEFORMVERT);
+    const MDeformVert *dvert = BKE_mesh_deform_verts(me);
     const MLoopUV *mloopuv = CustomData_get_layer_named(&me->ldata, CD_MLOOPUV, ffs->uvlayer_name);
 
     if (ffs->flags & FLUID_FLOW_INITVELOCITY) {

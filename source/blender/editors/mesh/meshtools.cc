@@ -1465,7 +1465,7 @@ MDeformVert *ED_mesh_active_dvert_get_ob(Object *ob, int *r_index)
   if (r_index) {
     *r_index = index;
   }
-  if (index == -1 || !CustomData_has_layer(&me->vdata, CD_MDEFORMVERT)) {
+  if (index == -1 || !BKE_mesh_deform_verts(me)) {
     return nullptr;
   }
   MDeformVert *dvert = BKE_mesh_deform_verts_for_write(me);

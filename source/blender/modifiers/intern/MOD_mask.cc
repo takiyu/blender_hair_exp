@@ -646,8 +646,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *UNUSED(ctx)
                                  (mmd->flag & MOD_MASK_SMOOTH);
 
   /* Return empty or input mesh when there are no vertex groups. */
-  const MDeformVert *dvert = (const MDeformVert *)CustomData_get_layer(&mesh->vdata,
-                                                                       CD_MDEFORMVERT);
+  const MDeformVert *dvert = BKE_mesh_deform_verts(mesh);
   if (dvert == nullptr) {
     return invert_mask ? mesh : BKE_mesh_new_nomain_from_template(mesh, 0, 0, 0, 0, 0);
   }

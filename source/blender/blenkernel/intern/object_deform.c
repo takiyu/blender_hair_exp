@@ -162,7 +162,7 @@ bool BKE_object_defgroup_clear(Object *ob, bDeformGroup *dg, const bool use_sele
       }
     }
     else {
-      if (CustomData_has_layer(&me->vdata, CD_MDEFORMVERT)) {
+      if (BKE_mesh_deform_verts(me)) {
         const MVert *mv;
         int i;
 

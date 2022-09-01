@@ -196,9 +196,9 @@ bool ED_vgroup_parray_alloc(ID *id,
 
           return true;
         }
-        if (CustomData_has_layer(&me->vdata, CD_MDEFORMVERT)) {
+        if (BKE_mesh_deform_verts(me)) {
           const blender::Span<MVert> verts = me->vertices();
-          MDeformVert *dvert = (MDeformVert *)CustomData_get_layer(&me->vdata, CD_MDEFORMVERT);
+          MDeformVert *dvert = BKE_mesh_deform_verts_for_write(me);
 
           *dvert_tot = me->totvert;
           *dvert_arr = static_cast<MDeformVert **>(
@@ -548,7 +548,7 @@ static void ED_mesh_defvert_mirror_update_ob(Object *ob, int def_nr, int vidx)
 
   vidx_mirr = mesh_get_x_mirror_vert(ob, nullptr, vidx, use_topology);
 
-  MDeformVert *dvert = (MDeformVert *)CustomData_get_layer(&me->vdata, CD_MDEFORMVERT);
+  MDeformVert *dvert = BKE_mesh_deform_verts_for_write(me);
   if ((vidx_mirr) >= 0 && (vidx_mirr != vidx)) {
     MDeformVert *dvert_src = &dvert[vidx];
     MDeformVert *dvert_dst = &dvert[vidx_mirr];
@@ -666,7 +666,7 @@ static void vgroup_copy_active_to_sel(Object *ob, eVGroupSelect subset_type)
 
     dvert_act = ED_mesh_active_dvert_get_ob(ob, &v_act);
     if (dvert_act) {
-      dv = (MDeformVert *)CustomData_get_layer(&me->vdata, CD_MDEFORMVERT);
+      dv = BKE_mesh_deform_verts_for_write(me);
       for (i = 0; i < me->totvert; i++, dv++) {
         if ((verts[i].flag & SELECT) && dv != dvert_act) {
           BKE_defvert_copy_subset(dv, dvert_act, vgroup_validmap, vgroup_tot);
@@ -951,7 +951,7 @@ static float get_vert_def_nr(Object *ob, const int def_nr, const int vertnum)
       }
     }
     else {
-      MDeformVert *dvert = (MDeformVert *)CustomData_get_layer(&me->vdata, CD_MDEFORMVERT);
+      MDeformVert *dvert = BKE_mesh_deform_verts_for_write(me);
       if (dvert) {
         if (vertnum >= me->totvert) {
           return 0.0f;
@@ -1047,19 +1047,17 @@ static void vgroup_select_verts(Object *ob, int select)
       }
     }
     else {
-      if (CustomData_has_layer(&me->vdata, CD_MDEFORMVERT)) {
+      if (const MDeformVert *dverts = BKE_mesh_deform_verts(me)) {
         const bool *hide_vert = (const bool *)CustomData_get_layer_named(
             &me->vdata, CD_PROP_BOOL, ".hide_vert");
         MVert *mv;
-        MDeformVert *dv;
         int i;
 
         mv = me->vertices_for_write().data();
-        dv = BKE_mesh_deform_verts_for_write(me);
 
-        for (i = 0; i < me->totvert; i++, mv++, dv++) {
+        for (i = 0; i < me->totvert; i++, mv++) {
           if (hide_vert != nullptr && !hide_vert[i]) {
-            if (BKE_defvert_find_index(dv, def_nr)) {
+            if (BKE_defvert_find_index(&dverts[i], def_nr)) {
               if (select) {
                 mv->flag |= SELECT;
               }
@@ -1353,10 +1351,8 @@ static void moveCloserToDistanceFromPlane(Depsgraph *depsgraph,
   MDeformWeight *dw, *dw_eval;
   MVert m;
   const blender::Span<MVert> verts = me_deform->vertices();
-  MDeformVert *dvert = (MDeformVert *)CustomData_get_layer(&me->vdata, CD_MDEFORMVERT) + index;
-  MDeformVert *dvert_eval = (MDeformVert *)CustomData_get_layer(&mesh_eval->vdata,
-                                                                CD_MDEFORMVERT) +
-                            index;
+  MDeformVert *dvert = BKE_mesh_deform_verts_for_write(me) + index;
+  MDeformVert *dvert_eval = BKE_mesh_deform_verts_for_write(mesh_eval) + index;
   int totweight = dvert->totweight;
   float oldw = 0;
   float oldPos[3] = {0};
@@ -2463,7 +2459,7 @@ void ED_vgroup_mirror(Object *ob,
       int vidx, vidx_mirr;
       const bool use_vert_sel = (me->editflag & ME_EDIT_PAINT_VERT_SEL) != 0;
 
-      if (!CustomData_has_layer(&me->vdata, CD_MDEFORMVERT)) {
+      if (!BKE_mesh_deform_verts(me)) {
         goto cleanup;
       }
 
@@ -2745,7 +2741,7 @@ static bool vertex_group_mesh_with_dvert_poll(bContext *C)
   }
 
   Mesh *me = static_cast<Mesh *>(ob->data);
-  if (CustomData_has_layer(&me->vdata, CD_MDEFORMVERT)) {
+  if (!BKE_mesh_deform_verts(me)) {
     CTX_wm_operator_poll_msg_set(C, "The active mesh object has no vertex group data");
     return false;
   }

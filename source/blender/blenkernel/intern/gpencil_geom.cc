@@ -2542,8 +2542,7 @@ static void gpencil_generate_edgeloops(Object *ob,
         gpf_stroke, MAX2(stroke_mat_index, 0), array_len + 1, thickness * thickness, false);
 
     /* Create dvert data. */
-    const MDeformVert *me_dvert = (const MDeformVert *)CustomData_get_layer(&me->vdata,
-                                                                            CD_MDEFORMVERT);
+    const MDeformVert *me_dvert = BKE_mesh_deform_verts(me);
     if (use_vgroups && me_dvert) {
       gps_stroke->dvert = (MDeformVert *)MEM_callocN(sizeof(MDeformVert) * (array_len + 1),
                                                      "gp_stroke_dverts");
@@ -2743,8 +2742,7 @@ bool BKE_gpencil_convert_mesh(Main *bmain,
       gps_fill->flag |= GP_STROKE_CYCLIC;
 
       /* Create dvert data. */
-      const MDeformVert *me_dvert = (const MDeformVert *)CustomData_get_layer(&me_eval->vdata,
-                                                                              CD_MDEFORMVERT);
+      const MDeformVert *me_dvert = BKE_mesh_deform_verts(me_eval);
       if (use_vgroups && me_dvert) {
         gps_fill->dvert = (MDeformVert *)MEM_callocN(sizeof(MDeformVert) * mp->totloop,
                                                      "gp_fill_dverts");

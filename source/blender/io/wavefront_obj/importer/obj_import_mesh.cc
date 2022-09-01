@@ -237,7 +237,7 @@ void MeshFromGeometry::create_polys_loops(Mesh *mesh, bool use_vertex_groups)
 void MeshFromGeometry::create_vertex_groups(Object *obj)
 {
   Mesh *mesh = static_cast<Mesh *>(obj->data);
-  if (!CustomData_has_layer(&mesh->vdata, CD_MDEFORMVERT)) {
+  if (!BKE_mesh_deform_verts(mesh)) {
     return;
   }
   for (const std::string &name : mesh_geometry_.group_order_) {

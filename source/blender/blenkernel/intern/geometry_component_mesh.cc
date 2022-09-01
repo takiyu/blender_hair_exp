@@ -1017,8 +1017,7 @@ class VertexGroupsAttributeProvider final : public DynamicAttributesProvider {
     if (vertex_group_index < 0) {
       return {};
     }
-    const MDeformVert *dvert = (const MDeformVert *)CustomData_get_layer(&mesh->vdata,
-                                                                         CD_MDEFORMVERT);
+    const MDeformVert *dvert = BKE_mesh_deform_verts(mesh);
     if (dvert == nullptr) {
       static const float default_value = 0.0f;
       return {VArray<float>::ForSingle(default_value, mesh->totvert), ATTR_DOMAIN_POINT};
@@ -1069,7 +1068,7 @@ class VertexGroupsAttributeProvider final : public DynamicAttributesProvider {
     }
     BLI_remlink(&mesh->vertex_group_names, group);
     MEM_freeN(group);
-    if (!CustomData_has_layer(&mesh->vdata, CD_MDEFORMVERT)) {
+    if (!BKE_mesh_deform_verts(mesh)) {
       return true;
     }
 

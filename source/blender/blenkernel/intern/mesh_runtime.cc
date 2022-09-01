@@ -361,7 +361,7 @@ bool BKE_mesh_runtime_is_valid(Mesh *me_eval)
       loops.size(),
       polys.data(),
       polys.size(),
-      (MDeformVert *)CustomData_get_layer(&me_eval->vdata, CD_MDEFORMVERT),
+      BKE_mesh_deform_verts_for_write(me_eval),
       do_verbose,
       do_fixes,
       &changed);

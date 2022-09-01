@@ -1083,7 +1083,7 @@ bool BKE_mesh_validate(Mesh *me, const bool do_verbose, const bool cddata_check_
                            loops.size(),
                            polys.data(),
                            polys.size(),
-                           (MDeformVert *)CustomData_get_layer(&me->vdata, CD_MDEFORMVERT),
+                           BKE_mesh_deform_verts_for_write(me),
                            do_verbose,
                            true,
                            &changed);
@@ -1125,22 +1125,21 @@ bool BKE_mesh_is_valid(Mesh *me)
   MutableSpan<MPoly> polys = me->polygons_for_write();
   MutableSpan<MLoop> loops = me->loops_for_write();
 
-  is_valid &= BKE_mesh_validate_arrays(
-      me,
-      verts.data(),
-      verts.size(),
-      edges.data(),
-      edges.size(),
-      (MFace *)CustomData_get_layer(&me->fdata, CD_MFACE),
-      me->totface,
-      loops.data(),
-      loops.size(),
-      polys.data(),
-      polys.size(),
-      (MDeformVert *)CustomData_get_layer(&me->vdata, CD_MDEFORMVERT),
-      do_verbose,
-      do_fixes,
-      &changed);
+  is_valid &= BKE_mesh_validate_arrays(me,
+                                       verts.data(),
+                                       verts.size(),
+                                       edges.data(),
+                                       edges.size(),
+                                       (MFace *)CustomData_get_layer(&me->fdata, CD_MFACE),
+                                       me->totface,
+                                       loops.data(),
+                                       loops.size(),
+                                       polys.data(),
+                                       polys.size(),
+                                       BKE_mesh_deform_verts_for_write(me),
+                                       do_verbose,
+                                       do_fixes,
+                                       &changed);
 
   BLI_assert(changed == false);
 
