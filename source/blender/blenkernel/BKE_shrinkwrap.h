@@ -31,6 +31,7 @@ struct MDeformVert;
 struct Mesh;
 struct MEdge;
 struct ModifierEvalContext;
+struct MPoly;
 struct Object;
 struct ShrinkwrapGpencilModifierData;
 struct ShrinkwrapModifierData;
@@ -73,6 +74,7 @@ typedef struct ShrinkwrapTreeData {
   BVHTree *bvh;
   BVHTreeFromMesh treeData;
 
+  const struct MPoly *polys;
   const float (*pnors)[3];
   const float (*clnors)[3];
   ShrinkwrapBoundaryData *boundary;

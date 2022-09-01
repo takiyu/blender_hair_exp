@@ -574,7 +574,6 @@ static void bvhtree_from_mesh_setup_data(BVHTree *tree,
                                          const BVHCacheType bvh_cache_type,
                                          const MVert *vert,
                                          const MEdge *edge,
-                                         const MPoly *polys,
                                          const MFace *face,
                                          const MLoop *loop,
                                          const MLoopTri *looptri,
@@ -587,9 +586,8 @@ static void bvhtree_from_mesh_setup_data(BVHTree *tree,
 
   r_data->vert = vert;
   r_data->edge = edge;
-  r_data->polys = polys;
-  r_data->loop = loop;
   r_data->face = face;
+  r_data->loop = loop;
   r_data->looptri = looptri;
   r_data->vert_normals = vert_normals;
 
@@ -779,16 +777,8 @@ BVHTree *bvhtree_from_mesh_verts_ex(BVHTreeFromMesh *data,
 
   if (data) {
     /* Setup BVHTreeFromMesh */
-    bvhtree_from_mesh_setup_data(tree,
-                                 BVHTREE_FROM_VERTS,
-                                 vert,
-                                 nullptr,
-                                 nullptr,
-                                 nullptr,
-                                 nullptr,
-                                 nullptr,
-                                 nullptr,
-                                 data);
+    bvhtree_from_mesh_setup_data(
+        tree, BVHTREE_FROM_VERTS, vert, nullptr, nullptr, nullptr, nullptr, nullptr, data);
   }
 
   return tree;
@@ -923,7 +913,7 @@ BVHTree *bvhtree_from_mesh_edges_ex(BVHTreeFromMesh *data,
   if (data) {
     /* Setup BVHTreeFromMesh */
     bvhtree_from_mesh_setup_data(
-        tree, BVHTREE_FROM_EDGES, vert, edge, nullptr, nullptr, nullptr, nullptr, nullptr, data);
+        tree, BVHTREE_FROM_EDGES, vert, edge, nullptr, nullptr, nullptr, nullptr, data);
   }
 
   return tree;
@@ -1137,16 +1127,8 @@ BVHTree *bvhtree_from_mesh_looptri_ex(BVHTreeFromMesh *data,
 
   if (data) {
     /* Setup BVHTreeFromMesh */
-    bvhtree_from_mesh_setup_data(tree,
-                                 BVHTREE_FROM_LOOPTRI,
-                                 vert,
-                                 nullptr,
-                                 nullptr,
-                                 nullptr,
-                                 mloop,
-                                 looptri,
-                                 nullptr,
-                                 data);
+    bvhtree_from_mesh_setup_data(
+        tree, BVHTREE_FROM_LOOPTRI, vert, nullptr, nullptr, mloop, looptri, nullptr, data);
   }
 
   return tree;
@@ -1251,7 +1233,6 @@ BVHTree *BKE_bvhtree_from_mesh_get(struct BVHTreeFromMesh *data,
   }
   const Span<MVert> verts = mesh->vertices();
   const Span<MEdge> edges = mesh->edges();
-  const Span<MPoly> polys = mesh->polygons();
   const Span<MLoop> loops = mesh->loops();
 
   /* Setup BVHTreeFromMesh */
@@ -1259,7 +1240,6 @@ BVHTree *BKE_bvhtree_from_mesh_get(struct BVHTreeFromMesh *data,
                                bvh_cache_type,
                                verts.data(),
                                edges.data(),
-                               polys.data(),
                                (const MFace *)CustomData_get_layer(&mesh->fdata, CD_MFACE),
                                loops.data(),
                                looptri,
