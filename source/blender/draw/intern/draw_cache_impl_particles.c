@@ -32,6 +32,8 @@
 #include "ED_particle.h"
 
 #include "GPU_batch.h"
+#include "GPU_capabilities.h"
+#include "GPU_context.h"
 #include "GPU_material.h"
 
 #include "DEG_depsgraph_query.h"
@@ -812,7 +814,10 @@ static void particle_batch_cache_ensure_procedural_final_points(ParticleHairCach
   GPUVertFormat format = {0};
   GPU_vertformat_attr_add(&format, "pos", GPU_COMP_F32, 4, GPU_FETCH_FLOAT);
 
-  cache->final[subdiv].proc_buf = GPU_vertbuf_create_with_format(&format);
+  /* Transform feedback buffer only needs to be resident in device memory. */
+  GPUUsageType type = GPU_transform_feedback_support() ? GPU_USAGE_DEVICE_ONLY : GPU_USAGE_STATIC;
+  cache->final[subdiv].proc_buf = GPU_vertbuf_create_with_format_ex(
+      &format, type | GPU_USAGE_FLAG_BUFFER_TEXTURE_ONLY);
 
   /* Create a destination buffer for the transform feedback. Sized appropriately */
   /* Those are points! not line segments. */
@@ -877,17 +882,20 @@ static void particle_batch_cache_ensure_procedural_strand_data(PTCacheEdit *edit
   memset(cache->uv_layer_names, 0, sizeof(cache->uv_layer_names));
 
   /* Strand Data */
-  cache->proc_strand_buf = GPU_vertbuf_create_with_format(&format_data);
+  cache->proc_strand_buf = GPU_vertbuf_create_with_format_ex(
+      &format_data, GPU_USAGE_STATIC | GPU_USAGE_FLAG_BUFFER_TEXTURE_ONLY);
   GPU_vertbuf_data_alloc(cache->proc_strand_buf, cache->strands_len);
   GPU_vertbuf_attr_get_raw_data(cache->proc_strand_buf, data_id, &data_step);
 
-  cache->proc_strand_seg_buf = GPU_vertbuf_create_with_format(&format_seg);
+  cache->proc_strand_seg_buf = GPU_vertbuf_create_with_format_ex(
+      &format_seg, GPU_USAGE_STATIC | GPU_USAGE_FLAG_BUFFER_TEXTURE_ONLY);
   GPU_vertbuf_data_alloc(cache->proc_strand_seg_buf, cache->strands_len);
   GPU_vertbuf_attr_get_raw_data(cache->proc_strand_seg_buf, seg_id, &seg_step);
 
   /* UV layers */
   for (int i = 0; i < cache->num_uv_layers; i++) {
-    cache->proc_uv_buf[i] = GPU_vertbuf_create_with_format(&format_uv);
+    cache->proc_uv_buf[i] = GPU_vertbuf_create_with_format_ex(
+        &format_uv, GPU_USAGE_STATIC | GPU_USAGE_FLAG_BUFFER_TEXTURE_ONLY);
     GPU_vertbuf_data_alloc(cache->proc_uv_buf[i], cache->strands_len);
     GPU_vertbuf_attr_get_raw_data(cache->proc_uv_buf[i], uv_id, &uv_step[i]);
 
@@ -917,7 +925,8 @@ static void particle_batch_cache_ensure_procedural_strand_data(PTCacheEdit *edit
 
   /* Vertex colors */
   for (int i = 0; i < cache->num_col_layers; i++) {
-    cache->proc_col_buf[i] = GPU_vertbuf_create_with_format(&format_col);
+    cache->proc_col_buf[i] = GPU_vertbuf_create_with_format_ex(
+        &format_col, GPU_USAGE_STATIC | GPU_USAGE_FLAG_BUFFER_TEXTURE_ONLY);
     GPU_vertbuf_data_alloc(cache->proc_col_buf[i], cache->strands_len);
     GPU_vertbuf_attr_get_raw_data(cache->proc_col_buf[i], col_id, &col_step[i]);
 
@@ -1063,8 +1072,9 @@ static void particle_batch_cache_ensure_procedural_indices(PTCacheEdit *edit,
   static GPUVertFormat format = {0};
   GPU_vertformat_clear(&format);
 
-  /* initialize vertex format */
-  GPU_vertformat_attr_add(&format, "dummy", GPU_COMP_U8, 1, GPU_FETCH_INT_TO_FLOAT_UNIT);
+  /* NOTE: initialize vertex format. Using GPU_COMP_U32 to satisfy Metal's 4-byte minimum
+   * stride requirement. */
+  GPU_vertformat_attr_add(&format, "dummy", GPU_COMP_U32, 1, GPU_FETCH_INT_TO_FLOAT_UNIT);
 
   GPUVertBuf *vbo = GPU_vertbuf_create_with_format(&format);
   GPU_vertbuf_data_alloc(vbo, 1);
@@ -1105,7 +1115,8 @@ static void particle_batch_cache_ensure_procedural_pos(PTCacheEdit *edit,
     uint pos_id = GPU_vertformat_attr_add(
         &pos_format, "posTime", GPU_COMP_F32, 4, GPU_FETCH_FLOAT);
 
-    cache->proc_point_buf = GPU_vertbuf_create_with_format(&pos_format);
+    cache->proc_point_buf = GPU_vertbuf_create_with_format_ex(
+        &pos_format, GPU_USAGE_STATIC | GPU_USAGE_FLAG_BUFFER_TEXTURE_ONLY);
     GPU_vertbuf_data_alloc(cache->proc_point_buf, cache->point_len);
 
     GPUVertBufRaw pos_step;
@@ -1115,7 +1126,8 @@ static void particle_batch_cache_ensure_procedural_pos(PTCacheEdit *edit,
     uint length_id = GPU_vertformat_attr_add(
         &length_format, "hairLength", GPU_COMP_F32, 1, GPU_FETCH_FLOAT);
 
-    cache->proc_length_buf = GPU_vertbuf_create_with_format(&length_format);
+    cache->proc_length_buf = GPU_vertbuf_create_with_format_ex(
+        &length_format, GPU_USAGE_STATIC | GPU_USAGE_FLAG_BUFFER_TEXTURE_ONLY);
     GPU_vertbuf_data_alloc(cache->proc_length_buf, cache->strands_len);
 
     GPUVertBufRaw length_step;
