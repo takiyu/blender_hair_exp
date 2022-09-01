@@ -930,10 +930,10 @@ static void execute_realize_mesh_task(const RealizeInstancesOptions &options,
   const IndexRange dst_poly_range(task.start_indices.poly, src_polys.size());
   const IndexRange dst_loop_range(task.start_indices.loop, src_loops.size());
 
-  MutableSpan<MVert> dst_verts = all_dst_verts.slice(task.start_indices.vertex, src_verts.size());
-  MutableSpan<MEdge> dst_edges = all_dst_edges.slice(task.start_indices.edge, src_loops.size());
-  MutableSpan<MPoly> dst_polys = all_dst_polys.slice(task.start_indices.poly, src_polys.size());
-  MutableSpan<MLoop> dst_loops = all_dst_loops.slice(task.start_indices.loop, src_loops.size());
+  MutableSpan<MVert> dst_verts = all_dst_verts.slice(dst_vert_range);
+  MutableSpan<MEdge> dst_edges = all_dst_edges.slice(dst_edge_range);
+  MutableSpan<MPoly> dst_polys = all_dst_polys.slice(dst_poly_range);
+  MutableSpan<MLoop> dst_loops = all_dst_loops.slice(dst_loop_range);
 
   threading::parallel_for(src_verts.index_range(), 1024, [&](const IndexRange vert_range) {
     for (const int i : vert_range) {
