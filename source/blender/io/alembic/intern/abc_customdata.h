@@ -30,6 +30,8 @@ struct UVSample {
 };
 
 struct CDStreamConfig {
+
+  /* Only set for import. */
   MutableSpan<MVert> verts;
   MutableSpan<MPoly> polys;
   MutableSpan<MLoop> loops;

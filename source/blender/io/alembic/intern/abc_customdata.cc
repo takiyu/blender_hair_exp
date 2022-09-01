@@ -246,9 +246,9 @@ void write_generated_coordinates(const OCompoundProperty &prop, CDStreamConfig &
   const float(*orcodata)[3] = static_cast<const float(*)[3]>(customdata);
 
   /* Convert 3D vertices from float[3] z=up to V3f y=up. */
-  std::vector<Imath::V3f> coords(config.verts.size());
+  std::vector<Imath::V3f> coords(mesh->totvert);
   float orco_yup[3];
-  for (int vertex_idx = 0; vertex_idx < config.verts.size(); vertex_idx++) {
+  for (int vertex_idx = 0; vertex_idx < mesh->totvert; vertex_idx++) {
     copy_yup_from_zup(orco_yup, orcodata[vertex_idx]);
     coords[vertex_idx].setValue(orco_yup[0], orco_yup[1], orco_yup[2]);
   }
