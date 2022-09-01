@@ -30,6 +30,39 @@ CCL_NAMESPACE_BEGIN
 
 /* Tangent Space */
 
+/** Corresponds to Blender #MVert type. */
+struct BlenderVertex {
+  float co[3];
+  char _pad[4];
+};
+
+/** Corresponds to Blender #MEdge type. */
+struct BlenderEdge {
+  unsigned int v1;
+  unsigned int v2;
+  char crease;
+  char _pad[3];
+};
+
+/** Corresponds to Blender #MPoly type. */
+struct BlenderPolygon {
+  int loopstart;
+  int totloop;
+  short _pad1;
+  char flag;
+  char _pad2;
+};
+
+enum {
+  ME_SMOOTH = (1 << 0),
+};
+
+/** Corresponds to Blender #MLoop type. */
+struct BlenderLoop {
+  unsigned int v;
+  unsigned int e;
+};
+
 struct MikkUserData {
   MikkUserData(const BL::Mesh &b_mesh,
                const char *layer_name,
@@ -279,10 +312,13 @@ static void fill_generic_attribute(BL::Mesh &b_mesh,
   switch (b_domain) {
     case BL::Attribute::domain_CORNER: {
       if (subdivision) {
-        for (BL::MeshPolygon &p : b_mesh.polygons) {
-          int n = p.loop_total();
-          for (int i = 0; i < n; i++) {
-            *data = get_value_at_index(p.loop_start() + i);
+        const BlenderPolygon *polys = static_cast<const BlenderPolygon *>(
+            b_mesh.polygons[0].ptr.data);
+        const int polys_num = b_mesh.polygons.length();
+        for (int i = 0; i < polys_num; i++) {
+          const BlenderPolygon &b_poly = polys[i];
+          for (int j = 0; j < b_poly.totloop; j++) {
+            *data = get_value_at_index(b_poly.loopstart + j);
             data++;
           }
         }
@@ -305,21 +341,23 @@ static void fill_generic_attribute(BL::Mesh &b_mesh,
         assert(0);
       }
       else {
+        const BlenderEdge *edges = static_cast<const BlenderEdge *>(b_mesh.edges[0].ptr.data);
+        const size_t verts_num = b_mesh.vertices.length();
+        const size_t edges_num = b_mesh.edges.length();
+        vector<int> count(verts_num, 0);
+
         /* Average edge attributes at vertices. */
-        const size_t num_verts = b_mesh.vertices.length();
-        vector<int> count(num_verts, 0);
+        for (int i = 0; i < edges_num; i++) {
+          TypeInCycles value = get_value_at_index(i);
 
-        for (BL::MeshEdge &e : b_mesh.edges) {
-          BL::Array<int, 2> vertices = e.vertices();
-          TypeInCycles value = get_value_at_index(e.index());
-
-          data[vertices[0]] += value;
-          data[vertices[1]] += value;
-          count[vertices[0]]++;
-          count[vertices[1]]++;
+          const BlenderEdge &b_edge = edges[i];
+          data[b_edge.v1] += value;
+          data[b_edge.v2] += value;
+          count[b_edge.v1]++;
+          count[b_edge.v2]++;
         }
 
-        for (size_t i = 0; i < num_verts; i++) {
+        for (size_t i = 0; i < verts_num; i++) {
           if (count[i] > 1) {
             data[i] /= (float)count[i];
           }
@@ -607,6 +645,9 @@ static void attr_create_subd_uv_map(Scene *scene, Mesh *mesh, BL::Mesh &b_mesh, 
     BL::Mesh::uv_layers_iterator l;
     int i = 0;
 
+    const BlenderPolygon *polys = static_cast<const BlenderPolygon *>(b_mesh.polygons[0].ptr.data);
+    const int polys_num = b_mesh.polygons.length();
+
     for (b_mesh.uv_layers.begin(l); l != b_mesh.uv_layers.end(); ++l, ++i) {
       bool active_render = l->active_render();
       AttributeStandard uv_std = (active_render) ? ATTR_STD_UV : ATTR_STD_NONE;
@@ -636,10 +677,10 @@ static void attr_create_subd_uv_map(Scene *scene, Mesh *mesh, BL::Mesh &b_mesh, 
 
         float2 *fdata = uv_attr->data_float2();
 
-        for (BL::MeshPolygon &p : b_mesh.polygons) {
-          int n = p.loop_total();
-          for (int j = 0; j < n; j++) {
-            *(fdata++) = get_float2(l->data[p.loop_start() + j].uv());
+        for (int i = 0; i < polys_num; i++) {
+          const BlenderPolygon &b_poly = polys[i];
+          for (int j = 0; j < b_poly.totloop; j++) {
+            *(fdata++) = get_float2(l->data[b_poly.loopstart + j].uv());
           }
         }
       }
@@ -702,6 +743,8 @@ static void attr_create_pointiness(Scene *scene, Mesh *mesh, BL::Mesh &b_mesh, b
   if (num_verts == 0) {
     return;
   }
+  const BlenderVertex *verts = static_cast<const BlenderVertex *>(b_mesh.vertices[0].ptr.data);
+
   /* STEP 1: Find out duplicated vertices and point duplicates to a single
    *         original vertex.
    */
@@ -754,10 +797,12 @@ static void attr_create_pointiness(Scene *scene, Mesh *mesh, BL::Mesh &b_mesh, b
    */
   vector<float3> vert_normal(num_verts, zero_float3());
   /* First we accumulate all vertex normals in the original index. */
+  const float(*b_vert_normals)[3] = static_cast<const float(*)[3]>(
+      b_mesh.vertex_normals[0].ptr.data);
   for (int vert_index = 0; vert_index < num_verts; ++vert_index) {
-    const float3 normal = get_float3(b_mesh.vertices[vert_index].normal());
+    const float *b_vert_normal = b_vert_normals[vert_index];
     const int orig_index = vert_orig_index[vert_index];
-    vert_normal[orig_index] += normal;
+    vert_normal[orig_index] += make_float3(b_vert_normal[0], b_vert_normal[1], b_vert_normal[2]);
   }
   /* Then we normalize the accumulated result and flush it to all duplicates
    * as well.
@@ -770,18 +815,24 @@ static void attr_create_pointiness(Scene *scene, Mesh *mesh, BL::Mesh &b_mesh, b
   vector<int> counter(num_verts, 0);
   vector<float> raw_data(num_verts, 0.0f);
   vector<float3> edge_accum(num_verts, zero_float3());
-  BL::Mesh::edges_iterator e;
   EdgeMap visited_edges;
-  int edge_index = 0;
   memset(&counter[0], 0, sizeof(int) * counter.size());
-  for (b_mesh.edges.begin(e); e != b_mesh.edges.end(); ++e, ++edge_index) {
-    const int v0 = vert_orig_index[b_mesh.edges[edge_index].vertices()[0]],
-              v1 = vert_orig_index[b_mesh.edges[edge_index].vertices()[1]];
+
+  const BlenderEdge *edges = static_cast<BlenderEdge *>(b_mesh.edges[0].ptr.data);
+  const int edges_num = b_mesh.edges.length();
+
+  for (int i = 0; i < edges_num; i++) {
+    const BlenderEdge &b_edge = edges[i];
+    const int v0 = vert_orig_index[b_edge.v1];
+    const int v1 = vert_orig_index[b_edge.v2];
     if (visited_edges.exists(v0, v1)) {
       continue;
     }
     visited_edges.insert(v0, v1);
-    float3 co0 = get_float3(b_mesh.vertices[v0].co()), co1 = get_float3(b_mesh.vertices[v1].co());
+    const BlenderVertex &b_vert_0 = verts[v0];
+    const BlenderVertex &b_vert_1 = verts[v1];
+    float3 co0 = make_float3(b_vert_0.co[0], b_vert_0.co[1], b_vert_0.co[2]);
+    float3 co1 = make_float3(b_vert_1.co[0], b_vert_1.co[1], b_vert_1.co[2]);
     float3 edge = normalize(co1 - co0);
     edge_accum[v0] += edge;
     edge_accum[v1] += -edge;
@@ -809,11 +860,11 @@ static void attr_create_pointiness(Scene *scene, Mesh *mesh, BL::Mesh &b_mesh, b
   float *data = attr->data_float();
   memcpy(data, &raw_data[0], sizeof(float) * raw_data.size());
   memset(&counter[0], 0, sizeof(int) * counter.size());
-  edge_index = 0;
   visited_edges.clear();
-  for (b_mesh.edges.begin(e); e != b_mesh.edges.end(); ++e, ++edge_index) {
-    const int v0 = vert_orig_index[b_mesh.edges[edge_index].vertices()[0]],
-              v1 = vert_orig_index[b_mesh.edges[edge_index].vertices()[1]];
+  for (int i = 0; i < edges_num; i++) {
+    const BlenderEdge &b_edge = edges[i];
+    const int v0 = vert_orig_index[b_edge.v1];
+    const int v1 = vert_orig_index[b_edge.v2];
     if (visited_edges.exists(v0, v1)) {
       continue;
     }
@@ -859,8 +910,11 @@ static void attr_create_random_per_island(Scene *scene,
 
   DisjointSet vertices_sets(number_of_vertices);
 
-  for (BL::MeshEdge &e : b_mesh.edges) {
-    vertices_sets.join(e.vertices()[0], e.vertices()[1]);
+  const BlenderEdge *edges = static_cast<BlenderEdge *>(b_mesh.edges[0].ptr.data);
+  const int edges_num = b_mesh.edges.length();
+
+  for (int i = 0; i < edges_num; i++) {
+    vertices_sets.join(edges[i].v1, edges[i].v2);
   }
 
   AttributeSet &attributes = (subdivision) ? mesh->subd_attributes : mesh->attributes;
@@ -873,8 +927,13 @@ static void attr_create_random_per_island(Scene *scene,
     }
   }
   else {
-    for (BL::MeshPolygon &p : b_mesh.polygons) {
-      data[p.index()] = hash_uint_to_float(vertices_sets.find(p.vertices()[0]));
+    const BlenderPolygon *polys = static_cast<const BlenderPolygon *>(b_mesh.polygons[0].ptr.data);
+    const int polys_num = b_mesh.polygons.length();
+    const BlenderLoop *loops = static_cast<const BlenderLoop *>(b_mesh.loops[0].ptr.data);
+    for (int i = 0; i < polys_num; i++) {
+      const BlenderPolygon &b_poly = polys[i];
+      const BlenderLoop &b_loop = loops[b_poly.loopstart];
+      data[i] = hash_uint_to_float(vertices_sets.find(b_loop.v));
     }
   }
 }
@@ -921,13 +980,18 @@ static void create_mesh(Scene *scene,
     return;
   }
 
+  const BlenderVertex *verts = static_cast<const BlenderVertex *>(b_mesh.vertices[0].ptr.data);
+
   if (!subdivision) {
     numtris = numfaces;
   }
   else {
-    for (BL::MeshPolygon &p : b_mesh.polygons) {
-      numngons += (p.loop_total() == 4) ? 0 : 1;
-      numcorners += p.loop_total();
+    const BlenderPolygon *polys = static_cast<const BlenderPolygon *>(b_mesh.polygons[0].ptr.data);
+    const int polys_num = b_mesh.polygons.length();
+    for (int i = 0; i < polys_num; i++) {
+      const BlenderPolygon &b_poly = polys[i];
+      numngons += (b_poly.totloop == 4) ? 0 : 1;
+      numcorners += b_poly.totloop;
     }
   }
 
@@ -939,17 +1003,23 @@ static void create_mesh(Scene *scene,
   mesh->reserve_mesh(numverts, numtris);
 
   /* create vertex coordinates and normals */
-  BL::Mesh::vertices_iterator v;
-  for (b_mesh.vertices.begin(v); v != b_mesh.vertices.end(); ++v)
-    mesh->add_vertex(get_float3(v->co()));
+  for (int i = 0; i < numverts; i++) {
+    const BlenderVertex &b_vert = verts[i];
+    mesh->add_vertex(make_float3(b_vert.co[0], b_vert.co[1], b_vert.co[2]));
+  }
 
   AttributeSet &attributes = (subdivision) ? mesh->subd_attributes : mesh->attributes;
   Attribute *attr_N = attributes.add(ATTR_STD_VERTEX_NORMAL);
   float3 *N = attr_N->data_float3();
 
-  for (b_mesh.vertices.begin(v); v != b_mesh.vertices.end(); ++v, ++N)
-    *N = get_float3(v->normal());
-  N = attr_N->data_float3();
+  if (subdivision || !use_loop_normals) {
+    const float(*b_vert_normals)[3] = static_cast<const float(*)[3]>(
+        b_mesh.vertex_normals[0].ptr.data);
+    for (int i = 0; i < numverts; i++) {
+      const float *b_vert_normal = b_vert_normals[i];
+      N[i] = make_float3(b_vert_normal[0], b_vert_normal[1], b_vert_normal[2]);
+    }
+  }
 
   /* create generated coordinates from undeformed coordinates */
   const bool need_default_tangent = (subdivision == false) && (b_mesh.uv_layers.empty()) &&
@@ -964,6 +1034,7 @@ static void create_mesh(Scene *scene,
     float3 *generated = attr->data_float3();
     size_t i = 0;
 
+    BL::Mesh::vertices_iterator v;
     for (b_mesh.vertices.begin(v); v != b_mesh.vertices.end(); ++v) {
       generated[i++] = get_float3(v->undeformed_co()) * size - loc;
     }
@@ -978,14 +1049,15 @@ static void create_mesh(Scene *scene,
   };
 
   /* create faces */
+  const BlenderPolygon *polys = static_cast<const BlenderPolygon *>(b_mesh.polygons[0].ptr.data);
   if (!subdivision) {
     for (BL::MeshLoopTriangle &t : b_mesh.loop_triangles) {
       const int poly_index = t.polygon_index();
-      BL::MeshPolygon p = b_mesh.polygons[poly_index];
+      const BlenderPolygon &b_poly = polys[poly_index];
       int3 vi = get_int3(t.vertices());
 
       int shader = get_material_index(poly_index);
-      bool smooth = p.use_smooth() || use_loop_normals;
+      bool smooth = (b_poly.flag & ME_SMOOTH) || use_loop_normals;
 
       if (use_loop_normals) {
         BL::Array<float, 9> loop_normals = t.split_normals();
@@ -1005,16 +1077,19 @@ static void create_mesh(Scene *scene,
   else {
     vector<int> vi;
 
-    for (int poly_index = 0; poly_index < numfaces; poly_index++) {
-      BL::MeshPolygon p = b_mesh.polygons[poly_index];
-      int n = p.loop_total();
-      int shader = get_material_index(poly_index);
-      bool smooth = p.use_smooth() || use_loop_normals;
+    const BlenderLoop *loops = static_cast<const BlenderLoop *>(b_mesh.loops[0].ptr.data);
+
+    for (int i = 0; i < numfaces; i++) {
+      const BlenderPolygon &b_poly = polys[i];
+      int n = b_poly.totloop;
+      int shader = get_material_index(i);
+      bool smooth = (b_poly.flag & ME_SMOOTH) || use_loop_normals;
 
       vi.resize(n);
       for (int i = 0; i < n; i++) {
         /* NOTE: Autosmooth is already taken care about. */
-        vi[i] = b_mesh.loops[p.loop_start() + i].vertex_index();
+
+        vi[i] = loops[b_poly.loopstart + i].v;
       }
 
       /* create subd faces */
@@ -1070,17 +1145,22 @@ static void create_subd_mesh(Scene *scene,
   /* export creases */
   size_t num_creases = 0;
 
-  for (BL::MeshEdge &e : b_mesh.edges) {
-    if (e.crease() != 0.0f) {
+  const BlenderEdge *edges = static_cast<BlenderEdge *>(b_mesh.edges[0].ptr.data);
+  const int edges_num = b_mesh.edges.length();
+
+  for (int i = 0; i < edges_num; i++) {
+    const BlenderEdge &b_edge = edges[i];
+    if (b_edge.crease != 0) {
       num_creases++;
     }
   }
 
   mesh->reserve_subd_creases(num_creases);
 
-  for (BL::MeshEdge &e : b_mesh.edges) {
-    if (e.crease() != 0.0f) {
-      mesh->add_edge_crease(e.vertices()[0], e.vertices()[1], e.crease());
+  for (int i = 0; i < edges_num; i++) {
+    const BlenderEdge &b_edge = edges[i];
+    if (b_edge.crease != 0) {
+      mesh->add_edge_crease(b_edge.v1, b_edge.v2, float(b_edge.crease) / 255.0f);
     }
   }
 
@@ -1225,22 +1305,31 @@ void BlenderSync::sync_mesh_motion(BL::Depsgraph b_depsgraph,
     /* Load vertex data from mesh. */
     float3 *mP = attr_mP->data_float3() + motion_step * numverts;
     float3 *mN = (attr_mN) ? attr_mN->data_float3() + motion_step * numverts : NULL;
+
+    const BlenderVertex *verts = static_cast<const BlenderVertex *>(b_mesh.vertices[0].ptr.data);
+    const int b_verts_num = b_mesh.vertices.length();
+
     /* NOTE: We don't copy more that existing amount of vertices to prevent
      * possible memory corruption.
      */
-    BL::Mesh::vertices_iterator v;
-    int i = 0;
-    for (b_mesh.vertices.begin(v); v != b_mesh.vertices.end() && i < numverts; ++v, ++i) {
-      mP[i] = get_float3(v->co());
-      if (mN)
-        mN[i] = get_float3(v->normal());
+    for (int i = 0; i < std::min<size_t>(b_verts_num, numverts); i++) {
+      const BlenderVertex &b_vert = verts[i];
+      mP[i] = make_float3(b_vert.co[0], b_vert.co[1], b_vert.co[2]);
+    }
+    if (mN) {
+      const float(*b_vert_normals)[3] = static_cast<const float(*)[3]>(
+          b_mesh.vertex_normals[0].ptr.data);
+      for (int i = 0; i < std::min<size_t>(b_verts_num, numverts); i++) {
+        const float *b_vert_normal = b_vert_normals[i];
+        mN[i] = make_float3(b_vert_normal[0], b_vert_normal[1], b_vert_normal[2]);
+      }
     }
     if (new_attribute) {
       /* In case of new attribute, we verify if there really was any motion. */
-      if (b_mesh.vertices.length() != numverts ||
+      if (b_verts_num != numverts ||
           memcmp(mP, &mesh->get_verts()[0], sizeof(float3) * numverts) == 0) {
         /* no motion, remove attributes again */
-        if (b_mesh.vertices.length() != numverts) {
+        if (b_verts_num != numverts) {
           VLOG_WARNING << "Topology differs, disabling motion blur for object " << ob_name;
         }
         else {
@@ -1264,7 +1353,7 @@ void BlenderSync::sync_mesh_motion(BL::Depsgraph b_depsgraph,
       }
     }
     else {
-      if (b_mesh.vertices.length() != numverts) {
+      if (b_verts_num != numverts) {
         VLOG_WARNING << "Topology differs, discarding motion blur for object " << ob_name
                      << " at time " << motion_step;
         memcpy(mP, &mesh->get_verts()[0], sizeof(float3) * numverts);
