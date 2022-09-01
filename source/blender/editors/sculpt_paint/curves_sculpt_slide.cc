@@ -199,15 +199,14 @@ struct SlideOperationExecutor {
     if (surface_eval_ == nullptr) {
       return;
     }
-    surface_looptris_eval_ = {BKE_mesh_runtime_looptri_ensure(surface_eval_),
-                              BKE_mesh_runtime_looptri_len(surface_eval_)};
-    surface_verts_eval_ = surface_eval_->vertices();
-    surface_loops_eval_ = surface_eval_->loops();
     if (surface_eval_->totpoly == 0) {
       report_empty_evaluated_surface(stroke_extension.reports);
       return;
     }
-
+    surface_looptris_eval_ = {BKE_mesh_runtime_looptri_ensure(surface_eval_),
+                              BKE_mesh_runtime_looptri_len(surface_eval_)};
+    surface_verts_eval_ = surface_eval_->vertices();
+    surface_loops_eval_ = surface_eval_->loops();
     surface_uv_map_eval_ =
         bke::mesh_attributes(*surface_eval_).lookup<float2>(uv_map_name, ATTR_DOMAIN_CORNER);
     if (surface_uv_map_eval_.is_empty()) {

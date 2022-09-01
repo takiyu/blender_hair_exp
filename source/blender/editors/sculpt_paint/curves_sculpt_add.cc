@@ -138,16 +138,16 @@ struct AddOperationExecutor {
       return;
     }
     surface_eval_ = BKE_object_get_evaluated_mesh(surface_ob_eval_);
+    if (surface_eval_->totpoly == 0) {
+      report_empty_evaluated_surface(stroke_extension.reports);
+      return;
+    }
     surface_verts_eval_ = surface_eval_->vertices();
     surface_loops_eval_ = surface_eval_->loops();
     surface_looptris_eval_ = {BKE_mesh_runtime_looptri_ensure(surface_eval_),
                               BKE_mesh_runtime_looptri_len(surface_eval_)};
     BKE_bvhtree_from_mesh_get(&surface_bvh_eval_, surface_eval_, BVHTREE_FROM_LOOPTRI, 2);
     BLI_SCOPED_DEFER([&]() { free_bvhtree_from_mesh(&surface_bvh_eval_); });
-    if (surface_eval_->totpoly == 0) {
-      report_empty_evaluated_surface(stroke_extension.reports);
-      return;
-    }
 
     curves_sculpt_ = ctx_.scene->toolsettings->curves_sculpt;
     brush_ = BKE_paint_brush_for_read(&curves_sculpt_->paint);
