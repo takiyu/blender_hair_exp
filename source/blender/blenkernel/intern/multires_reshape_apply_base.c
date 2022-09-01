@@ -31,6 +31,9 @@ void multires_reshape_apply_base_update_mesh_coords(MultiresReshapeContext *resh
 {
   Mesh *base_mesh = reshape_context->base_mesh;
   MVert *base_verts = BKE_mesh_vertices_for_write(base_mesh);
+  /* Update the context in case the vertices were duplicated. */
+  reshape_context->base_verts = base_verts;
+
   const MLoop *mloop = reshape_context->base_loops;
   for (int loop_index = 0; loop_index < base_mesh->totloop; ++loop_index) {
     const MLoop *loop = &mloop[loop_index];
@@ -67,7 +70,8 @@ void multires_reshape_apply_base_refit_base_mesh(MultiresReshapeContext *reshape
 {
   Mesh *base_mesh = reshape_context->base_mesh;
   MVert *base_verts = BKE_mesh_vertices_for_write(base_mesh);
-
+  /* Update the context in case the vertices were duplicated. */
+  reshape_context->base_verts = base_verts;
   MeshElemMap *pmap;
   int *pmap_mem;
   BKE_mesh_vert_poly_map_create(&pmap,
