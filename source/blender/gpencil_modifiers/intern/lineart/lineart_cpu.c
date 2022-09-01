@@ -1713,15 +1713,15 @@ static void lineart_identify_mlooptri_feature_edges(void *__restrict userdata,
 typedef struct LooseEdgeData {
   int loose_count;
   int loose_max;
-  MEdge **loose_array;
-  Mesh *me;
+  int *loose_array;
+  const MEdge *edges;
 } LooseEdgeData;
 
 static void lineart_loose_data_reallocate(LooseEdgeData *loose_data, int count)
 {
-  MEdge **new_arr = MEM_callocN(sizeof(MEdge *) * count, "loose edge array");
+  int *new_arr = MEM_calloc_arrayN(count, sizeof(int), "loose edge array");
   if (loose_data->loose_array) {
-    memcpy(new_arr, loose_data->loose_array, sizeof(MEdge *) * loose_data->loose_max);
+    memcpy(new_arr, loose_data->loose_array, sizeof(int) * loose_data->loose_max);
     MEM_SAFE_FREE(loose_data->loose_array);
   }
   loose_data->loose_max = count;
@@ -1739,19 +1739,19 @@ static void lineart_join_loose_edge_arr(LooseEdgeData *loose_data, LooseEdgeData
   }
   memcpy(&loose_data->loose_array[loose_data->loose_count],
          to_be_joined->loose_array,
-         sizeof(MEdge *) * to_be_joined->loose_count);
+         sizeof(int) * to_be_joined->loose_count);
   loose_data->loose_count += to_be_joined->loose_count;
   MEM_freeN(to_be_joined->loose_array);
   to_be_joined->loose_array = NULL;
 }
 
-static void lineart_add_loose_edge(LooseEdgeData *loose_data, const MEdge *e)
+static void lineart_add_loose_edge(LooseEdgeData *loose_data, const int i)
 {
   if (loose_data->loose_count >= loose_data->loose_max) {
     int min_amount = MAX2(100, loose_data->loose_count * 2);
     lineart_loose_data_reallocate(loose_data, min_amount);
   }
-  loose_data->loose_array[loose_data->loose_count] = (MEdge *)e;
+  loose_data->loose_array[loose_data->loose_count] = i;
   loose_data->loose_count++;
 }
 
@@ -1760,11 +1760,9 @@ static void lineart_identify_loose_edges(void *__restrict UNUSED(userdata),
                                          const TaskParallelTLS *__restrict tls)
 {
   LooseEdgeData *loose_data = (LooseEdgeData *)tls->userdata_chunk;
-  Mesh *me = loose_data->me;
-  const MEdge *edges = BKE_mesh_edges(me);
 
-  if (edges[i].flag & ME_LOOSEEDGE) {
-    lineart_add_loose_edge(loose_data, &edges[i]);
+  if (loose_data->edges[i].flag & ME_LOOSEEDGE) {
+    lineart_add_loose_edge(loose_data, i);
   }
 }
 
@@ -2160,6 +2158,7 @@ static void lineart_geometry_object_load(LineartObjectInfo *ob_info,
                           &edge_feat_settings);
 
   LooseEdgeData loose_data = {0};
+
   if (la_data->conf.use_loose) {
     /* Only identifying floating edges at this point because other edges has been taken care of
      * inside #lineart_identify_mlooptri_feature_edges function. */
@@ -2169,7 +2168,7 @@ static void lineart_geometry_object_load(LineartObjectInfo *ob_info,
     edge_loose_settings.func_reduce = loose_data_sum_reduce;
     edge_loose_settings.userdata_chunk = &loose_data;
     edge_loose_settings.userdata_chunk_size = sizeof(LooseEdgeData);
-    loose_data.me = me;
+    loose_data.edges = BKE_mesh_edges(me);
     BLI_task_parallel_range(
         0, me->totedge, &loose_data, lineart_identify_loose_edges, &edge_loose_settings);
   }
@@ -2274,8 +2273,9 @@ static void lineart_geometry_object_load(LineartObjectInfo *ob_info,
 
   if (loose_data.loose_array) {
     for (int i = 0; i < loose_data.loose_count; i++) {
-      la_edge->v1 = &la_v_arr[loose_data.loose_array[i]->v1];
-      la_edge->v2 = &la_v_arr[loose_data.loose_array[i]->v2];
+      const MEdge *edge = &loose_data.edges[loose_data.loose_array[i]];
+      la_edge->v1 = &la_v_arr[edge->v1];
+      la_edge->v2 = &la_v_arr[edge->v2];
       la_edge->flags = LRT_EDGE_FLAG_LOOSE;
       la_edge->object_ref = orig_ob;
       la_edge->edge_identifier = LRT_EDGE_IDENTIFIER(ob_info, la_edge);
