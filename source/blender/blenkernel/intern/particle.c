@@ -1665,7 +1665,7 @@ static void interpolate_pathcache(ParticleCacheKey *first, float t, ParticleCach
 /************************************************/
 
 void psys_interpolate_face(Mesh *mesh,
-                           MVert *mvert,
+                           const MVert *mvert,
                            const float (*vert_normals)[3],
                            MFace *mface,
                            MTFace *tface,
@@ -1677,7 +1677,7 @@ void psys_interpolate_face(Mesh *mesh,
                            float vtan[3],
                            float orco[3])
 {
-  float *v1 = 0, *v2 = 0, *v3 = 0, *v4 = 0;
+  const float *v1 = 0, *v2 = 0, *v3 = 0, *v4 = 0;
   float e1[3], e2[3], s1, s2, t1, t2;
   float *uv1, *uv2, *uv3, *uv4;
   float n1[3], n2[3], n3[3], n4[3];
