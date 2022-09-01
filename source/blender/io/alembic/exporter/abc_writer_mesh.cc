@@ -176,6 +176,11 @@ void ABCGenericMeshWriter::do_write(HierarchyContext &context)
 
   m_custom_data_config.pack_uvs = args_.export_params->packuv;
   m_custom_data_config.mesh = mesh;
+  m_custom_data_config.mpoly = mesh->polygons_for_write().data();
+  m_custom_data_config.mloop = mesh->loops_for_write().data();
+  m_custom_data_config.totpoly = mesh->totpoly;
+  m_custom_data_config.totloop = mesh->totloop;
+  m_custom_data_config.totvert = mesh->totvert;
   m_custom_data_config.timesample_index = timesample_index_;
 
   try {
@@ -431,9 +436,9 @@ static void get_vertices(struct Mesh *mesh, std::vector<Imath::V3f> &points)
   points.clear();
   points.resize(mesh->totvert);
 
-  const Span<MVert> vertices = mesh->vertices();
+  const Span<MVert> verts = mesh->vertices();
   for (int i = 0, e = mesh->totvert; i < e; i++) {
-    copy_yup_from_zup(points[i].getValue(), vertices[i].co);
+    copy_yup_from_zup(points[i].getValue(), verts[i].co);
   }
 }
 
