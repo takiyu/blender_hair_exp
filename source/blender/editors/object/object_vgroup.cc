@@ -1350,7 +1350,6 @@ static void moveCloserToDistanceFromPlane(Depsgraph *depsgraph,
   Mesh *me_deform;
   MDeformWeight *dw, *dw_eval;
   MVert m;
-  const blender::Span<MVert> verts = me_deform->vertices();
   MDeformVert *dvert = BKE_mesh_deform_verts_for_write(me) + index;
   MDeformVert *dvert_eval = BKE_mesh_deform_verts_for_write(mesh_eval) + index;
   int totweight = dvert->totweight;
@@ -1375,6 +1374,7 @@ static void moveCloserToDistanceFromPlane(Depsgraph *depsgraph,
   do {
     wasChange = false;
     me_deform = mesh_get_eval_deform(depsgraph, scene_eval, object_eval, &CD_MASK_BAREMESH);
+    const blender::Span<MVert> verts = me_deform->vertices();
     m = verts[index];
     copy_v3_v3(oldPos, m.co);
     distToStart = dot_v3v3(norm, oldPos) + d;
