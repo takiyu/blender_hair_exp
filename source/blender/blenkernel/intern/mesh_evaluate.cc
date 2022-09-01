@@ -205,13 +205,13 @@ float BKE_mesh_calc_poly_area(const MPoly *mpoly, const MLoop *loopstart, const 
 
 float BKE_mesh_calc_area(const Mesh *me)
 {
-  const Span<MVert> vertts = me->vertices();
+  const Span<MVert> verts = me->vertices();
   const Span<MPoly> polys = me->polygons();
   const Span<MLoop> loops = me->loops();
 
   float total_area = 0.0f;
   for (const MPoly &poly : polys) {
-    total_area += BKE_mesh_calc_poly_area(&poly, &loops[poly.loopstart], vertts.data());
+    total_area += BKE_mesh_calc_poly_area(&poly, &loops[poly.loopstart], verts.data());
   }
   return total_area;
 }
