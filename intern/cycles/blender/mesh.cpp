@@ -312,9 +312,12 @@ static void fill_generic_attribute(BL::Mesh &b_mesh,
   switch (b_domain) {
     case BL::Attribute::domain_CORNER: {
       if (subdivision) {
+        const int polys_num = b_mesh.polygons.length();
+        if (polys_num == 0) {
+          return;
+        }
         const BlenderPolygon *polys = static_cast<const BlenderPolygon *>(
             b_mesh.polygons[0].ptr.data);
-        const int polys_num = b_mesh.polygons.length();
         for (int i = 0; i < polys_num; i++) {
           const BlenderPolygon &b_poly = polys[i];
           for (int j = 0; j < b_poly.totloop; j++) {
@@ -335,6 +338,10 @@ static void fill_generic_attribute(BL::Mesh &b_mesh,
       break;
     }
     case BL::Attribute::domain_EDGE: {
+      const size_t edges_num = b_mesh.edges.length();
+      if (edges_num == 0) {
+        return;
+      }
       if constexpr (std::is_same_v<TypeInCycles, uchar4>) {
         /* uchar4 edge attributes do not exist, and averaging in place
          * would not work. */
@@ -343,7 +350,6 @@ static void fill_generic_attribute(BL::Mesh &b_mesh,
       else {
         const BlenderEdge *edges = static_cast<const BlenderEdge *>(b_mesh.edges[0].ptr.data);
         const size_t verts_num = b_mesh.vertices.length();
-        const size_t edges_num = b_mesh.edges.length();
         vector<int> count(verts_num, 0);
 
         /* Average edge attributes at vertices. */
@@ -641,12 +647,15 @@ static void attr_create_uv_map(Scene *scene, Mesh *mesh, BL::Mesh &b_mesh)
 
 static void attr_create_subd_uv_map(Scene *scene, Mesh *mesh, BL::Mesh &b_mesh, bool subdivide_uvs)
 {
+  const int polys_num = b_mesh.polygons.length();
+  if (polys_num == 0) {
+    return;
+  }
+  const BlenderPolygon *polys = static_cast<const BlenderPolygon *>(b_mesh.polygons[0].ptr.data);
+
   if (!b_mesh.uv_layers.empty()) {
     BL::Mesh::uv_layers_iterator l;
     int i = 0;
-
-    const BlenderPolygon *polys = static_cast<const BlenderPolygon *>(b_mesh.polygons[0].ptr.data);
-    const int polys_num = b_mesh.polygons.length();
 
     for (b_mesh.uv_layers.begin(l); l != b_mesh.uv_layers.end(); ++l, ++i) {
       bool active_render = l->active_render();
@@ -903,6 +912,7 @@ static void attr_create_random_per_island(Scene *scene,
     return;
   }
 
+  const int polys_num = b_mesh.polygons.length();
   int number_of_vertices = b_mesh.vertices.length();
   if (number_of_vertices == 0) {
     return;
@@ -927,13 +937,15 @@ static void attr_create_random_per_island(Scene *scene,
     }
   }
   else {
-    const BlenderPolygon *polys = static_cast<const BlenderPolygon *>(b_mesh.polygons[0].ptr.data);
-    const int polys_num = b_mesh.polygons.length();
-    const BlenderLoop *loops = static_cast<const BlenderLoop *>(b_mesh.loops[0].ptr.data);
-    for (int i = 0; i < polys_num; i++) {
-      const BlenderPolygon &b_poly = polys[i];
-      const BlenderLoop &b_loop = loops[b_poly.loopstart];
-      data[i] = hash_uint_to_float(vertices_sets.find(b_loop.v));
+    if (polys_num != 0) {
+      const BlenderPolygon *polys = static_cast<const BlenderPolygon *>(
+          b_mesh.polygons[0].ptr.data);
+      const BlenderLoop *loops = static_cast<const BlenderLoop *>(b_mesh.loops[0].ptr.data);
+      for (int i = 0; i < polys_num; i++) {
+        const BlenderPolygon &b_poly = polys[i];
+        const BlenderLoop &b_loop = loops[b_poly.loopstart];
+        data[i] = hash_uint_to_float(vertices_sets.find(b_loop.v));
+      }
     }
   }
 }
@@ -968,6 +980,7 @@ static void create_mesh(Scene *scene,
 {
   /* count vertices and faces */
   int numverts = b_mesh.vertices.length();
+  const int polys_num = b_mesh.polygons.length();
   int numfaces = (!subdivision) ? b_mesh.loop_triangles.length() : b_mesh.polygons.length();
   int numtris = 0;
   int numcorners = 0;
@@ -987,7 +1000,6 @@ static void create_mesh(Scene *scene,
   }
   else {
     const BlenderPolygon *polys = static_cast<const BlenderPolygon *>(b_mesh.polygons[0].ptr.data);
-    const int polys_num = b_mesh.polygons.length();
     for (int i = 0; i < polys_num; i++) {
       const BlenderPolygon &b_poly = polys[i];
       numngons += (b_poly.totloop == 4) ? 0 : 1;
@@ -1142,32 +1154,33 @@ static void create_subd_mesh(Scene *scene,
 
   create_mesh(scene, mesh, b_mesh, used_shaders, need_motion, motion_scale, true, subdivide_uvs);
 
-  /* export creases */
-  size_t num_creases = 0;
-
-  const BlenderEdge *edges = static_cast<BlenderEdge *>(b_mesh.edges[0].ptr.data);
   const int edges_num = b_mesh.edges.length();
 
-  for (int i = 0; i < edges_num; i++) {
-    const BlenderEdge &b_edge = edges[i];
-    if (b_edge.crease != 0) {
-      num_creases++;
+  if (edges_num != 0) {
+    size_t num_creases = 0;
+    const BlenderEdge *edges = static_cast<BlenderEdge *>(b_mesh.edges[0].ptr.data);
+
+    for (int i = 0; i < edges_num; i++) {
+      const BlenderEdge &b_edge = edges[i];
+      if (b_edge.crease != 0) {
+        num_creases++;
+      }
     }
-  }
 
-  mesh->reserve_subd_creases(num_creases);
+    mesh->reserve_subd_creases(num_creases);
 
-  for (int i = 0; i < edges_num; i++) {
-    const BlenderEdge &b_edge = edges[i];
-    if (b_edge.crease != 0) {
-      mesh->add_edge_crease(b_edge.v1, b_edge.v2, float(b_edge.crease) / 255.0f);
+    for (int i = 0; i < edges_num; i++) {
+      const BlenderEdge &b_edge = edges[i];
+      if (b_edge.crease != 0) {
+        mesh->add_edge_crease(b_edge.v1, b_edge.v2, float(b_edge.crease) / 255.0f);
+      }
     }
-  }
 
-  for (BL::MeshVertexCreaseLayer &c : b_mesh.vertex_creases) {
-    for (int i = 0; i < c.data.length(); ++i) {
-      if (c.data[i].value() != 0.0f) {
-        mesh->add_vertex_crease(i, c.data[i].value());
+    for (BL::MeshVertexCreaseLayer &c : b_mesh.vertex_creases) {
+      for (int i = 0; i < c.data.length(); ++i) {
+        if (c.data[i].value() != 0.0f) {
+          mesh->add_vertex_crease(i, c.data[i].value());
+        }
       }
     }
   }
@@ -1284,6 +1297,12 @@ void BlenderSync::sync_mesh_motion(BL::Depsgraph b_depsgraph,
     b_mesh = object_to_mesh(b_data, b_ob_info, b_depsgraph, false, Mesh::SUBDIVISION_NONE);
   }
 
+  const int b_verts_num = b_mesh.vertices.length();
+  if (b_verts_num == 0) {
+    free_object_to_mesh(b_data, b_ob_info, b_mesh);
+    return;
+  }
+
   const std::string ob_name = b_ob_info.real_object.name();
 
   /* TODO(sergey): Perform preliminary check for number of vertices. */
@@ -1307,7 +1326,6 @@ void BlenderSync::sync_mesh_motion(BL::Depsgraph b_depsgraph,
     float3 *mN = (attr_mN) ? attr_mN->data_float3() + motion_step * numverts : NULL;
 
     const BlenderVertex *verts = static_cast<const BlenderVertex *>(b_mesh.vertices[0].ptr.data);
-    const int b_verts_num = b_mesh.vertices.length();
 
     /* NOTE: We don't copy more that existing amount of vertices to prevent
      * possible memory corruption.
