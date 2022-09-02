@@ -1297,16 +1297,16 @@ void BlenderSync::sync_mesh_motion(BL::Depsgraph b_depsgraph,
     b_mesh = object_to_mesh(b_data, b_ob_info, b_depsgraph, false, Mesh::SUBDIVISION_NONE);
   }
 
-  const int b_verts_num = b_mesh.vertices.length();
-  if (b_verts_num == 0) {
-    free_object_to_mesh(b_data, b_ob_info, b_mesh);
-    return;
-  }
-
   const std::string ob_name = b_ob_info.real_object.name();
 
   /* TODO(sergey): Perform preliminary check for number of vertices. */
   if (b_mesh) {
+    const int b_verts_num = b_mesh.vertices.length();
+    if (b_verts_num == 0) {
+      free_object_to_mesh(b_data, b_ob_info, b_mesh);
+      return;
+    }
+
     /* Export deformed coordinates. */
     /* Find attributes. */
     Attribute *attr_mP = mesh->attributes.find(ATTR_STD_MOTION_VERTEX_POSITION);
