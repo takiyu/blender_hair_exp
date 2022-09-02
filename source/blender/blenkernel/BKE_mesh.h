@@ -1030,6 +1030,10 @@ char *BKE_mesh_debug_info(const struct Mesh *me)
 void BKE_mesh_debug_print(const struct Mesh *me) ATTR_NONNULL(1);
 #endif
 
+/* -------------------------------------------------------------------- */
+/** \name Inline Mesh Data Access
+ * \{ */
+
 /**
  * \return The material index for each polygon. May be null.
  * \note In C++ code, prefer using the attribute API (#MutableAttributeAccessor)/
@@ -1149,4 +1153,15 @@ inline blender::MutableSpan<MLoop> Mesh::loops_for_write()
   return {BKE_mesh_loops_for_write(this), this->totloop};
 }
 
+inline blender::Span<MDeformVert> Mesh::deform_verts() const
+{
+  return {BKE_mesh_deform_verts(this), this->totvert};
+}
+inline blender::MutableSpan<MDeformVert> Mesh::deform_verts_for_write()
+{
+  return {BKE_mesh_deform_verts_for_write(this), this->totvert};
+}
+
 #endif
+
+/** \} */

@@ -597,8 +597,8 @@ void paintvert_select_ungrouped(Object *ob, bool extend, bool flush_flags)
   if (me == nullptr) {
     return;
   }
-  const MDeformVert *dverts = BKE_mesh_deform_verts(me);
-  if (dverts == nullptr) {
+  const Span<MDeformVert> dverts = me->deform_verts();
+  if (dverts.is_empty()) {
     return;
   }
 

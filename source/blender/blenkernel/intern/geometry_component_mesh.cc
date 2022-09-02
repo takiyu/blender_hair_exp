@@ -918,8 +918,15 @@ class VArrayImpl_For_VertexWeights final : public VMutableArrayImpl<float> {
   const int dvert_index_;
 
  public:
-  VArrayImpl_For_VertexWeights(MDeformVert *dverts, const int totvert, const int dvert_index)
-      : VMutableArrayImpl<float>(totvert), dverts_(dverts), dvert_index_(dvert_index)
+  VArrayImpl_For_VertexWeights(MutableSpan<MDeformVert> dverts, const int dvert_index)
+      : VMutableArrayImpl<float>(dverts.size()), dverts_(dverts.data()), dvert_index_(dvert_index)
+  {
+  }
+
+  VArrayImpl_For_VertexWeights(Span<MDeformVert> dverts, const int dvert_index)
+      : VMutableArrayImpl<float>(dverts.size()),
+        dverts_(const_cast<MDeformVert *>(dverts.data())),
+        dvert_index_(dvert_index)
   {
   }
 
@@ -1017,13 +1024,12 @@ class VertexGroupsAttributeProvider final : public DynamicAttributesProvider {
     if (vertex_group_index < 0) {
       return {};
     }
-    const MDeformVert *dvert = BKE_mesh_deform_verts(mesh);
-    if (dvert == nullptr) {
+    const Span<MDeformVert> dverts = mesh->deform_verts();
+    if (dverts.is_empty()) {
       static const float default_value = 0.0f;
       return {VArray<float>::ForSingle(default_value, mesh->totvert), ATTR_DOMAIN_POINT};
     }
-    return {VArray<float>::For<VArrayImpl_For_VertexWeights>(
-                const_cast<MDeformVert *>(dvert), mesh->totvert, vertex_group_index),
+    return {VArray<float>::For<VArrayImpl_For_VertexWeights>(dverts, vertex_group_index),
             ATTR_DOMAIN_POINT};
   }
 
@@ -1043,9 +1049,8 @@ class VertexGroupsAttributeProvider final : public DynamicAttributesProvider {
     if (vertex_group_index < 0) {
       return {};
     }
-    MDeformVert *dvert = BKE_mesh_deform_verts_for_write(mesh);
-    return {VMutableArray<float>::For<VArrayImpl_For_VertexWeights>(
-                dvert, mesh->totvert, vertex_group_index),
+    MutableSpan<MDeformVert> dverts = mesh->deform_verts_for_write();
+    return {VMutableArray<float>::For<VArrayImpl_For_VertexWeights>(dverts, vertex_group_index),
             ATTR_DOMAIN_POINT};
   }
 
@@ -1068,12 +1073,11 @@ class VertexGroupsAttributeProvider final : public DynamicAttributesProvider {
     }
     BLI_remlink(&mesh->vertex_group_names, group);
     MEM_freeN(group);
-    if (!BKE_mesh_deform_verts(mesh)) {
+    if (mesh->deform_verts().is_empty()) {
       return true;
     }
 
-    MDeformVert *dvert = BKE_mesh_deform_verts_for_write(mesh);
-    for (MDeformVert &dvert : MutableSpan(dvert, mesh->totvert)) {
+    for (MDeformVert &dvert : mesh->deform_verts_for_write()) {
       MDeformWeight *weight = BKE_defvert_find_index(&dvert, index);
       BKE_defvert_remove_group(&dvert, weight);
       for (MDeformWeight &weight : MutableSpan(dvert.dw, dvert.totweight)) {

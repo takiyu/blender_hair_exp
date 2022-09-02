@@ -179,10 +179,10 @@ void MeshFromGeometry::create_vertices(Mesh *mesh)
 
 void MeshFromGeometry::create_polys_loops(Mesh *mesh, bool use_vertex_groups)
 {
-  MDeformVert *dvert = nullptr;
+  MutableSpan<MDeformVert> dverts;
   const int64_t total_verts = mesh_geometry_.get_vertex_count();
   if (use_vertex_groups && total_verts && mesh_geometry_.has_vertex_groups_) {
-    dvert = BKE_mesh_deform_verts_for_write(mesh);
+    dverts = mesh->deform_verts_for_write();
   }
 
   MutableSpan<MPoly> polys = mesh->polygons_for_write();
@@ -222,11 +222,11 @@ void MeshFromGeometry::create_polys_loops(Mesh *mesh, bool use_vertex_groups)
       mloop.v = mesh_geometry_.global_to_local_vertices_.lookup_default(curr_corner.vert_index, 0);
 
       /* Setup vertex group data, if needed. */
-      if (!dvert) {
+      if (!dverts.is_empty()) {
         continue;
       }
       const int group_index = curr_face.vertex_group_index;
-      MDeformWeight *dw = BKE_defvert_ensure_index(&dvert[mloop.v], group_index);
+      MDeformWeight *dw = BKE_defvert_ensure_index(&dverts[mloop.v], group_index);
       dw->weight = 1.0f;
     }
   }
@@ -237,7 +237,7 @@ void MeshFromGeometry::create_polys_loops(Mesh *mesh, bool use_vertex_groups)
 void MeshFromGeometry::create_vertex_groups(Object *obj)
 {
   Mesh *mesh = static_cast<Mesh *>(obj->data);
-  if (!BKE_mesh_deform_verts(mesh)) {
+  if (mesh->deform_verts().is_empty()) {
     return;
   }
   for (const std::string &name : mesh_geometry_.group_order_) {

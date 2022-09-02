@@ -67,6 +67,9 @@
 
 #include "object_intern.h"
 
+using blender::MutableSpan;
+using blender::Span;
+
 static bool vertex_group_supported_poll_ex(bContext *C, const Object *ob);
 
 /* -------------------------------------------------------------------- */
@@ -196,9 +199,9 @@ bool ED_vgroup_parray_alloc(ID *id,
 
           return true;
         }
-        if (BKE_mesh_deform_verts(me)) {
-          const blender::Span<MVert> verts = me->vertices();
-          MDeformVert *dvert = BKE_mesh_deform_verts_for_write(me);
+        if (!me->deform_verts().is_empty()) {
+          const Span<MVert> verts = me->vertices();
+          MutableSpan<MDeformVert> dverts = me->deform_verts_for_write();
 
           *dvert_tot = me->totvert;
           *dvert_arr = static_cast<MDeformVert **>(
@@ -206,12 +209,12 @@ bool ED_vgroup_parray_alloc(ID *id,
 
           if (use_vert_sel) {
             for (int i = 0; i < me->totvert; i++) {
-              (*dvert_arr)[i] = (verts[i].flag & SELECT) ? &dvert[i] : nullptr;
+              (*dvert_arr)[i] = (verts[i].flag & SELECT) ? &dverts[i] : nullptr;
             }
           }
           else {
             for (int i = 0; i < me->totvert; i++) {
-              (*dvert_arr)[i] = dvert + i;
+              (*dvert_arr)[i] = &dverts[i];
             }
           }
 
@@ -548,10 +551,10 @@ static void ED_mesh_defvert_mirror_update_ob(Object *ob, int def_nr, int vidx)
 
   vidx_mirr = mesh_get_x_mirror_vert(ob, nullptr, vidx, use_topology);
 
-  MDeformVert *dvert = BKE_mesh_deform_verts_for_write(me);
+  MutableSpan<MDeformVert> dverts = me->deform_verts_for_write();
   if ((vidx_mirr) >= 0 && (vidx_mirr != vidx)) {
-    MDeformVert *dvert_src = &dvert[vidx];
-    MDeformVert *dvert_dst = &dvert[vidx_mirr];
+    MDeformVert *dvert_src = &dverts[vidx];
+    MDeformVert *dvert_dst = &dverts[vidx_mirr];
     mesh_defvert_mirror_update_internal(ob, dvert_dst, dvert_src, def_nr);
   }
 }
@@ -660,16 +663,15 @@ static void vgroup_copy_active_to_sel(Object *ob, eVGroupSelect subset_type)
     }
   }
   else {
-    const blender::Span<MVert> verts = me->vertices();
-    MDeformVert *dv;
+    const Span<MVert> verts = me->vertices();
     int v_act;
 
     dvert_act = ED_mesh_active_dvert_get_ob(ob, &v_act);
     if (dvert_act) {
-      dv = BKE_mesh_deform_verts_for_write(me);
-      for (i = 0; i < me->totvert; i++, dv++) {
-        if ((verts[i].flag & SELECT) && dv != dvert_act) {
-          BKE_defvert_copy_subset(dv, dvert_act, vgroup_validmap, vgroup_tot);
+      MutableSpan<MDeformVert> dverts = me->deform_verts_for_write();
+      for (i = 0; i < me->totvert; i++) {
+        if ((verts[i].flag & SELECT) && &dverts[i] != dvert_act) {
+          BKE_defvert_copy_subset(&dverts[i], dvert_act, vgroup_validmap, vgroup_tot);
           if (me->symmetry & ME_SYMMETRY_X) {
             ED_mesh_defvert_mirror_update_ob(ob, -1, i);
           }
@@ -929,7 +931,7 @@ void ED_vgroup_vert_remove(Object *ob, bDeformGroup *dg, int vertnum)
 
 static float get_vert_def_nr(Object *ob, const int def_nr, const int vertnum)
 {
-  MDeformVert *dv = nullptr;
+  const MDeformVert *dv = nullptr;
 
   /* get the deform vertices corresponding to the vertnum */
   if (ob->type == OB_MESH) {
@@ -944,19 +946,19 @@ static float get_vert_def_nr(Object *ob, const int def_nr, const int vertnum)
         BMVert *eve;
         BM_mesh_elem_table_ensure(em->bm, BM_VERT);
         eve = BM_vert_at_index(em->bm, vertnum);
-        dv = static_cast<MDeformVert *>(BM_ELEM_CD_GET_VOID_P(eve, cd_dvert_offset));
+        dv = static_cast<const MDeformVert *>(BM_ELEM_CD_GET_VOID_P(eve, cd_dvert_offset));
       }
       else {
         return 0.0f;
       }
     }
     else {
-      MDeformVert *dvert = BKE_mesh_deform_verts_for_write(me);
-      if (dvert) {
+      const Span<MDeformVert> dverts = me->deform_verts();
+      if (!dverts.is_empty()) {
         if (vertnum >= me->totvert) {
           return 0.0f;
         }
-        dv = &dvert[vertnum];
+        dv = &dverts[vertnum];
       }
     }
   }
@@ -1047,7 +1049,8 @@ static void vgroup_select_verts(Object *ob, int select)
       }
     }
     else {
-      if (const MDeformVert *dverts = BKE_mesh_deform_verts(me)) {
+      const Span<MDeformVert> dverts = me->deform_verts();
+      if (!dverts.is_empty()) {
         const bool *hide_vert = (const bool *)CustomData_get_layer_named(
             &me->vdata, CD_PROP_BOOL, ".hide_vert");
         MVert *mv;
@@ -1350,8 +1353,8 @@ static void moveCloserToDistanceFromPlane(Depsgraph *depsgraph,
   Mesh *me_deform;
   MDeformWeight *dw, *dw_eval;
   MVert m;
-  MDeformVert *dvert = BKE_mesh_deform_verts_for_write(me) + index;
-  MDeformVert *dvert_eval = BKE_mesh_deform_verts_for_write(mesh_eval) + index;
+  MDeformVert *dvert = me->deform_verts_for_write().data() + index;
+  MDeformVert *dvert_eval = mesh_eval->deform_verts_for_write().data() + index;
   int totweight = dvert->totweight;
   float oldw = 0;
   float oldPos[3] = {0};
@@ -1374,7 +1377,7 @@ static void moveCloserToDistanceFromPlane(Depsgraph *depsgraph,
   do {
     wasChange = false;
     me_deform = mesh_get_eval_deform(depsgraph, scene_eval, object_eval, &CD_MASK_BAREMESH);
-    const blender::Span<MVert> verts = me_deform->vertices();
+    const Span<MVert> verts = me_deform->vertices();
     m = verts[index];
     copy_v3_v3(oldPos, m.co);
     distToStart = dot_v3v3(norm, oldPos) + d;
@@ -1537,7 +1540,7 @@ static void vgroup_fix(
 
         Mesh *me_deform = mesh_get_eval_deform(
             depsgraph, scene_eval, object_eval, &CD_MASK_BAREMESH);
-        const blender::Span<MVert> verts_deform = me_deform->vertices();
+        const Span<MVert> verts_deform = me_deform->vertices();
         k = count;
         while (k--) {
           p[k] = verts_deform[verts[k]];
@@ -1972,7 +1975,7 @@ static void vgroup_smooth_subset(Object *ob,
     }
   }
   else {
-    const blender::Span<MVert> verts = me->vertices();
+    const Span<MVert> verts = me->vertices();
     const blender::Span<MEdge> edges = me->edges();
     for (int i = 0; i < dvert_tot; i++) {
       const MVert *v = &verts[i];
@@ -2459,7 +2462,7 @@ void ED_vgroup_mirror(Object *ob,
       int vidx, vidx_mirr;
       const bool use_vert_sel = (me->editflag & ME_EDIT_PAINT_VERT_SEL) != 0;
 
-      if (!BKE_mesh_deform_verts(me)) {
+      if (me->deform_verts().is_empty()) {
         goto cleanup;
       }
 
@@ -2469,7 +2472,7 @@ void ED_vgroup_mirror(Object *ob,
 
       BLI_bitmap *vert_tag = BLI_BITMAP_NEW(me->totvert, __func__);
       const MVert *verts = me->vertices().data();
-      MDeformVert *dverts = BKE_mesh_deform_verts_for_write(me);
+      MutableSpan<MDeformVert> dverts = me->deform_verts_for_write();
 
       for (vidx = 0, mv = verts; vidx < me->totvert; vidx++, mv++) {
         if (!BLI_BITMAP_TEST(vert_tag, vidx)) {
@@ -2622,9 +2625,9 @@ static void vgroup_assign_verts(Object *ob, const float weight)
       }
     }
     else {
-      const blender::Span<MVert> verts = me->vertices();
-      MDeformVert *dvert = BKE_mesh_deform_verts_for_write(me);
-      MDeformVert *dv = dvert;
+      const Span<MVert> verts = me->vertices();
+      MutableSpan<MDeformVert> dverts = me->deform_verts_for_write();
+      MDeformVert *dv = dverts.data();
 
       for (int i = 0; i < me->totvert; i++, dv++) {
         const MVert *mv = &verts[i];
@@ -2741,7 +2744,7 @@ static bool vertex_group_mesh_with_dvert_poll(bContext *C)
   }
 
   Mesh *me = static_cast<Mesh *>(ob->data);
-  if (!BKE_mesh_deform_verts(me)) {
+  if (me->deform_verts().is_empty()) {
     CTX_wm_operator_poll_msg_set(C, "The active mesh object has no vertex group data");
     return false;
   }
@@ -4351,10 +4354,10 @@ static void vgroup_copy_active_to_sel_single(Object *ob, const int def_nr)
       return;
     }
 
-    const blender::Span<MVert> verts = me->vertices();
-    MDeformVert *dvert = BKE_mesh_deform_verts_for_write(me);
+    const Span<MVert> verts = me->vertices();
+    MutableSpan<MDeformVert> dverts = me->deform_verts_for_write();
 
-    dv = dvert;
+    dv = dverts.data();
     for (i = 0; i < me->totvert; i++, dv++) {
       if ((verts[i].flag & SELECT) && (dv != dvert_act)) {
 

@@ -646,8 +646,8 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *UNUSED(ctx)
                                  (mmd->flag & MOD_MASK_SMOOTH);
 
   /* Return empty or input mesh when there are no vertex groups. */
-  const MDeformVert *dvert = BKE_mesh_deform_verts(mesh);
-  if (dvert == nullptr) {
+  const Span<MDeformVert> dverts = mesh->deform_verts();
+  if (dverts.is_empty()) {
     return invert_mask ? mesh : BKE_mesh_new_nomain_from_template(mesh, 0, 0, 0, 0, 0);
   }
 
@@ -669,7 +669,8 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *UNUSED(ctx)
     }
 
     vertex_mask = Array<bool>(mesh->totvert);
-    compute_vertex_mask__armature_mode(dvert, mesh, armature_ob, mmd->threshold, vertex_mask);
+    compute_vertex_mask__armature_mode(
+        dverts.data(), mesh, armature_ob, mmd->threshold, vertex_mask);
   }
   else {
     BLI_assert(mmd->mode == MOD_MASK_MODE_VGROUP);
@@ -681,7 +682,8 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *UNUSED(ctx)
     }
 
     vertex_mask = Array<bool>(mesh->totvert);
-    compute_vertex_mask__vertex_group_mode(dvert, defgrp_index, mmd->threshold, vertex_mask);
+    compute_vertex_mask__vertex_group_mode(
+        dverts.data(), defgrp_index, mmd->threshold, vertex_mask);
   }
 
   if (invert_mask) {
@@ -742,7 +744,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *UNUSED(ctx)
                                             *result,
                                             vertex_mask,
                                             vertex_map,
-                                            dvert,
+                                            dverts.data(),
                                             defgrp_index,
                                             mmd->threshold,
                                             edges_masked_num,
@@ -765,7 +767,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *UNUSED(ctx)
                                        vertex_mask,
                                        vertex_map,
                                        edge_map,
-                                       dvert,
+                                       dverts.data(),
                                        defgrp_index,
                                        mmd->threshold,
                                        masked_poly_indices,

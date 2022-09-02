@@ -345,6 +345,15 @@ typedef struct Mesh {
   blender::Span<MLoop> loops() const;
   /** Write access to loop data. */
   blender::MutableSpan<MLoop> loops_for_write();
+
+  /**
+   * Vertex group data, encoded as an array of indices and weights for every vertex.
+   * \warning: May be empty.
+   */
+  blender::Span<MDeformVert> deform_verts() const;
+  /** Write access to vertex group data. */
+  blender::MutableSpan<MDeformVert> deform_verts_for_write();
+
 #endif
 } Mesh;
 

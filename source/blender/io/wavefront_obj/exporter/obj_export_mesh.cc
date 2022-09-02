@@ -462,8 +462,8 @@ int16_t OBJMesh::get_poly_deform_group_index(const int poly_index,
   BLI_assert(group_weights.size() == BKE_object_defgroup_count(&export_object_eval_));
   const Span<MPoly> polys = export_mesh_eval_->polygons();
   const Span<MLoop> loops = export_mesh_eval_->loops();
-  const MDeformVert *dvert = BKE_mesh_deform_verts(export_mesh_eval_);
-  if (!dvert) {
+  const Span<MDeformVert> dverts = export_mesh_eval_->deform_verts();
+  if (dverts.is_empty()) {
     return NOT_FOUND;
   }
 
@@ -472,7 +472,7 @@ int16_t OBJMesh::get_poly_deform_group_index(const int poly_index,
   const MPoly &mpoly = polys[poly_index];
   const MLoop *mloop = &loops[mpoly.loopstart];
   for (int loop_i = 0; loop_i < mpoly.totloop; ++loop_i, ++mloop) {
-    const MDeformVert &dv = dvert[mloop->v];
+    const MDeformVert &dv = dverts[mloop->v];
     for (int weight_i = 0; weight_i < dv.totweight; ++weight_i) {
       const auto group = dv.dw[weight_i].def_nr;
       if (group < group_weights.size()) {

@@ -2513,7 +2513,7 @@ static void wpaint_stroke_update_step(bContext *C,
   Mesh *mesh = static_cast<Mesh *>(ob->data);
 
   /* *** setup WeightPaintInfo - pass onto do_weight_paint_vertex *** */
-  wpi.dvert = {BKE_mesh_deform_verts_for_write(mesh), mesh->totvert};
+  wpi.dvert = mesh->deform_verts_for_write();
 
   wpi.defbase_tot = wpd->defbase_tot;
   wpi.defbase_sel = wpd->defbase_sel;

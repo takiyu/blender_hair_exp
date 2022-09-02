@@ -55,6 +55,7 @@
 #include "WM_api.h"
 #include "WM_types.h"
 
+using blender::MutableSpan;
 using blender::Span;
 
 /* * ********************** no editmode!!! *********** */
@@ -1465,11 +1466,11 @@ MDeformVert *ED_mesh_active_dvert_get_ob(Object *ob, int *r_index)
   if (r_index) {
     *r_index = index;
   }
-  if (index == -1 || !BKE_mesh_deform_verts(me)) {
+  if (index == -1 || me->deform_verts().is_empty()) {
     return nullptr;
   }
-  MDeformVert *dvert = BKE_mesh_deform_verts_for_write(me);
-  return dvert + index;
+  MutableSpan<MDeformVert> dverts = me->deform_verts_for_write();
+  return &dverts[index];
 }
 
 MDeformVert *ED_mesh_active_dvert_get_only(Object *ob)

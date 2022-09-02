@@ -2464,9 +2464,10 @@ static void gpencil_generate_edgeloops(Object *ob,
   if (me->totedge == 0) {
     return;
   }
-  const float(*vert_normals)[3] = BKE_mesh_vertex_normals_ensure(me);
   const Span<MVert> verts = me->vertices();
   const Span<MEdge> edges = me->edges();
+  const Span<MDeformVert> dverts = me->deform_verts();
+  const float(*vert_normals)[3] = BKE_mesh_vertex_normals_ensure(me);
 
   /* Arrays for all edge vertices (forward and backward) that form a edge loop.
    * This is reused for each edge-loop to create gpencil stroke. */
@@ -2542,8 +2543,7 @@ static void gpencil_generate_edgeloops(Object *ob,
         gpf_stroke, MAX2(stroke_mat_index, 0), array_len + 1, thickness * thickness, false);
 
     /* Create dvert data. */
-    const MDeformVert *me_dvert = BKE_mesh_deform_verts(me);
-    if (use_vgroups && me_dvert) {
+    if (use_vgroups && !dverts.is_empty()) {
       gps_stroke->dvert = (MDeformVert *)MEM_callocN(sizeof(MDeformVert) * (array_len + 1),
                                                      "gp_stroke_dverts");
     }
@@ -2565,9 +2565,9 @@ static void gpencil_generate_edgeloops(Object *ob,
       pt->strength = 1.0f;
 
       /* Copy vertex groups from mesh. Assuming they already exist in the same order. */
-      if (use_vgroups && me_dvert) {
+      if (use_vgroups && !dverts.is_empty()) {
         MDeformVert *dv = &gps_stroke->dvert[i];
-        const MDeformVert *src_dv = &me_dvert[vertex_index];
+        const MDeformVert *src_dv = &dverts[vertex_index];
         dv->totweight = src_dv->totweight;
         dv->dw = (MDeformWeight *)MEM_callocN(sizeof(MDeformWeight) * dv->totweight,
                                               "gp_stroke_dverts_dw");
@@ -2742,8 +2742,8 @@ bool BKE_gpencil_convert_mesh(Main *bmain,
       gps_fill->flag |= GP_STROKE_CYCLIC;
 
       /* Create dvert data. */
-      const MDeformVert *me_dvert = BKE_mesh_deform_verts(me_eval);
-      if (use_vgroups && me_dvert) {
+      const Span<MDeformVert> dverts = me_eval->deform_verts();
+      if (use_vgroups && !dverts.is_empty()) {
         gps_fill->dvert = (MDeformVert *)MEM_callocN(sizeof(MDeformVert) * mp->totloop,
                                                      "gp_fill_dverts");
       }
@@ -2760,9 +2760,9 @@ bool BKE_gpencil_convert_mesh(Main *bmain,
         pt->strength = 1.0f;
 
         /* Copy vertex groups from mesh. Assuming they already exist in the same order. */
-        if (use_vgroups && me_dvert) {
+        if (use_vgroups && !dverts.is_empty()) {
           MDeformVert *dv = &gps_fill->dvert[j];
-          const MDeformVert *src_dv = &me_dvert[ml->v];
+          const MDeformVert *src_dv = &dverts[ml->v];
           dv->totweight = src_dv->totweight;
           dv->dw = (MDeformWeight *)MEM_callocN(sizeof(MDeformWeight) * dv->totweight,
                                                 "gp_fill_dverts_dw");

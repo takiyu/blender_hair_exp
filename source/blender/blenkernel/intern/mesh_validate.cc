@@ -1083,7 +1083,7 @@ bool BKE_mesh_validate(Mesh *me, const bool do_verbose, const bool cddata_check_
                            loops.size(),
                            polys.data(),
                            polys.size(),
-                           BKE_mesh_deform_verts_for_write(me),
+                           me->deform_verts_for_write().data(),
                            do_verbose,
                            true,
                            &changed);
@@ -1136,7 +1136,7 @@ bool BKE_mesh_is_valid(Mesh *me)
                                        loops.size(),
                                        polys.data(),
                                        polys.size(),
-                                       BKE_mesh_deform_verts_for_write(me),
+                                       me->deform_verts_for_write().data(),
                                        do_verbose,
                                        do_fixes,
                                        &changed);
