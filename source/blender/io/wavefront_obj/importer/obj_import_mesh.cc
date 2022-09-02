@@ -222,7 +222,7 @@ void MeshFromGeometry::create_polys_loops(Mesh *mesh, bool use_vertex_groups)
       mloop.v = mesh_geometry_.global_to_local_vertices_.lookup_default(curr_corner.vert_index, 0);
 
       /* Setup vertex group data, if needed. */
-      if (!dverts.is_empty()) {
+      if (dverts.is_empty()) {
         continue;
       }
       const int group_index = curr_face.vertex_group_index;
