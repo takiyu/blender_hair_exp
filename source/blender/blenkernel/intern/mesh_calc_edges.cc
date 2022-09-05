@@ -149,7 +149,7 @@ static void serialize_and_initialize_deduplicated_edges(Mesh &mesh,
         /* Initialize new edge. */
         new_edge.v1 = item.key.v_low;
         new_edge.v2 = item.key.v_high;
-        new_edge.flag = (ME_EDGEDRAW | ME_EDGERENDER);
+        new_edge.flag = ME_EDGEDRAW | ME_EDGERENDER;
       }
       item.value.index = new_edge_index;
       new_edge_index++;

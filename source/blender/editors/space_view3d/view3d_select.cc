@@ -372,22 +372,20 @@ static bool edbm_backbuf_check_and_select_faces_obmode(Mesh *me,
 
   const BLI_bitmap *select_bitmap = esel->select_bitmap;
 
-  if (mpoly) {
-    bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*me);
-    bke::SpanAttributeWriter<bool> selection_poly = attributes.lookup_or_add_for_write_span<bool>(
-        ".selection_poly", ATTR_DOMAIN_FACE);
-    const VArray<bool> hide_poly = attributes.lookup_or_default<bool>(
-        ".hide_poly", ATTR_DOMAIN_FACE, false);
+  bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*me);
+  bke::SpanAttributeWriter<bool> selection_poly = attributes.lookup_or_add_for_write_span<bool>(
+      ".selection_poly", ATTR_DOMAIN_FACE);
+  const VArray<bool> hide_poly = attributes.lookup_or_default<bool>(
+      ".hide_poly", ATTR_DOMAIN_FACE, false);
 
-    for (int index = 0; index < me->totpoly; index++, mpoly++) {
-      if (!hide_poly[index]) {
-        const bool is_select = selection_poly.span[index];
-        const bool is_inside = BLI_BITMAP_TEST_BOOL(select_bitmap, index);
-        const int sel_op_result = ED_select_op_action_deselected(sel_op, is_select, is_inside);
-        if (sel_op_result != -1) {
-          selection_poly.span[index] = sel_op_result == 1;
-          changed = true;
-        }
+  for (int index = 0; index < me->totpoly; index++) {
+    if (!hide_poly[index]) {
+      const bool is_select = selection_poly.span[index];
+      const bool is_inside = BLI_BITMAP_TEST_BOOL(select_bitmap, index);
+      const int sel_op_result = ED_select_op_action_deselected(sel_op, is_select, is_inside);
+      if (sel_op_result != -1) {
+        selection_poly.span[index] = sel_op_result == 1;
+        changed = true;
       }
     }
   }
@@ -1226,7 +1224,6 @@ static bool do_lasso_select_paintvert(ViewContext *vc,
         ".selection_vert", ATTR_DOMAIN_POINT);
 
     LassoSelectUserData_ForMeshVert data;
-
     data.selection_vert = selection_vert.span;
 
     view3d_userdata_lassoselect_init(&data.lasso_data, vc, &rect, mcoords, mcoords_len, sel_op);
@@ -3184,7 +3181,6 @@ static bool do_paintvert_box_select(ViewContext *vc,
         ".selection_vert", ATTR_DOMAIN_POINT);
 
     BoxSelectUserData_ForMeshVert data;
-
     data.selection_vert = selection_vert.span;
 
     view3d_userdata_boxselect_init(&data.box_data, vc, rect, sel_op);
@@ -3472,7 +3468,8 @@ static bool do_mesh_box_select(ViewContext *vc,
   }
   if (ts->selectmode & SCE_SELECT_EDGE) {
     /* Does both use_zbuf and non-use_zbuf versions (need screen cos for both) */
-    struct BoxSelectUserData_ForMeshEdge cb_data {};
+    struct BoxSelectUserData_ForMeshEdge cb_data {
+    };
     cb_data.data = &data;
     cb_data.esel = use_zbuf ? esel : nullptr;
     cb_data.backbuf_offset = use_zbuf ? DRW_select_buffer_context_offset_for_object_elem(
@@ -4206,7 +4203,6 @@ static bool paint_vertsel_circle_select(ViewContext *vc,
         ".selection_vert", ATTR_DOMAIN_POINT);
 
     CircleSelectUserData_ForMeshVert data;
-
     data.selection_vert = selection_vert.span;
 
     ED_view3d_init_mats_rv3d(vc->obact, vc->rv3d); /* for foreach's screen/vert projection */

@@ -445,7 +445,6 @@ static bool weight_paint_set(Object *ob, float paintweight)
   /* mutually exclusive, could be made into a */
   const short paint_selmode = ME_EDIT_PAINT_SEL_MODE(me);
 
-  const MVert *verts = BKE_mesh_vertices(me);
   const MPoly *polys = BKE_mesh_polygons(me);
   const MLoop *loops = BKE_mesh_loops(me);
   MDeformVert *dvert = BKE_mesh_deform_verts_for_write(me);
@@ -462,14 +461,14 @@ static bool weight_paint_set(Object *ob, float paintweight)
   }
 
   struct WPaintPrev wpp;
-  wpaint_prev_create(&wpp, me->dvert, me->totvert);
+  wpaint_prev_create(&wpp, dvert, me->totvert);
 
   const bool *selection_vert = (const bool *)CustomData_get_layer_named(
       &me->vdata, CD_PROP_BOOL, ".selection_vert");
   const bool *selection_poly = (const bool *)CustomData_get_layer_named(
       &me->pdata, CD_PROP_BOOL, ".selection_poly");
 
-  for (index = 0, mp = me->mpoly; index < me->totpoly; index++, mp++) {
+  for (index = 0, mp = polys; index < me->totpoly; index++, mp++) {
     uint fidx = mp->totloop - 1;
 
     if ((paint_selmode == SCE_SELECT_FACE) && !(selection_poly && selection_poly[index])) {
@@ -588,7 +587,7 @@ typedef struct WPGradient_userData {
   struct ARegion *region;
   Scene *scene;
   Mesh *me;
-  const bool *selection_vert;
+  MDeformVert *dvert;
   Brush *brush;
   const float *sco_start; /* [2] */
   const float *sco_end;   /* [2] */
@@ -685,7 +684,7 @@ static void gradientVertInit__mapFunc(void *userData,
   WPGradient_userData *grad_data = userData;
   WPGradient_vertStore *vs = &grad_data->vert_cache->elem[index];
 
-  if (grad_data->use_select && !(grad_data->selection_vert && grad_data->selection_vert[index])) {
+  if (grad_data->use_select && !(grad_data->dvert[index].flag & SELECT)) {
     copy_v2_fl(vs->sco, FLT_MAX);
     return;
   }
@@ -812,8 +811,7 @@ static int paint_weight_gradient_exec(bContext *C, wmOperator *op)
   data.region = region;
   data.scene = scene;
   data.me = ob->data;
-  data.selection_vert = (const bool *)CustomData_get_layer_named(
-      &me->vdata, CD_PROP_BOOL, ".selection_vert");
+  data.dvert = dverts;
   data.sco_start = sco_start;
   data.sco_end = sco_end;
   data.sco_line_div = 1.0f / len_v2v2(sco_start, sco_end);

@@ -2248,12 +2248,11 @@ static void do_wpaint_brush_calc_average_weight_cb_ex(
                                                       1.0f;
       if (angle_cos > 0.0 &&
           BKE_brush_curve_strength(data->brush, sqrtf(test.dist), cache->radius) > 0.0) {
-        const int v_index = has_grids ? data->me->mloop[vd.grid_indices[vd.g]].v :
-                                        vd.vert_indices[vd.i];
+        const int v_index = has_grids ? ss->mloop[vd.grid_indices[vd.g]].v : vd.vert_indices[vd.i];
 
         /* If the vertex is selected. */
         if (!(use_face_sel || use_vert_sel) || selection_vert[v_index]) {
-          const MDeformVert *dv = &data->me->dvert[v_index];
+          const MDeformVert *dv = &data->wpi->dvert[v_index];
           accum->len += 1;
           accum->value += wpaint_get_active_weight(dv, data->wpi);
         }
@@ -3029,7 +3028,7 @@ static void do_vpaint_brush_blur_loops(bContext *C,
 
               for (int j = 0; j < gmap->vert_to_poly[v_index].count; j++) {
                 int p_index = gmap->vert_to_poly[v_index].indices[j];
-                const MPoly *mp = &me->mpoly[p_index];
+                const MPoly *mp = &ss->mpoly[p_index];
                 if (!use_face_sel || selection_poly[p_index]) {
                   total_hit_loops += mp->totloop;
                   for (int k = 0; k < mp->totloop; k++) {
@@ -3063,7 +3062,7 @@ static void do_vpaint_brush_blur_loops(bContext *C,
                 for (int j = 0; j < gmap->vert_to_poly[v_index].count; j++) {
                   const int p_index = gmap->vert_to_poly[v_index].indices[j];
                   const int l_index = gmap->vert_to_loop[v_index].indices[j];
-                  BLI_assert(me->mloop[l_index].v == v_index);
+                  BLI_assert(ss->mloop[l_index].v == v_index);
                   if (!use_face_sel || selection_poly[p_index]) {
                     Color color_orig(0, 0, 0, 0); /* unused when array is nullptr */
 
@@ -3174,7 +3173,7 @@ static void do_vpaint_brush_blur_verts(bContext *C,
 
               for (int j = 0; j < gmap->vert_to_poly[v_index].count; j++) {
                 int p_index = gmap->vert_to_poly[v_index].indices[j];
-                const MPoly *mp = &me->mpoly[p_index];
+                const MPoly *mp = &ss->mpoly[p_index];
                 if (!use_face_sel || selection_poly[p_index]) {
                   total_hit_loops += mp->totloop;
                   for (int k = 0; k < mp->totloop; k++) {
@@ -3337,9 +3336,9 @@ static void do_vpaint_brush_smear(bContext *C,
                   const int l_index = gmap->vert_to_loop[v_index].indices[j];
                   BLI_assert(ss->mloop[l_index].v == v_index);
                   UNUSED_VARS_NDEBUG(l_index);
-                  const MPoly *mp = &me->mpoly[p_index];
+                  const MPoly *mp = &ss->mpoly[p_index];
                   if (!use_face_sel || selection_poly[p_index]) {
-                    const MLoop *ml_other = &me->mloop[mp->loopstart];
+                    const MLoop *ml_other = &ss->mloop[mp->loopstart];
                     for (int k = 0; k < mp->totloop; k++, ml_other++) {
                       const uint v_other_index = ml_other->v;
                       if (v_other_index != v_index) {
@@ -3647,7 +3646,7 @@ static void vpaint_do_draw(bContext *C,
                 for (int j = 0; j < gmap->vert_to_poly[v_index].count; j++) {
                   const int p_index = gmap->vert_to_poly[v_index].indices[j];
                   const int l_index = gmap->vert_to_loop[v_index].indices[j];
-                  BLI_assert(me->mloop[l_index].v == v_index);
+                  BLI_assert(ss->mloop[l_index].v == v_index);
                   if (!use_face_sel || selection_poly[p_index]) {
                     Color color_orig = Color(0, 0, 0, 0); /* unused when array is nullptr */
 
@@ -4123,15 +4122,14 @@ static bool vertex_color_set(Object *ob, ColorPaint4f paintcol_in, CustomDataLay
   }
   else {
     Color *color_layer = static_cast<Color *>(layer->data);
-    const Span<MVert> verts = me->vertices();
     const Span<MPoly> polys = me->polygons();
     const Span<MLoop> loops = me->loops();
 
-    const MPoly *mp = me->mpoly;
-    for (int i = 0; i < me->totpoly; i++, mp++) {
+    for (const int i : polys.index_range()) {
       if (use_face_sel && !selection_poly[i]) {
         continue;
       }
+      const MPoly &poly = polys[i];
 
       int j = 0;
       do {

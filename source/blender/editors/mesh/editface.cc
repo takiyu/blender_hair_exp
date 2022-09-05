@@ -73,7 +73,6 @@ void paintface_flush_flags(bContext *C,
   Mesh *me_eval = (Mesh *)ob_eval->runtime.data_eval;
   bke::MutableAttributeAccessor attributes_eval = bke::mesh_attributes_for_write(*me_eval);
   bool updated = false;
-  const Span<MPoly> me_polys = me->polygons();
 
   if (me_orig != nullptr && me_eval != nullptr && me_orig->totpoly == me->totpoly) {
     /* Update the COW copy of the mesh. */
@@ -155,7 +154,6 @@ void paintface_hide(bContext *C, Object *ob, const bool unselected)
     return;
   }
 
-  MutableSpan<MPoly> polys = me->polygons_for_write();
   bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*me);
   bke::SpanAttributeWriter<bool> hide_poly = attributes.lookup_or_add_for_write_span<bool>(
       ".hide_poly", ATTR_DOMAIN_FACE);
@@ -190,7 +188,6 @@ void paintface_reveal(bContext *C, Object *ob, const bool select)
     return;
   }
 
-  MutableSpan<MPoly> polys = me->polygons_for_write();
   bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*me);
 
   if (select) {
@@ -247,7 +244,7 @@ static void select_linked_tfaces_with_seams(Mesh *me, const uint index, const bo
       }
       else if (selection_poly.span[i]) {
         const MPoly &poly = polys[i];
-        BKE_mesh_poly_edgebitmap_insert(edge_tag, &poly, me->mloop + poly.loopstart);
+        BKE_mesh_poly_edgebitmap_insert(edge_tag, &poly, &loops[poly.loopstart]);
         BLI_BITMAP_ENABLE(poly_tag, i);
       }
     }
@@ -398,13 +395,13 @@ bool paintface_minmax(Object *ob, float r_min[3], float r_max[3])
       ".selection_poly", ATTR_DOMAIN_FACE, false);
 
   for (int i = 0; i < me->totpoly; i++) {
-    MPoly *mp = &me->mpoly[i];
     if (hide_poly[i] || !selection_poly[i]) {
       continue;
     }
 
-    const MLoop *ml = &loops[mp->loopstart];
-    for (int b = 0; b < mp->totloop; b++, ml++) {
+    const MPoly &poly = polys[i];
+    const MLoop *ml = &loops[poly.loopstart];
+    for (int b = 0; b < poly.totloop; b++, ml++) {
       mul_v3_m3v3(vec, bmat, verts[ml->v].co);
       add_v3_v3v3(vec, vec, ob->obmat[3]);
       minmax_v3v3_v3(r_min, r_max, vec);
@@ -637,9 +634,8 @@ void paintvert_select_ungrouped(Object *ob, bool extend, bool flush_flags)
       ".selection_vert", ATTR_DOMAIN_POINT);
 
   for (int i = 0; i < me->totvert; i++) {
-    const MDeformVert *dv = &me->dvert[i];
     if (!hide_vert[i]) {
-      if (dv->dw == nullptr) {
+      if (dverts[i].dw == nullptr) {
         /* if null weight then not grouped */
         selection_vert.span[i] = true;
       }
@@ -661,7 +657,6 @@ void paintvert_hide(bContext *C, Object *ob, const bool unselected)
     return;
   }
 
-  MutableSpan<MVert> verts = me->vertices_for_write();
   bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*me);
   bke::SpanAttributeWriter<bool> hide_vert = attributes.lookup_or_add_for_write_span<bool>(
       ".hide_vert", ATTR_DOMAIN_POINT);
@@ -696,7 +691,6 @@ void paintvert_reveal(bContext *C, Object *ob, const bool select)
     return;
   }
 
-  MutableSpan<MVert> verts = me->vertices_for_write();
   bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*me);
   const VArray<bool> hide_vert = attributes.lookup_or_default<bool>(
       ".hide_vert", ATTR_DOMAIN_POINT, false);
@@ -708,6 +702,8 @@ void paintvert_reveal(bContext *C, Object *ob, const bool select)
       selection_vert.span[i] = select;
     }
   }
+
+  selection_vert.finish();
 
   /* Remove the hide attribute to reveal all vertices. */
   attributes.remove(".hide_vert");

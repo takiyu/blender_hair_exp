@@ -594,8 +594,6 @@ bool ED_object_modifier_convert_psys_to_mesh(ReportList *UNUSED(reports),
   CustomData_add_layer(&me->edata, CD_MEDGE, CD_SET_DEFAULT, nullptr, edges_num);
   CustomData_add_layer(&me->fdata, CD_MFACE, CD_SET_DEFAULT, nullptr, 0);
 
-  int vert_index = 0;
-
   blender::MutableSpan<MVert> verts = me->vertices_for_write();
   blender::MutableSpan<MEdge> edges = me->edges_for_write();
   MVert *mvert = verts.data();
@@ -606,6 +604,7 @@ bool ED_object_modifier_convert_psys_to_mesh(ReportList *UNUSED(reports),
       ".selection_vert", ATTR_DOMAIN_POINT);
 
   /* copy coordinates */
+  int vert_index = 0;
   cache = psys_eval->pathcache;
   for (int a = 0; a < part_num; a++) {
     ParticleCacheKey *key = cache[a];

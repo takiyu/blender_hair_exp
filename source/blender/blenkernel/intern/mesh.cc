@@ -1656,9 +1656,6 @@ void BKE_mesh_mselect_validate(Mesh *me)
   if (me->totselect == 0) {
     return;
   }
-  const Span<MVert> verts = me->vertices();
-  const Span<MEdge> edges = me->edges();
-  const Span<MPoly> polys = me->polygons();
 
   mselect_src = me->mselect;
   mselect_dst = (MSelect *)MEM_malloc_arrayN(

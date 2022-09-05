@@ -163,7 +163,7 @@ bool BKE_object_defgroup_clear(Object *ob, bDeformGroup *dg, const bool use_sele
     }
     else {
       if (BKE_mesh_deform_verts(me)) {
-        const const bool *selection_vert = (const bool *)CustomData_get_layer_named(
+        const bool *selection_vert = (const bool *)CustomData_get_layer_named(
             &me->vdata, CD_PROP_BOOL, ".selection_vert");
         int i;
 

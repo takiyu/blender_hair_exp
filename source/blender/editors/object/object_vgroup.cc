@@ -673,15 +673,14 @@ static void vgroup_copy_active_to_sel(Object *ob, eVGroupSelect subset_type)
     const VArray<bool> selection_vert = attributes.lookup_or_default<bool>(
         ".selection_vert", ATTR_DOMAIN_POINT, false);
 
-    MDeformVert *dv;
     int v_act;
 
     dvert_act = ED_mesh_active_dvert_get_ob(ob, &v_act);
     if (dvert_act) {
       MutableSpan<MDeformVert> dverts = me->deform_verts_for_write();
-      for (i = 0; i < me->totvert; i++, dv++) {
-        if (selection_vert[i] && dv != dvert_act) {
-          BKE_defvert_copy_subset(dv, dvert_act, vgroup_validmap, vgroup_tot);
+      for (i = 0; i < me->totvert; i++) {
+        if (selection_vert[i] && &dverts[i] != dvert_act) {
+          BKE_defvert_copy_subset(&dverts[i], dvert_act, vgroup_validmap, vgroup_tot);
           if (me->symmetry & ME_SYMMETRY_X) {
             ED_mesh_defvert_mirror_update_ob(ob, -1, i);
           }
@@ -1060,14 +1059,14 @@ static void vgroup_select_verts(Object *ob, int select)
       }
     }
     else {
-      if (me->dvert) {
+      const Span<MDeformVert> dverts = me->deform_verts();
+      if (!dverts.is_empty()) {
         bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*me);
         const VArray<bool> hide_vert = attributes.lookup_or_default<bool>(
             ".hide_vert", ATTR_DOMAIN_POINT, false);
         bke::SpanAttributeWriter<bool> selection_vert =
             attributes.lookup_or_add_for_write_only_span<bool>(".selection_vert",
                                                                ATTR_DOMAIN_POINT);
-        const Span<MDeformVert> dverts = me->deform_verts();
 
         for (const int i : selection_vert.span.index_range()) {
           if (!hide_vert[i]) {
@@ -1991,7 +1990,6 @@ static void vgroup_smooth_subset(Object *ob,
     }
   }
   else {
-    const Span<MVert> verts = me->vertices();
     const blender::Span<MEdge> edges = me->edges();
     for (int i = 0; i < dvert_tot; i++) {
       if (IS_ME_VERT_WRITE(i)) {
@@ -2486,7 +2484,6 @@ void ED_vgroup_mirror(Object *ob,
       }
 
       BLI_bitmap *vert_tag = BLI_BITMAP_NEW(me->totvert, __func__);
-
       MutableSpan<MDeformVert> dverts = me->deform_verts_for_write();
       const bke::AttributeAccessor attributes = bke::mesh_attributes(*me);
       const VArray<bool> selection_vert = attributes.lookup_or_default<bool>(

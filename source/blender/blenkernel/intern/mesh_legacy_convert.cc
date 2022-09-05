@@ -1054,7 +1054,7 @@ void BKE_mesh_legacy_convert_selection_layers_to_flags(Mesh *mesh)
   using namespace blender::bke;
   const AttributeAccessor attributes = mesh_attributes(*mesh);
 
-  MutableSpan<MVert> verts(mesh->mvert, mesh->totvert);
+  MutableSpan<MVert> verts = mesh->vertices_for_write();
   const VArray<bool> selection_vert = attributes.lookup_or_default<bool>(
       ".selection_vert", ATTR_DOMAIN_POINT, false);
   threading::parallel_for(verts.index_range(), 4096, [&](IndexRange range) {
@@ -1063,7 +1063,7 @@ void BKE_mesh_legacy_convert_selection_layers_to_flags(Mesh *mesh)
     }
   });
 
-  MutableSpan<MEdge> edges(mesh->medge, mesh->totedge);
+  MutableSpan<MEdge> edges = mesh->edges_for_write();
   const VArray<bool> selection_edge = attributes.lookup_or_default<bool>(
       ".selection_edge", ATTR_DOMAIN_EDGE, false);
   threading::parallel_for(edges.index_range(), 4096, [&](IndexRange range) {
@@ -1072,7 +1072,7 @@ void BKE_mesh_legacy_convert_selection_layers_to_flags(Mesh *mesh)
     }
   });
 
-  MutableSpan<MPoly> polys(mesh->mpoly, mesh->totpoly);
+  MutableSpan<MPoly> polys = mesh->polygons_for_write();
   const VArray<bool> selection_poly = attributes.lookup_or_default<bool>(
       ".selection_poly", ATTR_DOMAIN_FACE, false);
   threading::parallel_for(polys.index_range(), 4096, [&](IndexRange range) {
@@ -1088,7 +1088,7 @@ void BKE_mesh_legacy_convert_flags_to_selection_layers(Mesh *mesh)
   using namespace blender::bke;
   MutableAttributeAccessor attributes = mesh_attributes_for_write(*mesh);
 
-  const Span<MVert> verts(mesh->mvert, mesh->totvert);
+  const Span<MVert> verts = mesh->vertices();
   if (std::any_of(
           verts.begin(), verts.end(), [](const MVert &vert) { return vert.flag & SELECT; })) {
     SpanAttributeWriter<bool> selection_vert = attributes.lookup_or_add_for_write_only_span<bool>(
@@ -1101,7 +1101,7 @@ void BKE_mesh_legacy_convert_flags_to_selection_layers(Mesh *mesh)
     selection_vert.finish();
   }
 
-  const Span<MEdge> edges(mesh->medge, mesh->totedge);
+  const Span<MEdge> edges = mesh->edges();
   if (std::any_of(
           edges.begin(), edges.end(), [](const MEdge &edge) { return edge.flag & SELECT; })) {
     SpanAttributeWriter<bool> selection_edge = attributes.lookup_or_add_for_write_only_span<bool>(
@@ -1114,7 +1114,7 @@ void BKE_mesh_legacy_convert_flags_to_selection_layers(Mesh *mesh)
     selection_edge.finish();
   }
 
-  const Span<MPoly> polys(mesh->mpoly, mesh->totpoly);
+  const Span<MPoly> polys = mesh->polygons();
   if (std::any_of(
           polys.begin(), polys.end(), [](const MPoly &poly) { return poly.flag & ME_FACE_SEL; })) {
     SpanAttributeWriter<bool> selection_poly = attributes.lookup_or_add_for_write_only_span<bool>(
