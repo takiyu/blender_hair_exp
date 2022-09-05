@@ -21,6 +21,7 @@
 #include "BKE_action.h"
 #include "BKE_armature.h"
 #include "BKE_deform.h"
+#include "BKE_mesh.h"
 #include "BKE_mesh_iterators.h"
 #include "BKE_mesh_runtime.h"
 #include "BKE_modifier.h"
@@ -408,9 +409,10 @@ static void add_verts_to_dgroups(ReportList *reports,
   }
 
   /* transform verts to global space */
+  const MVert *mesh_verts = BKE_mesh_vertices(mesh);
   for (int i = 0; i < mesh->totvert; i++) {
     if (!vertsfilled) {
-      copy_v3_v3(verts[i], mesh->mvert[i].co);
+      copy_v3_v3(verts[i], mesh_verts[i].co);
     }
     mul_m4_v3(ob->obmat, verts[i]);
   }
