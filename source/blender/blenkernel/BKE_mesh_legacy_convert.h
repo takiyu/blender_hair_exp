@@ -51,6 +51,16 @@ extern "C" {
 #endif
 
 /**
+ * Move material indices from a generic attribute to #MPoly.
+ */
+void BKE_mesh_legacy_convert_material_indices_to_mpoly(struct Mesh *mesh);
+/**
+ * Move material indices from the #MPoly struct to a generic attributes.
+ * Only add the attribute when the indices are not all zero.
+ */
+void BKE_mesh_legacy_convert_mpoly_to_material_indices(struct Mesh *mesh);
+
+/**
  * Recreate #MFace Tessellation.
  *
  * \note This doesn't use multi-threading like #BKE_mesh_recalc_looptri since

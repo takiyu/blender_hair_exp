@@ -439,6 +439,7 @@ int BKE_id_attribute_data_length(ID *id, CustomDataLayer *layer)
       if (mesh->edit_mesh != nullptr) {
         return 0;
       }
+      break;
     }
     default:
       break;
@@ -491,7 +492,7 @@ CustomDataLayer *BKE_id_attributes_active_get(ID *id)
       for (int i = 0; i < customdata->totlayer; i++) {
         CustomDataLayer *layer = &customdata->layers[i];
         if (CD_MASK_PROP_ALL & CD_TYPE_AS_MASK(layer->type)) {
-          if (index == active_index) {
+          if (index == active_index && BKE_attribute_allow_procedural_access(layer->name)) {
             return layer;
           }
           index++;

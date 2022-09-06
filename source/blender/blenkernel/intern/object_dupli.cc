@@ -56,6 +56,7 @@
 #include "BLI_strict_flags.h"
 
 using blender::Array;
+using blender::float2;
 using blender::float3;
 using blender::float4x4;
 using blender::Span;
@@ -628,7 +629,7 @@ static void make_duplis_verts(const DupliContext *ctx)
     VertexDupliData_Mesh vdd{};
     vdd.params = vdd_params;
     vdd.totvert = me_eval->totvert;
-    vdd.mvert = me_eval->mvert;
+    vdd.mvert = me_eval->vertices().data();
     vdd.vert_normals = BKE_mesh_vertex_normals_ensure(me_eval);
     vdd.orco = (const float(*)[3])CustomData_get_layer(&me_eval->vdata, CD_ORCO);
 
@@ -926,7 +927,7 @@ struct FaceDupliData_Mesh {
   const MLoop *mloop;
   const MVert *mvert;
   const float (*orco)[3];
-  const float (*mloopuv)[2];
+  const float2 *mloopuv;
 };
 
 struct FaceDupliData_EditMesh {
@@ -1076,7 +1077,7 @@ static void make_child_duplis_faces_from_mesh(const DupliContext *ctx,
   const MLoop *mloop = fdd->mloop;
   const MVert *mvert = fdd->mvert;
   const float(*orco)[3] = fdd->orco;
-  const float(*mloopuv)[2] = fdd->mloopuv;
+  const float2 *mloopuv = fdd->mloopuv;
   const int totface = fdd->totface;
   const bool use_scale = fdd->params.use_scale;
   int a;
@@ -1178,10 +1179,10 @@ static void make_duplis_faces(const DupliContext *ctx)
     FaceDupliData_Mesh fdd{};
     fdd.params = fdd_params;
     fdd.totface = me_eval->totpoly;
-    fdd.mpoly = me_eval->mpoly;
-    fdd.mloop = me_eval->mloop;
-    fdd.mvert = me_eval->mvert;
-    fdd.mloopuv = (uv_idx != -1) ? (const float(*)[2])CustomData_get_layer_n(
+    fdd.mpoly = me_eval->polygons().data();
+    fdd.mloop = me_eval->loops().data();
+    fdd.mvert = me_eval->vertices().data();
+    fdd.mloopuv = (uv_idx != -1) ? (const float2 *)CustomData_get_layer_n(
                                        &me_eval->ldata, CD_PROP_FLOAT2, uv_idx) :
                                    nullptr;
     fdd.orco = (const float(*)[3])CustomData_get_layer(&me_eval->vdata, CD_ORCO);

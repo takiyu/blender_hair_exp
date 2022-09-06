@@ -1008,11 +1008,6 @@ static void layerInterp_mloopcol(const void **sources,
   mc->a = round_fl_to_uchar_clamp(col.a);
 }
 
-static int layerMaxNum_mloopcol()
-{
-  return MAX_MCOL;
-}
-
 /** \} */
 
 /* -------------------------------------------------------------------- */
@@ -1416,11 +1411,6 @@ static void layerInterp_propcol(const void **sources,
   copy_v4_v4(mc->color, col);
 }
 
-static int layerMaxNum_propcol()
-{
-  return MAX_MCOL;
-}
-
 /** \} */
 
 /* -------------------------------------------------------------------- */
@@ -1604,8 +1594,8 @@ static const LayerTypeInfo LAYERTYPEINFO[CD_NUMTYPES] = {
      layerFree_mdeformvert,
      layerInterp_mdeformvert,
      nullptr,
-     layerConstruct_mdeformvert,
-     nullptr},
+     nullptr,
+     layerConstruct_mdeformvert},
     /* 3: CD_MEDGE */
     {sizeof(MEdge), "MEdge", 1, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr},
     /* 4: CD_MFACE */
@@ -1640,7 +1630,7 @@ static const LayerTypeInfo LAYERTYPEINFO[CD_NUMTYPES] = {
      nullptr,          nullptr,        nullptr,
      nullptr,          nullptr,        nullptr,
      nullptr,          nullptr,        nullptr,
-     nullptr,          nullptr,        layerMaxNum_mloopcol},
+     nullptr,          nullptr,        nullptr},
     /* 7: CD_ORIGINDEX */
     {sizeof(int), "", 0, nullptr, nullptr, nullptr, nullptr, nullptr, layerDefault_origindex},
     /* 8: CD_NORMAL */
@@ -1733,7 +1723,7 @@ static const LayerTypeInfo LAYERTYPEINFO[CD_NUMTYPES] = {
      nullptr,
      nullptr,
      nullptr,
-     layerMaxNum_mloopcol},
+     nullptr},
     /* 18: CD_TANGENT */
     {sizeof(float[4][4]), "", 0, N_("Tangent"), nullptr, nullptr, nullptr, nullptr, nullptr},
     /* 19: CD_MDISPS */
@@ -1931,7 +1921,7 @@ static const LayerTypeInfo LAYERTYPEINFO[CD_NUMTYPES] = {
      nullptr,
      nullptr,
      nullptr,
-     layerMaxNum_propcol},
+     nullptr},
     /* 48: CD_PROP_FLOAT3 */
     {sizeof(float[3]),
      "vec3f",
@@ -2299,7 +2289,7 @@ bool CustomData_merge(const CustomData *source,
 
 static bool attribute_stored_in_bmesh_flag(const StringRef name)
 {
-  return ELEM(name, ".hide_vert", ".hide_edge", ".hide_poly");
+  return ELEM(name, ".hide_vert", ".hide_edge", ".hide_poly", "material_index");
 }
 
 static CustomData shallow_copy_remove_non_bmesh_attributes(const CustomData &src)
