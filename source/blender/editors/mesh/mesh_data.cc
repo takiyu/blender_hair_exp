@@ -34,6 +34,8 @@
 #include "WM_api.h"
 #include "WM_types.h"
 
+#include "BLT_translation.h"
+
 #include "ED_mesh.h"
 #include "ED_object.h"
 #include "ED_paint.h"
@@ -229,7 +231,7 @@ int ED_mesh_uv_add(
   int layernum_dst;
 
   if (!name) {
-    name = "UVMap";
+    name = DATA_("UVMap");
   }
 
   bool is_init = false;
@@ -369,8 +371,11 @@ void ED_mesh_uv_ensure(Mesh *me, const char *name)
   }
 }
 
-int ED_mesh_color_add(
-    Mesh *me, const char *name, const bool active_set, const bool do_init, ReportList *reports)
+int ED_mesh_color_add(Mesh *me,
+                      const char *name,
+                      const bool active_set,
+                      const bool do_init,
+                      ReportList *UNUSED(reports))
 {
   /* NOTE: keep in sync with #ED_mesh_uv_add. */
 

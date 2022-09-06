@@ -7,7 +7,7 @@
  */
 
 /**
- * Get a descriptor containing offsets for layers used for user interaction with the active UV map.
+ * Retrieve the custom data offsets for layers used for user interaction with the active UV map.
  */
 BMUVOffsets BM_uv_map_get_offsets(const BMesh *bm);
 

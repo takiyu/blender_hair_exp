@@ -58,8 +58,7 @@ static int compare_v2_classify(const float uv_a[2], const float uv_b[2])
   return CMP_APART;
 }
 
-static void merge_uvs_for_vertex(const Span<int> loops_for_vert,
-                                 Span<blender::float2 *> mloopuv_layers)
+static void merge_uvs_for_vertex(const Span<int> loops_for_vert, Span<float2 *> mloopuv_layers)
 {
   if (loops_for_vert.size() <= 1) {
     return;
@@ -67,7 +66,7 @@ static void merge_uvs_for_vertex(const Span<int> loops_for_vert,
   /* Manipulate a copy of the loop indices, de-duplicating UV's per layer.  */
   Vector<int, 32> loops_merge;
   loops_merge.reserve(loops_for_vert.size());
-  for (blender::float2 *mloopuv : mloopuv_layers) {
+  for (float2 *mloopuv : mloopuv_layers) {
     BLI_assert(loops_merge.is_empty());
     loops_merge.extend_unchecked(loops_for_vert);
     while (loops_merge.size() > 1) {
@@ -123,15 +122,14 @@ void BKE_mesh_merge_customdata_for_apply_modifier(Mesh *me)
                                 me->totpoly,
                                 me->totloop);
 
-  Vector<blender::float2 *> mloopuv_layers;
+  Vector<float2 *> mloopuv_layers;
   mloopuv_layers.reserve(mloopuv_layers_num);
   for (int a = 0; a < mloopuv_layers_num; a++) {
-    blender::float2 *mloopuv = static_cast<blender::float2 *>(
-        CustomData_get_layer_n(&me->ldata, CD_PROP_FLOAT2, a));
+    float2 *mloopuv = static_cast<float2 *>(CustomData_get_layer_n(&me->ldata, CD_PROP_FLOAT2, a));
     mloopuv_layers.append_unchecked(mloopuv);
   }
 
-  Span<blender::float2 *> mloopuv_layers_as_span = mloopuv_layers.as_span();
+  Span<float2 *> mloopuv_layers_as_span = mloopuv_layers.as_span();
 
   threading::parallel_for(IndexRange(me->totvert), 1024, [&](IndexRange range) {
     for (const int64_t v_index : range) {

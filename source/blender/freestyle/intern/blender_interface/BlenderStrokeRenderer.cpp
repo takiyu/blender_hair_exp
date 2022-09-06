@@ -591,16 +591,14 @@ void BlenderStrokeRenderer::GenerateStrokeMesh(StrokeGroup *group, bool hasTex)
 
   if (hasTex) {
     // First UV layer
-    CustomData_add_layer_named(
-        &mesh->ldata, CD_PROP_FLOAT2, CD_SET_DEFAULT, nullptr, mesh->totloop, uvNames[0]);
+    loopsuv[0] = static_cast<blender::float2 *>(CustomData_add_layer_named(
+        &mesh->ldata, CD_PROP_FLOAT2, CD_SET_DEFAULT, nullptr, mesh->totloop, uvNames[0]));
     CustomData_set_layer_active(&mesh->ldata, CD_PROP_FLOAT2, 0);
-    loopsuv[0] = reinterpret_cast<blender::float2 *>(mesh->mloopuv);
 
     // Second UV layer
-    CustomData_add_layer_named(
-        &mesh->ldata, CD_PROP_FLOAT2, CD_SET_DEFAULT, nullptr, mesh->totloop, uvNames[1]);
+    loopsuv[1] = static_cast<blender::float2 *>(CustomData_add_layer_named(
+        &mesh->ldata, CD_PROP_FLOAT2, CD_SET_DEFAULT, nullptr, mesh->totloop, uvNames[1]));
     CustomData_set_layer_active(&mesh->ldata, CD_PROP_FLOAT2, 1);
-    loopsuv[1] = reinterpret_cast<blender::float2 *>(mesh->mloopuv);
   }
 
   // colors and transparency (the latter represented by grayscale colors)

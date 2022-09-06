@@ -493,7 +493,7 @@ static void generate_margin(ImBuf *ibuf,
 
   const MPoly *mpoly;
   const MLoop *mloop;
-  const MLoopUV *mloopuv;
+  const float2 *mloopuv;
   int totpoly, totloop, totedge;
 
   int tottri;

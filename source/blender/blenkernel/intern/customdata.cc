@@ -58,6 +58,7 @@
 /* only for customdata_data_transfer_interp_normal_normals */
 #include "data_transfer_intern.h"
 
+using blender::float2;
 using blender::IndexRange;
 using blender::Set;
 using blender::Span;
@@ -1517,27 +1518,25 @@ static bool layerValidate_propfloat2(void *data, const uint totitems, const bool
 
 static bool layerEqual_propfloat2(const void *data1, const void *data2)
 {
-  const float *luv1 = static_cast<const float *>(data1);
-  const float *luv2 = static_cast<const float *>(data2);
+  const float2 &a = *static_cast<const float2 *>(data1);
+  const float2 &b = *static_cast<const float2 *>(data2);
 
-  return len_squared_v2v2(luv1, luv2) < 0.00001f;
+  return blender::math::distance_squared(a, b) < 0.00001f;
 }
 
 static void layerInitMinMax_propfloat2(void *vmin, void *vmax)
 {
-  float *min = static_cast<float *>(vmin);
-  float *max = static_cast<float *>(vmax);
-
+  float2 &min = *static_cast<float2 *>(vmin);
+  float2 &max = *static_cast<float2 *>(vmax);
   INIT_MINMAX2(min, max);
 }
 
 static void layerDoMinMax_propfloat2(const void *data, void *vmin, void *vmax)
 {
-  const float *luv = static_cast<const float *>(data);
-  float *min = static_cast<float *>(vmin);
-  float *max = static_cast<float *>(vmax);
-
-  minmax_v2v2_v2(min, max, luv);
+  const float2 &value = *static_cast<const float2 *>(data);
+  float2 &a = *static_cast<float2 *>(vmin);
+  float2 &b = *static_cast<float2 *>(vmax);
+  blender::math::min_max(value, a, b);
 }
 
 static void layerCopyValue_propfloat2(const void *source,
@@ -1545,17 +1544,16 @@ static void layerCopyValue_propfloat2(const void *source,
                                       const int mixmode,
                                       const float mixfactor)
 {
-  const float *luv1 = static_cast<const float *>(source);
-  float *luv2 = static_cast<float *>(dest);
+  const float2 &a = *static_cast<const float2 *>(source);
+  float2 &b = *static_cast<float2 *>(dest);
 
-  /* We only support a limited subset of advanced mixing here -
+  /* We only support a limited subset of advanced mixing here-
    * namely the mixfactor interpolation. */
-
   if (mixmode == CDT_MIX_NOMIX) {
-    copy_v2_v2(luv2, luv1);
+    b = a;
   }
   else {
-    interp_v2_v2v2(luv2, luv2, luv1, mixfactor);
+    b = blender::math::interpolate(b, a, mixfactor);
   }
 }
 
@@ -3515,6 +3513,7 @@ bool CustomData_set_layer_name(CustomData *data, const int type, const int n, co
 const char *CustomData_get_layer_name(const CustomData *data, const int type, const int n)
 {
   const int layer_index = CustomData_get_layer_index_n(data, type, n);
+  
   return (layer_index == -1) ? nullptr : data->layers[layer_index].name;
 }
 

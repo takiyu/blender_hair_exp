@@ -50,15 +50,15 @@ static void bm_corners_to_loops_ex(ID *id,
 
     blender::float2 *uv = static_cast<blender::float2 *>(
         CustomData_get_n(ldata, CD_PROP_FLOAT2, loopstart, i));
-    copy_v2_v2((float *)uv, texface->uv[0]);
+    copy_v2_v2(*uv, texface->uv[0]);
     uv++;
-    copy_v2_v2((float *)uv, texface->uv[1]);
+    copy_v2_v2(*uv, texface->uv[1]);
     uv++;
-    copy_v2_v2((float *)uv, texface->uv[2]);
+    copy_v2_v2(*uv, texface->uv[2]);
     uv++;
 
     if (mf->v4) {
-      copy_v2_v2((float *)uv, texface->uv[3]);
+      copy_v2_v2(*uv, texface->uv[3]);
       uv++;
     }
   }
