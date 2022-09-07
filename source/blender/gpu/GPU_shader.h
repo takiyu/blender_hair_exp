@@ -295,15 +295,6 @@ typedef enum eGPUBuiltinShader {
    * \param pos: in vec3
    */
   GPU_SHADER_3D_IMAGE_COLOR,
-  /**
-   * Draw texture with alpha. Take a 3D position and a 2D texture coordinate for each vertex.
-   *
-   * \param alpha: uniform float
-   * \param image: uniform sampler2D
-   * \param texCoord: in vec2
-   * \param pos: in vec3
-   */
-  GPU_SHADER_3D_IMAGE_MODULATE_ALPHA,
   /* points */
   /**
    * Draw round points with a constant size.
@@ -352,7 +343,6 @@ typedef enum eGPUBuiltinShader {
    */
   GPU_SHADER_3D_POINT_VARYING_SIZE_VARYING_COLOR,
   /* lines */
-  GPU_SHADER_2D_LINE_DASHED_UNIFORM_COLOR,
   GPU_SHADER_3D_LINE_DASHED_UNIFORM_COLOR,
   /* grease pencil drawing */
   GPU_SHADER_GPENCIL_STROKE,

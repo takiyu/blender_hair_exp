@@ -1969,7 +1969,7 @@ static void vgroup_smooth_subset(Object *ob,
                                    &me->vdata, CD_PROP_BOOL, ".hide_vert") :
                                nullptr;
 
-#define IS_ME_VERT_READ(v) (use_hide ? (hide_vert && hide_vert[v]) : true)
+#define IS_ME_VERT_READ(v) (use_hide ? !(hide_vert && hide_vert[v]) : true)
 #define IS_ME_VERT_WRITE(v) (use_select ? selection_vert[v] : true)
 
   /* initialize used verts */
