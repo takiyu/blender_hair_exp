@@ -1224,7 +1224,7 @@ static bool vgroup_normalize(Object *ob)
  * count is an int passed by reference so it can be assigned the value of the length here. */
 static blender::Vector<int> getSurroundingVerts(Mesh *me, int vert)
 {
-  const MPoly *mp = me->polygons().data();
+  const MPoly *mp = me->polys().data();
   const MLoop *loops = me->loops().data();
   int i = me->totpoly;
 
@@ -1383,7 +1383,7 @@ static void moveCloserToDistanceFromPlane(Depsgraph *depsgraph,
   do {
     wasChange = false;
     me_deform = mesh_get_eval_deform(depsgraph, scene_eval, object_eval, &CD_MASK_BAREMESH);
-    const Span<MVert> verts = me_deform->vertices();
+    const Span<MVert> verts = me_deform->verts();
     m = verts[index];
     copy_v3_v3(oldPos, m.co);
     distToStart = dot_v3v3(norm, oldPos) + d;
@@ -1532,7 +1532,7 @@ static void vgroup_fix(
   int i;
 
   Mesh *me = static_cast<Mesh *>(ob->data);
-  MVert *mvert = me->vertices_for_write().data();
+  MVert *mvert = me->verts_for_write().data();
   if (!(me->editflag & ME_EDIT_PAINT_VERT_SEL)) {
     return;
   }
@@ -1550,7 +1550,7 @@ static void vgroup_fix(
 
         Mesh *me_deform = mesh_get_eval_deform(
             depsgraph, scene_eval, object_eval, &CD_MASK_BAREMESH);
-        const Span<MVert> verts_deform = me_deform->vertices();
+        const Span<MVert> verts_deform = me_deform->verts();
         k = count;
         while (k--) {
           p[k] = verts_deform[verts[k]];

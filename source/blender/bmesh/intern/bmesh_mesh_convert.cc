@@ -372,7 +372,7 @@ void BM_mesh_bm_from_me(BMesh *bm, const Mesh *me, const struct BMeshFromMeshPar
   const int *material_indices = (const int *)CustomData_get_layer_named(
       &me->pdata, CD_PROP_INT32, "material_index");
 
-  Span<MVert> mvert = me->vertices();
+  Span<MVert> mvert = me->verts();
   Array<BMVert *> vtable(me->totvert);
   for (const int i : mvert.index_range()) {
     BMVert *v = vtable[i] = BM_vert_create(
@@ -444,7 +444,7 @@ void BM_mesh_bm_from_me(BMesh *bm, const Mesh *me, const struct BMeshFromMeshPar
     bm->elem_index_dirty &= ~BM_EDGE; /* Added in order, clear dirty flag. */
   }
 
-  const Span<MPoly> mpoly = me->polygons();
+  const Span<MPoly> mpoly = me->polys();
   const Span<MLoop> mloop = me->loops();
 
   /* Only needed for selection. */
@@ -959,19 +959,15 @@ static void convert_bmesh_hide_flags_to_mesh_attributes(BMesh &bm,
   bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(mesh);
   BM_mesh_elem_table_ensure(&bm, BM_VERT | BM_EDGE | BM_FACE);
 
-  write_fn_to_attribute<bool>(
-      attributes, ".hide_vert", ATTR_DOMAIN_POINT, need_hide_vert, [&](const int i) {
-        return BM_elem_flag_test(BM_vert_at_index(&bm, i), BM_ELEM_HIDDEN);
-      });
-  write_fn_to_attribute<bool>(
-      attributes, ".hide_edge", ATTR_DOMAIN_EDGE, need_hide_edge, [&](const int i) {
-        return BM_elem_flag_test(BM_edge_at_index(&bm, i), BM_ELEM_HIDDEN);
-      });
-  write_fn_to_attribute<bool>(
-      attributes, ".hide_poly", ATTR_DOMAIN_FACE, need_hide_poly, [&](const int i) {
-        return BM_elem_flag_test(BM_face_at_index(&bm, i), BM_ELEM_HIDDEN);
-      });
-}
+  write_fn_to_attribute<bool>(attributes, ".hide_vert", ATTR_DOMAIN_POINT, [&](const int i) {
+    return BM_elem_flag_test(BM_vert_at_index(&bm, i), BM_ELEM_HIDDEN);
+  });
+  write_fn_to_attribute<bool>(attributes, ".hide_edge", ATTR_DOMAIN_EDGE, [&](const int i) {
+    return BM_elem_flag_test(BM_edge_at_index(&bm, i), BM_ELEM_HIDDEN);
+  });
+  write_fn_to_attribute<bool>(attributes, ".hide_poly", ATTR_DOMAIN_FACE, [&](const int i) {
+    return BM_elem_flag_test(BM_face_at_index(&bm, i), BM_ELEM_HIDDEN);
+  });
 }
 
 static void convert_bmesh_selection_flags_to_mesh_attributes(BMesh &bm,
@@ -1348,9 +1344,9 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
   BMVert *eve;
   BMEdge *eed;
   BMFace *efa;
-  MutableSpan<MVert> mvert = me->vertices_for_write();
+  MutableSpan<MVert> mvert = me->verts_for_write();
   MutableSpan<MEdge> medge = me->edges_for_write();
-  MutableSpan<MPoly> mpoly = me->polygons_for_write();
+  MutableSpan<MPoly> mpoly = me->polys_for_write();
   MutableSpan<MLoop> loops = me->loops_for_write();
   MLoop *mloop = loops.data();
   unsigned int i, j;

@@ -825,7 +825,7 @@ void BKE_mesh_tessface_calc(Mesh *mesh)
   mesh->totface = mesh_tessface_calc(&mesh->fdata,
                                      &mesh->ldata,
                                      &mesh->pdata,
-                                     BKE_mesh_vertices_for_write(mesh),
+                                     BKE_mesh_verts_for_write(mesh),
                                      mesh->totface,
                                      mesh->totloop,
                                      mesh->totpoly);
@@ -928,7 +928,7 @@ void BKE_mesh_legacy_convert_hide_layers_to_flags(Mesh *mesh)
   using namespace blender::bke;
   const AttributeAccessor attributes = mesh_attributes(*mesh);
 
-  MutableSpan<MVert> verts = mesh->vertices_for_write();
+  MutableSpan<MVert> verts = mesh->verts_for_write();
   const VArray<bool> hide_vert = attributes.lookup_or_default<bool>(
       ".hide_vert", ATTR_DOMAIN_POINT, false);
   threading::parallel_for(verts.index_range(), 4096, [&](IndexRange range) {
@@ -946,7 +946,7 @@ void BKE_mesh_legacy_convert_hide_layers_to_flags(Mesh *mesh)
     }
   });
 
-  MutableSpan<MPoly> polys = mesh->polygons_for_write();
+  MutableSpan<MPoly> polys = mesh->polys_for_write();
   const VArray<bool> hide_poly = attributes.lookup_or_default<bool>(
       ".hide_poly", ATTR_DOMAIN_FACE, false);
   threading::parallel_for(polys.index_range(), 4096, [&](IndexRange range) {
@@ -962,7 +962,7 @@ void BKE_mesh_legacy_convert_flags_to_hide_layers(Mesh *mesh)
   using namespace blender::bke;
   MutableAttributeAccessor attributes = mesh_attributes_for_write(*mesh);
 
-  const Span<MVert> verts = mesh->vertices();
+  const Span<MVert> verts = mesh->verts();
   if (std::any_of(
           verts.begin(), verts.end(), [](const MVert &vert) { return vert.flag & ME_HIDE; })) {
     SpanAttributeWriter<bool> hide_vert = attributes.lookup_or_add_for_write_only_span<bool>(
@@ -988,7 +988,7 @@ void BKE_mesh_legacy_convert_flags_to_hide_layers(Mesh *mesh)
     hide_edge.finish();
   }
 
-  const Span<MPoly> polys = mesh->polygons();
+  const Span<MPoly> polys = mesh->polys();
   if (std::any_of(
           polys.begin(), polys.end(), [](const MPoly &poly) { return poly.flag & ME_HIDE; })) {
     SpanAttributeWriter<bool> hide_poly = attributes.lookup_or_add_for_write_only_span<bool>(
@@ -1013,7 +1013,7 @@ void BKE_mesh_legacy_convert_material_indices_to_mpoly(Mesh *mesh)
   using namespace blender;
   using namespace blender::bke;
   const AttributeAccessor attributes = mesh_attributes(*mesh);
-  MutableSpan<MPoly> polys = mesh->polygons_for_write();
+  MutableSpan<MPoly> polys = mesh->polys_for_write();
   const VArray<int> material_indices = attributes.lookup_or_default<int>(
       "material_index", ATTR_DOMAIN_FACE, 0);
   threading::parallel_for(polys.index_range(), 4096, [&](IndexRange range) {
@@ -1028,7 +1028,7 @@ void BKE_mesh_legacy_convert_mpoly_to_material_indices(Mesh *mesh)
   using namespace blender;
   using namespace blender::bke;
   MutableAttributeAccessor attributes = mesh_attributes_for_write(*mesh);
-  const Span<MPoly> polys = mesh->polygons();
+  const Span<MPoly> polys = mesh->polys();
   if (std::any_of(
           polys.begin(), polys.end(), [](const MPoly &poly) { return poly.mat_nr != 0; })) {
     SpanAttributeWriter<int> material_indices = attributes.lookup_or_add_for_write_only_span<int>(
@@ -1054,7 +1054,7 @@ void BKE_mesh_legacy_convert_selection_layers_to_flags(Mesh *mesh)
   using namespace blender::bke;
   const AttributeAccessor attributes = mesh_attributes(*mesh);
 
-  MutableSpan<MVert> verts = mesh->vertices_for_write();
+  MutableSpan<MVert> verts = mesh->verts_for_write();
   const VArray<bool> selection_vert = attributes.lookup_or_default<bool>(
       ".selection_vert", ATTR_DOMAIN_POINT, false);
   threading::parallel_for(verts.index_range(), 4096, [&](IndexRange range) {
@@ -1072,7 +1072,7 @@ void BKE_mesh_legacy_convert_selection_layers_to_flags(Mesh *mesh)
     }
   });
 
-  MutableSpan<MPoly> polys = mesh->polygons_for_write();
+  MutableSpan<MPoly> polys = mesh->polys_for_write();
   const VArray<bool> selection_poly = attributes.lookup_or_default<bool>(
       ".selection_poly", ATTR_DOMAIN_FACE, false);
   threading::parallel_for(polys.index_range(), 4096, [&](IndexRange range) {
@@ -1088,7 +1088,7 @@ void BKE_mesh_legacy_convert_flags_to_selection_layers(Mesh *mesh)
   using namespace blender::bke;
   MutableAttributeAccessor attributes = mesh_attributes_for_write(*mesh);
 
-  const Span<MVert> verts = mesh->vertices();
+  const Span<MVert> verts = mesh->verts();
   if (std::any_of(
           verts.begin(), verts.end(), [](const MVert &vert) { return vert.flag & SELECT; })) {
     SpanAttributeWriter<bool> selection_vert = attributes.lookup_or_add_for_write_only_span<bool>(
@@ -1114,7 +1114,7 @@ void BKE_mesh_legacy_convert_flags_to_selection_layers(Mesh *mesh)
     selection_edge.finish();
   }
 
-  const Span<MPoly> polys = mesh->polygons();
+  const Span<MPoly> polys = mesh->polys();
   if (std::any_of(
           polys.begin(), polys.end(), [](const MPoly &poly) { return poly.flag & ME_FACE_SEL; })) {
     SpanAttributeWriter<bool> selection_poly = attributes.lookup_or_add_for_write_only_span<bool>(

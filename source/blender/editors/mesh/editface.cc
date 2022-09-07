@@ -222,7 +222,7 @@ static void select_linked_tfaces_with_seams(Mesh *me, const uint index, const bo
   BLI_bitmap *poly_tag = BLI_BITMAP_NEW(me->totpoly, __func__);
 
   const Span<MEdge> edges = me->edges();
-  const Span<MPoly> polys = me->polygons();
+  const Span<MPoly> polys = me->polys();
   const Span<MLoop> loops = me->loops();
   bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*me);
   const VArray<bool> hide_poly = attributes.lookup_or_default<bool>(
@@ -385,8 +385,8 @@ bool paintface_minmax(Object *ob, float r_min[3], float r_max[3])
 
   copy_m3_m4(bmat, ob->obmat);
 
-  const Span<MVert> verts = me->vertices();
-  const Span<MPoly> polys = me->polygons();
+  const Span<MVert> verts = me->verts();
+  const Span<MPoly> polys = me->polys();
   const Span<MLoop> loops = me->loops();
   bke::AttributeAccessor attributes = bke::mesh_attributes(*me);
   const VArray<bool> hide_poly = attributes.lookup_or_default<bool>(

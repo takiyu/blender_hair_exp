@@ -4056,13 +4056,13 @@ static bool proj_paint_state_mesh_eval_init(const bContext *C, ProjPaintState *p
   }
   ps->mat_array[totmat - 1] = NULL;
 
-  ps->mvert_eval = BKE_mesh_vertices(ps->me_eval);
+  ps->mvert_eval = BKE_mesh_verts(ps->me_eval);
   ps->vert_normals = BKE_mesh_vertex_normals_ensure(ps->me_eval);
   if (ps->do_mask_cavity) {
     ps->medge_eval = BKE_mesh_edges(ps->me_eval);
   }
   ps->mloop_eval = BKE_mesh_loops(ps->me_eval);
-  ps->mpoly_eval = BKE_mesh_polygons(ps->me_eval);
+  ps->mpoly_eval = BKE_mesh_polys(ps->me_eval);
   ps->selection_poly_eval = (const bool *)CustomData_get_layer_named(
       &ps->me_eval->pdata, CD_PROP_BOOL, ".selection_poly");
   ps->material_indices = (const int *)CustomData_get_layer_named(

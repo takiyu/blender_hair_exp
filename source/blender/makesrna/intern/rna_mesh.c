@@ -348,7 +348,7 @@ static int rna_MeshVertex_index_get(PointerRNA *ptr)
 {
   const Mesh *mesh = rna_mesh(ptr);
   const MVert *vert = (MVert *)ptr->data;
-  const int index = (int)(vert - BKE_mesh_vertices(mesh));
+  const int index = (int)(vert - BKE_mesh_verts(mesh));
   BLI_assert(index >= 0);
   BLI_assert(index < mesh->totvert);
   return index;
@@ -368,7 +368,7 @@ static int rna_MeshPolygon_index_get(PointerRNA *ptr)
 {
   const Mesh *mesh = rna_mesh(ptr);
   const MPoly *mpoly = (MPoly *)ptr->data;
-  const int index = (int)(mpoly - BKE_mesh_polygons(mesh));
+  const int index = (int)(mpoly - BKE_mesh_polys(mesh));
   BLI_assert(index >= 0);
   BLI_assert(index < mesh->totpoly);
   return index;
@@ -558,7 +558,7 @@ static void rna_MeshPolygon_normal_get(PointerRNA *ptr, float *values)
 {
   Mesh *me = rna_mesh(ptr);
   MPoly *mp = (MPoly *)ptr->data;
-  const MVert *verts = BKE_mesh_vertices(me);
+  const MVert *verts = BKE_mesh_verts(me);
   const MLoop *loops = BKE_mesh_loops(me);
   BKE_mesh_calc_poly_normal(mp, loops + mp->loopstart, verts, values);
 }
@@ -635,7 +635,7 @@ static void rna_MeshPolygon_center_get(PointerRNA *ptr, float *values)
 {
   Mesh *me = rna_mesh(ptr);
   MPoly *mp = (MPoly *)ptr->data;
-  const MVert *verts = BKE_mesh_vertices(me);
+  const MVert *verts = BKE_mesh_verts(me);
   const MLoop *loops = BKE_mesh_loops(me);
   BKE_mesh_calc_poly_center(mp, loops + mp->loopstart, verts, values);
 }
@@ -644,7 +644,7 @@ static float rna_MeshPolygon_area_get(PointerRNA *ptr)
 {
   Mesh *me = (Mesh *)ptr->owner_id;
   MPoly *mp = (MPoly *)ptr->data;
-  const MVert *verts = BKE_mesh_vertices(me);
+  const MVert *verts = BKE_mesh_verts(me);
   const MLoop *loops = BKE_mesh_loops(me);
   return BKE_mesh_calc_poly_area(mp, loops + mp->loopstart, verts);
 }
@@ -673,7 +673,7 @@ static void rna_MeshLoopTriangle_normal_get(PointerRNA *ptr, float *values)
 {
   Mesh *me = rna_mesh(ptr);
   MLoopTri *lt = (MLoopTri *)ptr->data;
-  const MVert *verts = BKE_mesh_vertices(me);
+  const MVert *verts = BKE_mesh_verts(me);
   const MLoop *loops = BKE_mesh_loops(me);
   unsigned int v1 = loops[lt->tri[0]].v;
   unsigned int v2 = loops[lt->tri[1]].v;
@@ -704,7 +704,7 @@ static float rna_MeshLoopTriangle_area_get(PointerRNA *ptr)
 {
   Mesh *me = rna_mesh(ptr);
   MLoopTri *lt = (MLoopTri *)ptr->data;
-  const MVert *verts = BKE_mesh_vertices(me);
+  const MVert *verts = BKE_mesh_verts(me);
   const MLoop *loops = BKE_mesh_loops(me);
   unsigned int v1 = loops[lt->tri[0]].v;
   unsigned int v2 = loops[lt->tri[1]].v;
@@ -1413,7 +1413,7 @@ static bool rna_MeshLoopTriangle_use_smooth_get(PointerRNA *ptr)
 {
   const Mesh *me = rna_mesh(ptr);
   const MLoopTri *ltri = (MLoopTri *)ptr->data;
-  const MPoly *polys = BKE_mesh_polygons(me);
+  const MPoly *polys = BKE_mesh_polys(me);
   return polys[ltri->poly].flag & ME_SMOOTH;
 }
 
@@ -1530,7 +1530,7 @@ static void rna_Mesh_vertices_begin(CollectionPropertyIterator *iter, PointerRNA
 {
   Mesh *mesh = rna_mesh(ptr);
   rna_iterator_array_begin(
-      iter, BKE_mesh_vertices_for_write(mesh), sizeof(MVert), mesh->totvert, false, NULL);
+      iter, BKE_mesh_verts_for_write(mesh), sizeof(MVert), mesh->totvert, false, NULL);
 }
 static int rna_Mesh_vertices_length(PointerRNA *ptr)
 {
@@ -1545,7 +1545,7 @@ int rna_Mesh_vertices_lookup_int(PointerRNA *ptr, int index, PointerRNA *r_ptr)
   }
   r_ptr->owner_id = &mesh->id;
   r_ptr->type = &RNA_MeshVertex;
-  r_ptr->data = &BKE_mesh_vertices_for_write(mesh)[index];
+  r_ptr->data = &BKE_mesh_verts_for_write(mesh)[index];
   return true;
 }
 
@@ -1576,7 +1576,7 @@ static void rna_Mesh_polygons_begin(CollectionPropertyIterator *iter, PointerRNA
 {
   Mesh *mesh = rna_mesh(ptr);
   rna_iterator_array_begin(
-      iter, BKE_mesh_polygons_for_write(mesh), sizeof(MPoly), mesh->totpoly, false, NULL);
+      iter, BKE_mesh_polys_for_write(mesh), sizeof(MPoly), mesh->totpoly, false, NULL);
 }
 static int rna_Mesh_polygons_length(PointerRNA *ptr)
 {
@@ -1591,7 +1591,7 @@ int rna_Mesh_polygons_lookup_int(PointerRNA *ptr, int index, PointerRNA *r_ptr)
   }
   r_ptr->owner_id = &mesh->id;
   r_ptr->type = &RNA_MeshPolygon;
-  r_ptr->data = &BKE_mesh_polygons_for_write(mesh)[index];
+  r_ptr->data = &BKE_mesh_polys_for_write(mesh)[index];
   return true;
 }
 

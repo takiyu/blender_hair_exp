@@ -1238,7 +1238,7 @@ static void vertex_paint_init_session_data(const ToolSettings *ts, Object *ob)
   }
 
   Mesh *me = (Mesh *)ob->data;
-  const Span<MPoly> polys = me->polygons();
+  const Span<MPoly> polys = me->polys();
   const Span<MLoop> loops = me->loops();
 
   if (gmap->vert_to_loop == nullptr) {
@@ -4122,7 +4122,7 @@ static bool vertex_color_set(Object *ob, ColorPaint4f paintcol_in, CustomDataLay
   }
   else {
     Color *color_layer = static_cast<Color *>(layer->data);
-    const Span<MPoly> polys = me->polygons();
+    const Span<MPoly> polys = me->polys();
     const Span<MLoop> loops = me->loops();
 
     for (const int i : polys.index_range()) {

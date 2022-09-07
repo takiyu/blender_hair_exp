@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 
-from bpy.types import Operator
-from mathutils import Matrix,Vector
-
 import math
+
+from bpy.types import Operator
+from mathutils import Matrix, Vector
 
 from bpy.props import (
     BoolProperty,
@@ -14,12 +14,15 @@ from bpy.props import (
 )
 
 
+# ------------------------------------------------------------------------------
+# Local Utility Functions
+
 def is_face_uv_selected(face, uv_layer, any_edge):
     """
     Returns True if the face is UV selected.
 
     :arg face: the face to query.
-    :type bmesh: :class:`BMFace`
+    :type face: :class:`BMFace`
     :arg uv_layer: the UV layer to source UVs from.
     :type bmesh: :class:`BMLayerItem`
     :arg any_edge: use edge selection instead of vertex selection.
@@ -53,6 +56,7 @@ def is_island_uv_selected(island, uv_layer, any_edge):
     Returns True if the island is UV selected.
 
     :arg island: list of faces to query.
+    :type island: sequence of :class:`BMFace`.
     :arg uv_layer: the UV layer to source UVs from.
     :type bmesh: :class:`BMLayerItem`
     :arg any_edge: use edge selection instead of vertex selection.
@@ -65,6 +69,47 @@ def is_island_uv_selected(island, uv_layer, any_edge):
             return True
     return False
 
+
+def island_uv_bounds(island, uv_layer):
+    """
+    The UV bounds of UV island.
+
+    :arg island: list of faces to query.
+    :type island: sequence of :class:`BMFace`.
+    :arg uv_layer: the UV layer to source UVs from.
+    :return: U-min, V-min, U-max, V-max.
+    :rtype: list
+    """
+    minmax = [1e30, 1e30, -1e30, -1e30]
+    for face in island:
+        for loop in face.loops:
+            u, v = loop[uv_layer].uv
+            minmax[0] = min(minmax[0], u)
+            minmax[1] = min(minmax[1], v)
+            minmax[2] = max(minmax[2], u)
+            minmax[3] = max(minmax[3], v)
+    return minmax
+
+
+def island_uv_bounds_center(island, uv_layer):
+    """
+    The UV bounds center of UV island.
+
+    :arg island: list of faces to query.
+    :type island: sequence of :class:`BMFace`.
+    :arg uv_layer: the UV layer to source UVs from.
+    :return: U, V center.
+    :rtype: tuple
+    """
+    minmax = island_uv_bounds(island, uv_layer)
+    return (
+        (minmax[0] + minmax[2]) / 2.0,
+        (minmax[1] + minmax[3]) / 2.0,
+    )
+
+
+# ------------------------------------------------------------------------------
+# Align UV Rotation Operator
 
 def find_rotation_auto(bm, uv_layer, faces):
     sum_u = 0.0
@@ -155,18 +200,8 @@ def align_uv_rotation_island(bm, uv_layer, faces, method, axis):
     if angle == 0.0:
         return False  # No change.
 
-    # Find bounding box.
-    minmax = [1e30, 1e30, -1e30, -1e30]
-    for face in faces:
-        for loop in face.loops:
-            u, v = loop[uv_layer].uv
-            minmax[0] = min(minmax[0], u)
-            minmax[1] = min(minmax[1], v)
-            minmax[2] = max(minmax[2], u)
-            minmax[3] = max(minmax[3], v)
-
-    mid_u = (minmax[0] + minmax[2]) / 2.0
-    mid_v = (minmax[1] + minmax[3]) / 2.0
+    # Find bounding box center.
+    mid_u, mid_v = island_uv_bounds_center(faces, uv_layer)
 
     cos_angle = math.cos(angle)
     sin_angle = math.sin(angle)
@@ -251,6 +286,9 @@ class AlignUVRotation(Operator):
         return context.mode == 'EDIT_MESH'
 
 
+# ------------------------------------------------------------------------------
+# Randomize UV Operator
+
 def get_random_transform(transform_params, entropy):
     from random import uniform
     from random import seed as random_seed
@@ -261,31 +299,31 @@ def get_random_transform(transform_params, entropy):
     random_seed(seed + entropy)
 
     # Next, call uniform a known number of times.
-    offset_u = uniform(0, 1)
-    offset_v = uniform(0, 1)
-    angle = uniform(0, 1)
-    scale_u = uniform(0, 1)
-    scale_v = uniform(0, 1)
+    offset_u = uniform(0.0, 1.0)
+    offset_v = uniform(0.0, 1.0)
+    angle = uniform(0.0, 1.0)
+    scale_u = uniform(0.0, 1.0)
+    scale_v = uniform(0.0, 1.0)
 
     # Apply the transform_params.
     if loc:
         offset_u *= loc[0]
         offset_v *= loc[1]
     else:
-        offset_u = 0
-        offset_v = 0
+        offset_u = 0.0
+        offset_v = 0.0
 
     if rot:
         angle *= rot
     else:
-        angle = 0
+        angle = 0.0
 
     if scale:
-        scale_u = scale_u * (2 * scale[0] - 2.0) + 2.0 - scale[0]
-        scale_v = scale_v * (2 * scale[1] - 2.0) + 2.0 - scale[1]
+        scale_u = scale_u * (2.0 * scale[0] - 2.0) + 2.0 - scale[0]
+        scale_v = scale_v * (2.0 * scale[1] - 2.0) + 2.0 - scale[1]
     else:
-        scale_u = 1
-        scale_v = 1
+        scale_u = 1.0
+        scale_v = 1.0
 
     if scale_even:
         scale_v = scale_u
@@ -301,18 +339,8 @@ def randomize_uv_transform_island(bm, uv_layer, faces, transform_params):
 
     transform = get_random_transform(transform_params, entropy)
 
-    # Find bounding box.
-    minmax = [1e30, 1e30, -1e30, -1e30]
-    for face in faces:
-        for loop in face.loops:
-            u, v = loop[uv_layer].uv
-            minmax[0] = min(minmax[0], u)
-            minmax[1] = min(minmax[1], v)
-            minmax[2] = max(minmax[2], u)
-            minmax[3] = max(minmax[3], v)
-
-    mid_u = (minmax[0] + minmax[2]) / 2
-    mid_v = (minmax[1] + minmax[3]) / 2
+    # Find bounding box center.
+    mid_u, mid_v = island_uv_bounds_center(faces, uv_layer)
 
     del_u = transform[0][2] + mid_u - transform[0][0] * mid_u - transform[0][1] * mid_v
     del_v = transform[1][2] + mid_v - transform[1][0] * mid_u - transform[1][1] * mid_v
@@ -389,8 +417,8 @@ class RandomizeUVTransform(Operator):
     rot: FloatProperty(
         name="Rotation",
         description="Maximum rotation",
-        min=-2 * math.pi,
-        max=2 * math.pi,
+        min=-2.0 * math.pi,
+        max=2.0 * math.pi,
         subtype='ANGLE',
         default=0.0,
     )
@@ -421,8 +449,8 @@ class RandomizeUVTransform(Operator):
     def execute(self, context):
         seed = self.random_seed
 
-        loc = [0, 0] if not self.use_loc else self.loc
-        rot = 0 if not self.use_rot else self.rot
+        loc = [0.0, 0.0] if not self.use_loc else self.loc
+        rot = 0.0 if not self.use_rot else self.rot
         scale = None if not self.use_scale else self.scale
         scale_even = self.scale_even
 
