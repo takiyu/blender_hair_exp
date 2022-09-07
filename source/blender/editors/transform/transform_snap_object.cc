@@ -244,9 +244,9 @@ static SnapData_Mesh *snap_object_data_mesh_get(SnapObjectContext *sctx,
   SnapData_Mesh *sod;
   bool init = false;
 
-  const Span<MVert> verts = me_eval->vertices();
+  const Span<MVert> verts = me_eval->verts();
   const Span<MEdge> edges = me_eval->edges();
-  const Span<MPoly> polys = me_eval->polygons();
+  const Span<MPoly> polys = me_eval->polys();
   const Span<MLoop> loops = me_eval->loops();
 
   if (std::unique_ptr<SnapData_Mesh> *sod_p = sctx->mesh_caches.lookup_ptr(ob_eval)) {
@@ -3408,8 +3408,8 @@ static eSnapMode transform_snap_context_project_view3d_mixed_impl(SnapObjectCont
 
   bool use_occlusion_test = params->use_occlusion_test && !XRAY_ENABLED(v3d);
 
-  /* Note: if both face raycast and face nearest are enabled, first find result of nearest, then
-   * override with raycast. */
+  /* NOTE: if both face ray-cast and face nearest are enabled, first find result of nearest, then
+   * override with ray-cast. */
   if ((snap_to_flag & SCE_SNAP_MODE_FACE_NEAREST) && !has_hit) {
     has_hit = nearestWorldObjects(
         sctx, params, init_co, prev_co, loc, no, &index, &ob_eval, obmat);

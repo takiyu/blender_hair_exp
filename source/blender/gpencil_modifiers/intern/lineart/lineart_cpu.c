@@ -69,7 +69,7 @@ typedef struct LineartIsecThread {
   int max;
   int count_test;
 
-  /* For individual thread reference.*/
+  /* For individual thread reference. */
   LineartData *ld;
 } LineartIsecThread;
 
@@ -1638,7 +1638,7 @@ static void lineart_identify_mlooptri_feature_edges(void *__restrict userdata,
   }
 
   if (!only_contour) {
-    const MPoly *polys = BKE_mesh_polygons(me);
+    const MPoly *polys = BKE_mesh_polys(me);
 
     if (ld->conf.use_crease) {
       bool do_crease = true;
@@ -1800,7 +1800,7 @@ static void lineart_add_edge_to_array_thread(LineartObjectInfo *obi, LineartEdge
 }
 
 /* NOTE: For simplicity, this function doesn't actually do anything if you already have data in
- * #pe.  */
+ * #pe. */
 void lineart_finalize_object_edge_array_reserve(LineartPendingEdges *pe, int count)
 {
   if (pe->max || pe->array || count == 0) {
@@ -1896,7 +1896,7 @@ static void lineart_load_tri_task(void *__restrict userdata,
 
   double gn[3];
   float no[3];
-  const MVert *verts = BKE_mesh_vertices(me);
+  const MVert *verts = BKE_mesh_verts(me);
   normal_tri_v3(no, verts[v1].co, verts[v2].co, verts[v3].co);
   copy_v3db_v3fl(gn, no);
   mul_v3_mat3_m4v3_db(tri->gn, ob_info->normal, gn);
@@ -2088,7 +2088,7 @@ static void lineart_geometry_object_load(LineartObjectInfo *ob_info,
   vert_settings.min_iter_per_thread = 4000;
 
   VertData vert_data;
-  vert_data.mvert = BKE_mesh_vertices(me);
+  vert_data.mvert = BKE_mesh_verts(me);
   vert_data.v_arr = la_v_arr;
   vert_data.model_view = ob_info->model_view;
   vert_data.model_view_proj = ob_info->model_view_proj;
@@ -4671,7 +4671,7 @@ void lineart_main_add_triangles(LineartData *ld)
   }
 
   /* Initialize per-thread data for thread task scheduling information and storing intersection
-   * results.  */
+   * results. */
   LineartIsecData d = {0};
   lineart_init_isec_thread(&d, ld, ld->thread_count);
 
