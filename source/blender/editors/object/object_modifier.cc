@@ -599,7 +599,7 @@ bool ED_object_modifier_convert_psys_to_mesh(ReportList *UNUSED(reports),
   MVert *mvert = verts.data();
   MEdge *medge = edges.data();
 
-  bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*me);
+  bke::MutableAttributeAccessor attributes = me->attributes_for_write();
   bke::SpanAttributeWriter<bool> selection_vert = attributes.lookup_or_add_for_write_span<bool>(
       ".selection_vert", ATTR_DOMAIN_POINT);
 
@@ -774,7 +774,7 @@ static bool modifier_apply_obdata(
       BKE_mesh_nomain_to_mesh(mesh_applied, me, ob, &CD_MASK_MESH, true);
 
       /* Anonymous attributes shouldn't be available on the applied geometry. */
-      blender::bke::mesh_attributes_for_write(*me).remove_anonymous();
+      me->attributes_for_write().remove_anonymous();
 
       if (md_eval->type == eModifierType_Multires) {
         multires_customdata_delete(me);

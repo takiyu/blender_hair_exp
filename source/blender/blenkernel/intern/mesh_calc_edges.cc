@@ -158,8 +158,8 @@ static void serialize_and_initialize_deduplicated_edges(Mesh &mesh,
 
   if (select_new_edges) {
     SpanAttributeWriter<bool> selection_edge =
-        mesh_attributes_for_write(mesh).lookup_or_add_for_write_span<bool>(".selection_edge",
-                                                                           ATTR_DOMAIN_EDGE);
+        mesh.attributes_for_write().lookup_or_add_for_write_span<bool>(".selection_edge",
+                                                                       ATTR_DOMAIN_EDGE);
     threading::parallel_for_each(edge_maps, [&](EdgeMap &edge_map) {
       const int task_index = &edge_map - edge_maps.data();
       int new_edge_index = edge_index_offsets[task_index];

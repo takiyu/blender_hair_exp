@@ -340,7 +340,7 @@ static bool edbm_backbuf_check_and_select_verts_obmode(Mesh *me,
 
   const BLI_bitmap *select_bitmap = esel->select_bitmap;
 
-  bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*me);
+  bke::MutableAttributeAccessor attributes = me->attributes_for_write();
   bke::SpanAttributeWriter<bool> selection_vert = attributes.lookup_or_add_for_write_span<bool>(
       ".selection_vert", ATTR_DOMAIN_POINT);
   const VArray<bool> hide_vert = attributes.lookup_or_default<bool>(
@@ -371,7 +371,7 @@ static bool edbm_backbuf_check_and_select_faces_obmode(Mesh *me,
 
   const BLI_bitmap *select_bitmap = esel->select_bitmap;
 
-  bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*me);
+  bke::MutableAttributeAccessor attributes = me->attributes_for_write();
   bke::SpanAttributeWriter<bool> selection_poly = attributes.lookup_or_add_for_write_span<bool>(
       ".selection_poly", ATTR_DOMAIN_FACE);
   const VArray<bool> hide_poly = attributes.lookup_or_default<bool>(
@@ -1219,7 +1219,7 @@ static bool do_lasso_select_paintvert(ViewContext *vc,
     }
   }
   else {
-    bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*me);
+    bke::MutableAttributeAccessor attributes = me->attributes_for_write();
     bke::SpanAttributeWriter<bool> selection_vert = attributes.lookup_or_add_for_write_span<bool>(
         ".selection_vert", ATTR_DOMAIN_POINT);
 
@@ -2837,7 +2837,7 @@ static bool ed_wpaint_vertex_select_pick(bContext *C,
 
   bool found = ED_mesh_pick_vert(C, obact, mval, ED_MESH_PICK_DEFAULT_VERT_DIST, use_zbuf, &index);
 
-  bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*me);
+  bke::MutableAttributeAccessor attributes = me->attributes_for_write();
   bke::AttributeWriter<bool> selection_vert = attributes.lookup_or_add_for_write<bool>(
       ".selection_vert", ATTR_DOMAIN_POINT);
 
@@ -3176,7 +3176,7 @@ static bool do_paintvert_box_select(ViewContext *vc,
     }
   }
   else {
-    bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*me);
+    bke::MutableAttributeAccessor attributes = me->attributes_for_write();
     bke::SpanAttributeWriter<bool> selection_vert = attributes.lookup_or_add_for_write_span<bool>(
         ".selection_vert", ATTR_DOMAIN_POINT);
 
@@ -4197,7 +4197,7 @@ static bool paint_vertsel_circle_select(ViewContext *vc,
     }
   }
   else {
-    bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*me);
+    bke::MutableAttributeAccessor attributes = me->attributes_for_write();
     bke::SpanAttributeWriter<bool> selection_vert = attributes.lookup_or_add_for_write_span<bool>(
         ".selection_vert", ATTR_DOMAIN_POINT);
 

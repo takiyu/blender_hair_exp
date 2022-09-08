@@ -956,7 +956,7 @@ static void convert_bmesh_hide_flags_to_mesh_attributes(BMesh &bm,
     return;
   }
 
-  bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(mesh);
+  bke::MutableAttributeAccessor attributes = mesh.attributes_for_write();
   BM_mesh_elem_table_ensure(&bm, BM_VERT | BM_EDGE | BM_FACE);
 
   write_fn_to_attribute<bool>(attributes, ".hide_vert", ATTR_DOMAIN_POINT, [&](const int i) {
@@ -986,7 +986,7 @@ static void convert_bmesh_selection_flags_to_mesh_attributes(BMesh &bm,
     return;
   }
 
-  bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(mesh);
+  bke::MutableAttributeAccessor attributes = mesh.attributes_for_write();
   BM_mesh_elem_table_ensure(&bm, BM_VERT | BM_EDGE | BM_FACE);
 
   if (need_selection_vert) {
@@ -1190,10 +1190,9 @@ void BM_mesh_bm_to_me(Main *bmain, BMesh *bm, Mesh *me, const struct BMeshToMesh
   if (need_material_index) {
     BM_mesh_elem_table_ensure(bm, BM_FACE);
     write_fn_to_attribute<int>(
-        blender::bke::mesh_attributes_for_write(*me),
-        "material_index",
-        ATTR_DOMAIN_FACE,
-        [&](const int i) { return static_cast<int>(BM_face_at_index(bm, i)->mat_nr); });
+        me->attributes_for_write(), "material_index", ATTR_DOMAIN_FACE, [&](const int i) {
+          return static_cast<int>(BM_face_at_index(bm, i)->mat_nr);
+        });
   }
 
   /* Patch hook indices and vertex parents. */
@@ -1471,10 +1470,9 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
   if (need_material_index) {
     BM_mesh_elem_table_ensure(bm, BM_FACE);
     write_fn_to_attribute<int>(
-        blender::bke::mesh_attributes_for_write(*me),
-        "material_index",
-        ATTR_DOMAIN_FACE,
-        [&](const int i) { return static_cast<int>(BM_face_at_index(bm, i)->mat_nr); });
+        me->attributes_for_write(), "material_index", ATTR_DOMAIN_FACE, [&](const int i) {
+          return static_cast<int>(BM_face_at_index(bm, i)->mat_nr);
+        });
   }
 
   convert_bmesh_hide_flags_to_mesh_attributes(

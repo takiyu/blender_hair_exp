@@ -717,7 +717,7 @@ void BKE_mesh_polygon_flip(const MPoly *mpoly, MLoop *mloop, CustomData *ldata)
   BKE_mesh_polygon_flip_ex(mpoly, mloop, ldata, nullptr, mdisp, true);
 }
 
-void BKE_mesh_polygons_flip(const MPoly *mpoly, MLoop *mloop, CustomData *ldata, int totpoly)
+void BKE_mesh_polys_flip(const MPoly *mpoly, MLoop *mloop, CustomData *ldata, int totpoly)
 {
   MDisps *mdisp = (MDisps *)CustomData_get_layer(ldata, CD_MDISPS);
   const MPoly *mp;
@@ -736,7 +736,7 @@ void BKE_mesh_flush_hidden_from_verts(Mesh *me)
 {
   using namespace blender;
   using namespace blender::bke;
-  MutableAttributeAccessor attributes = mesh_attributes_for_write(*me);
+  MutableAttributeAccessor attributes = me->attributes_for_write();
 
   const VArray<bool> hide_vert = attributes.lookup_or_default<bool>(
       ".hide_vert", ATTR_DOMAIN_POINT, false);
@@ -776,7 +776,7 @@ void BKE_mesh_flush_hidden_from_polys(Mesh *me)
 {
   using namespace blender;
   using namespace blender::bke;
-  MutableAttributeAccessor attributes = mesh_attributes_for_write(*me);
+  MutableAttributeAccessor attributes = me->attributes_for_write();
 
   const VArray<bool> hide_poly = attributes.lookup_or_default<bool>(
       ".hide_poly", ATTR_DOMAIN_FACE, false);
@@ -821,7 +821,7 @@ void BKE_mesh_flush_hidden_from_polys(Mesh *me)
 void BKE_mesh_flush_select_from_polys(Mesh *me)
 {
   using namespace blender::bke;
-  MutableAttributeAccessor attributes = mesh_attributes_for_write(*me);
+  MutableAttributeAccessor attributes = me->attributes_for_write();
   const VArray<bool> selection_poly = attributes.lookup_or_default<bool>(
       ".selection_poly", ATTR_DOMAIN_FACE, false);
   if (selection_poly.is_single() && !selection_poly.get_internal_single()) {
@@ -877,7 +877,7 @@ static void mesh_flush_select_from_verts(const Span<MEdge> edges,
 void BKE_mesh_flush_select_from_verts(Mesh *me)
 {
   using namespace blender::bke;
-  MutableAttributeAccessor attributes = mesh_attributes_for_write(*me);
+  MutableAttributeAccessor attributes = me->attributes_for_write();
   const VArray<bool> selection_vert = attributes.lookup_or_default<bool>(
       ".selection_vert", ATTR_DOMAIN_POINT, false);
   if (selection_vert.is_single() && !selection_vert.get_internal_single()) {

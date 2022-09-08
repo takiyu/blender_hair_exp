@@ -209,7 +209,7 @@ bool ED_vgroup_parray_alloc(ID *id,
               MEM_mallocN(sizeof(void *) * me->totvert, __func__));
 
           if (use_vert_sel) {
-            const bke::AttributeAccessor attributes = bke::mesh_attributes(*me);
+            const bke::AttributeAccessor attributes = me->attributes();
             const VArray<bool> selection_vert = attributes.lookup_or_default<bool>(
                 ".selection_vert", ATTR_DOMAIN_POINT, false);
 
@@ -669,7 +669,7 @@ static void vgroup_copy_active_to_sel(Object *ob, eVGroupSelect subset_type)
     }
   }
   else {
-    const bke::AttributeAccessor attributes = bke::mesh_attributes(*me);
+    const bke::AttributeAccessor attributes = me->attributes();
     const VArray<bool> selection_vert = attributes.lookup_or_default<bool>(
         ".selection_vert", ATTR_DOMAIN_POINT, false);
 
@@ -1061,7 +1061,7 @@ static void vgroup_select_verts(Object *ob, int select)
     else {
       const Span<MDeformVert> dverts = me->deform_verts();
       if (!dverts.is_empty()) {
-        bke::MutableAttributeAccessor attributes = bke::mesh_attributes_for_write(*me);
+        bke::MutableAttributeAccessor attributes = me->attributes_for_write();
         const VArray<bool> hide_vert = attributes.lookup_or_default<bool>(
             ".hide_vert", ATTR_DOMAIN_POINT, false);
         bke::SpanAttributeWriter<bool> selection_vert =
@@ -1536,7 +1536,7 @@ static void vgroup_fix(
   if (!(me->editflag & ME_EDIT_PAINT_VERT_SEL)) {
     return;
   }
-  const bke::AttributeAccessor attributes = bke::mesh_attributes(*me);
+  const bke::AttributeAccessor attributes = me->attributes();
   const VArray<bool> selection_vert = attributes.lookup_or_default<bool>(
       ".selection_vert", ATTR_DOMAIN_POINT, false);
   for (i = 0; i < me->totvert && mvert; i++, mvert++) {
@@ -1923,7 +1923,7 @@ static void vgroup_smooth_subset(Object *ob,
   BMesh *bm = em ? em->bm : nullptr;
   Mesh *me = em ? nullptr : static_cast<Mesh *>(ob->data);
 
-  const bke::AttributeAccessor attributes = bke::mesh_attributes(*me);
+  const bke::AttributeAccessor attributes = me->attributes();
   const VArray<bool> selection_vert = attributes.lookup_or_default<bool>(
       ".selection_vert", ATTR_DOMAIN_POINT, false);
 
@@ -2485,7 +2485,7 @@ void ED_vgroup_mirror(Object *ob,
 
       BLI_bitmap *vert_tag = BLI_BITMAP_NEW(me->totvert, __func__);
       MutableSpan<MDeformVert> dverts = me->deform_verts_for_write();
-      const bke::AttributeAccessor attributes = bke::mesh_attributes(*me);
+      const bke::AttributeAccessor attributes = me->attributes();
       const VArray<bool> selection_vert = attributes.lookup_or_default<bool>(
           ".selection_vert", ATTR_DOMAIN_POINT, false);
 
@@ -2640,7 +2640,7 @@ static void vgroup_assign_verts(Object *ob, const float weight)
       }
     }
     else {
-      const bke::AttributeAccessor attributes = bke::mesh_attributes(*me);
+      const bke::AttributeAccessor attributes = me->attributes();
       const VArray<bool> selection_vert = attributes.lookup_or_default<bool>(
           ".selection_vert", ATTR_DOMAIN_POINT, false);
 
@@ -4373,7 +4373,7 @@ static void vgroup_copy_active_to_sel_single(Object *ob, const int def_nr)
     }
 
     MutableSpan<MDeformVert> dverts = me->deform_verts_for_write();
-    const bke::AttributeAccessor attributes = bke::mesh_attributes(*me);
+    const bke::AttributeAccessor attributes = me->attributes();
     const VArray<bool> selection_vert = attributes.lookup_or_default<bool>(
         ".selection_vert", ATTR_DOMAIN_POINT, false);
 

@@ -1959,7 +1959,7 @@ static void do_wpaint_brush_blur_task_cb_ex(void *__restrict userdata,
   const float *sculpt_normal_frontface = SCULPT_brush_frontface_normal_from_falloff_shape(
       ss, data->brush->falloff_shape);
 
-  const blender::bke::AttributeAccessor attributes = blender::bke::mesh_attributes(*data->me);
+  const blender::bke::AttributeAccessor attributes = data->me->attributes();
   const blender::VArray<bool> selection_vert = attributes.lookup_or_default<bool>(
       ".selection_vert", ATTR_DOMAIN_POINT, false);
 
@@ -2049,7 +2049,7 @@ static void do_wpaint_brush_smear_task_cb_ex(void *__restrict userdata,
   sub_v3_v3v3(brush_dir, cache->location, cache->last_location);
   project_plane_v3_v3v3(brush_dir, brush_dir, cache->view_normal);
 
-  const blender::bke::AttributeAccessor attributes = blender::bke::mesh_attributes(*data->me);
+  const blender::bke::AttributeAccessor attributes = data->me->attributes();
   const blender::VArray<bool> selection_vert = attributes.lookup_or_default<bool>(
       ".selection_vert", ATTR_DOMAIN_POINT, false);
 
@@ -2166,7 +2166,7 @@ static void do_wpaint_brush_draw_task_cb_ex(void *__restrict userdata,
   const float *sculpt_normal_frontface = SCULPT_brush_frontface_normal_from_falloff_shape(
       ss, data->brush->falloff_shape);
 
-  const blender::bke::AttributeAccessor attributes = blender::bke::mesh_attributes(*data->me);
+  const blender::bke::AttributeAccessor attributes = data->me->attributes();
   const blender::VArray<bool> selection_vert = attributes.lookup_or_default<bool>(
       ".selection_vert", ATTR_DOMAIN_POINT, false);
 
@@ -2235,7 +2235,7 @@ static void do_wpaint_brush_calc_average_weight_cb_ex(
   const float *sculpt_normal_frontface = SCULPT_brush_frontface_normal_from_falloff_shape(
       ss, data->brush->falloff_shape);
 
-  const blender::bke::AttributeAccessor attributes = blender::bke::mesh_attributes(*data->me);
+  const blender::bke::AttributeAccessor attributes = data->me->attributes();
   const blender::VArray<bool> selection_vert = attributes.lookup_or_default<bool>(
       ".selection_vert", ATTR_DOMAIN_POINT, false);
 
@@ -2970,9 +2970,9 @@ static void do_vpaint_brush_blur_loops(bContext *C,
 
   Color *previous_color = static_cast<Color *>(ss->cache->prev_colors_vpaint);
 
-  const blender::VArray<bool> selection_vert = bke::mesh_attributes(*me).lookup_or_default<bool>(
+  const blender::VArray<bool> selection_vert = me->attributes().lookup_or_default<bool>(
       ".selection_vert", ATTR_DOMAIN_POINT, false);
-  const blender::VArray<bool> selection_poly = bke::mesh_attributes(*me).lookup_or_default<bool>(
+  const blender::VArray<bool> selection_poly = me->attributes().lookup_or_default<bool>(
       ".selection_poly", ATTR_DOMAIN_FACE, false);
 
   blender::threading::parallel_for(IndexRange(totnode), 1LL, [&](IndexRange range) {
@@ -3115,9 +3115,9 @@ static void do_vpaint_brush_blur_verts(bContext *C,
 
   Color *previous_color = static_cast<Color *>(ss->cache->prev_colors_vpaint);
 
-  const blender::VArray<bool> selection_vert = bke::mesh_attributes(*me).lookup_or_default<bool>(
+  const blender::VArray<bool> selection_vert = me->attributes().lookup_or_default<bool>(
       ".selection_vert", ATTR_DOMAIN_POINT, false);
-  const blender::VArray<bool> selection_poly = bke::mesh_attributes(*me).lookup_or_default<bool>(
+  const blender::VArray<bool> selection_poly = me->attributes().lookup_or_default<bool>(
       ".selection_poly", ATTR_DOMAIN_FACE, false);
 
   blender::threading::parallel_for(IndexRange(totnode), 1LL, [&](IndexRange range) {
@@ -3267,9 +3267,9 @@ static void do_vpaint_brush_smear(bContext *C,
   Color *color_prev_smear = static_cast<Color *>(vpd->smear.color_prev);
   Color *color_prev = reinterpret_cast<Color *>(ss->cache->prev_colors_vpaint);
 
-  const blender::VArray<bool> selection_vert = bke::mesh_attributes(*me).lookup_or_default<bool>(
+  const blender::VArray<bool> selection_vert = me->attributes().lookup_or_default<bool>(
       ".selection_vert", ATTR_DOMAIN_POINT, false);
-  const blender::VArray<bool> selection_poly = bke::mesh_attributes(*me).lookup_or_default<bool>(
+  const blender::VArray<bool> selection_poly = me->attributes().lookup_or_default<bool>(
       ".selection_poly", ATTR_DOMAIN_FACE, false);
 
   blender::threading::parallel_for(IndexRange(totnode), 1LL, [&](IndexRange range) {
@@ -3437,7 +3437,7 @@ static void calculate_average_color(VPaintData<Color, Traits, domain> *vpd,
 {
   using Blend = typename Traits::BlendType;
 
-  const blender::VArray<bool> selection_vert = bke::mesh_attributes(*me).lookup_or_default<bool>(
+  const blender::VArray<bool> selection_vert = me->attributes().lookup_or_default<bool>(
       ".selection_vert", ATTR_DOMAIN_POINT, false);
 
   VPaintAverageAccum<Blend> *accum = (VPaintAverageAccum<Blend> *)MEM_mallocN(
@@ -3555,9 +3555,9 @@ static void vpaint_do_draw(bContext *C,
 
   Color *previous_color = static_cast<Color *>(ss->cache->prev_colors_vpaint);
 
-  const blender::VArray<bool> selection_vert = bke::mesh_attributes(*me).lookup_or_default<bool>(
+  const blender::VArray<bool> selection_vert = me->attributes().lookup_or_default<bool>(
       ".selection_vert", ATTR_DOMAIN_POINT, false);
-  const blender::VArray<bool> selection_poly = bke::mesh_attributes(*me).lookup_or_default<bool>(
+  const blender::VArray<bool> selection_poly = me->attributes().lookup_or_default<bool>(
       ".selection_poly", ATTR_DOMAIN_FACE, false);
 
   blender::threading::parallel_for(IndexRange(totnode), 1LL, [&](IndexRange range) {
@@ -4074,9 +4074,9 @@ static bool vertex_color_set(Object *ob, ColorPaint4f paintcol_in, CustomDataLay
     return false;
   }
 
-  const blender::VArray<bool> selection_vert = bke::mesh_attributes(*me).lookup_or_default<bool>(
+  const blender::VArray<bool> selection_vert = me->attributes().lookup_or_default<bool>(
       ".selection_vert", ATTR_DOMAIN_POINT, false);
-  const blender::VArray<bool> selection_poly = bke::mesh_attributes(*me).lookup_or_default<bool>(
+  const blender::VArray<bool> selection_poly = me->attributes().lookup_or_default<bool>(
       ".selection_poly", ATTR_DOMAIN_FACE, false);
 
   Color paintcol = fromFloat<Color>(paintcol_in);
