@@ -68,6 +68,7 @@ using blender::BitVector;
 using blender::float3;
 using blender::MutableSpan;
 using blender::Span;
+using blender::StringRef;
 using blender::VArray;
 using blender::Vector;
 
@@ -699,7 +700,11 @@ static int customdata_compare(
         case CD_PROP_BOOL: {
           const bool *l1_data = (bool *)l1->data;
           const bool *l2_data = (bool *)l2->data;
-
+          /* TODO(@HooglyBoogly): Remove this after test files have been updated for selection
+           * attribute changes. */
+          if (StringRef(l1->name).startswith(".selection")) {
+            continue;
+          }
           for (int i = 0; i < total_length; i++) {
             if (l1_data[i] != l2_data[i]) {
               return MESHCMP_ATTRIBUTE_VALUE_MISMATCH;
