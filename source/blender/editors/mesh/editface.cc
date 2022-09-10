@@ -633,7 +633,7 @@ void paintvert_select_ungrouped(Object *ob, bool extend, bool flush_flags)
   bke::SpanAttributeWriter<bool> selection_vert = attributes.lookup_or_add_for_write_span<bool>(
       ".selection_vert", ATTR_DOMAIN_POINT);
 
-  for (int i = 0; i < me->totvert; i++) {
+  for (const int i : selection_vert.span.index_range()) {
     if (!hide_vert[i]) {
       if (dverts[i].dw == nullptr) {
         /* if null weight then not grouped */

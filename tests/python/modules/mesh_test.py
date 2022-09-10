@@ -396,6 +396,7 @@ class MeshTest(ABC):
         selected_expected_verts = [
             v.index for v in expected_mesh.vertices if v.select]
 
+        # TODO(@HooglyBoogly): Reenable when mesh tests are updated.
         # if selected_evaluated_verts == selected_expected_verts:
         #     result_selection = "Same"
         #     result_codes['Selection Comparison'] = (True, result_selection)
