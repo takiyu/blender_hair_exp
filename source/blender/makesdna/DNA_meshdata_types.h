@@ -25,8 +25,15 @@ extern "C" {
  */
 typedef struct MVert {
   float co[3];
+  /**
+   * Deprecated flag for storing hide status and selection, which are now stored in separate
+   * generic attributes. Kept for file read and write.
+   */
   char flag DNA_DEPRECATED;
-  char bweight;
+  /**
+   * Deprecated bevel weight storage, now located in #CD_BWEIGHT, except for file read and write.
+   */
+  char bweight DNA_DEPRECATED;
   char _pad[2];
 } MVert;
 
@@ -49,7 +56,11 @@ enum {
 typedef struct MEdge {
   /** Un-ordered vertex indices (cannot match). */
   unsigned int v1, v2;
-  char crease, bweight;
+  char crease;
+  /**
+   * Deprecated bevel weight storage, now located in #CD_BWEIGHT, except for file read and write.
+   */
+  char bweight DNA_DEPRECATED;
   short flag;
 } MEdge;
 

@@ -252,10 +252,12 @@ static void mesh_blend_write(BlendWriter *writer, ID *id, const void *id_address
     if (!BLO_write_is_undo(writer)) {
       BKE_mesh_legacy_convert_hide_layers_to_flags(mesh);
       BKE_mesh_legacy_convert_material_indices_to_mpoly(mesh);
+      BKE_mesh_legacy_bevel_weight_from_layers(mesh);
       /* When converting to the old mesh format, don't save redundant attributes. */
       names_to_skip.add_multiple_new({".hide_vert",
                                       ".hide_edge",
                                       ".hide_poly",
+                                      "material_index",
                                       ".selection_vert",
                                       ".selection_edge",
                                       ".selection_poly"});
@@ -355,6 +357,7 @@ static void mesh_blend_read_data(BlendDataReader *reader, ID *id)
     BKE_mesh_legacy_convert_flags_to_selection_layers(mesh);
     BKE_mesh_legacy_convert_flags_to_hide_layers(mesh);
     BKE_mesh_legacy_convert_mpoly_to_material_indices(mesh);
+    BKE_mesh_legacy_bevel_weight_to_layers(mesh);
   }
 
   /* We don't expect to load normals from files, since they are derived data. */
@@ -409,7 +412,7 @@ IDTypeInfo IDType_ID_ME = {
     /* foreach_id */ mesh_foreach_id,
     /* foreach_cache */ nullptr,
     /* foreach_path */ mesh_foreach_path,
-    /* owner_get */ nullptr,
+    /* owner_pointer_get */ nullptr,
 
     /* blend_write */ mesh_blend_write,
     /* blend_read_data */ mesh_blend_read_data,
@@ -892,11 +895,12 @@ static void mesh_clear_geometry(Mesh *mesh)
   mesh->totpoly = 0;
   mesh->act_face = -1;
   mesh->totselect = 0;
+
+  BLI_freelistN(&mesh->vertex_group_names);
 }
 
 void BKE_mesh_clear_geometry(Mesh *mesh)
 {
-  BKE_animdata_free(&mesh->id, false);
   BKE_mesh_runtime_clear_cache(mesh);
   mesh_clear_geometry(mesh);
 }
@@ -986,6 +990,7 @@ void BKE_mesh_copy_parameters(Mesh *me_dst, const Mesh *me_src)
   copy_v3_v3(me_dst->size, me_src->size);
 
   me_dst->vertex_group_active_index = me_src->vertex_group_active_index;
+  me_dst->attributes_active_index = me_src->attributes_active_index;
 }
 
 void BKE_mesh_copy_parameters_for_eval(Mesh *me_dst, const Mesh *me_src)
