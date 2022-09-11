@@ -279,7 +279,7 @@ static void mesh_merge_transform(Mesh *result,
   MEdge *me;
   MLoop *ml;
   MPoly *mp;
-  MVert *result_verts = BKE_mesh_verts_for_write(result);
+  MVert *result_verts = BKE_mesh_positions_for_write(result);
   MEdge *result_edges = BKE_mesh_edges_for_write(result);
   MPoly *result_polys = BKE_mesh_polys_for_write(result);
   MLoop *result_loops = BKE_mesh_loops_for_write(result);
@@ -428,7 +428,7 @@ static Mesh *arrayModifier_doArray(ArrayModifierData *amd,
   /* Build up offset array, accumulating all settings options. */
 
   unit_m4(offset);
-  const MVert *src_verts = BKE_mesh_verts(mesh);
+  const MVert *src_verts = BKE_mesh_positions(mesh);
   const MEdge *src_edges = BKE_mesh_edges(mesh);
   const MPoly *src_polys = BKE_mesh_polys(mesh);
   const MLoop *src_loops = BKE_mesh_loops(mesh);
@@ -541,7 +541,7 @@ static Mesh *arrayModifier_doArray(ArrayModifierData *amd,
   /* Initialize a result dm */
   result = BKE_mesh_new_nomain_from_template(
       mesh, result_nverts, result_nedges, 0, result_nloops, result_npolys);
-  MVert *result_verts = BKE_mesh_verts_for_write(result);
+  MVert *result_verts = BKE_mesh_positions_for_write(result);
   MEdge *result_edges = BKE_mesh_edges_for_write(result);
   MPoly *result_polys = BKE_mesh_polys_for_write(result);
   MLoop *result_loops = BKE_mesh_loops_for_write(result);

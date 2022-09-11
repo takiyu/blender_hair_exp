@@ -1160,7 +1160,7 @@ struct LassoSelectUserData_ForMeshVert {
   blender::MutableSpan<bool> selection_vert;
 };
 static void do_lasso_select_meshobject__doSelectVert(void *userData,
-                                                     MVert * /*mv*/,
+                                                     const float UNUSED(position)[3],
                                                      const float screen_co[2],
                                                      int index)
 {
@@ -3127,7 +3127,7 @@ struct BoxSelectUserData_ForMeshVert {
   blender::MutableSpan<bool> selection_vert;
 };
 static void do_paintvert_box_select__doSelectVert(void *userData,
-                                                  MVert * /*mv*/,
+                                                  const float UNUSED(position)[3],
                                                   const float screen_co[2],
                                                   int index)
 {
@@ -4146,7 +4146,7 @@ struct CircleSelectUserData_ForMeshVert {
   blender::MutableSpan<bool> selection_vert;
 };
 static void paint_vertsel_circle_select_doSelectVert(void *userData,
-                                                     MVert * /*mv*/,
+                                                     const float UNUSED(position)[3],
                                                      const float screen_co[2],
                                                      int index)
 {

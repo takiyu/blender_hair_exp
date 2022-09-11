@@ -1638,7 +1638,7 @@ static void layerInterp_propbool(const void **sources,
 }
 
 static const LayerTypeInfo LAYERTYPEINFO[CD_NUMTYPES] = {
-    /* 0: CD_MVERT */
+    /* 0: CD_MVERT */ /* DEPRECATED */
     {sizeof(MVert), "MVert", 1, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr},
     /* 1: CD_MSTICKY */ /* DEPRECATED */
     {sizeof(float[2]), "", 1, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr},

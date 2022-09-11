@@ -1399,7 +1399,7 @@ static void init_particle_interpolation(Object *ob,
     pind->dietime = (key + pa->totkey - 1)->time;
 
     if (pind->mesh) {
-      MVert *verts = BKE_mesh_verts_for_write(pind->mesh);
+      MVert *verts = BKE_mesh_positions_for_write(pind->mesh);
       pind->mvert[0] = &verts[pa->hair_index];
       pind->mvert[1] = pind->mvert[0] + 1;
     }
@@ -1665,7 +1665,7 @@ static void interpolate_pathcache(ParticleCacheKey *first, float t, ParticleCach
 /************************************************/
 
 void psys_interpolate_face(Mesh *mesh,
-                           const MVert *mvert,
+                           const float (*positions)[3],
                            const float (*vert_normals)[3],
                            MFace *mface,
                            MTFace *tface,
@@ -1684,16 +1684,16 @@ void psys_interpolate_face(Mesh *mesh,
   float tuv[4][2];
   const float *o1, *o2, *o3, *o4;
 
-  v1 = mvert[mface->v1].co;
-  v2 = mvert[mface->v2].co;
-  v3 = mvert[mface->v3].co;
+  v1 = positions[mface->v1];
+  v2 = positions[mface->v2];
+  v3 = positions[mface->v3];
 
   copy_v3_v3(n1, vert_normals[mface->v1]);
   copy_v3_v3(n2, vert_normals[mface->v2]);
   copy_v3_v3(n3, vert_normals[mface->v3]);
 
   if (mface->v4) {
-    v4 = mvert[mface->v4].co;
+    v4 = positions[mface->v4];
     copy_v3_v3(n4, vert_normals[mface->v4]);
 
     interp_v3_v3v3v3v3(vec, v1, v2, v3, v4, w);
@@ -2120,7 +2120,7 @@ void psys_particle_on_dm(Mesh *mesh_final,
   const float(*vert_normals)[3] = BKE_mesh_vertex_normals_ensure(mesh_final);
 
   if (from == PART_FROM_VERT) {
-    const MVert *verts = BKE_mesh_verts(mesh_final);
+    const MVert *verts = BKE_mesh_positions(mesh_final);
     copy_v3_v3(vec, verts[mapindex].co);
 
     if (nor) {
@@ -2149,7 +2149,7 @@ void psys_particle_on_dm(Mesh *mesh_final,
 
     MFace *mfaces = CustomData_get_layer(&mesh_final->fdata, CD_MFACE);
     mface = &mfaces[mapindex];
-    mvert = BKE_mesh_verts_for_write(mesh_final);
+    mvert = BKE_mesh_positions_for_write(mesh_final);
     mtface = CustomData_get_layer(&mesh_final->fdata, CD_MTFACE);
 
     if (mtface) {
@@ -3869,7 +3869,7 @@ static void psys_face_mat(Object *ob, Mesh *mesh, ParticleData *pa, float mat[4]
     }
   }
   else {
-    const MVert *verts = BKE_mesh_verts(mesh);
+    const MVert *verts = BKE_mesh_positions(mesh);
     copy_v3_v3(v[0], verts[mface->v1].co);
     copy_v3_v3(v[1], verts[mface->v2].co);
     copy_v3_v3(v[2], verts[mface->v3].co);

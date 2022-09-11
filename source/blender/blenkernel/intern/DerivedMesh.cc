@@ -2003,9 +2003,9 @@ void mesh_get_mapped_verts_coords(Mesh *me_eval, float (*r_cos)[3], const int to
     MEM_freeN(userData.vertex_visit);
   }
   else {
-    const Span<MVert> verts = me_eval->verts();
+    const Span<float3> positions = me_eval->positions();
     for (int i = 0; i < totcos; i++) {
-      copy_v3_v3(r_cos[i], verts[i].co);
+      copy_v3_v3(r_cos[i], positions[i]);
     }
   }
 }
@@ -2018,7 +2018,7 @@ static void mesh_init_origspace(Mesh *mesh)
                                                                    CD_ORIGSPACE_MLOOP);
   const int numpoly = mesh->totpoly;
   // const int numloop = mesh->totloop;
-  const Span<MVert> verts = mesh->verts();
+  const Span<float3> positions = mesh->positions();
   const Span<MPoly> polys = mesh->polys();
   const Span<MLoop> loops = mesh->loops();
 
@@ -2043,12 +2043,13 @@ static void mesh_init_origspace(Mesh *mesh)
       float min[2] = {FLT_MAX, FLT_MAX}, max[2] = {-FLT_MAX, -FLT_MAX};
       float translate[2], scale[2];
 
-      BKE_mesh_calc_poly_normal(mp, l, verts.data(), p_nor);
+      BKE_mesh_calc_poly_normal(
+          mp, l, reinterpret_cast<const float(*)[3]>(positions.data()), p_nor);
       axis_dominant_v3_to_m3(mat, p_nor);
 
       vcos_2d.resize(mp->totloop);
       for (j = 0; j < mp->totloop; j++, l++) {
-        mul_v3_m3v3(co, mat, verts[l->v].co);
+        mul_v3_m3v3(co, mat, positions[l->v]);
         copy_v2_v2(vcos_2d[j], co);
 
         for (k = 0; k < 2; k++) {

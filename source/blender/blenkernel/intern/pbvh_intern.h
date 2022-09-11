@@ -154,7 +154,7 @@ struct PBVH {
   /* NOTE: Normals are not `const` because they can be updated for drawing by sculpt code. */
   float (*vert_normals)[3];
   bool *hide_vert;
-  struct MVert *verts;
+  float (*positions)[3];
   const struct MPoly *mpoly;
   /** Material indices. Only valid for polygon meshes. */
   const int *material_indices;

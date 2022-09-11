@@ -77,10 +77,7 @@ Mesh *STLMeshHelper::to_mesh(Main *bmain, char *mesh_name)
 
   mesh->totvert = verts_.size();
   CustomData_add_layer(&mesh->vdata, CD_MVERT, CD_SET_DEFAULT, nullptr, mesh->totvert);
-  MutableSpan<MVert> verts = mesh->verts_for_write();
-  for (int i = 0; i < mesh->totvert; i++) {
-    copy_v3_v3(verts[i].co, verts_[i]);
-  }
+  mesh->positions_for_write().copy_from(verts_);
 
   mesh->totpoly = tris_.size();
   mesh->totloop = tris_.size() * 3;

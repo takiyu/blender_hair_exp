@@ -209,9 +209,11 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
   CustomData_copy_data(&mesh->pdata, &result->pdata, 0, 0, maxPolys);
 
   /* Subdivision-surface for eg won't have mesh data in the custom-data arrays.
-   * Now add #MVert/#MEdge/#MPoly layers. */
-  if (!CustomData_has_layer(&mesh->vdata, CD_MVERT)) {
-    memcpy(BKE_mesh_verts_for_write(result), BKE_mesh_verts(mesh), sizeof(MVert) * mesh->totvert);
+   * Now add position/#MEdge/#MPoly layers. */
+  if (BKE_mesh_positions(mesh) != NULL) {
+    memcpy(BKE_mesh_positions_for_write(result),
+           BKE_mesh_positions(mesh),
+           sizeof(float[3]) * mesh->totvert);
   }
   if (!CustomData_has_layer(&mesh->edata, CD_MEDGE)) {
     memcpy(BKE_mesh_edges_for_write(result), BKE_mesh_edges(mesh), sizeof(MEdge) * mesh->totedge);
@@ -237,7 +239,7 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
   }
 
   /* mirror vertex coordinates */
-  mv_prev = BKE_mesh_verts_for_write(result);
+  mv_prev = BKE_mesh_positions_for_write(result);
   mv = mv_prev + maxVerts;
   for (i = 0; i < maxVerts; i++, mv++, mv_prev++) {
     mul_m4_v3(mtx, mv->co);
@@ -405,7 +407,7 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
 
     /* calculate custom normals into loop_normals, then mirror first half into second half */
 
-    BKE_mesh_normals_loop_split(BKE_mesh_verts(result),
+    BKE_mesh_normals_loop_split(BKE_mesh_positions(result),
                                 BKE_mesh_vertex_normals_ensure(result),
                                 result->totvert,
                                 BKE_mesh_edges(result),

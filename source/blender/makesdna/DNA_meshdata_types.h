@@ -23,8 +23,9 @@ extern "C" {
  *
  * Typically accessed from #Mesh.mvert
  */
+#ifdef DNA_DEPRECATED_ALLOW
 typedef struct MVert {
-  float co[3];
+  float co[3] DNA_DEPRECATED;
   /**
    * Deprecated flag for storing hide status and selection, which are now stored in separate
    * generic attributes. Kept for file read and write.
@@ -38,8 +39,6 @@ typedef struct MVert {
 } MVert;
 
 /** #MVert.flag */
-
-#ifdef DNA_DEPRECATED_ALLOW
 enum {
   /** Deprecated selection status. Now stored in ".selection_vert" attribute. */
   /*  SELECT = (1 << 0), */
@@ -111,7 +110,7 @@ enum {
  * Typically accessed from #Mesh.mloop.
  */
 typedef struct MLoop {
-  /** Vertex index into an #MVert array. */
+  /** Vertex index. */
   unsigned int v;
   /** Edge index into an #MEdge array. */
   unsigned int e;
@@ -152,7 +151,7 @@ enum {
 /**
  * #MLoopTri's are lightweight triangulation data,
  * for functionality that doesn't support ngons (#MPoly).
- * This is cache data created from (#MPoly, #MLoop & #MVert arrays).
+ * This is cache data created from (#MPoly, #MLoop & position arrays).
  * There is no attempt to maintain this data's validity over time,
  * any changes to the underlying mesh invalidate the #MLoopTri array,
  * which will need to be re-calculated.

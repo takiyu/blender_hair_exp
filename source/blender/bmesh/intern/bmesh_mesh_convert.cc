@@ -37,7 +37,7 @@
  * But basics are as follows.
  *
  * - Vertex locations (possibly modified from initial active key-block)
- *   are copied directly into #MVert.co
+ *   are copied directly into the mesh position attribute.
  *   (special confusing note that these may be restored later, when editing the 'Basis', read on).
  * - if the 'Key' is relative, and the active key-block is the basis for ANY other key-blocks -
  *   get an array of offsets between the new vertex locations and the original shape key
@@ -105,6 +105,7 @@
 static CLG_LogRef LOG = {"bmesh.mesh.convert"};
 
 using blender::Array;
+using blender::float3;
 using blender::IndexRange;
 using blender::MutableSpan;
 using blender::Span;
@@ -338,11 +339,11 @@ void BM_mesh_bm_from_me(BMesh *bm, const Mesh *me, const struct BMeshFromMeshPar
   const int *material_indices = (const int *)CustomData_get_layer_named(
       &me->pdata, CD_PROP_INT32, "material_index");
 
-  Span<MVert> mvert = me->verts();
+  const Span<float3> positions = me->positions();
   Array<BMVert *> vtable(me->totvert);
-  for (const int i : mvert.index_range()) {
+  for (const int i : positions.index_range()) {
     BMVert *v = vtable[i] = BM_vert_create(
-        bm, keyco ? keyco[i] : mvert[i].co, nullptr, BM_CREATE_SKIP_CD);
+        bm, keyco ? keyco[i] : positions[i], nullptr, BM_CREATE_SKIP_CD);
     BM_elem_index_set(v, i); /* set_ok */
 
     if (hide_vert && hide_vert[i]) {
@@ -657,12 +658,12 @@ static int bm_to_mesh_shape_layer_index_from_kb(BMesh *bm, KeyBlock *currkey)
  * \param active_shapekey_to_mvert: When editing a non-basis shape key, the coordinates for the
  * basis are typically copied into the `mvert` array since it makes sense for the meshes
  * vertex coordinates to match the "Basis" key.
- * When enabled, skip this step and copy #BMVert.co directly to #MVert.co,
+ * When enabled, skip this step and copy #BMVert.co directly to the mesh position.
  * See #BMeshToMeshParams.active_shapekey_to_mvert doc-string.
  */
 static void bm_to_mesh_shape(BMesh *bm,
                              Key *key,
-                             MutableSpan<MVert> mvert,
+                             MutableSpan<float3> positions,
                              const bool active_shapekey_to_mvert)
 {
   KeyBlock *actkey = static_cast<KeyBlock *>(BLI_findlink(&key->block, bm->shapenr - 1));
@@ -724,7 +725,7 @@ static void bm_to_mesh_shape(BMesh *bm,
       /* Check the vertex existed when entering edit-mode (otherwise don't apply an offset). */
       if (keyi != ORIGINDEX_NONE) {
         float *co_orig = (float *)BM_ELEM_CD_GET_VOID_P(eve, cd_shape_offset);
-        /* Could use 'eve->co' or the destination #MVert.co, they're the same at this point. */
+        /* Could use 'eve->co' or the destination position, they're the same at this point. */
         sub_v3_v3v3(ofs[i], eve->co, co_orig);
       }
       else {
@@ -794,7 +795,7 @@ static void bm_to_mesh_shape(BMesh *bm,
             keyi = BM_ELEM_CD_GET_INT(eve, cd_shape_keyindex_offset);
             if (keyi != ORIGINDEX_NONE) {
               float *co_refkey = (float *)BM_ELEM_CD_GET_VOID_P(eve, cd_shape_offset_refkey);
-              copy_v3_v3(mvert[i].co, co_refkey);
+              copy_v3_v3(positions[i], co_refkey);
             }
           }
         }
@@ -1005,14 +1006,14 @@ void BM_mesh_bm_to_me(Main *bmain, BMesh *bm, Mesh *me, const struct BMeshToMesh
     CustomData_copy_mesh_to_bmesh(&bm->pdata, &me->pdata, mask.pmask, CD_SET_DEFAULT, me->totpoly);
   }
 
-  MutableSpan<MVert> mvert;
+  MutableSpan<float3> positions;
   MutableSpan<MEdge> medge;
   MutableSpan<MPoly> mpoly;
   MutableSpan<MLoop> mloop;
   if (me->totvert > 0) {
-    mvert = {static_cast<MVert *>(
-                 CustomData_add_layer(&me->vdata, CD_MVERT, CD_SET_DEFAULT, nullptr, me->totvert)),
-             me->totvert};
+    positions = {static_cast<float3 *>(CustomData_add_layer_named(
+                     &me->vdata, CD_MVERT, CD_CONSTRUCT, nullptr, me->totvert, "position")),
+                 me->totvert};
   }
   if (me->totedge > 0) {
     medge = {static_cast<MEdge *>(
@@ -1046,7 +1047,7 @@ void BM_mesh_bm_to_me(Main *bmain, BMesh *bm, Mesh *me, const struct BMeshToMesh
 
   i = 0;
   BM_ITER_MESH (v, &iter, bm, BM_VERTS_OF_MESH) {
-    copy_v3_v3(mvert[i].co, v->co);
+    copy_v3_v3(positions[i], v->co);
 
     if (BM_elem_flag_test(v, BM_ELEM_HIDDEN)) {
       need_hide_vert = true;
@@ -1239,7 +1240,7 @@ void BM_mesh_bm_to_me(Main *bmain, BMesh *bm, Mesh *me, const struct BMeshToMesh
   }
 
   if (me->key) {
-    bm_to_mesh_shape(bm, me->key, mvert, params->active_shapekey_to_mvert);
+    bm_to_mesh_shape(bm, me->key, positions, params->active_shapekey_to_mvert);
   }
 
   /* Run this even when shape keys aren't used since it may be used for hooks or vertex parents. */
@@ -1293,7 +1294,7 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
   BMVert *eve;
   BMEdge *eed;
   BMFace *efa;
-  MutableSpan<MVert> mvert = me->verts_for_write();
+  MutableSpan<float3> positions = me->positions_for_write();
   MutableSpan<MEdge> medge = me->edges_for_write();
   MutableSpan<MPoly> mpoly = me->polys_for_write();
   MutableSpan<MLoop> loops = me->loops_for_write();
@@ -1317,9 +1318,7 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
   me->runtime.deformed_only = true;
 
   BM_ITER_MESH_INDEX (eve, &iter, bm, BM_VERTS_OF_MESH, i) {
-    MVert *mv = &mvert[i];
-
-    copy_v3_v3(mv->co, eve->co);
+    copy_v3_v3(positions[i], eve->co);
 
     BM_elem_index_set(eve, i); /* set_inline */
 

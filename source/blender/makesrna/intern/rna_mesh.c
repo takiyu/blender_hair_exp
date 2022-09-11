@@ -355,8 +355,8 @@ static void rna_Mesh_update_positions_tag(Main *bmain, Scene *scene, PointerRNA 
 static int rna_MeshVertex_index_get(PointerRNA *ptr)
 {
   const Mesh *mesh = rna_mesh(ptr);
-  const MVert *vert = (MVert *)ptr->data;
-  const int index = (int)(vert - BKE_mesh_verts(mesh));
+  const float(*position)[3] = (const float(*)[3])ptr->data;
+  const int index = (int)(position - BKE_mesh_positions(mesh));
   BLI_assert(index >= 0);
   BLI_assert(index < mesh->totvert);
   return index;
@@ -400,6 +400,16 @@ static int rna_MeshLoopTriangle_index_get(PointerRNA *ptr)
   BLI_assert(index >= 0);
   BLI_assert(index < mesh->runtime.looptris.len);
   return index;
+}
+
+static void rna_MeshVertex_co_get(PointerRNA *ptr, float *value)
+{
+  copy_v3_v3(value, (const float(*)[3])ptr->data);
+}
+
+static void rna_MeshVertex_co_set(PointerRNA *ptr, float *value)
+{
+  copy_v3_v3((float(*)[3])ptr->data, value);
 }
 
 static void rna_MeshVertex_normal_get(PointerRNA *ptr, float *value)
@@ -576,9 +586,9 @@ static void rna_MeshPolygon_normal_get(PointerRNA *ptr, float *values)
 {
   Mesh *me = rna_mesh(ptr);
   MPoly *mp = (MPoly *)ptr->data;
-  const MVert *verts = BKE_mesh_verts(me);
+  const float(*positions)[3] = BKE_mesh_positions(me);
   const MLoop *loops = BKE_mesh_loops(me);
-  BKE_mesh_calc_poly_normal(mp, loops + mp->loopstart, verts, values);
+  BKE_mesh_calc_poly_normal(mp, loops + mp->loopstart, positions, values);
 }
 
 static bool rna_MeshPolygon_hide_get(PointerRNA *ptr)
@@ -653,18 +663,18 @@ static void rna_MeshPolygon_center_get(PointerRNA *ptr, float *values)
 {
   Mesh *me = rna_mesh(ptr);
   MPoly *mp = (MPoly *)ptr->data;
-  const MVert *verts = BKE_mesh_verts(me);
+  const float(*positions)[3] = BKE_mesh_positions(me);
   const MLoop *loops = BKE_mesh_loops(me);
-  BKE_mesh_calc_poly_center(mp, loops + mp->loopstart, verts, values);
+  BKE_mesh_calc_poly_center(mp, loops + mp->loopstart, positions, values);
 }
 
 static float rna_MeshPolygon_area_get(PointerRNA *ptr)
 {
   Mesh *me = (Mesh *)ptr->owner_id;
   MPoly *mp = (MPoly *)ptr->data;
-  const MVert *verts = BKE_mesh_verts(me);
+  const float(*positions)[3] = BKE_mesh_positions(me);
   const MLoop *loops = BKE_mesh_loops(me);
-  return BKE_mesh_calc_poly_area(mp, loops + mp->loopstart, verts);
+  return BKE_mesh_calc_poly_area(mp, loops + mp->loopstart, positions);
 }
 
 static void rna_MeshPolygon_flip(ID *id, MPoly *mp)
@@ -691,13 +701,13 @@ static void rna_MeshLoopTriangle_normal_get(PointerRNA *ptr, float *values)
 {
   Mesh *me = rna_mesh(ptr);
   MLoopTri *lt = (MLoopTri *)ptr->data;
-  const MVert *verts = BKE_mesh_verts(me);
+  const float(*positions)[3] = BKE_mesh_positions(me);
   const MLoop *loops = BKE_mesh_loops(me);
   unsigned int v1 = loops[lt->tri[0]].v;
   unsigned int v2 = loops[lt->tri[1]].v;
   unsigned int v3 = loops[lt->tri[2]].v;
 
-  normal_tri_v3(values, verts[v1].co, verts[v2].co, verts[v3].co);
+  normal_tri_v3(values, positions[v1], positions[v2], positions[v3]);
 }
 
 static void rna_MeshLoopTriangle_split_normals_get(PointerRNA *ptr, float *values)
@@ -722,12 +732,12 @@ static float rna_MeshLoopTriangle_area_get(PointerRNA *ptr)
 {
   Mesh *me = rna_mesh(ptr);
   MLoopTri *lt = (MLoopTri *)ptr->data;
-  const MVert *verts = BKE_mesh_verts(me);
+  const float(*positions)[3] = BKE_mesh_positions(me);
   const MLoop *loops = BKE_mesh_loops(me);
   unsigned int v1 = loops[lt->tri[0]].v;
   unsigned int v2 = loops[lt->tri[1]].v;
   unsigned int v3 = loops[lt->tri[2]].v;
-  return area_tri_v3(verts[v1].co, verts[v2].co, verts[v3].co);
+  return area_tri_v3(positions[v1], positions[v2], positions[v3]);
 }
 
 static void rna_MeshLoopColor_color_get(PointerRNA *ptr, float *values)
@@ -793,19 +803,19 @@ static void rna_MeshVertex_groups_begin(CollectionPropertyIterator *iter, Pointe
 static void rna_MeshVertex_undeformed_co_get(PointerRNA *ptr, float values[3])
 {
   Mesh *me = rna_mesh(ptr);
-  MVert *mvert = (MVert *)ptr->data;
+  const float(*position)[3] = (const float(*)[3])ptr->data;
   const float(*orco)[3] = CustomData_get_layer(&me->vdata, CD_ORCO);
 
   if (orco) {
     const int index = rna_MeshVertex_index_get(ptr);
-    /* orco is normalized to 0..1, we do inverse to match mvert->co */
+    /* orco is normalized to 0..1, we do inverse to match the vertex position */
     float loc[3], size[3];
 
     BKE_mesh_texspace_get(me->texcomesh ? me->texcomesh : me, loc, size);
     madd_v3_v3v3v3(values, loc, orco[index], size);
   }
   else {
-    copy_v3_v3(values, mvert->co);
+    copy_v3_v3(values, position);
   }
 }
 
@@ -1548,7 +1558,7 @@ static void rna_Mesh_vertices_begin(CollectionPropertyIterator *iter, PointerRNA
 {
   Mesh *mesh = rna_mesh(ptr);
   rna_iterator_array_begin(
-      iter, BKE_mesh_verts_for_write(mesh), sizeof(MVert), mesh->totvert, false, NULL);
+      iter, BKE_mesh_positions_for_write(mesh), sizeof(float[3]), mesh->totvert, false, NULL);
 }
 static int rna_Mesh_vertices_length(PointerRNA *ptr)
 {
@@ -1563,7 +1573,7 @@ int rna_Mesh_vertices_lookup_int(PointerRNA *ptr, int index, PointerRNA *r_ptr)
   }
   r_ptr->owner_id = &mesh->id;
   r_ptr->type = &RNA_MeshVertex;
-  r_ptr->data = &BKE_mesh_verts_for_write(mesh)[index];
+  r_ptr->data = &BKE_mesh_positions_for_write(mesh)[index];
   return true;
 }
 
@@ -2114,13 +2124,14 @@ static void rna_def_mvert(BlenderRNA *brna)
   PropertyRNA *prop;
 
   srna = RNA_def_struct(brna, "MeshVertex", NULL);
-  RNA_def_struct_sdna(srna, "MVert");
   RNA_def_struct_ui_text(srna, "Mesh Vertex", "Vertex in a Mesh data-block");
   RNA_def_struct_path_func(srna, "rna_MeshVertex_path");
   RNA_def_struct_ui_icon(srna, ICON_VERTEXSEL);
 
   prop = RNA_def_property(srna, "co", PROP_FLOAT, PROP_TRANSLATION);
-  RNA_def_property_ui_text(prop, "Location", "");
+  RNA_def_property_array(prop, 3);
+  RNA_def_property_float_funcs(prop, "rna_MeshVertex_co_get", "rna_MeshVertex_co_set", NULL);
+  RNA_def_property_ui_text(prop, "Position", "");
   RNA_def_property_update(prop, 0, "rna_Mesh_update_positions_tag");
 
   prop = RNA_def_property(srna, "normal", PROP_FLOAT, PROP_DIRECTION);

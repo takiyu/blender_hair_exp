@@ -1517,8 +1517,7 @@ void multiresModifier_ensure_external_read(struct Mesh *mesh, const MultiresModi
 
 /***************** Multires interpolation stuff *****************/
 
-int mdisp_rot_face_to_crn(struct MVert *UNUSED(mvert),
-                          struct MPoly *mpoly,
+int mdisp_rot_face_to_crn(                          struct MPoly *mpoly,
                           struct MLoop *UNUSED(mloop),
                           const struct MLoopTri *UNUSED(lt),
                           const int face_side,

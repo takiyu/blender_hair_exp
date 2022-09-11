@@ -215,7 +215,7 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
 
   MOD_get_vgroup(ctx->object, mesh, smd->defgrp_name, &dvert, &defgrp_index);
 
-  const MVert *orig_mvert = BKE_mesh_verts(mesh);
+  const MVert *orig_mvert = BKE_mesh_positions(mesh);
   const MEdge *orig_medge = BKE_mesh_edges(mesh);
   const MPoly *orig_mpoly = BKE_mesh_polys(mesh);
   const MLoop *orig_mloop = BKE_mesh_loops(mesh);
@@ -335,7 +335,7 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
                                              (int)((loops_num * stride) + newLoops),
                                              (int)((polys_num * stride) + newPolys));
 
-  MVert *mvert = BKE_mesh_verts_for_write(result);
+  MVert *mvert = BKE_mesh_positions_for_write(result);
   MEdge *medge = BKE_mesh_edges_for_write(result);
   MPoly *mpoly = BKE_mesh_polys_for_write(result);
   MLoop *mloop = BKE_mesh_loops_for_write(result);

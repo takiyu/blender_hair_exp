@@ -682,7 +682,7 @@ static bool mesh_is_manifold_consistent(Mesh *mesh)
    * check that the direction of the faces are consistent and doesn't suddenly
    * flip
    */
-  const Span<MVert> verts = mesh->verts();
+  const Span<float3> positions = mesh->positions();
   const Span<MEdge> edges = mesh->edges();
   const Span<MLoop> loops = mesh->loops();
 
@@ -720,9 +720,7 @@ static bool mesh_is_manifold_consistent(Mesh *mesh)
         break;
       }
       /* Check for zero length edges */
-      const MVert &v1 = verts[edges[i].v1];
-      const MVert &v2 = verts[edges[i].v2];
-      if (compare_v3v3(v1.co, v2.co, 1e-4f)) {
+      if (compare_v3v3(positions[edges[i].v1], positions[edges[i].v2], 1e-4f)) {
         is_manifold_consistent = false;
         break;
       }

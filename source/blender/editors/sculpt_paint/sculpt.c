@@ -127,10 +127,10 @@ const float *SCULPT_vertex_co_get(SculptSession *ss, PBVHVertRef vertex)
   switch (BKE_pbvh_type(ss->pbvh)) {
     case PBVH_FACES: {
       if (ss->shapekey_active || ss->deform_modifiers_active) {
-        const MVert *mverts = BKE_pbvh_get_verts(ss->pbvh);
-        return mverts[vertex.i].co;
+        const float(*positions)[3] = BKE_pbvh_get_positions(ss->pbvh);
+        return positions[vertex.i];
       }
-      return ss->mvert[vertex.i].co;
+      return ss->positions[vertex.i];
     }
     case PBVH_BMESH:
       return ((BMVert *)vertex.i)->co;
@@ -205,12 +205,12 @@ const float *SCULPT_vertex_co_for_grab_active_get(SculptSession *ss, PBVHVertRef
   if (BKE_pbvh_type(ss->pbvh) == PBVH_FACES) {
     /* Always grab active shape key if the sculpt happens on shapekey. */
     if (ss->shapekey_active) {
-      const MVert *mverts = BKE_pbvh_get_verts(ss->pbvh);
-      return mverts[vertex.i].co;
+      const float(*positions)[3] = BKE_pbvh_get_positions(ss->pbvh);
+      return positions[vertex.i];
     }
 
     /* Sculpting on the base mesh. */
-    return ss->mvert[vertex.i].co;
+    return ss->positions[vertex.i];
   }
 
   /* Everything else, such as sculpting on multires. */
@@ -289,14 +289,14 @@ void SCULPT_active_vertex_normal_get(SculptSession *ss, float normal[3])
   SCULPT_vertex_normal_get(ss, SCULPT_active_vertex_get(ss), normal);
 }
 
-MVert *SCULPT_mesh_deformed_mverts_get(SculptSession *ss)
+float (*SCULPT_mesh_deformed_positions_get(SculptSession *ss))[3]
 {
   switch (BKE_pbvh_type(ss->pbvh)) {
     case PBVH_FACES:
       if (ss->shapekey_active || ss->deform_modifiers_active) {
-        return BKE_pbvh_get_verts(ss->pbvh);
+        return BKE_pbvh_get_positions(ss->pbvh);
       }
-      return ss->mvert;
+      return ss->positions;
     case PBVH_BMESH:
     case PBVH_GRIDS:
       return NULL;
@@ -3162,12 +3162,7 @@ void SCULPT_vertcos_to_key(Object *ob, KeyBlock *kb, const float (*vertCos)[3])
 
   /* Modifying of basis key should update mesh. */
   if (kb == me->key->refkey) {
-    MVert *verts = BKE_mesh_verts_for_write(me);
-
-    for (a = 0; a < me->totvert; a++) {
-      copy_v3_v3(verts[a].co, vertCos[a]);
-    }
-    BKE_mesh_tag_coords_changed(me);
+    BKE_mesh_vert_coords_apply(me, vertCos);
   }
 
   /* Apply new coords on active key block, no need to re-allocate kb->data here! */
@@ -3589,9 +3584,9 @@ static void sculpt_flush_pbvhvert_deform(Object *ob, PBVHVertexIter *vd)
   copy_v3_v3(ss->deform_cos[index], vd->co);
   copy_v3_v3(ss->orig_cos[index], newco);
 
-  MVert *verts = BKE_mesh_verts_for_write(me);
+  float(*positions)[3] = BKE_mesh_positions_for_write(me);
   if (!ss->shapekey_active) {
-    copy_v3_v3(verts[index].co, newco);
+    copy_v3_v3(positions[index], newco);
   }
 }
 

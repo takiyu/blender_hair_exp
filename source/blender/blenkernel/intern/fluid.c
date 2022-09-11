@@ -404,7 +404,7 @@ static void manta_set_domain_from_mesh(FluidDomainSettings *fds,
   float min[3] = {FLT_MAX, FLT_MAX, FLT_MAX}, max[3] = {-FLT_MAX, -FLT_MAX, -FLT_MAX};
   float size[3];
 
-  MVert *verts = BKE_mesh_verts_for_write(me);
+  float(*positions)[3] = BKE_mesh_positions_for_write(me);
   float scale = 0.0;
   int res;
 
@@ -412,7 +412,7 @@ static void manta_set_domain_from_mesh(FluidDomainSettings *fds,
 
   /* Set minimum and maximum coordinates of BB. */
   for (i = 0; i < me->totvert; i++) {
-    minmax_v3v3_v3(min, max, verts[i].co);
+    minmax_v3v3_v3(min, max, positions[i]);
   }
 
   /* Set domain bounds. */
@@ -837,7 +837,7 @@ BLI_INLINE void apply_effector_fields(FluidEffectorSettings *UNUSED(fes),
 }
 
 static void update_velocities(FluidEffectorSettings *fes,
-                              const MVert *mvert,
+                              const float (*positions)[3],
                               const MLoop *mloop,
                               const MLoopTri *mlooptri,
                               float *velocity_map,
@@ -867,7 +867,7 @@ static void update_velocities(FluidEffectorSettings *fes,
     v1 = mloop[mlooptri[f_index].tri[0]].v;
     v2 = mloop[mlooptri[f_index].tri[1]].v;
     v3 = mloop[mlooptri[f_index].tri[2]].v;
-    interp_weights_tri_v3(weights, mvert[v1].co, mvert[v2].co, mvert[v3].co, nearest.co);
+    interp_weights_tri_v3(weights, positions[v1], positions[v2], positions[v3], nearest.co);
 
     /* Apply object velocity. */
     float hit_vel[3];
@@ -934,7 +934,7 @@ static void update_velocities(FluidEffectorSettings *fes,
 typedef struct ObstaclesFromDMData {
   FluidEffectorSettings *fes;
 
-  const MVert *mvert;
+  const float (*positions)[3];
   const MLoop *mloop;
   const MLoopTri *mlooptri;
 
@@ -969,7 +969,7 @@ static void obstacles_from_mesh_task_cb(void *__restrict userdata,
 
       /* Calculate object velocities. Result in bb->velocity. */
       update_velocities(data->fes,
-                        data->mvert,
+                        data->positions,
                         data->mloop,
                         data->mlooptri,
                         bb->velocity,
@@ -1007,7 +1007,7 @@ static void obstacles_from_mesh(Object *coll_ob,
     int min[3], max[3], res[3];
 
     /* Duplicate vertices to modify. */
-    MVert *verts = MEM_dupallocN(BKE_mesh_verts(me));
+    float(*positions)[3] = MEM_dupallocN(BKE_mesh_positions(me));
 
     const MLoop *mloop = BKE_mesh_loops(me);
     looptri = BKE_mesh_runtime_looptri_ensure(me);
@@ -1036,11 +1036,11 @@ static void obstacles_from_mesh(Object *coll_ob,
       float co[3];
 
       /* Vertex position. */
-      mul_m4_v3(coll_ob->obmat, verts[i].co);
-      manta_pos_to_cell(fds, verts[i].co);
+      mul_m4_v3(coll_ob->obmat, positions[i]);
+      manta_pos_to_cell(fds, positions[i]);
 
       /* Vertex velocity. */
-      add_v3fl_v3fl_v3i(co, verts[i].co, fds->shift);
+      add_v3fl_v3fl_v3i(co, positions[i], fds->shift);
       if (has_velocity) {
         sub_v3_v3v3(&vert_vel[i * 3], co, &fes->verts_old[i * 3]);
         mul_v3_fl(&vert_vel[i * 3], 1.0f / dt);
@@ -1048,7 +1048,7 @@ static void obstacles_from_mesh(Object *coll_ob,
       copy_v3_v3(&fes->verts_old[i * 3], co);
 
       /* Calculate emission map bounds. */
-      bb_boundInsert(bb, verts[i].co);
+      bb_boundInsert(bb, positions[i]);
     }
 
     /* Set emission map.
@@ -1070,7 +1070,7 @@ static void obstacles_from_mesh(Object *coll_ob,
 
       ObstaclesFromDMData data = {
           .fes = fes,
-          .mvert = verts,
+          .positions = positions,
           .mloop = mloop,
           .mlooptri = looptri,
           .tree = &tree_data,
@@ -1093,7 +1093,7 @@ static void obstacles_from_mesh(Object *coll_ob,
     if (vert_vel) {
       MEM_freeN(vert_vel);
     }
-    MEM_SAFE_FREE(verts);
+    MEM_SAFE_FREE(positions);
     BKE_id_free(NULL, me);
   }
 }
@@ -1793,7 +1793,7 @@ static void update_distances(int index,
 }
 
 static void sample_mesh(FluidFlowSettings *ffs,
-                        const MVert *mvert,
+                        const float (*positions)[3],
                         const float (*vert_normals)[3],
                         const MLoop *mloop,
                         const MLoopTri *mlooptri,
@@ -1881,7 +1881,7 @@ static void sample_mesh(FluidFlowSettings *ffs,
     v1 = mloop[mlooptri[f_index].tri[0]].v;
     v2 = mloop[mlooptri[f_index].tri[1]].v;
     v3 = mloop[mlooptri[f_index].tri[2]].v;
-    interp_weights_tri_v3(weights, mvert[v1].co, mvert[v2].co, mvert[v3].co, nearest.co);
+    interp_weights_tri_v3(weights, positions[v1], positions[v2], positions[v3], nearest.co);
 
     /* Compute emission strength for smoke flow. */
     if (is_gas_flow) {
@@ -1987,7 +1987,7 @@ typedef struct EmitFromDMData {
   FluidDomainSettings *fds;
   FluidFlowSettings *ffs;
 
-  const MVert *mvert;
+  const float (*positions)[3];
   const float (*vert_normals)[3];
   const MLoop *mloop;
   const MLoopTri *mlooptri;
@@ -2021,7 +2021,7 @@ static void emit_from_mesh_task_cb(void *__restrict userdata,
        * Result in bb->influence. Also computes initial velocities. Result in bb->velocity. */
       if (ELEM(data->ffs->behavior, FLUID_FLOW_BEHAVIOR_GEOMETRY, FLUID_FLOW_BEHAVIOR_INFLOW)) {
         sample_mesh(data->ffs,
-                    data->mvert,
+                    data->positions,
                     data->vert_normals,
                     data->mloop,
                     data->mlooptri,
@@ -2073,7 +2073,7 @@ static void emit_from_mesh(
     Mesh *me = BKE_mesh_copy_for_eval(ffs->mesh, true);
 
     /* Duplicate vertices to modify. */
-    MVert *verts = MEM_dupallocN(BKE_mesh_verts(me));
+    float(*positions)[3] = MEM_dupallocN(BKE_mesh_positions(me));
 
     const MLoop *mloop = BKE_mesh_loops(me);
     const MLoopTri *mlooptri = BKE_mesh_runtime_looptri_ensure(me);
@@ -2101,8 +2101,8 @@ static void emit_from_mesh(
     float(*vert_normals)[3] = MEM_dupallocN(BKE_mesh_vertex_normals_ensure(me));
     for (i = 0; i < numverts; i++) {
       /* Vertex position. */
-      mul_m4_v3(flow_ob->obmat, verts[i].co);
-      manta_pos_to_cell(fds, verts[i].co);
+      mul_m4_v3(flow_ob->obmat, positions[i]);
+      manta_pos_to_cell(fds, positions[i]);
 
       /* Vertex normal. */
       mul_mat3_m4_v3(flow_ob->obmat, vert_normals[i]);
@@ -2112,7 +2112,7 @@ static void emit_from_mesh(
       /* Vertex velocity. */
       if (ffs->flags & FLUID_FLOW_INITVELOCITY) {
         float co[3];
-        add_v3fl_v3fl_v3i(co, verts[i].co, fds->shift);
+        add_v3fl_v3fl_v3i(co, positions[i], fds->shift);
         if (has_velocity) {
           sub_v3_v3v3(&vert_vel[i * 3], co, &ffs->verts_old[i * 3]);
           mul_v3_fl(&vert_vel[i * 3], 1.0 / dt);
@@ -2121,7 +2121,7 @@ static void emit_from_mesh(
       }
 
       /* Calculate emission map bounds. */
-      bb_boundInsert(bb, verts[i].co);
+      bb_boundInsert(bb, positions[i]);
     }
     mul_m4_v3(flow_ob->obmat, flow_center);
     manta_pos_to_cell(fds, flow_center);
@@ -2146,7 +2146,7 @@ static void emit_from_mesh(
       EmitFromDMData data = {
           .fds = fds,
           .ffs = ffs,
-          .mvert = verts,
+          .positions = positions,
           .vert_normals = vert_normals,
           .mloop = mloop,
           .mlooptri = mlooptri,
@@ -2174,7 +2174,7 @@ static void emit_from_mesh(
     if (vert_vel) {
       MEM_freeN(vert_vel);
     }
-    MEM_SAFE_FREE(verts);
+    MEM_SAFE_FREE(positions);
     MEM_SAFE_FREE(vert_normals);
     BKE_id_free(NULL, me);
   }
@@ -3216,7 +3216,6 @@ static Mesh *create_liquid_geometry(FluidDomainSettings *fds,
                                     Object *ob)
 {
   Mesh *me;
-  MVert *mverts;
   MPoly *mpolys;
   MLoop *mloops;
   float min[3];
@@ -3260,7 +3259,7 @@ static Mesh *create_liquid_geometry(FluidDomainSettings *fds,
   if (!me) {
     return NULL;
   }
-  mverts = BKE_mesh_verts_for_write(me);
+  float(*positions)[3] = BKE_mesh_positions_for_write(me);
   mpolys = BKE_mesh_polys_for_write(me);
   mloops = BKE_mesh_loops_for_write(me);
 
@@ -3297,30 +3296,30 @@ static Mesh *create_liquid_geometry(FluidDomainSettings *fds,
   }
 
   /* Loop for vertices and normals. */
-  for (i = 0; i < num_verts; i++, mverts++) {
+  for (i = 0; i < num_verts; i++) {
 
     /* Vertices (data is normalized cube around domain origin). */
-    mverts->co[0] = manta_liquid_get_vertex_x_at(fds->fluid, i);
-    mverts->co[1] = manta_liquid_get_vertex_y_at(fds->fluid, i);
-    mverts->co[2] = manta_liquid_get_vertex_z_at(fds->fluid, i);
+    positions[i][0] = manta_liquid_get_vertex_x_at(fds->fluid, i);
+    positions[i][1] = manta_liquid_get_vertex_y_at(fds->fluid, i);
+    positions[i][2] = manta_liquid_get_vertex_z_at(fds->fluid, i);
 
     /* Adjust coordinates from Mantaflow to match viewport scaling. */
     float tmp[3] = {(float)fds->res[0], (float)fds->res[1], (float)fds->res[2]};
     /* Scale to unit cube around 0. */
     mul_v3_fl(tmp, fds->mesh_scale * 0.5f);
-    sub_v3_v3(mverts->co, tmp);
+    sub_v3_v3(positions[i], tmp);
     /* Apply scaling of domain object. */
-    mul_v3_fl(mverts->co, fds->dx / fds->mesh_scale);
+    mul_v3_fl(positions[i], fds->dx / fds->mesh_scale);
 
-    mul_v3_v3(mverts->co, co_scale);
-    add_v3_v3(mverts->co, co_offset);
+    mul_v3_v3(positions[i], co_scale);
+    add_v3_v3(positions[i], co_offset);
 
 #  ifdef DEBUG_PRINT
     /* Debugging: Print coordinates of vertices. */
-    printf("mverts->co[0]: %f, mverts->co[1]: %f, mverts->co[2]: %f\n",
-           mverts->co[0],
-           mverts->co[1],
-           mverts->co[2]);
+    printf("positions[i][0]: %f, positions[i][1]: %f, positions[i][2]: %f\n",
+           positions[i][0],
+           positions[i][1],
+           positions[i][2]);
 #  endif
 
 #  ifdef DEBUG_PRINT
@@ -3376,7 +3375,6 @@ static Mesh *create_liquid_geometry(FluidDomainSettings *fds,
 static Mesh *create_smoke_geometry(FluidDomainSettings *fds, Mesh *orgmesh, Object *ob)
 {
   Mesh *result;
-  MVert *mverts;
   MPoly *mpolys;
   MLoop *mloops;
   float min[3];
@@ -3396,7 +3394,7 @@ static Mesh *create_smoke_geometry(FluidDomainSettings *fds, Mesh *orgmesh, Obje
   }
 
   result = BKE_mesh_new_nomain(num_verts, 0, 0, num_faces * 4, num_faces);
-  mverts = BKE_mesh_verts_for_write(result);
+  float(*positions)[3] = BKE_mesh_positions_for_write(result);
   mpolys = BKE_mesh_polys_for_write(result);
   mloops = BKE_mesh_loops_for_write(result);
 
@@ -3407,36 +3405,36 @@ static Mesh *create_smoke_geometry(FluidDomainSettings *fds, Mesh *orgmesh, Obje
 
     /* Set vertices of smoke BB. Especially important, when BB changes (adaptive domain). */
     /* Top slab */
-    co = mverts[0].co;
+    co = positions[0];
     co[0] = min[0];
     co[1] = min[1];
     co[2] = max[2];
-    co = mverts[1].co;
+    co = positions[1];
     co[0] = max[0];
     co[1] = min[1];
     co[2] = max[2];
-    co = mverts[2].co;
+    co = positions[2];
     co[0] = max[0];
     co[1] = max[1];
     co[2] = max[2];
-    co = mverts[3].co;
+    co = positions[3];
     co[0] = min[0];
     co[1] = max[1];
     co[2] = max[2];
     /* Bottom slab. */
-    co = mverts[4].co;
+    co = positions[4];
     co[0] = min[0];
     co[1] = min[1];
     co[2] = min[2];
-    co = mverts[5].co;
+    co = positions[5];
     co[0] = max[0];
     co[1] = min[1];
     co[2] = min[2];
-    co = mverts[6].co;
+    co = positions[6];
     co[0] = max[0];
     co[1] = max[1];
     co[2] = min[2];
-    co = mverts[7].co;
+    co = positions[7];
     co[0] = min[0];
     co[1] = max[1];
     co[2] = min[2];
@@ -3507,7 +3505,7 @@ static Mesh *create_smoke_geometry(FluidDomainSettings *fds, Mesh *orgmesh, Obje
     mul_mat3_m4_v3(ob->imat, fds->obj_shift_f);
     /* Apply shift to vertices. */
     for (int i = 0; i < num_verts; i++) {
-      add_v3_v3(mverts[i].co, fds->obj_shift_f);
+      add_v3_v3(positions[i], fds->obj_shift_f);
     }
   }
 

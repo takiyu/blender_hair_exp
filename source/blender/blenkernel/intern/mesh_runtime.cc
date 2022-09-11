@@ -23,6 +23,7 @@
 #include "BKE_shrinkwrap.h"
 #include "BKE_subdiv_ccg.h"
 
+using blender::float3;
 using blender::MutableSpan;
 using blender::Span;
 
@@ -150,13 +151,13 @@ void BKE_mesh_runtime_looptri_recalc(Mesh *mesh)
 {
   mesh_ensure_looptri_data(mesh);
   BLI_assert(mesh->totpoly == 0 || mesh->runtime.looptris.array_wip != nullptr);
-  const Span<MVert> verts = mesh->verts();
+  const Span<float3> positions = mesh->positions();
   const Span<MPoly> polys = mesh->polys();
   const Span<MLoop> loops = mesh->loops();
 
   BKE_mesh_recalc_looptri(loops.data(),
                           polys.data(),
-                          verts.data(),
+                          reinterpret_cast<const float(*)[3]>(positions.data()),
                           mesh->totloop,
                           mesh->totpoly,
                           mesh->runtime.looptris.array_wip);
@@ -330,7 +331,7 @@ bool BKE_mesh_runtime_is_valid(Mesh *me_eval)
     printf("MESH: %s\n", me_eval->id.name + 2);
   }
 
-  MutableSpan<MVert> verts = me_eval->verts_for_write();
+  MutableSpan<float3> positions = me_eval->positions_for_write();
   MutableSpan<MEdge> edges = me_eval->edges_for_write();
   MutableSpan<MPoly> polys = me_eval->polys_for_write();
   MutableSpan<MLoop> loops = me_eval->loops_for_write();
@@ -351,8 +352,8 @@ bool BKE_mesh_runtime_is_valid(Mesh *me_eval)
 
   is_valid &= BKE_mesh_validate_arrays(
       me_eval,
-      verts.data(),
-      verts.size(),
+      reinterpret_cast<float(*)[3]>(positions.data()),
+      positions.size(),
       edges.data(),
       edges.size(),
       static_cast<MFace *>(CustomData_get_layer(&me_eval->fdata, CD_MFACE)),

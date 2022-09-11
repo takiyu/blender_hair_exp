@@ -88,7 +88,7 @@ struct CurveFromEdgesOutput {
   IndexRange cyclic_curves;
 };
 
-static CurveFromEdgesOutput edges_to_curve_point_indices(Span<MVert> verts,
+static CurveFromEdgesOutput edges_to_curve_point_indices(const int verts_num,
                                                          Span<std::pair<int, int>> edges)
 {
   Vector<int> vert_indices;
@@ -96,22 +96,22 @@ static CurveFromEdgesOutput edges_to_curve_point_indices(Span<MVert> verts,
   Vector<int> curve_offsets;
 
   /* Compute the number of edges connecting to each vertex. */
-  Array<int> neighbor_count(verts.size(), 0);
+  Array<int> neighbor_count(verts_num, 0);
   for (const std::pair<int, int> &edge : edges) {
     neighbor_count[edge.first]++;
     neighbor_count[edge.second]++;
   }
 
   /* Compute an offset into the array of neighbor edges based on the counts. */
-  Array<int> neighbor_offsets(verts.size());
+  Array<int> neighbor_offsets(verts_num);
   int start = 0;
-  for (const int i : verts.index_range()) {
+  for (const int i : IndexRange(verts_num)) {
     neighbor_offsets[i] = start;
     start += neighbor_count[i];
   }
 
   /* Use as an index into the "neighbor group" for each vertex. */
-  Array<int> used_slots(verts.size(), 0);
+  Array<int> used_slots(verts_num, 0);
   /* Calculate the indices of each vertex's neighboring edges. */
   Array<int> neighbors(edges.size() * 2);
   for (const int i : edges.index_range()) {
@@ -126,7 +126,7 @@ static CurveFromEdgesOutput edges_to_curve_point_indices(Span<MVert> verts,
   /* Now use the neighbor group offsets calculated above as a count used edges at each vertex. */
   Array<int> unused_edges = std::move(used_slots);
 
-  for (const int start_vert : verts.index_range()) {
+  for (const int start_vert : IndexRange(verts_num)) {
     /* The vertex will be part of a cyclic curve. */
     if (neighbor_count[start_vert] == 2) {
       continue;
@@ -174,7 +174,7 @@ static CurveFromEdgesOutput edges_to_curve_point_indices(Span<MVert> verts,
   const int cyclic_start = curve_offsets.size();
 
   /* All remaining edges are part of cyclic curves (we skipped vertices with two edges before). */
-  for (const int start_vert : verts.index_range()) {
+  for (const int start_vert : IndexRange(verts_num)) {
     if (unused_edges[start_vert] != 2) {
       continue;
     }
@@ -224,8 +224,7 @@ static Vector<std::pair<int, int>> get_selected_edges(const Mesh &mesh, const In
 bke::CurvesGeometry mesh_to_curve_convert(const Mesh &mesh, const IndexMask selection)
 {
   Vector<std::pair<int, int>> selected_edges = get_selected_edges(mesh, selection);
-  const Span<MVert> verts = mesh.verts();
-  CurveFromEdgesOutput output = edges_to_curve_point_indices(verts, selected_edges);
+  CurveFromEdgesOutput output = edges_to_curve_point_indices(mesh.totvert, selected_edges);
 
   return create_curve_from_vert_indices(
       mesh, output.vert_indices, output.curve_offsets, output.cyclic_curves);

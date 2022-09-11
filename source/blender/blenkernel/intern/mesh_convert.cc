@@ -186,12 +186,11 @@ static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispba
   }
 
   Mesh *mesh = BKE_mesh_new_nomain(totvert, totedge, 0, totloop, totpoly);
-  MutableSpan<MVert> verts = mesh->verts_for_write();
+  MutableSpan<float3> positions = mesh->positions_for_write();
   MutableSpan<MEdge> edges = mesh->edges_for_write();
   MutableSpan<MPoly> polys = mesh->polys_for_write();
   MutableSpan<MLoop> loops = mesh->loops_for_write();
 
-  MVert *mvert = verts.data();
   MEdge *medge = edges.data();
   MPoly *mpoly = polys.data();
   MLoop *mloop = loops.data();
@@ -212,10 +211,9 @@ static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispba
       a = dl->parts * dl->nr;
       data = dl->verts;
       while (a--) {
-        copy_v3_v3(mvert->co, data);
+        copy_v3_v3(positions[vertcount], data);
         data += 3;
         vertcount++;
-        mvert++;
       }
 
       for (a = 0; a < dl->parts; a++) {
@@ -235,10 +233,9 @@ static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispba
         a = dl->parts * dl->nr;
         data = dl->verts;
         while (a--) {
-          copy_v3_v3(mvert->co, data);
+          copy_v3_v3(positions[vertcount], data);
           data += 3;
           vertcount++;
-          mvert++;
         }
 
         for (a = 0; a < dl->parts; a++) {
@@ -262,10 +259,9 @@ static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispba
       a = dl->nr;
       data = dl->verts;
       while (a--) {
-        copy_v3_v3(mvert->co, data);
+        copy_v3_v3(positions[vertcount], data);
         data += 3;
         vertcount++;
-        mvert++;
       }
 
       a = dl->parts;
@@ -298,10 +294,9 @@ static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispba
       a = dl->parts * dl->nr;
       data = dl->verts;
       while (a--) {
-        copy_v3_v3(mvert->co, data);
+        copy_v3_v3(positions[vertcount], data);
         data += 3;
         vertcount++;
-        mvert++;
       }
 
       for (a = 0; a < dl->parts; a++) {
@@ -458,7 +453,7 @@ static void appendPolyLineVert(ListBase *lb, uint index)
 
 void BKE_mesh_to_curve_nurblist(const Mesh *me, ListBase *nurblist, const int edge_users_test)
 {
-  const Span<MVert> verts = me->verts();
+  const Span<float3> positions = me->positions();
   const Span<MEdge> mesh_edges = me->edges();
   const Span<MPoly> polys = me->polys();
   const Span<MLoop> loops = me->loops();
@@ -590,7 +585,7 @@ void BKE_mesh_to_curve_nurblist(const Mesh *me, ListBase *nurblist, const int ed
         /* add points */
         vl = (VertLink *)polyline.first;
         for (i = 0, bp = nu->bp; i < totpoly; i++, bp++, vl = (VertLink *)vl->next) {
-          copy_v3_v3(bp->vec, verts[vl->index].co);
+          copy_v3_v3(bp->vec, positions[vl->index]);
           bp->f1 = SELECT;
           bp->radius = bp->weight = 1.0;
         }
@@ -679,25 +674,8 @@ void BKE_mesh_from_pointcloud(const PointCloud *pointcloud, Mesh *me)
 
   me->totvert = pointcloud->totpoint;
 
-  /* Merge over all attributes. */
   CustomData_merge(
       &pointcloud->pdata, &me->vdata, CD_MASK_PROP_ALL, CD_DUPLICATE, pointcloud->totpoint);
-
-  /* Convert the Position attribute to a mesh vertex. */
-  CustomData_add_layer(&me->vdata, CD_MVERT, CD_SET_DEFAULT, nullptr, me->totvert);
-
-  const int layer_idx = CustomData_get_named_layer_index(
-      &me->vdata, CD_PROP_FLOAT3, POINTCLOUD_ATTR_POSITION);
-  CustomDataLayer *pos_layer = &me->vdata.layers[layer_idx];
-  float(*positions)[3] = (float(*)[3])pos_layer->data;
-
-  MutableSpan<MVert> verts = me->verts_for_write();
-  for (int i = 0; i < me->totvert; i++) {
-    copy_v3_v3(verts[i].co, positions[i]);
-  }
-
-  /* Delete Position attribute since it is now in vertex coordinates. */
-  CustomData_free_layer(&me->vdata, CD_PROP_FLOAT3, me->totvert, layer_idx);
 }
 
 void BKE_mesh_edges_set_draw_render(Mesh *mesh)
@@ -1170,8 +1148,8 @@ Mesh *BKE_mesh_create_derived_for_modifier(struct Depsgraph *depsgraph,
 
   if (build_shapekey_layers && me->key &&
       (kb = (KeyBlock *)BLI_findlink(&me->key->block, ob_eval->shapenr - 1))) {
-    MutableSpan<MVert> verts = me->verts_for_write();
-    BKE_keyblock_convert_to_mesh(kb, verts.data(), me->totvert);
+    MutableSpan<float3> verts = me->positions_for_write();
+    BKE_keyblock_convert_to_mesh(kb, reinterpret_cast<float(*)[3]>(verts.data()), me->totvert);
   }
 
   Mesh *mesh_temp = (Mesh *)BKE_id_copy_ex(nullptr, &me->id, nullptr, LIB_ID_COPY_LOCALIZE);
@@ -1362,10 +1340,5 @@ void BKE_mesh_nomain_to_meshkey(Mesh *mesh_src, Mesh *mesh_dst, KeyBlock *kb)
   }
   kb->data = MEM_malloc_arrayN(mesh_dst->key->elemsize, mesh_dst->totvert, "kb->data");
   kb->totelem = totvert;
-
-  fp = (float *)kb->data;
-  const Span<MVert> verts = mesh_src->verts();
-  for (a = 0; a < kb->totelem; a++, fp += 3) {
-    copy_v3_v3(fp, verts[a].co);
-  }
+  MutableSpan(static_cast<float3 *>(kb->data), kb->totelem).copy_from(mesh_src->positions());
 }

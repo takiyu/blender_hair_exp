@@ -55,6 +55,7 @@
 #include "WM_api.h"
 #include "WM_types.h"
 
+using blender::float3;
 using blender::MutableSpan;
 using blender::Span;
 
@@ -71,7 +72,7 @@ static void join_mesh_single(Depsgraph *depsgraph,
                              Object *ob_dst,
                              Object *ob_src,
                              const float imat[4][4],
-                             MVert **mvert_pp,
+                             float3 **positions_pp,
                              MEdge **medge_pp,
                              MLoop **mloop_pp,
                              MPoly **mpoly_pp,
@@ -96,7 +97,7 @@ static void join_mesh_single(Depsgraph *depsgraph,
   int a, b;
 
   Mesh *me = static_cast<Mesh *>(ob_src->data);
-  MVert *mvert = *mvert_pp;
+  float3 *positions = *positions_pp;
   MEdge *medge = *medge_pp;
   MLoop *mloop = *mloop_pp;
   MPoly *mpoly = *mpoly_pp;
@@ -138,8 +139,8 @@ static void join_mesh_single(Depsgraph *depsgraph,
       mul_m4_m4m4(cmat, imat, ob_src->obmat);
 
       /* transform vertex coordinates into new space */
-      for (a = 0; a < me->totvert; a++, mvert++) {
-        mul_m4_v3(cmat, mvert->co);
+      for (a = 0; a < me->totvert; a++) {
+        mul_m4_v3(cmat, positions[a]);
       }
 
       /* For each shape-key in destination mesh:
@@ -167,8 +168,8 @@ static void join_mesh_single(Depsgraph *depsgraph,
           }
           else {
             /* Copy this mesh's vertex coordinates to the destination shape-key. */
-            for (a = 0, mvert = *mvert_pp; a < me->totvert; a++, cos++, mvert++) {
-              copy_v3_v3(*cos, mvert->co);
+            for (a = 0; a < me->totvert; a++, cos++) {
+              copy_v3_v3(*cos, positions[a]);
             }
           }
         }
@@ -195,8 +196,8 @@ static void join_mesh_single(Depsgraph *depsgraph,
           }
           else {
             /* Copy base-coordinates to the destination shape-key. */
-            for (a = 0, mvert = *mvert_pp; a < me->totvert; a++, cos++, mvert++) {
-              copy_v3_v3(*cos, mvert->co);
+            for (a = 0; a < me->totvert; a++, cos++) {
+              copy_v3_v3(*cos, positions[a]);
             }
           }
         }
@@ -290,7 +291,7 @@ static void join_mesh_single(Depsgraph *depsgraph,
 
   /* these are used for relinking (cannot be set earlier, or else reattaching goes wrong) */
   *vertofs += me->totvert;
-  *mvert_pp += me->totvert;
+  *positions_pp += me->totvert;
   *edgeofs += me->totedge;
   *medge_pp += me->totedge;
   *loopofs += me->totloop;
@@ -337,7 +338,6 @@ int ED_mesh_join_objects_exec(bContext *C, wmOperator *op)
   Object *ob = CTX_data_active_object(C);
   Material **matar = nullptr, *ma;
   Mesh *me;
-  MVert *mvert = nullptr;
   MEdge *medge = nullptr;
   MPoly *mpoly = nullptr;
   MLoop *mloop = nullptr;
@@ -589,7 +589,8 @@ int ED_mesh_join_objects_exec(bContext *C, wmOperator *op)
   CustomData_reset(&ldata);
   CustomData_reset(&pdata);
 
-  mvert = (MVert *)CustomData_add_layer(&vdata, CD_MVERT, CD_SET_DEFAULT, nullptr, totvert);
+  float3 *positions = (float3 *)CustomData_add_layer_named(
+      &vdata, CD_PROP_FLOAT3, CD_SET_DEFAULT, nullptr, totvert, "position");
   medge = (MEdge *)CustomData_add_layer(&edata, CD_MEDGE, CD_SET_DEFAULT, nullptr, totedge);
   mloop = (MLoop *)CustomData_add_layer(&ldata, CD_MLOOP, CD_SET_DEFAULT, nullptr, totloop);
   mpoly = (MPoly *)CustomData_add_layer(&pdata, CD_MPOLY, CD_SET_DEFAULT, nullptr, totpoly);
@@ -614,7 +615,7 @@ int ED_mesh_join_objects_exec(bContext *C, wmOperator *op)
                    ob,
                    ob,
                    imat,
-                   &mvert,
+                   &positions,
                    &medge,
                    &mloop,
                    &mpoly,
@@ -648,7 +649,7 @@ int ED_mesh_join_objects_exec(bContext *C, wmOperator *op)
                        ob,
                        ob_iter,
                        imat,
-                       &mvert,
+                       &positions,
                        &medge,
                        &mloop,
                        &mpoly,
@@ -908,13 +909,13 @@ static bool ed_mesh_mirror_topo_table_update(Object *ob, Mesh *me_eval)
 static int mesh_get_x_mirror_vert_spatial(Object *ob, Mesh *me_eval, int index)
 {
   Mesh *me = static_cast<Mesh *>(ob->data);
-  const Span<MVert> verts = me_eval ? me_eval->verts() : me->verts();
+  const Span<float3> positions = me_eval ? me_eval->positions() : me->positions();
 
   float vec[3];
 
-  vec[0] = -verts[index].co[0];
-  vec[1] = verts[index].co[1];
-  vec[2] = verts[index].co[2];
+  vec[0] = -positions[index][0];
+  vec[1] = positions[index][1];
+  vec[2] = positions[index][2];
 
   return ED_mesh_mirror_spatial_table_lookup(ob, nullptr, me_eval, vec);
 }
@@ -1130,7 +1131,6 @@ static bool mirror_facecmp(const void *a, const void *b)
 int *mesh_get_x_mirror_faces(Object *ob, BMEditMesh *em, Mesh *me_eval)
 {
   Mesh *me = static_cast<Mesh *>(ob->data);
-  const MVert *mv;
   MFace mirrormf, *mf, *hashmf;
   GHash *fhash;
   int *mirrorverts, *mirrorfaces;
@@ -1145,12 +1145,12 @@ int *mesh_get_x_mirror_faces(Object *ob, BMEditMesh *em, Mesh *me_eval)
   mirrorverts = static_cast<int *>(MEM_callocN(sizeof(int) * totvert, "MirrorVerts"));
   mirrorfaces = static_cast<int *>(MEM_callocN(sizeof(int[2]) * totface, "MirrorFaces"));
 
-  const Span<MVert> verts = me_eval ? me_eval->verts() : me->verts();
+  const Span<float3> positions = me_eval ? me_eval->positions() : me->positions();
   MFace *mface = (MFace *)CustomData_get_layer(&(me_eval ? me_eval : me)->fdata, CD_MFACE);
 
   ED_mesh_mirror_spatial_table_begin(ob, em, me_eval);
 
-  for (a = 0, mv = verts.data(); a < totvert; a++, mv++) {
+  for (const int i : positions.index_range()) {
     mirrorverts[a] = mesh_get_x_mirror_vert(ob, me_eval, a, use_topology);
   }
 
@@ -1232,7 +1232,7 @@ static void ed_mesh_pick_face_vert__mpoly_find(
     const float mval[2],
     /* mesh data (evaluated) */
     const MPoly *mp,
-    const MVert *mvert,
+    const Span<float3> positions,
     const MLoop *mloop,
     /* return values */
     float *r_len_best,
@@ -1243,8 +1243,8 @@ static void ed_mesh_pick_face_vert__mpoly_find(
   for (ml = &mloop[mp->loopstart]; j--; ml++) {
     float sco[2];
     const int v_idx = ml->v;
-    const float *co = mvert[v_idx].co;
-    if (ED_view3d_project_float_object(region, co, sco, V3D_PROJ_TEST_NOP) == V3D_PROJ_RET_OK) {
+    if (ED_view3d_project_float_object(region, positions[v_idx], sco, V3D_PROJ_TEST_NOP) ==
+        V3D_PROJ_RET_OK) {
       const float len_test = len_manhattan_v2v2(mval, sco);
       if (len_test < *r_len_best) {
         *r_len_best = len_test;
@@ -1277,7 +1277,7 @@ bool ED_mesh_pick_face_vert(
     const float mval_f[2] = {(float)mval[0], (float)mval[1]};
     float len_best = FLT_MAX;
 
-    const Span<MVert> verts = me_eval->verts();
+    const Span<float3> positions = me_eval->positions();
     const Span<MPoly> polys = me_eval->polys();
     const Span<MLoop> loops = me_eval->loops();
 
@@ -1288,19 +1288,14 @@ bool ED_mesh_pick_face_vert(
       for (const int i : polys.index_range()) {
         if (index_mp_to_orig[i] == poly_index) {
           ed_mesh_pick_face_vert__mpoly_find(
-              region, mval_f, &polys[i], verts.data(), loops.data(), &len_best, &v_idx_best);
+              region, mval_f, &polys[i], positions, loops.data(), &len_best, &v_idx_best);
         }
       }
     }
     else {
       if (poly_index < polys.size()) {
-        ed_mesh_pick_face_vert__mpoly_find(region,
-                                           mval_f,
-                                           &polys[poly_index],
-                                           verts.data(),
-                                           loops.data(),
-                                           &len_best,
-                                           &v_idx_best);
+        ed_mesh_pick_face_vert__mpoly_find(
+            region, mval_f, &polys[poly_index], positions, loops.data(), &len_best, &v_idx_best);
       }
     }
 
@@ -1329,7 +1324,7 @@ bool ED_mesh_pick_face_vert(
  * \return boolean true == Found
  */
 struct VertPickData {
-  const MVert *mvert;
+  Span<float3> positions;
   const bool *hide_vert;
   const float *mval_f; /* [2] */
   ARegion *region;
@@ -1404,7 +1399,7 @@ bool ED_mesh_pick_vert(
     /* find the vert closest to 'mval' */
     const float mval_f[2] = {(float)mval[0], (float)mval[1]};
 
-    VertPickData data = {nullptr};
+    VertPickData data{};
 
     ED_view3d_init_mats_rv3d(ob, rv3d);
 
@@ -1413,8 +1408,7 @@ bool ED_mesh_pick_vert(
     }
 
     /* setup data */
-    const Span<MVert> verts = me->verts();
-    data.mvert = verts.data();
+    data.positions = me->positions();
     data.region = region;
     data.mval_f = mval_f;
     data.len_best = FLT_MAX;

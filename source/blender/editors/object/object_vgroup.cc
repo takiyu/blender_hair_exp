@@ -1383,7 +1383,7 @@ static void moveCloserToDistanceFromPlane(Depsgraph *depsgraph,
   do {
     wasChange = false;
     me_deform = mesh_get_eval_deform(depsgraph, scene_eval, object_eval, &CD_MASK_BAREMESH);
-    const Span<MVert> verts = me_deform->verts();
+    const Span<MVert> verts = me_deform->positions();
     m = verts[index];
     copy_v3_v3(oldPos, m.co);
     distToStart = dot_v3v3(norm, oldPos) + d;
@@ -1532,7 +1532,7 @@ static void vgroup_fix(
   int i;
 
   Mesh *me = static_cast<Mesh *>(ob->data);
-  MVert *mvert = me->verts_for_write().data();
+  MVert *mvert = me->positions_for_write().data();
   if (!(me->editflag & ME_EDIT_PAINT_VERT_SEL)) {
     return;
   }
@@ -1550,7 +1550,7 @@ static void vgroup_fix(
 
         Mesh *me_deform = mesh_get_eval_deform(
             depsgraph, scene_eval, object_eval, &CD_MASK_BAREMESH);
-        const Span<MVert> verts_deform = me_deform->verts();
+        const Span<MVert> verts_deform = me_deform->positions();
         k = count;
         while (k--) {
           p[k] = verts_deform[verts[k]];

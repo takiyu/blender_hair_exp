@@ -34,34 +34,6 @@ static void set_computed_position_and_offset(GeometryComponent &component,
   const int grain_size = 10000;
 
   switch (component.type()) {
-    case GEO_COMPONENT_TYPE_MESH: {
-      Mesh *mesh = static_cast<MeshComponent &>(component).get_for_write();
-      MutableSpan<MVert> verts = mesh->verts_for_write();
-      if (in_positions.is_same(positions.varray)) {
-        devirtualize_varray(in_offsets, [&](const auto in_offsets) {
-          threading::parallel_for(
-              selection.index_range(), grain_size, [&](const IndexRange range) {
-                for (const int i : selection.slice(range)) {
-                  const float3 offset = in_offsets[i];
-                  add_v3_v3(verts[i].co, offset);
-                }
-              });
-        });
-      }
-      else {
-        devirtualize_varray2(
-            in_positions, in_offsets, [&](const auto in_positions, const auto in_offsets) {
-              threading::parallel_for(
-                  selection.index_range(), grain_size, [&](const IndexRange range) {
-                    for (const int i : selection.slice(range)) {
-                      const float3 new_position = in_positions[i] + in_offsets[i];
-                      copy_v3_v3(verts[i].co, new_position);
-                    }
-                  });
-            });
-      }
-      break;
-    }
     case GEO_COMPONENT_TYPE_CURVE: {
       CurveComponent &curve_component = static_cast<CurveComponent &>(component);
       Curves &curves_id = *curve_component.get_for_write();

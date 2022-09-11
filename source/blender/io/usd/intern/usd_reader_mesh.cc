@@ -694,9 +694,9 @@ void USDMeshReader::read_mesh_sample(ImportSettings *settings,
    * in code that expect this data to be there. */
 
   if (new_mesh || (settings->read_flag & MOD_MESHSEQ_READ_VERT) != 0) {
-    MutableSpan<MVert> verts = mesh->verts_for_write();
+    MutableSpan<float3> verts = mesh->positions_for_write();
     for (int i = 0; i < positions_.size(); i++) {
-      MVert &mvert = verts[i];
+      float3 &mvert = verts[i];
       mvert.co[0] = positions_[i][0];
       mvert.co[1] = positions_[i][1];
       mvert.co[2] = positions_[i][2];

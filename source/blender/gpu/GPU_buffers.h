@@ -28,7 +28,7 @@ struct MLoopCol;
 struct MLoopTri;
 struct MPoly;
 struct MPropCol;
-struct MVert;
+struct;
 struct Mesh;
 struct PBVH;
 struct SubdivCCG;
@@ -90,7 +90,7 @@ enum {
 void GPU_pbvh_mesh_buffers_update(PBVHGPUFormat *vbo_id,
                                   GPU_PBVH_Buffers *buffers,
                                   const struct Mesh *mesh,
-                                  const struct MVert *mvert,
+                                  const float (*positions)[3],
                                   const float *vmask,
                                   const int *sculpt_face_sets,
                                   const int face_sets_color_seed,

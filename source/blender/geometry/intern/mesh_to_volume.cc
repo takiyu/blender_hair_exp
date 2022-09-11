@@ -16,7 +16,7 @@ namespace blender::geometry {
 /* This class follows the MeshDataAdapter interface from openvdb. */
 class OpenVDBMeshAdapter {
  private:
-  Span<MVert> verts_;
+  Span<float3> positions_;
   Span<MLoop> loops_;
   Span<MLoopTri> looptris_;
   float4x4 transform_;
@@ -30,7 +30,7 @@ class OpenVDBMeshAdapter {
 };
 
 OpenVDBMeshAdapter::OpenVDBMeshAdapter(const Mesh &mesh, float4x4 transform)
-    : verts_(mesh.verts()), loops_(mesh.loops()), transform_(transform)
+    : positions_(mesh.positions()), loops_(mesh.loops()), transform_(transform)
 {
   /* This only updates a cache and can be considered to be logically const. */
   const MLoopTri *looptris = BKE_mesh_runtime_looptri_ensure(&mesh);
@@ -45,7 +45,7 @@ size_t OpenVDBMeshAdapter::polygonCount() const
 
 size_t OpenVDBMeshAdapter::pointCount() const
 {
-  return static_cast<size_t>(verts_.size());
+  return static_cast<size_t>(positions_.size());
 }
 
 size_t OpenVDBMeshAdapter::vertexCount(size_t UNUSED(polygon_index)) const
@@ -59,8 +59,7 @@ void OpenVDBMeshAdapter::getIndexSpacePoint(size_t polygon_index,
                                             openvdb::Vec3d &pos) const
 {
   const MLoopTri &looptri = looptris_[polygon_index];
-  const MVert &vertex = verts_[loops_[looptri.tri[vertex_index]].v];
-  const float3 transformed_co = transform_ * float3(vertex.co);
+  const float3 transformed_co = transform_ * positions_[loops_[looptri.tri[vertex_index]].v];
   pos = &transformed_co.x;
 }
 

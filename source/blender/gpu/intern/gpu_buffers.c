@@ -54,7 +54,7 @@ struct GPU_PBVH_Buffers {
   const MPoly *mpoly;
   const MLoop *mloop;
   const MLoopTri *looptri;
-  const MVert *mvert;
+  const float (*positions)[3];
 
   const int *face_indices;
   int face_indices_len;
@@ -222,7 +222,7 @@ static bool gpu_pbvh_is_looptri_visible(const MLoopTri *lt,
 void GPU_pbvh_mesh_buffers_update(PBVHGPUFormat *vbo_id,
                                   GPU_PBVH_Buffers *buffers,
                                   const Mesh *mesh,
-                                  const MVert *mvert,
+                                  const float (*positions)[3],
                                   const float *vmask,
                                   const int *sculpt_face_sets,
                                   int face_sets_color_seed,
@@ -403,7 +403,7 @@ void GPU_pbvh_mesh_buffers_update(PBVHGPUFormat *vbo_id,
         if (lt->poly != mpoly_prev && !buffers->smooth) {
           const MPoly *mp = &buffers->mpoly[lt->poly];
           float fno[3];
-          BKE_mesh_calc_poly_normal(mp, &buffers->mloop[mp->loopstart], mvert, fno);
+          BKE_mesh_calc_poly_normal(mp, &buffers->mloop[mp->loopstart], positions, fno);
           normal_float_to_short_v3(no, fno);
           mpoly_prev = lt->poly;
         }
@@ -426,8 +426,7 @@ void GPU_pbvh_mesh_buffers_update(PBVHGPUFormat *vbo_id,
         }
 
         for (uint j = 0; j < 3; j++) {
-          const MVert *v = &mvert[vtri[j]];
-          copy_v3_v3(GPU_vertbuf_raw_step(&pos_step), v->co);
+          copy_v3_v3(GPU_vertbuf_raw_step(&pos_step), positions[vtri[j]]);
 
           if (buffers->smooth) {
             normal_float_to_short_v3(no, vert_normals[vtri[j]]);
@@ -454,7 +453,7 @@ void GPU_pbvh_mesh_buffers_update(PBVHGPUFormat *vbo_id,
   buffers->material_index = material_indices ? material_indices[lt->poly] : 0;
 
   buffers->show_overlay = !empty_mask || !default_face_set;
-  buffers->mvert = mvert;
+  buffers->positions = positions;
 }
 
 GPU_PBVH_Buffers *GPU_pbvh_mesh_buffers_build(const Mesh *mesh,

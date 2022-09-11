@@ -178,10 +178,10 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
   }
 
   if (me != nullptr) {
-    const Span<MVert> mesh_verts = mesh->verts();
+    const Span<MVert> mesh_verts = mesh->positions();
     const Span<MEdge> mesh_edges = mesh->edges();
     const Span<MPoly> mesh_polys = mesh->polys();
-    const Span<MVert> me_verts = me->verts();
+    const Span<MVert> me_verts = me->positions();
     const Span<MEdge> me_edges = me->edges();
     const Span<MPoly> me_polys = me->polys();
 

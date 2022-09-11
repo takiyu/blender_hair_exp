@@ -244,7 +244,7 @@ static SnapData_Mesh *snap_object_data_mesh_get(SnapObjectContext *sctx,
   SnapData_Mesh *sod;
   bool init = false;
 
-  const Span<MVert> verts = me_eval->verts();
+  const Span<float3> positions = me_eval->positions();
   const Span<MEdge> edges = me_eval->edges();
   const Span<MPoly> polys = me_eval->polys();
   const Span<MLoop> loops = me_eval->loops();
@@ -270,7 +270,8 @@ static SnapData_Mesh *snap_object_data_mesh_get(SnapObjectContext *sctx,
     else if (sod->treedata_mesh.looptri != me_eval->runtime.looptris.array) {
       is_dirty = true;
     }
-    else if (sod->treedata_mesh.vert != verts.data()) {
+    else if (sod->treedata_mesh.positions !=
+             reinterpret_cast<const float(*)[3]>(positions.data())) {
       is_dirty = true;
     }
     else if (sod->treedata_mesh.loop != loops.data()) {
@@ -309,8 +310,9 @@ static SnapData_Mesh *snap_object_data_mesh_get(SnapObjectContext *sctx,
                               use_hide ? BVHTREE_FROM_LOOPTRI_NO_HIDDEN : BVHTREE_FROM_LOOPTRI,
                               4);
 
-    BLI_assert(sod->treedata_mesh.vert == verts.data());
-    BLI_assert(!verts.data() || sod->treedata_mesh.vert_normals);
+    BLI_assert(sod->treedata_mesh.positions ==
+               reinterpret_cast<const float(*)[3]>(positions.data()));
+    BLI_assert(!positions.data() || sod->treedata_mesh.vert_normals);
     BLI_assert(sod->treedata_mesh.loop == loops.data());
     BLI_assert(!polys.data() || sod->treedata_mesh.looptri);
 
@@ -672,12 +674,12 @@ static void mesh_looptri_raycast_backface_culling_cb(void *userdata,
                                                      BVHTreeRayHit *hit)
 {
   const BVHTreeFromMesh *data = (BVHTreeFromMesh *)userdata;
-  const MVert *vert = data->vert;
+  const float(*positions)[3] = data->positions;
   const MLoopTri *lt = &data->looptri[index];
   const float *vtri_co[3] = {
-      vert[data->loop[lt->tri[0]].v].co,
-      vert[data->loop[lt->tri[1]].v].co,
-      vert[data->loop[lt->tri[2]].v].co,
+      positions[data->loop[lt->tri[0]].v],
+      positions[data->loop[lt->tri[1]].v],
+      positions[data->loop[lt->tri[2]].v],
   };
   float dist = bvhtree_ray_tri_intersection(ray, hit->dist, UNPACK3(vtri_co));
 
@@ -1574,7 +1576,7 @@ struct Nearest2dUserData {
       BMesh *bm;
     };
     struct {
-      const MVert *vert;
+      const float (*positions)[3];
       const float (*vert_normals)[3];
       const MEdge *edge; /* only used for #BVHTreeFromMeshEdges */
       const MLoop *loop;
@@ -1588,7 +1590,7 @@ struct Nearest2dUserData {
 
 static void cb_mvert_co_get(const int index, const Nearest2dUserData *data, const float **r_co)
 {
-  *r_co = data->vert[index].co;
+  *r_co = data->positions[index];
 }
 
 static void cb_bvert_co_get(const int index, const Nearest2dUserData *data, const float **r_co)
@@ -1863,7 +1865,7 @@ static void nearest2d_data_init_mesh(SnapData_Mesh *sod,
   r_nearest2d->get_tri_verts_index = cb_mlooptri_verts_get;
   r_nearest2d->get_tri_edges_index = cb_mlooptri_edges_get;
 
-  r_nearest2d->vert = sod->treedata_mesh.vert;
+  r_nearest2d->positions = sod->treedata_mesh.positions;
   r_nearest2d->vert_normals = sod->treedata_mesh.vert_normals;
   r_nearest2d->edge = sod->treedata_mesh.edge;
   r_nearest2d->loop = sod->treedata_mesh.loop;

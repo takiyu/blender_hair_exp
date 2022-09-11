@@ -18,6 +18,7 @@
 namespace blender {
 template<typename T> class Span;
 template<typename T> class MutableSpan;
+struct float3;
 namespace bke {
 class AttributeAccessor;
 class MutableAttributeAccessor;
@@ -38,7 +39,6 @@ struct MEdge;
 struct MFace;
 struct MLoopCol;
 struct MLoopTri;
-struct MVert;
 struct Material;
 struct Mesh;
 struct SubdivCCG;
@@ -176,7 +176,7 @@ typedef struct Mesh {
    */
   struct Material **mat;
 
-  /** The number of vertices (#MVert) in the mesh, and the size of #vdata. */
+  /** The number of vertices in the mesh, and the size of #vdata. */
   int totvert;
   /** The number of edges (#MEdge) in the mesh, and the size of #edata. */
   int totedge;
@@ -322,12 +322,11 @@ typedef struct Mesh {
   Mesh_Runtime runtime;
 #ifdef __cplusplus
   /**
-   * Array of vertex positions (and various other data). Edges and faces are defined by indices
-   * into this array.
+   * Array of vertex positions. Edges and faces are defined by indices into this array.
    */
-  blender::Span<MVert> verts() const;
+  blender::Span<blender::float3> positions() const;
   /** Write access to vertex data. */
-  blender::MutableSpan<MVert> verts_for_write();
+  blender::MutableSpan<blender::float3> positions_for_write();
   /**
    * Array of edges, containing vertex indices. For simple triangle or quad meshes, edges could be
    * calculated from the #MPoly and #MLoop arrays, however, edges need to be stored explicitly to

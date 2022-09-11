@@ -264,7 +264,7 @@ static void get_closest_mesh_corners(const Mesh &mesh,
                                      const MutableSpan<float> r_distances_sq,
                                      const MutableSpan<float3> r_positions)
 {
-  const Span<MVert> verts = mesh.verts();
+  const Span<MVert> verts = mesh.positions();
   const Span<MPoly> polys = mesh.polys();
   const Span<MLoop> loops = mesh.loops();
 

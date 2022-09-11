@@ -27,7 +27,6 @@ struct SubdivCCG;
 struct MLoop;
 struct MLoopTri;
 struct MPoly;
-struct MVert;
 
 /**
  * Delete mesh mdisps and grid paint masks.
@@ -155,8 +154,7 @@ void old_mdisps_bilinear(float out[3], float (*disps)[3], int st, float u, float
 /**
  * Find per-corner coordinate with given per-face UV coord.
  */
-int mdisp_rot_face_to_crn(struct MVert *mvert,
-                          struct MPoly *mpoly,
+int mdisp_rot_face_to_crn(struct MPoly *mpoly,
                           struct MLoop *mloop,
                           const struct MLoopTri *lt,
                           int face_side,

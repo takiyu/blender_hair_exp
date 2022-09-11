@@ -62,6 +62,7 @@
 #endif
 
 using blender::Array;
+using blender::float3;
 using blender::float4x4;
 using blender::IndexRange;
 using blender::MutableSpan;
@@ -144,9 +145,9 @@ static Mesh *get_quick_mesh(
           invert_m4_m4(imat, ob_self->obmat);
           mul_m4_m4m4(omat, imat, ob_operand_ob->obmat);
 
-          MutableSpan<MVert> verts = result->verts_for_write();
-          for (const int i : verts.index_range()) {
-            mul_m4_v3(omat, verts[i].co);
+          MutableSpan<float3> positions = result->positions_for_write();
+          for (const int i : positions.index_range()) {
+            mul_m4_v3(omat, positions[i]);
           }
 
           BKE_mesh_tag_coords_changed(result);

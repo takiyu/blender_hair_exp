@@ -37,7 +37,7 @@ class PlanarFieldInput final : public bke::MeshFieldInput {
                                  const eAttrDomain domain,
                                  IndexMask /*mask*/) const final
   {
-    const Span<MVert> verts = mesh.verts();
+    const Span<MVert> verts = mesh.positions();
     const Span<MPoly> polys = mesh.polys();
     const Span<MLoop> loops = mesh.loops();
     const Span<float3> poly_normals{(float3 *)BKE_mesh_poly_normals_ensure(&mesh), mesh.totpoly};

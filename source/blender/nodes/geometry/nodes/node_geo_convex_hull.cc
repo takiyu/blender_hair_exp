@@ -46,7 +46,7 @@ static Mesh *hull_from_bullet(const Mesh *mesh, Span<float3> coords)
   }
 
   /* Copy vertices. */
-  MutableSpan<MVert> dst_verts = result->verts_for_write();
+  MutableSpan<MVert> dst_verts = result->positions_for_write();
   for (const int i : IndexRange(verts_num)) {
     float co[3];
     int original_index;

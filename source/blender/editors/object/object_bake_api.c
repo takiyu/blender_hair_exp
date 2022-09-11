@@ -1029,7 +1029,7 @@ static void bake_targets_populate_pixels_color_attributes(BakeTargets *targets,
   const MLoop *loops = BKE_mesh_loops(me_eval);
   BKE_mesh_recalc_looptri(loops,
                           BKE_mesh_polys(me_eval),
-                          BKE_mesh_verts(me_eval),
+                          BKE_mesh_positions(me_eval),
                           me_eval->totloop,
                           me_eval->totpoly,
                           looptri);

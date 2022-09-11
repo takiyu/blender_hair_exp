@@ -53,9 +53,9 @@ static void generate_vert_coordinates(Mesh *mesh,
 
   INIT_MINMAX(min_co, max_co);
 
-  const MVert *mv = BKE_mesh_verts(mesh);
-  for (int i = 0; i < mesh->totvert; i++, mv++) {
-    copy_v3_v3(r_cos[i], mv->co);
+  const float(*positions)[3] = BKE_mesh_positions(mesh);
+  for (int i = 0; i < mesh->totvert; i++) {
+    copy_v3_v3(r_cos[i], positions[i]);
     if (r_size != NULL && ob_center == NULL) {
       minmax_v3v3_v3(min_co, max_co, r_cos[i]);
     }
@@ -221,7 +221,7 @@ static void normalEditModifier_do_radial(NormalEditModifierData *enmd,
                                          const MDeformVert *dvert,
                                          const int defgrp_index,
                                          const bool use_invert_vgroup,
-                                         const MVert *mvert,
+                                         const float (*positions)[3],
                                          const int verts_num,
                                          MEdge *medge,
                                          const int edges_num,
@@ -327,7 +327,7 @@ static void normalEditModifier_do_radial(NormalEditModifierData *enmd,
     BKE_mesh_normals_tag_dirty(mesh);
   }
 
-  BKE_mesh_normals_loop_custom_set(mvert,
+  BKE_mesh_normals_loop_custom_set(positions,
                                    BKE_mesh_vertex_normals_ensure(mesh),
                                    verts_num,
                                    medge,
@@ -358,7 +358,7 @@ static void normalEditModifier_do_directional(NormalEditModifierData *enmd,
                                               const MDeformVert *dvert,
                                               const int defgrp_index,
                                               const bool use_invert_vgroup,
-                                              const MVert *mvert,
+                                              const float (*positions)[3],
                                               const int verts_num,
                                               MEdge *medge,
                                               const int edges_num,
@@ -441,7 +441,7 @@ static void normalEditModifier_do_directional(NormalEditModifierData *enmd,
     BKE_mesh_normals_tag_dirty(mesh);
   }
 
-  BKE_mesh_normals_loop_custom_set(mvert,
+  BKE_mesh_normals_loop_custom_set(positions,
                                    BKE_mesh_vertex_normals_ensure(mesh),
                                    verts_num,
                                    medge,
@@ -523,7 +523,7 @@ static Mesh *normalEditModifier_do(NormalEditModifierData *enmd,
   const int edges_num = result->totedge;
   const int loops_num = result->totloop;
   const int polys_num = result->totpoly;
-  const MVert *verts = BKE_mesh_verts(result);
+  const float(*positions)[3] = BKE_mesh_positions(result);
   MEdge *edges = BKE_mesh_edges_for_write(result);
   const MPoly *polys = BKE_mesh_polys(result);
   MLoop *loops = BKE_mesh_loops_for_write(result);
@@ -543,7 +543,7 @@ static Mesh *normalEditModifier_do(NormalEditModifierData *enmd,
     clnors = CustomData_duplicate_referenced_layer(ldata, CD_CUSTOMLOOPNORMAL, loops_num);
     loopnors = MEM_malloc_arrayN((size_t)loops_num, sizeof(*loopnors), __func__);
 
-    BKE_mesh_normals_loop_split(verts,
+    BKE_mesh_normals_loop_split(positions,
                                 vert_normals,
                                 verts_num,
                                 edges,
@@ -581,7 +581,7 @@ static Mesh *normalEditModifier_do(NormalEditModifierData *enmd,
                                  dvert,
                                  defgrp_index,
                                  use_invert_vgroup,
-                                 verts,
+                                 positions,
                                  verts_num,
                                  edges,
                                  edges_num,
@@ -604,7 +604,7 @@ static Mesh *normalEditModifier_do(NormalEditModifierData *enmd,
                                       dvert,
                                       defgrp_index,
                                       use_invert_vgroup,
-                                      verts,
+                                      positions,
                                       verts_num,
                                       edges,
                                       edges_num,

@@ -30,6 +30,7 @@
 #include "BKE_mesh.h"
 #include "BKE_multires.h"
 
+using blender::float3;
 using blender::MutableSpan;
 using blender::Span;
 using blender::VArray;
@@ -47,18 +48,18 @@ using blender::VArray;
  */
 static void mesh_calc_ngon_normal(const MPoly *mpoly,
                                   const MLoop *loopstart,
-                                  const MVert *mvert,
+                                  const float (*positions)[3],
                                   float normal[3])
 {
   const int nverts = mpoly->totloop;
-  const float *v_prev = mvert[loopstart[nverts - 1].v].co;
+  const float *v_prev = positions[loopstart[nverts - 1].v];
   const float *v_curr;
 
   zero_v3(normal);
 
   /* Newell's Method */
   for (int i = 0; i < nverts; i++) {
-    v_curr = mvert[loopstart[i].v].co;
+    v_curr = positions[loopstart[i].v];
     add_newell_cross_v3_v3v3(normal, v_prev, v_curr);
     v_prev = v_curr;
   }
@@ -70,22 +71,22 @@ static void mesh_calc_ngon_normal(const MPoly *mpoly,
 
 void BKE_mesh_calc_poly_normal(const MPoly *mpoly,
                                const MLoop *loopstart,
-                               const MVert *mvarray,
+                               const float (*positions)[3],
                                float r_no[3])
 {
   if (mpoly->totloop > 4) {
-    mesh_calc_ngon_normal(mpoly, loopstart, mvarray, r_no);
+    mesh_calc_ngon_normal(mpoly, loopstart, positions, r_no);
   }
   else if (mpoly->totloop == 3) {
     normal_tri_v3(
-        r_no, mvarray[loopstart[0].v].co, mvarray[loopstart[1].v].co, mvarray[loopstart[2].v].co);
+        r_no, positions[loopstart[0].v], positions[loopstart[1].v], positions[loopstart[2].v]);
   }
   else if (mpoly->totloop == 4) {
     normal_quad_v3(r_no,
-                   mvarray[loopstart[0].v].co,
-                   mvarray[loopstart[1].v].co,
-                   mvarray[loopstart[2].v].co,
-                   mvarray[loopstart[3].v].co);
+                   positions[loopstart[0].v],
+                   positions[loopstart[1].v],
+                   positions[loopstart[2].v],
+                   positions[loopstart[3].v]);
   }
   else { /* horrible, two sided face! */
     r_no[0] = 0.0;
@@ -147,7 +148,7 @@ void BKE_mesh_calc_poly_normal_coords(const MPoly *mpoly,
 
 static void mesh_calc_ngon_center(const MPoly *mpoly,
                                   const MLoop *loopstart,
-                                  const MVert *mvert,
+                                  const float (*positions)[3],
                                   float cent[3])
 {
   const float w = 1.0f / (float)mpoly->totloop;
@@ -155,38 +156,38 @@ static void mesh_calc_ngon_center(const MPoly *mpoly,
   zero_v3(cent);
 
   for (int i = 0; i < mpoly->totloop; i++) {
-    madd_v3_v3fl(cent, mvert[(loopstart++)->v].co, w);
+    madd_v3_v3fl(cent, positions[(loopstart++)->v], w);
   }
 }
 
 void BKE_mesh_calc_poly_center(const MPoly *mpoly,
                                const MLoop *loopstart,
-                               const MVert *mvarray,
+                               const float (*positions)[3],
                                float r_cent[3])
 {
   if (mpoly->totloop == 3) {
-    mid_v3_v3v3v3(r_cent,
-                  mvarray[loopstart[0].v].co,
-                  mvarray[loopstart[1].v].co,
-                  mvarray[loopstart[2].v].co);
+    mid_v3_v3v3v3(
+        r_cent, positions[loopstart[0].v], positions[loopstart[1].v], positions[loopstart[2].v]);
   }
   else if (mpoly->totloop == 4) {
     mid_v3_v3v3v3v3(r_cent,
-                    mvarray[loopstart[0].v].co,
-                    mvarray[loopstart[1].v].co,
-                    mvarray[loopstart[2].v].co,
-                    mvarray[loopstart[3].v].co);
+                    positions[loopstart[0].v],
+                    positions[loopstart[1].v],
+                    positions[loopstart[2].v],
+                    positions[loopstart[3].v]);
   }
   else {
-    mesh_calc_ngon_center(mpoly, loopstart, mvarray, r_cent);
+    mesh_calc_ngon_center(mpoly, loopstart, positions, r_cent);
   }
 }
 
-float BKE_mesh_calc_poly_area(const MPoly *mpoly, const MLoop *loopstart, const MVert *mvarray)
+float BKE_mesh_calc_poly_area(const MPoly *mpoly,
+                              const MLoop *loopstart,
+                              const float (*positions)[3])
 {
   if (mpoly->totloop == 3) {
     return area_tri_v3(
-        mvarray[loopstart[0].v].co, mvarray[loopstart[1].v].co, mvarray[loopstart[2].v].co);
+        positions[loopstart[0].v], positions[loopstart[1].v], positions[loopstart[2].v]);
   }
 
   const MLoop *l_iter = loopstart;
@@ -194,7 +195,7 @@ float BKE_mesh_calc_poly_area(const MPoly *mpoly, const MLoop *loopstart, const 
 
   /* pack vertex cos into an array for area_poly_v3 */
   for (int i = 0; i < mpoly->totloop; i++, l_iter++) {
-    copy_v3_v3(vertexcos[i], mvarray[l_iter->v].co);
+    copy_v3_v3(vertexcos[i], positions[l_iter->v]);
   }
 
   /* finally calculate the area */
@@ -205,13 +206,14 @@ float BKE_mesh_calc_poly_area(const MPoly *mpoly, const MLoop *loopstart, const 
 
 float BKE_mesh_calc_area(const Mesh *me)
 {
-  const Span<MVert> verts = me->verts();
+  const Span<float3> positions = me->positions();
   const Span<MPoly> polys = me->polys();
   const Span<MLoop> loops = me->loops();
 
   float total_area = 0.0f;
   for (const MPoly &poly : polys) {
-    total_area += BKE_mesh_calc_poly_area(&poly, &loops[poly.loopstart], verts.data());
+    total_area += BKE_mesh_calc_poly_area(
+        &poly, &loops[poly.loopstart], reinterpret_cast<const float(*)[3]>(positions.data()));
   }
   return total_area;
 }
@@ -236,7 +238,7 @@ float BKE_mesh_calc_poly_uv_area(const MPoly *mpoly, const MLoopUV *uv_array)
 
 static float UNUSED_FUNCTION(mesh_calc_poly_volume_centroid)(const MPoly *mpoly,
                                                              const MLoop *loopstart,
-                                                             const MVert *mvarray,
+                                                             const float (*positions)[3],
                                                              float r_cent[3])
 {
   const float *v_pivot, *v_step1;
@@ -244,11 +246,11 @@ static float UNUSED_FUNCTION(mesh_calc_poly_volume_centroid)(const MPoly *mpoly,
 
   zero_v3(r_cent);
 
-  v_pivot = mvarray[loopstart[0].v].co;
-  v_step1 = mvarray[loopstart[1].v].co;
+  v_pivot = positions[loopstart[0].v];
+  v_step1 = positions[loopstart[1].v];
 
   for (int i = 2; i < mpoly->totloop; i++) {
-    const float *v_step2 = mvarray[loopstart[i].v].co;
+    const float *v_step2 = positions[loopstart[i].v];
 
     /* Calculate the 6x volume of the tetrahedron formed by the 3 vertices
      * of the triangle and the origin as the fourth vertex */
@@ -278,7 +280,7 @@ static float UNUSED_FUNCTION(mesh_calc_poly_volume_centroid)(const MPoly *mpoly,
  */
 static float mesh_calc_poly_volume_centroid_with_reference_center(const MPoly *mpoly,
                                                                   const MLoop *loopstart,
-                                                                  const MVert *mvarray,
+                                                                  const float (*positions)[3],
                                                                   const float reference_center[3],
                                                                   float r_cent[3])
 {
@@ -286,11 +288,11 @@ static float mesh_calc_poly_volume_centroid_with_reference_center(const MPoly *m
   float v_pivot[3], v_step1[3];
   float total_volume = 0.0f;
   zero_v3(r_cent);
-  sub_v3_v3v3(v_pivot, mvarray[loopstart[0].v].co, reference_center);
-  sub_v3_v3v3(v_step1, mvarray[loopstart[1].v].co, reference_center);
+  sub_v3_v3v3(v_pivot, positions[loopstart[0].v], reference_center);
+  sub_v3_v3v3(v_step1, positions[loopstart[1].v], reference_center);
   for (int i = 2; i < mpoly->totloop; i++) {
     float v_step2[3];
-    sub_v3_v3v3(v_step2, mvarray[loopstart[i].v].co, reference_center);
+    sub_v3_v3v3(v_step2, positions[loopstart[i].v], reference_center);
     const float tetra_volume = volume_tri_tetrahedron_signed_v3_6x(v_pivot, v_step1, v_step2);
     total_volume += tetra_volume;
     for (uint j = 0; j < 3; j++) {
@@ -309,19 +311,19 @@ static float mesh_calc_poly_volume_centroid_with_reference_center(const MPoly *m
  */
 static float mesh_calc_poly_area_centroid(const MPoly *mpoly,
                                           const MLoop *loopstart,
-                                          const MVert *mvarray,
+                                          const float (*positions)[3],
                                           float r_cent[3])
 {
   float total_area = 0.0f;
   float v1[3], v2[3], v3[3], normal[3], tri_cent[3];
 
-  BKE_mesh_calc_poly_normal(mpoly, loopstart, mvarray, normal);
-  copy_v3_v3(v1, mvarray[loopstart[0].v].co);
-  copy_v3_v3(v2, mvarray[loopstart[1].v].co);
+  BKE_mesh_calc_poly_normal(mpoly, loopstart, positions, normal);
+  copy_v3_v3(v1, positions[loopstart[0].v]);
+  copy_v3_v3(v2, positions[loopstart[1].v]);
   zero_v3(r_cent);
 
   for (int i = 2; i < mpoly->totloop; i++) {
-    copy_v3_v3(v3, mvarray[loopstart[i].v].co);
+    copy_v3_v3(v3, positions[loopstart[i].v]);
 
     float tri_area = area_tri_signed_v3(v1, v2, v3, normal);
     total_area += tri_area;
@@ -339,7 +341,7 @@ static float mesh_calc_poly_area_centroid(const MPoly *mpoly,
 
 void BKE_mesh_calc_poly_angles(const MPoly *mpoly,
                                const MLoop *loopstart,
-                               const MVert *mvarray,
+                               const float (*positions)[3],
                                float angles[])
 {
   float nor_prev[3];
@@ -348,11 +350,11 @@ void BKE_mesh_calc_poly_angles(const MPoly *mpoly,
   int i_this = mpoly->totloop - 1;
   int i_next = 0;
 
-  sub_v3_v3v3(nor_prev, mvarray[loopstart[i_this - 1].v].co, mvarray[loopstart[i_this].v].co);
+  sub_v3_v3v3(nor_prev, positions[loopstart[i_this - 1].v], positions[loopstart[i_this].v]);
   normalize_v3(nor_prev);
 
   while (i_next < mpoly->totloop) {
-    sub_v3_v3v3(nor_next, mvarray[loopstart[i_this].v].co, mvarray[loopstart[i_next].v].co);
+    sub_v3_v3v3(nor_next, positions[loopstart[i_this].v], positions[loopstart[i_next].v]);
     normalize_v3(nor_next);
     angles[i_this] = angle_normalized_v3v3(nor_prev, nor_next);
 
@@ -400,10 +402,10 @@ void BKE_mesh_poly_edgebitmap_insert(uint *edge_bitmap, const MPoly *mp, const M
 
 bool BKE_mesh_center_median(const Mesh *me, float r_cent[3])
 {
-  const Span<MVert> verts = me->verts();
+  const Span<float3> positions = me->positions();
   zero_v3(r_cent);
-  for (const MVert &vert : verts) {
-    add_v3_v3(r_cent, vert.co);
+  for (const float3 &position : positions) {
+    add_v3_v3(r_cent, position);
   }
   /* otherwise we get NAN for 0 verts */
   if (me->totvert) {
@@ -415,14 +417,14 @@ bool BKE_mesh_center_median(const Mesh *me, float r_cent[3])
 bool BKE_mesh_center_median_from_polys(const Mesh *me, float r_cent[3])
 {
   int tot = 0;
-  const Span<MVert> verts = me->verts();
+  const Span<float3> positions = me->positions();
   const Span<MPoly> polys = me->polys();
   const Span<MLoop> loops = me->loops();
   zero_v3(r_cent);
   for (const MPoly &poly : polys) {
     int loopend = poly.loopstart + poly.totloop;
     for (int j = poly.loopstart; j < loopend; j++) {
-      add_v3_v3(r_cent, verts[loops[j].v].co);
+      add_v3_v3(r_cent, positions[loops[j].v]);
     }
     tot += poly.totloop;
   }
@@ -452,7 +454,7 @@ bool BKE_mesh_center_of_surface(const Mesh *me, float r_cent[3])
   float poly_area;
   float total_area = 0.0f;
   float poly_cent[3];
-  const MVert *verts = BKE_mesh_verts(me);
+  const float(*positions)[3] = BKE_mesh_positions(me);
   const MPoly *polys = BKE_mesh_polys(me);
   const MLoop *loops = BKE_mesh_loops(me);
 
@@ -460,7 +462,8 @@ bool BKE_mesh_center_of_surface(const Mesh *me, float r_cent[3])
 
   /* calculate a weighted average of polygon centroids */
   for (mpoly = polys; i--; mpoly++) {
-    poly_area = mesh_calc_poly_area_centroid(mpoly, loops + mpoly->loopstart, verts, poly_cent);
+    poly_area = mesh_calc_poly_area_centroid(
+        mpoly, loops + mpoly->loopstart, positions, poly_cent);
 
     madd_v3_v3fl(r_cent, poly_cent, poly_area);
     total_area += poly_area;
@@ -485,7 +488,7 @@ bool BKE_mesh_center_of_volume(const Mesh *me, float r_cent[3])
   float poly_volume;
   float total_volume = 0.0f;
   float poly_cent[3];
-  const MVert *verts = BKE_mesh_verts(me);
+  const float(*positions)[3] = BKE_mesh_positions(me);
   const MPoly *polys = BKE_mesh_polys(me);
   const MLoop *loops = BKE_mesh_loops(me);
 
@@ -498,7 +501,7 @@ bool BKE_mesh_center_of_volume(const Mesh *me, float r_cent[3])
   /* calculate a weighted average of polyhedron centroids */
   for (mpoly = polys; i--; mpoly++) {
     poly_volume = mesh_calc_poly_volume_centroid_with_reference_center(
-        mpoly, loops + mpoly->loopstart, verts, init_cent, poly_cent);
+        mpoly, loops + mpoly->loopstart, positions, init_cent, poly_cent);
 
     /* poly_cent is already volume-weighted, so no need to multiply by the volume */
     add_v3_v3(r_cent, poly_cent);
@@ -527,7 +530,7 @@ bool BKE_mesh_center_of_volume(const Mesh *me, float r_cent[3])
 /** \name Mesh Volume Calculation
  * \{ */
 
-static bool mesh_calc_center_centroid_ex(const MVert *mverts,
+static bool mesh_calc_center_centroid_ex(const float (*positions)[3],
                                          int UNUSED(mverts_num),
                                          const MLoopTri *looptri,
                                          int looptri_num,
@@ -545,15 +548,15 @@ static bool mesh_calc_center_centroid_ex(const MVert *mverts,
   const MLoopTri *lt;
   int i;
   for (i = 0, lt = looptri; i < looptri_num; i++, lt++) {
-    const MVert *v1 = &mverts[mloop[lt->tri[0]].v];
-    const MVert *v2 = &mverts[mloop[lt->tri[1]].v];
-    const MVert *v3 = &mverts[mloop[lt->tri[2]].v];
+    const float *v1 = positions[mloop[lt->tri[0]].v];
+    const float *v2 = positions[mloop[lt->tri[1]].v];
+    const float *v3 = positions[mloop[lt->tri[2]].v];
     float area;
 
-    area = area_tri_v3(v1->co, v2->co, v3->co);
-    madd_v3_v3fl(r_center, v1->co, area);
-    madd_v3_v3fl(r_center, v2->co, area);
-    madd_v3_v3fl(r_center, v3->co, area);
+    area = area_tri_v3(v1, v2, v3);
+    madd_v3_v3fl(r_center, v1, area);
+    madd_v3_v3fl(r_center, v2, area);
+    madd_v3_v3fl(r_center, v3, area);
     totweight += area;
   }
   if (totweight == 0.0f) {
@@ -565,7 +568,7 @@ static bool mesh_calc_center_centroid_ex(const MVert *mverts,
   return true;
 }
 
-void BKE_mesh_calc_volume(const MVert *mverts,
+void BKE_mesh_calc_volume(const float (*positions)[3],
                           const int mverts_num,
                           const MLoopTri *looptri,
                           const int looptri_num,
@@ -589,27 +592,27 @@ void BKE_mesh_calc_volume(const MVert *mverts,
     return;
   }
 
-  if (!mesh_calc_center_centroid_ex(mverts, mverts_num, looptri, looptri_num, mloop, center)) {
+  if (!mesh_calc_center_centroid_ex(positions, mverts_num, looptri, looptri_num, mloop, center)) {
     return;
   }
 
   totvol = 0.0f;
 
   for (i = 0, lt = looptri; i < looptri_num; i++, lt++) {
-    const MVert *v1 = &mverts[mloop[lt->tri[0]].v];
-    const MVert *v2 = &mverts[mloop[lt->tri[1]].v];
-    const MVert *v3 = &mverts[mloop[lt->tri[2]].v];
+    const float *v1 = positions[mloop[lt->tri[0]].v];
+    const float *v2 = positions[mloop[lt->tri[1]].v];
+    const float *v3 = positions[mloop[lt->tri[2]].v];
     float vol;
 
-    vol = volume_tetrahedron_signed_v3(center, v1->co, v2->co, v3->co);
+    vol = volume_tetrahedron_signed_v3(center, v1, v2, v3);
     if (r_volume) {
       totvol += vol;
     }
     if (r_center) {
       /* averaging factor 1/3 is applied in the end */
-      madd_v3_v3fl(r_center, v1->co, vol);
-      madd_v3_v3fl(r_center, v2->co, vol);
-      madd_v3_v3fl(r_center, v3->co, vol);
+      madd_v3_v3fl(r_center, v1, vol);
+      madd_v3_v3fl(r_center, v2, vol);
+      madd_v3_v3fl(r_center, v3, vol);
     }
   }
 

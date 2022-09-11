@@ -1558,7 +1558,7 @@ std::optional<Mesh *> mesh_merge_by_distance_all(const Mesh &mesh,
 
   KDTree_3d *tree = BLI_kdtree_3d_new(selection.size());
 
-  const Span<MVert> verts = mesh.verts();
+  const Span<MVert> verts = mesh.positions();
   for (const int i : selection) {
     BLI_kdtree_3d_insert(tree, i, verts[i].co);
   }
@@ -1585,7 +1585,7 @@ std::optional<Mesh *> mesh_merge_by_distance_connected(const Mesh &mesh,
                                                        const float merge_distance,
                                                        const bool only_loose_edges)
 {
-  const Span<MVert> verts = mesh.verts();
+  const Span<MVert> verts = mesh.positions();
   const Span<MEdge> edges = mesh.edges();
 
   int vert_kill_len = 0;

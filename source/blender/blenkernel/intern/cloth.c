@@ -251,14 +251,13 @@ static int do_step_cloth(
   ClothVertex *verts = NULL;
   Cloth *cloth;
   ListBase *effectors = NULL;
-  MVert *mvert;
   unsigned int i = 0;
   int ret = 0;
   bool vert_mass_changed = false;
 
   cloth = clmd->clothObject;
   verts = cloth->verts;
-  mvert = BKE_mesh_verts_for_write(result);
+  const float(*positions)[3] = BKE_mesh_positions(result);
   vert_mass_changed = verts->mass != clmd->sim_parms->mass;
 
   /* force any pinned verts to their constrained location. */
@@ -268,7 +267,7 @@ static int do_step_cloth(
     copy_v3_v3(verts->txold, verts->x);
 
     /* Get the current position. */
-    copy_v3_v3(verts->xconst, mvert[i].co);
+    copy_v3_v3(verts->xconst, positions[i]);
     mul_m4_v3(ob->obmat, verts->xconst);
 
     if (vert_mass_changed) {
@@ -754,14 +753,14 @@ static bool cloth_from_object(
     shapekey_rest = CustomData_get_layer(&mesh->vdata, CD_CLOTH_ORCO);
   }
 
-  MVert *mvert = BKE_mesh_verts_for_write(mesh);
+  const float(*positions)[3] = BKE_mesh_positions(mesh);
 
   verts = clmd->clothObject->verts;
 
   /* set initial values */
   for (i = 0; i < mesh->totvert; i++, verts++) {
     if (first) {
-      copy_v3_v3(verts->x, mvert[i].co);
+      copy_v3_v3(verts->x, positions[i]);
 
       mul_m4_v3(ob->obmat, verts->x);
 
@@ -1149,12 +1148,12 @@ static void cloth_update_springs(ClothModifierData *clmd)
 static void cloth_update_verts(Object *ob, ClothModifierData *clmd, Mesh *mesh)
 {
   unsigned int i = 0;
-  const MVert *mvert = BKE_mesh_verts(mesh);
+  const float(*positions)[3] = BKE_mesh_positions(mesh);
   ClothVertex *verts = clmd->clothObject->verts;
 
   /* vertex count is already ensured to match */
   for (i = 0; i < mesh->totvert; i++, verts++) {
-    copy_v3_v3(verts->xrest, mvert[i].co);
+    copy_v3_v3(verts->xrest, positions[i]);
     mul_m4_v3(ob->obmat, verts->xrest);
   }
 }
@@ -1164,11 +1163,11 @@ static Mesh *cloth_make_rest_mesh(ClothModifierData *clmd, Mesh *mesh)
 {
   Mesh *new_mesh = BKE_mesh_copy_for_eval(mesh, false);
   ClothVertex *verts = clmd->clothObject->verts;
-  MVert *mvert = BKE_mesh_verts_for_write(mesh);
+  float(*positions)[3] = BKE_mesh_positions_for_write(mesh);
 
   /* vertex count is already ensured to match */
-  for (unsigned i = 0; i < mesh->totvert; i++, verts++) {
-    copy_v3_v3(mvert[i].co, verts->xrest);
+  for (int i = 0; i < mesh->totvert; i++, verts++) {
+    copy_v3_v3(positions[i], verts->xrest);
   }
   BKE_mesh_tag_coords_changed(new_mesh);
 
@@ -1383,7 +1382,7 @@ static bool find_internal_spring_target_vertex(BVHTreeFromMesh *treedata,
   float co[3], no[3], new_co[3];
   float radius;
 
-  copy_v3_v3(co, treedata->vert[v_idx].co);
+  copy_v3_v3(co, treedata->positions[v_idx]);
   negate_v3_v3(no, treedata->vert_normals[v_idx]);
 
   float vec_len = sin(max_diversion);

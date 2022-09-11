@@ -61,7 +61,6 @@ struct CustomData_MeshMasks;
 struct Depsgraph;
 struct MEdge;
 struct MFace;
-struct MVert;
 struct Mesh;
 struct ModifierData;
 struct Object;

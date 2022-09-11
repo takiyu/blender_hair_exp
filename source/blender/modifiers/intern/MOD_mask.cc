@@ -338,8 +338,8 @@ static void copy_masked_verts_to_new_mesh(const Mesh &src_mesh,
                                           Span<int> vertex_map)
 {
   BLI_assert(src_mesh.totvert == vertex_map.size());
-  const Span<MVert> src_verts = src_mesh.verts();
-  MutableSpan<MVert> dst_verts = dst_mesh.verts_for_write();
+  const Span<MVert> src_verts = src_mesh.positions();
+  MutableSpan<MVert> dst_verts = dst_mesh.positions_for_write();
 
   for (const int i_src : vertex_map.index_range()) {
     const int i_dst = vertex_map[i_src];
@@ -378,9 +378,9 @@ static void add_interp_verts_copy_edges_to_new_mesh(const Mesh &src_mesh,
 {
   BLI_assert(src_mesh.totvert == vertex_mask.size());
   BLI_assert(src_mesh.totedge == r_edge_map.size());
-  const Span<MVert> src_verts = src_mesh.verts();
+  const Span<MVert> src_verts = src_mesh.positions();
   const Span<MEdge> src_edges = src_mesh.edges();
-  MutableSpan<MVert> dst_verts = dst_mesh.verts_for_write();
+  MutableSpan<MVert> dst_verts = dst_mesh.positions_for_write();
   MutableSpan<MEdge> dst_edges = dst_mesh.edges_for_write();
 
   uint vert_index = dst_mesh.totvert - verts_add_num;

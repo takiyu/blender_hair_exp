@@ -259,7 +259,6 @@ void BKE_mesh_vert_loop_map_create(MeshElemMap **r_map,
 
 void BKE_mesh_vert_looptri_map_create(MeshElemMap **r_map,
                                       int **r_mem,
-                                      const MVert *UNUSED(mvert),
                                       const int totvert,
                                       const MLoopTri *mlooptri,
                                       const int totlooptri,
@@ -977,9 +976,7 @@ static bool mesh_check_island_boundary_uv(const MPoly *UNUSED(mp),
   return (me->flag & ME_SEAM) != 0;
 }
 
-static bool mesh_calc_islands_loop_poly_uv(const MVert *UNUSED(verts),
-                                           const int UNUSED(totvert),
-                                           const MEdge *edges,
+static bool mesh_calc_islands_loop_poly_uv(const MEdge *edges,
                                            const int totedge,
                                            const MPoly *polys,
                                            const int totpoly,
@@ -1124,7 +1121,7 @@ static bool mesh_calc_islands_loop_poly_uv(const MVert *UNUSED(verts),
   return true;
 }
 
-bool BKE_mesh_calc_islands_loop_poly_edgeseam(const MVert *verts,
+bool BKE_mesh_calc_islands_loop_poly_edgeseam(const float (*positions)[3],
                                               const int totvert,
                                               const MEdge *edges,
                                               const int totedge,
@@ -1134,11 +1131,12 @@ bool BKE_mesh_calc_islands_loop_poly_edgeseam(const MVert *verts,
                                               const int totloop,
                                               MeshIslandStore *r_island_store)
 {
+  UNUSED_VARS(positions, totvert);
   return mesh_calc_islands_loop_poly_uv(
-      verts, totvert, edges, totedge, polys, totpoly, loops, totloop, NULL, r_island_store);
+      edges, totedge, polys, totpoly, loops, totloop, NULL, r_island_store);
 }
 
-bool BKE_mesh_calc_islands_loop_poly_uvmap(MVert *verts,
+bool BKE_mesh_calc_islands_loop_poly_uvmap(float (*positions)[3],
                                            const int totvert,
                                            MEdge *edges,
                                            const int totedge,
@@ -1149,9 +1147,10 @@ bool BKE_mesh_calc_islands_loop_poly_uvmap(MVert *verts,
                                            const MLoopUV *luvs,
                                            MeshIslandStore *r_island_store)
 {
+  UNUSED_VARS(positions, totvert);
   BLI_assert(luvs != NULL);
   return mesh_calc_islands_loop_poly_uv(
-      verts, totvert, edges, totedge, polys, totpoly, loops, totloop, luvs, r_island_store);
+      edges, totedge, polys, totpoly, loops, totloop, luvs, r_island_store);
 }
 
 /** \} */

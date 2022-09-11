@@ -451,7 +451,7 @@ struct VertexDupliData_Mesh {
   VertexDupliData_Params params;
 
   int totvert;
-  const MVert *mvert;
+  Span<float3> positions;
   const float (*vert_normals)[3];
 
   const float (*orco)[3];
@@ -542,7 +542,6 @@ static void make_child_duplis_verts_from_mesh(const DupliContext *ctx,
   VertexDupliData_Mesh *vdd = (VertexDupliData_Mesh *)userdata;
   const bool use_rotation = vdd->params.use_rotation;
 
-  const MVert *mvert = vdd->mvert;
   const int totvert = vdd->totvert;
 
   invert_m4_m4(inst_ob->imat, inst_ob->obmat);
@@ -551,8 +550,13 @@ static void make_child_duplis_verts_from_mesh(const DupliContext *ctx,
   mul_m4_m4m4(child_imat, inst_ob->imat, ctx->object->obmat);
 
   for (int i = 0; i < totvert; i++) {
-    DupliObject *dob = vertex_dupli(
-        vdd->params.ctx, inst_ob, child_imat, i, mvert[i].co, vdd->vert_normals[i], use_rotation);
+    DupliObject *dob = vertex_dupli(vdd->params.ctx,
+                                    inst_ob,
+                                    child_imat,
+                                    i,
+                                    vdd->positions[i],
+                                    vdd->vert_normals[i],
+                                    use_rotation);
     if (vdd->orco) {
       copy_v3_v3(dob->orco, vdd->orco[i]);
     }
@@ -628,7 +632,7 @@ static void make_duplis_verts(const DupliContext *ctx)
     VertexDupliData_Mesh vdd{};
     vdd.params = vdd_params;
     vdd.totvert = me_eval->totvert;
-    vdd.mvert = me_eval->verts().data();
+    vdd.positions = me_eval->positions();
     vdd.vert_normals = BKE_mesh_vertex_normals_ensure(me_eval);
     vdd.orco = (const float(*)[3])CustomData_get_layer(&me_eval->vdata, CD_ORCO);
 
@@ -924,7 +928,7 @@ struct FaceDupliData_Mesh {
   int totface;
   const MPoly *mpoly;
   const MLoop *mloop;
-  const MVert *mvert;
+  Span<float3> positions;
   const float (*orco)[3];
   const MLoopUV *mloopuv;
 };
@@ -1023,14 +1027,14 @@ static DupliObject *face_dupli_from_mesh(const DupliContext *ctx,
                                          /* Mesh variables. */
                                          const MPoly *mpoly,
                                          const MLoop *mloopstart,
-                                         const MVert *mvert)
+                                         const Span<float3> positions)
 {
   const int coords_len = mpoly->totloop;
   Array<float3, 64> coords(coords_len);
 
   const MLoop *ml = mloopstart;
   for (int i = 0; i < coords_len; i++, ml++) {
-    coords[i] = float3(mvert[ml->v].co);
+    coords[i] = positions[ml->v];
   }
 
   return face_dupli(ctx, inst_ob, child_imat, index, use_scale, scale_fac, coords);
@@ -1074,7 +1078,6 @@ static void make_child_duplis_faces_from_mesh(const DupliContext *ctx,
   FaceDupliData_Mesh *fdd = (FaceDupliData_Mesh *)userdata;
   const MPoly *mpoly = fdd->mpoly, *mp;
   const MLoop *mloop = fdd->mloop;
-  const MVert *mvert = fdd->mvert;
   const float(*orco)[3] = fdd->orco;
   const MLoopUV *mloopuv = fdd->mloopuv;
   const int totface = fdd->totface;
@@ -1090,8 +1093,15 @@ static void make_child_duplis_faces_from_mesh(const DupliContext *ctx,
 
   for (a = 0, mp = mpoly; a < totface; a++, mp++) {
     const MLoop *loopstart = mloop + mp->loopstart;
-    DupliObject *dob = face_dupli_from_mesh(
-        fdd->params.ctx, inst_ob, child_imat, a, use_scale, scale_fac, mp, loopstart, mvert);
+    DupliObject *dob = face_dupli_from_mesh(fdd->params.ctx,
+                                            inst_ob,
+                                            child_imat,
+                                            a,
+                                            use_scale,
+                                            scale_fac,
+                                            mp,
+                                            loopstart,
+                                            fdd->positions);
 
     const float w = 1.0f / (float)mp->totloop;
     if (orco) {
@@ -1180,7 +1190,7 @@ static void make_duplis_faces(const DupliContext *ctx)
     fdd.totface = me_eval->totpoly;
     fdd.mpoly = me_eval->polys().data();
     fdd.mloop = me_eval->loops().data();
-    fdd.mvert = me_eval->verts().data();
+    fdd.positions = me_eval->positions();
     fdd.mloopuv = (uv_idx != -1) ? (const MLoopUV *)CustomData_get_layer_n(
                                        &me_eval->ldata, CD_MLOOPUV, uv_idx) :
                                    nullptr;

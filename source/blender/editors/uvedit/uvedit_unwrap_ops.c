@@ -596,7 +596,7 @@ static ParamHandle *construct_param_handle_subsurfed(const Scene *scene,
   /* holds original indices for subsurfed mesh */
   const int *origVertIndices, *origEdgeIndices, *origPolyIndices;
   /* Holds vertices of subsurfed mesh */
-  MVert *subsurfedVerts;
+  float (*subsurfedPositions)[3];
   MEdge *subsurfedEdges;
   MPoly *subsurfedPolys;
   MLoop *subsurfedLoops;
@@ -641,7 +641,7 @@ static ParamHandle *construct_param_handle_subsurfed(const Scene *scene,
   }
 
   /* get the derived data */
-  subsurfedVerts = derivedMesh->getVertArray(derivedMesh);
+  subsurfedPositions = derivedMesh->getVertArray(derivedMesh);
   subsurfedEdges = derivedMesh->getEdgeArray(derivedMesh);
   subsurfedPolys = derivedMesh->getPolyArray(derivedMesh);
   subsurfedLoops = derivedMesh->getLoopArray(derivedMesh);

@@ -70,7 +70,7 @@ struct MeshRenderData {
   int freestyle_face_ofs;
   /** Mesh */
   Mesh *me;
-  const MVert *mvert;
+  const float (*positions)[3];
   const MEdge *medge;
   const MLoop *mloop;
   const MPoly *mpoly;

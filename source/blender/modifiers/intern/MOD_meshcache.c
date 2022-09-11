@@ -182,7 +182,7 @@ static void meshcache_do(MeshCacheModifierData *mcmd,
       float(*vertexCos_Source)[3] = MEM_malloc_arrayN(
           verts_num, sizeof(*vertexCos_Source), __func__);
       float(*vertexCos_New)[3] = MEM_malloc_arrayN(verts_num, sizeof(*vertexCos_New), __func__);
-      const MVert *mv = BKE_mesh_verts(me);
+      const MVert *mv = BKE_mesh_positions(me);
 
       for (i = 0; i < verts_num; i++, mv++) {
         copy_v3_v3(vertexCos_Source[i], mv->co);

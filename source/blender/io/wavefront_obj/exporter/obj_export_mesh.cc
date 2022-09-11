@@ -268,8 +268,8 @@ const char *OBJMesh::get_object_material_name(const int16_t mat_nr) const
 float3 OBJMesh::calc_vertex_coords(const int vert_index, const float scaling_factor) const
 {
   float3 r_coords;
-  const Span<MVert> verts = export_mesh_eval_->verts();
-  copy_v3_v3(r_coords, verts[vert_index].co);
+  const Span<float3> positions = export_mesh_eval_->positions();
+  copy_v3_v3(r_coords, positions[vert_index]);
   mul_m4_v3(world_and_axes_transform_, r_coords);
   mul_v3_fl(r_coords, scaling_factor);
   return r_coords;
@@ -355,11 +355,14 @@ Span<int> OBJMesh::calc_poly_uv_indices(const int poly_index) const
 float3 OBJMesh::calc_poly_normal(const int poly_index) const
 {
   float3 r_poly_normal;
-  const Span<MVert> verts = export_mesh_eval_->verts();
+  const Span<float3> positions = export_mesh_eval_->positions();
   const Span<MPoly> polys = export_mesh_eval_->polys();
   const Span<MLoop> loops = export_mesh_eval_->loops();
   const MPoly &poly = polys[poly_index];
-  BKE_mesh_calc_poly_normal(&poly, &loops[poly.loopstart], verts.data(), r_poly_normal);
+  BKE_mesh_calc_poly_normal(&poly,
+                            &loops[poly.loopstart],
+                            reinterpret_cast<const float(*)[3]>(positions.data()),
+                            r_poly_normal);
   mul_m3_v3(world_and_axes_normal_transform_, r_poly_normal);
   normalize_v3(r_poly_normal);
   return r_poly_normal;

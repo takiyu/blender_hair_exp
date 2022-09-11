@@ -1411,7 +1411,7 @@ typedef struct LineartEdgeNeighbor {
 } LineartEdgeNeighbor;
 
 typedef struct VertData {
-  const MVert *mvert;
+  const float (*positions)[3];
   LineartVert *v_arr;
   double (*model_view)[4];
   double (*model_view_proj)[4];
@@ -1422,10 +1422,9 @@ static void lineart_mvert_transform_task(void *__restrict userdata,
                                          const TaskParallelTLS *__restrict UNUSED(tls))
 {
   VertData *vert_task_data = (VertData *)userdata;
-  const MVert *m_v = &vert_task_data->mvert[i];
   double co[4];
   LineartVert *v = &vert_task_data->v_arr[i];
-  copy_v3db_v3fl(co, m_v->co);
+  copy_v3db_v3fl(co, vert_task_data->positions[i]);
   mul_v3_m4v3_db(v->gloc, vert_task_data->model_view, co);
   mul_v4_m4v3_db(v->fbcoord, vert_task_data->model_view_proj, co);
   v->index = i;
@@ -1844,6 +1843,7 @@ static void lineart_triangle_adjacent_assign(LineartTriangle *tri,
 
 typedef struct TriData {
   LineartObjectInfo *ob_info;
+  const float (*positions)[3];
   const MLoopTri *mlooptri;
   const int *material_indices;
   LineartVert *vert_arr;
@@ -1859,6 +1859,7 @@ static void lineart_load_tri_task(void *__restrict userdata,
   TriData *tri_task_data = (TriData *)userdata;
   Mesh *me = tri_task_data->ob_info->original_me;
   LineartObjectInfo *ob_info = tri_task_data->ob_info;
+  const float(*positions)[3] = tri_task_data->positions;
   const MLoopTri *mlooptri = &tri_task_data->mlooptri[i];
   const int *material_indices = tri_task_data->material_indices;
   LineartVert *vert_arr = tri_task_data->vert_arr;
@@ -1896,8 +1897,7 @@ static void lineart_load_tri_task(void *__restrict userdata,
 
   double gn[3];
   float no[3];
-  const MVert *verts = BKE_mesh_verts(me);
-  normal_tri_v3(no, verts[v1].co, verts[v2].co, verts[v3].co);
+  normal_tri_v3(no, positions[v1], positions[v2], positions[v3]);
   copy_v3db_v3fl(gn, no);
   mul_v3_mat3_m4v3_db(tri->gn, ob_info->normal, gn);
   normalize_v3_db(tri->gn);
@@ -2088,7 +2088,7 @@ static void lineart_geometry_object_load(LineartObjectInfo *ob_info,
   vert_settings.min_iter_per_thread = 4000;
 
   VertData vert_data;
-  vert_data.mvert = BKE_mesh_verts(me);
+  vert_data.positions = BKE_mesh_positions(me);
   vert_data.v_arr = la_v_arr;
   vert_data.model_view = ob_info->model_view;
   vert_data.model_view_proj = ob_info->model_view_proj;
@@ -2105,6 +2105,7 @@ static void lineart_geometry_object_load(LineartObjectInfo *ob_info,
 
   TriData tri_data;
   tri_data.ob_info = ob_info;
+  tri_data.positions = BKE_mesh_positions(me);
   tri_data.mlooptri = mlooptri;
   tri_data.material_indices = material_indices;
   tri_data.vert_arr = la_v_arr;

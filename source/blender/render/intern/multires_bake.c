@@ -60,7 +60,7 @@ typedef struct MultiresBakeResult {
 } MultiresBakeResult;
 
 typedef struct {
-  MVert *mvert;
+  const float (*positions)[3];
   const float (*vert_normals)[3];
   MPoly *mpoly;
   const int *material_indices;
@@ -125,7 +125,7 @@ static void multiresbake_get_normal(const MResolvePixelData *data,
       copy_v3_v3(r_normal, data->precomputed_normals[poly_index]);
     }
     else {
-      BKE_mesh_calc_poly_normal(mp, &data->mloop[mp->loopstart], data->mvert, r_normal);
+      BKE_mesh_calc_poly_normal(mp, &data->mloop[mp->loopstart], data->positions, r_normal);
     }
   }
 }
@@ -472,7 +472,7 @@ static void do_multires_bake(MultiresBakeRender *bkr,
   MultiresBakeThread *handles;
   MultiresBakeQueue queue;
 
-  MVert *mvert = dm->getVertArray(dm);
+  const float(*positions)[3] = dm->getVertArray(dm);
   MPoly *mpoly = dm->getPolyArray(dm);
   MLoop *mloop = dm->getLoopArray(dm);
   MLoopUV *mloopuv = dm->getLoopDataArray(dm, CD_MLOOPUV);
@@ -485,9 +485,9 @@ static void do_multires_bake(MultiresBakeRender *bkr,
 
   Mesh *temp_mesh = BKE_mesh_new_nomain(
       dm->getNumVerts(dm), dm->getNumEdges(dm), 0, dm->getNumLoops(dm), dm->getNumPolys(dm));
-  memcpy(BKE_mesh_verts_for_write(temp_mesh),
+  memcpy(BKE_mesh_positions_for_write(temp_mesh),
          dm->getVertArray(dm),
-         temp_mesh->totvert * sizeof(MVert));
+         temp_mesh->totvert * sizeof(float[3]));
   memcpy(BKE_mesh_edges_for_write(temp_mesh),
          dm->getEdgeArray(dm),
          temp_mesh->totedge * sizeof(MEdge));
@@ -555,7 +555,7 @@ static void do_multires_bake(MultiresBakeRender *bkr,
     handle->data.mpoly = mpoly;
     handle->data.material_indices = CustomData_get_layer_named(
         &dm->polyData, CD_PROP_INT32, "material_index");
-    handle->data.mvert = mvert;
+    handle->data.positions = positions;
     handle->data.vert_normals = vert_normals;
     handle->data.mloopuv = mloopuv;
     BKE_image_get_tile_uv(ima, tile->tile_number, handle->data.uv_offset);
@@ -674,8 +674,7 @@ static void get_ccgdm_data(DerivedMesh *lodm,
 
     mpoly = lodm->getPolyArray(lodm) + poly_index;
     g_index = grid_offset[poly_index];
-    S = mdisp_rot_face_to_crn(lodm->getVertArray(lodm),
-                              mpoly,
+    S = mdisp_rot_face_to_crn(mpoly,
                               lodm->getLoopArray(lodm),
                               lt,
                               face_side,

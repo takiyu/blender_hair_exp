@@ -203,7 +203,7 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
   const int totedge = mesh->totedge;
   const int totloop = mesh->totloop;
   const int totpoly = mesh->totpoly;
-  const MVert *src_verts = BKE_mesh_verts(mesh);
+  const float(*src_positions)[3] = BKE_mesh_positions(mesh);
   const MEdge *src_edges = BKE_mesh_edges(mesh);
   const MPoly *src_polys = BKE_mesh_polys(mesh);
   const MLoop *src_loops = BKE_mesh_loops(mesh);
@@ -211,10 +211,10 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
   const int totvert_final = totvert - tot_vtargetmap;
 
   const MVert *mv;
-  MVert *mvert = MEM_malloc_arrayN(totvert_final, sizeof(*mvert), __func__);
+  float(*positions)[3] = MEM_malloc_arrayN(totvert_final, sizeof(float[3]), __func__);
   int *oldv = MEM_malloc_arrayN(totvert_final, sizeof(*oldv), __func__);
   int *newv = MEM_malloc_arrayN(totvert, sizeof(*newv), __func__);
-  STACK_DECLARE(mvert);
+  STACK_DECLARE(positions);
   STACK_DECLARE(oldv);
 
   /* NOTE: create (totedge + totloop) elements because partially invalid polys due to merge may
@@ -256,18 +256,18 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
   STACK_INIT(oldl, totloop);
   STACK_INIT(oldp, totpoly);
 
-  STACK_INIT(mvert, totvert_final);
+  STACK_INIT(positions, totvert_final);
   STACK_INIT(medge, totedge);
   STACK_INIT(mloop, totloop);
   STACK_INIT(mpoly, totpoly);
 
   /* fill newv with destination vertex indices */
-  mv = src_verts;
+  mv = src_positions;
   c = 0;
   for (i = 0; i < totvert; i++, mv++) {
     if (vtargetmap[i] == -1) {
       STACK_PUSH(oldv, i);
-      STACK_PUSH(mvert, *mv);
+      STACK_PUSH(positions, *mv);
       newv[i] = c++;
     }
     else {
@@ -611,7 +611,7 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
 
   /* Copy over data. #CustomData_add_layer can do this, need to look it up. */
   if (STACK_SIZE(mvert)) {
-    memcpy(BKE_mesh_verts_for_write(result), mvert, sizeof(MVert) * STACK_SIZE(mvert));
+    memcpy(BKE_mesh_positions_for_write(result), mvert, sizeof(float[3]) * STACK_SIZE(mvert));
   }
   if (STACK_SIZE(medge)) {
     memcpy(BKE_mesh_edges_for_write(result), medge, sizeof(MEdge) * STACK_SIZE(medge));

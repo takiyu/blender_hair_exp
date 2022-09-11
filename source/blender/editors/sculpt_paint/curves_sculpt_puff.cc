@@ -70,7 +70,7 @@ struct PuffOperationExecutor {
 
   Object *surface_ob_ = nullptr;
   Mesh *surface_ = nullptr;
-  Span<MVert> surface_verts_;
+  Span<float3> surface_verts_;
   Span<MLoop> surface_loops_;
   Span<MLoopTri> surface_looptris_;
   Span<float3> corner_normals_su_;
@@ -119,7 +119,7 @@ struct PuffOperationExecutor {
         reinterpret_cast<const float3 *>(CustomData_get_layer(&surface_->ldata, CD_NORMAL)),
         surface_->totloop};
 
-    surface_verts_ = surface_->verts();
+    surface_verts_ = surface_->positions();
     surface_loops_ = surface_->loops();
     surface_looptris_ = {BKE_mesh_runtime_looptri_ensure(surface_),
                          BKE_mesh_runtime_looptri_len(surface_)};

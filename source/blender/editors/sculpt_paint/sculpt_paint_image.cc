@@ -131,7 +131,7 @@ template<typename ImageBuffer> class PaintingKernel {
   SculptSession *ss;
   const Brush *brush;
   const int thread_id;
-  const MVert *mvert;
+  const float (*positions_)[3];
 
   float4 brush_color;
   float brush_strength;
@@ -146,8 +146,8 @@ template<typename ImageBuffer> class PaintingKernel {
   explicit PaintingKernel(SculptSession *ss,
                           const Brush *brush,
                           const int thread_id,
-                          const MVert *mvert)
-      : ss(ss), brush(brush), thread_id(thread_id), mvert(mvert)
+                          const float (*positions)[3])
+      : ss(ss), brush(brush), thread_id(thread_id), positions_(positions)
   {
     init_brush_strength();
     init_brush_test();
@@ -261,9 +261,9 @@ template<typename ImageBuffer> class PaintingKernel {
                              barycentric_weights.y,
                              1.0f - barycentric_weights.x - barycentric_weights.y);
     interp_v3_v3v3v3(result,
-                     mvert[vert_indices[0]].co,
-                     mvert[vert_indices[1]].co,
-                     mvert[vert_indices[2]].co,
+                     positions_[vert_indices[0]],
+                     positions_[vert_indices[1]],
+                     positions_[vert_indices[2]],
                      barycentric);
     return result;
   }
@@ -271,7 +271,7 @@ template<typename ImageBuffer> class PaintingKernel {
 
 static std::vector<bool> init_triangle_brush_test(SculptSession *ss,
                                                   Triangles &triangles,
-                                                  const MVert *mvert)
+                                                  const float (*positions)[3])
 {
   std::vector<bool> brush_test(triangles.size());
   SculptBrushTest test;
@@ -285,10 +285,10 @@ static std::vector<bool> init_triangle_brush_test(SculptSession *ss,
   for (int triangle_index = 0; triangle_index < triangles.size(); triangle_index++) {
     TrianglePaintInput &triangle = triangles.get_paint_input(triangle_index);
 
-    float3 triangle_min_bounds(mvert[triangle.vert_indices[0]].co);
+    float3 triangle_min_bounds(positions[triangle.vert_indices[0]]);
     float3 triangle_max_bounds(triangle_min_bounds);
     for (int i = 1; i < 3; i++) {
-      const float3 &pos = mvert[triangle.vert_indices[i]].co;
+      const float3 &pos = positions[triangle.vert_indices[i]];
       triangle_min_bounds.x = min_ff(triangle_min_bounds.x, pos.x);
       triangle_min_bounds.y = min_ff(triangle_min_bounds.y, pos.y);
       triangle_min_bounds.z = min_ff(triangle_min_bounds.z, pos.z);
@@ -314,12 +314,12 @@ static void do_paint_pixels(void *__restrict userdata,
 
   NodeData &node_data = BKE_pbvh_pixels_node_data_get(*node);
   const int thread_id = BLI_task_parallel_thread_id(tls);
-  MVert *mvert = SCULPT_mesh_deformed_mverts_get(ss);
+  const float(*positions)[3] = SCULPT_mesh_deformed_positions_get(ss);
 
-  std::vector<bool> brush_test = init_triangle_brush_test(ss, node_data.triangles, mvert);
+  std::vector<bool> brush_test = init_triangle_brush_test(ss, node_data.triangles, positions);
 
-  PaintingKernel<ImageBufferFloat4> kernel_float4(ss, brush, thread_id, mvert);
-  PaintingKernel<ImageBufferByte4> kernel_byte4(ss, brush, thread_id, mvert);
+  PaintingKernel<ImageBufferFloat4> kernel_float4(ss, brush, thread_id, positions);
+  PaintingKernel<ImageBufferByte4> kernel_byte4(ss, brush, thread_id, positions);
 
   ImageUser image_user = *data->image_data.image_user;
   bool pixels_updated = false;

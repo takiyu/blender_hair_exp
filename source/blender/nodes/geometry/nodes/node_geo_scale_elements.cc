@@ -158,7 +158,7 @@ static void scale_vertex_islands_uniformly(Mesh &mesh,
                                            const UniformScaleParams &params,
                                            const GetVertexIndicesFn get_vertex_indices)
 {
-  MutableSpan<MVert> verts = mesh.verts_for_write();
+  MutableSpan<MVert> verts = mesh.positions_for_write();
   const Span<MEdge> edges = mesh.edges();
   const Span<MPoly> polys = mesh.polys();
   const Span<MLoop> loops = mesh.loops();
@@ -199,7 +199,7 @@ static void scale_vertex_islands_on_axis(Mesh &mesh,
                                          const AxisScaleParams &params,
                                          const GetVertexIndicesFn get_vertex_indices)
 {
-  MutableSpan<MVert> verts = mesh.verts_for_write();
+  MutableSpan<MVert> verts = mesh.positions_for_write();
   const Span<MEdge> edges = mesh.edges();
   const Span<MPoly> polys = mesh.polys();
   const Span<MLoop> loops = mesh.loops();
