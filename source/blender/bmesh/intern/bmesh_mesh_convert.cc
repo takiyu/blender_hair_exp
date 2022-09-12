@@ -1012,7 +1012,7 @@ void BM_mesh_bm_to_me(Main *bmain, BMesh *bm, Mesh *me, const struct BMeshToMesh
   MutableSpan<MLoop> mloop;
   if (me->totvert > 0) {
     positions = {static_cast<float3 *>(CustomData_add_layer_named(
-                     &me->vdata, CD_MVERT, CD_CONSTRUCT, nullptr, me->totvert, "position")),
+                     &me->vdata, CD_PROP_FLOAT3, CD_CONSTRUCT, nullptr, me->totvert, "position")),
                  me->totvert};
   }
   if (me->totedge > 0) {
@@ -1273,7 +1273,8 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
   me->totloop = bm->totloop;
   me->totpoly = bm->totface;
 
-  CustomData_add_layer(&me->vdata, CD_MVERT, CD_SET_DEFAULT, nullptr, bm->totvert);
+  CustomData_add_layer_named(
+      &me->vdata, CD_PROP_FLOAT3, CD_CONSTRUCT, nullptr, bm->totvert, "position");
   CustomData_add_layer(&me->edata, CD_MEDGE, CD_SET_DEFAULT, nullptr, bm->totedge);
   CustomData_add_layer(&me->ldata, CD_MLOOP, CD_SET_DEFAULT, nullptr, bm->totloop);
   CustomData_add_layer(&me->pdata, CD_MPOLY, CD_SET_DEFAULT, nullptr, bm->totface);

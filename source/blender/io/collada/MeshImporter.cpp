@@ -344,7 +344,8 @@ void MeshImporter::read_vertices(COLLADAFW::Mesh *mesh, Mesh *me)
   }
 
   me->totvert = pos.getFloatValues()->getCount() / stride;
-  CustomData_add_layer(&me->vdata, CD_MVERT, CD_SET_DEFAULT, nullptr, me->totvert);
+  CustomData_add_layer_named(
+      &me->vdata, CD_PROP_FLOAT3, CD_CONSTRUCT, nullptr, me->totvert, "position");
   MutableSpan<float3> positions = me->positions_for_write();
   for (const int i : positions.index_range()) {
     get_vector(positions[i], pos, i, stride);

@@ -519,22 +519,6 @@ static int customdata_compare(
       /* At this point `l1` and `l2` have the same name and type, so they should be compared. */
 
       switch (l1->type) {
-
-        case CD_MVERT: {
-          MVert *v1 = (MVert *)l1->data;
-          MVert *v2 = (MVert *)l2->data;
-          int vtot = m1->totvert;
-
-          for (j = 0; j < vtot; j++, v1++, v2++) {
-            for (int k = 0; k < 3; k++) {
-              if (compare_threshold_relative(v1->co[k], v2->co[k], thresh)) {
-                return MESHCMP_VERTCOMISMATCH;
-              }
-            }
-          }
-          break;
-        }
-
         /* We're order-agnostic for edges here. */
         case CD_MEDGE: {
           MEdge *e1 = (MEdge *)l1->data;
@@ -928,7 +912,7 @@ Mesh *BKE_mesh_add(Main *bmain, const char *name)
 /* Custom data layer functions; those assume that totXXX are set correctly. */
 static void mesh_ensure_cdlayers_primary(Mesh *mesh, bool do_tessface)
 {
-  if (!CustomData_get_layer(&mesh->vdata, CD_MVERT)) {
+  if (!CustomData_get_layer_named(&mesh->vdata, CD_PROP_FLOAT3, "position")) {
     CustomData_add_layer_named(
         &mesh->vdata, CD_PROP_FLOAT3, CD_CONSTRUCT, nullptr, mesh->totvert, "position");
   }

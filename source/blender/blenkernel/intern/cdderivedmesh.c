@@ -38,7 +38,7 @@ typedef struct {
 
   /* these point to data in the DerivedMesh custom data layers,
    * they are only here for efficiency and convenience */
-  MVert *mvert;
+  float (*positions)[3];
   const float (*vert_normals)[3];
   MEdge *medge;
   MFace *mface;
@@ -75,10 +75,10 @@ static int cdDM_getNumPolys(DerivedMesh *dm)
   return dm->numPolyData;
 }
 
-static void cdDM_copyVertArray(DerivedMesh *dm, MVert *r_vert)
+static void cdDM_copyVertArray(DerivedMesh *dm, float (*r_positions)[3])
 {
   CDDerivedMesh *cddm = (CDDerivedMesh *)dm;
-  memcpy(r_vert, cddm->mvert, sizeof(*r_vert) * dm->numVertData);
+  memcpy(r_positions, cddm->positions, sizeof(float[3]) * dm->numVertData);
 }
 
 static void cdDM_copyEdgeArray(DerivedMesh *dm, MEdge *r_edge)
@@ -103,7 +103,7 @@ static void cdDM_getVertCo(DerivedMesh *dm, int index, float r_co[3])
 {
   CDDerivedMesh *cddm = (CDDerivedMesh *)dm;
 
-  copy_v3_v3(r_co, cddm->mvert[index].co);
+  copy_v3_v3(r_co, cddm->positions[index]);
 }
 
 static void cdDM_getVertNo(DerivedMesh *dm, int index, float r_no[3])
@@ -122,7 +122,7 @@ static void cdDM_recalc_looptri(DerivedMesh *dm)
   BLI_assert(totpoly == 0 || cddm->dm.looptris.array_wip != NULL);
 
   BKE_mesh_recalc_looptri(
-      cddm->mloop, cddm->mpoly, cddm->mvert, totloop, totpoly, cddm->dm.looptris.array_wip);
+      cddm->mloop, cddm->mpoly, cddm->positions, totloop, totpoly, cddm->dm.looptris.array_wip);
 
   BLI_assert(cddm->dm.looptris.array == NULL);
   atomic_cas_ptr(
@@ -218,7 +218,7 @@ static DerivedMesh *cdDM_from_mesh_ex(Mesh *mesh,
   CustomData_merge(&mesh->ldata, &dm->loopData, cddata_masks.lmask, alloctype, mesh->totloop);
   CustomData_merge(&mesh->pdata, &dm->polyData, cddata_masks.pmask, alloctype, mesh->totpoly);
 
-  cddm->mvert = CustomData_get_layer(&dm->vertData, CD_MVERT);
+  cddm->positions = CustomData_get_layer_named(&dm->vertData, CD_PROP_FLOAT3, "position");
   /* Though this may be an unnecessary calculation, simply retrieving the layer may return nothing
    * or dirty normals. */
   cddm->vert_normals = BKE_mesh_vertex_normals_ensure(mesh);
@@ -271,10 +271,11 @@ DerivedMesh *CDDM_copy(DerivedMesh *source)
   CustomData_copy_data(&source->edgeData, &dm->edgeData, 0, 0, numEdges);
 
   /* now add mvert/medge/mface layers */
-  cddm->mvert = source->dupVertArray(source);
+  cddm->positions = source->dupVertArray(source);
   cddm->medge = source->dupEdgeArray(source);
 
-  CustomData_add_layer(&dm->vertData, CD_MVERT, CD_ASSIGN, cddm->mvert, numVerts);
+  CustomData_add_layer_named(
+      &dm->vertData, CD_PROP_FLOAT3, CD_ASSIGN, cddm->positions, numVerts, "position");
   CustomData_add_layer(&dm->edgeData, CD_MEDGE, CD_ASSIGN, cddm->medge, numEdges);
 
   DM_DupPolys(source, dm);

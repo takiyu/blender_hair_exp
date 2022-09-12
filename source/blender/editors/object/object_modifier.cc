@@ -591,7 +591,8 @@ bool ED_object_modifier_convert_psys_to_mesh(ReportList *UNUSED(reports),
   me->totvert = verts_num;
   me->totedge = edges_num;
 
-  CustomData_add_layer(&me->vdata, CD_MVERT, CD_SET_DEFAULT, nullptr, verts_num);
+  CustomData_add_layer_named(
+      &me->vdata, CD_PROP_FLOAT3, CD_CONSTRUCT, nullptr, verts_num, "position");
   CustomData_add_layer(&me->edata, CD_MEDGE, CD_SET_DEFAULT, nullptr, edges_num);
   CustomData_add_layer(&me->fdata, CD_MFACE, CD_SET_DEFAULT, nullptr, 0);
 
@@ -610,7 +611,7 @@ bool ED_object_modifier_convert_psys_to_mesh(ReportList *UNUSED(reports),
     ParticleCacheKey *key = cache[a];
     int kmax = key->segments;
     for (int k = 0; k <= kmax; k++, key++, cvert++, vert_index++) {
-      copy_v3_v3(positions[vert_index], key->co);
+      positions[vert_index] = key->co;
       if (k) {
         medge->v1 = cvert - 1;
         medge->v2 = cvert;

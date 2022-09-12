@@ -91,18 +91,19 @@ static void editbmesh_calc_modifier_final_normals_or_defer(
 
 /* -------------------------------------------------------------------- */
 
-static MVert *dm_getVertArray(DerivedMesh *dm)
+static float (*dm_getVertArray(DerivedMesh *dm))[3]
 {
-  MVert *mvert = (MVert *)CustomData_get_layer(&dm->vertData, CD_MVERT);
+  float(*positions)[3] = (float(*)[3])CustomData_get_layer_named(
+      &dm->vertData, CD_PROP_FLOAT3, "position");
 
-  if (!mvert) {
-    mvert = (MVert *)CustomData_add_layer(
-        &dm->vertData, CD_MVERT, CD_SET_DEFAULT, nullptr, dm->getNumVerts(dm));
-    CustomData_set_layer_flag(&dm->vertData, CD_MVERT, CD_FLAG_TEMPORARY);
-    dm->copyVertArray(dm, mvert);
+  if (!positions) {
+    positions = (float(*)[3])CustomData_add_layer_named(
+        &dm->vertData, CD_PROP_FLOAT3, CD_SET_DEFAULT, nullptr, dm->getNumVerts(dm), "position");
+    CustomData_set_layer_flag(&dm->vertData, CD_PROP_FLOAT3, CD_FLAG_TEMPORARY);
+    dm->copyVertArray(dm, positions);
   }
 
-  return mvert;
+  return positions;
 }
 
 static MEdge *dm_getEdgeArray(DerivedMesh *dm)

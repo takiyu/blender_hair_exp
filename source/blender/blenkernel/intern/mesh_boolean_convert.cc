@@ -382,9 +382,7 @@ static void copy_vert_attributes(Mesh *dest_mesh,
   const CustomData *source_cd = &orig_me->vdata;
   for (int source_layer_i = 0; source_layer_i < source_cd->totlayer; ++source_layer_i) {
     int ty = source_cd->layers[source_layer_i].type;
-    /* The (first) CD_MVERT layer is the same as dest_mesh->vdata, so we've
-     * already set the coordinate to the right value. */
-    if (ty == CD_MVERT) {
+    if (StringRef(source_cd->layers->name) == "position") {
       continue;
     }
     const char *name = source_cd->layers[source_layer_i].name;

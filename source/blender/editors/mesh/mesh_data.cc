@@ -1025,8 +1025,9 @@ static void mesh_add_verts(Mesh *mesh, int len)
   CustomData_copy(&mesh->vdata, &vdata, CD_MASK_MESH.vmask, CD_SET_DEFAULT, totvert);
   CustomData_copy_data(&mesh->vdata, &vdata, 0, 0, mesh->totvert);
 
-  if (!CustomData_has_layer(&vdata, CD_MVERT)) {
-    CustomData_add_layer(&vdata, CD_MVERT, CD_SET_DEFAULT, nullptr, totvert);
+  if (!CustomData_get_layer_named(&vdata, CD_PROP_FLOAT3, "position")) {
+    CustomData_add_layer_named(
+        &vdata, CD_PROP_FLOAT3, CD_SET_DEFAULT, nullptr, totvert, "position");
   }
 
   CustomData_free(&mesh->vdata, mesh->totvert);
