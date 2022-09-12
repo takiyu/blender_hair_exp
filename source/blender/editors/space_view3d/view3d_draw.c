@@ -618,7 +618,7 @@ static void drawviewborder(Scene *scene, Depsgraph *depsgraph, ARegion *region, 
   }
 
   /* And now, the dashed lines! */
-  immBindBuiltinProgram(GPU_SHADER_2D_LINE_DASHED_UNIFORM_COLOR);
+  immBindBuiltinProgram(GPU_SHADER_3D_LINE_DASHED_UNIFORM_COLOR);
 
   {
     float viewport_size[4];
@@ -800,7 +800,7 @@ static void drawrenderborder(ARegion *region, View3D *v3d)
 
   GPU_line_width(1.0f);
 
-  immBindBuiltinProgram(GPU_SHADER_2D_LINE_DASHED_UNIFORM_COLOR);
+  immBindBuiltinProgram(GPU_SHADER_3D_LINE_DASHED_UNIFORM_COLOR);
 
   float viewport_size[4];
   GPU_viewport_size_get_f(viewport_size);
@@ -2152,7 +2152,7 @@ static void validate_object_select_id(struct Depsgraph *depsgraph,
     return;
   }
 
-  if (obact_eval && ((obact_eval->base_flag & BASE_VISIBLE_DEPSGRAPH) != 0)) {
+  if (obact_eval && ((obact_eval->base_flag & BASE_ENABLED_AND_MAYBE_VISIBLE_IN_VIEWPORT) != 0)) {
     Base *base = BKE_view_layer_base_find(view_layer, obact);
     DRW_select_buffer_context_create(&base, 1, -1);
   }

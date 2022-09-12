@@ -285,7 +285,7 @@ static void outliner_object_set_flag_recursive_fn(bContext *C,
       }
       else {
         Base *base_iter = BKE_view_layer_base_find(view_layer, ob_iter);
-        /* Child can be in a collection excluded from viewlayer. */
+        /* Child can be in a collection excluded from view-layer. */
         if (base_iter == nullptr) {
           continue;
         }
@@ -3216,7 +3216,8 @@ static bool element_should_draw_faded(const TreeViewContext *tvc,
         const Base *base = (te->directdata) ? (const Base *)te->directdata :
                                               BKE_view_layer_base_find(
                                                   (ViewLayer *)tvc->view_layer, (Object *)ob);
-        const bool is_visible = (base != nullptr) && (base->flag & BASE_VISIBLE_VIEWLAYER);
+        const bool is_visible = (base != nullptr) &&
+                                (base->flag & BASE_ENABLED_AND_VISIBLE_IN_DEFAULT_VIEWPORT);
         if (!is_visible) {
           return true;
         }
@@ -3551,7 +3552,7 @@ static void outliner_draw_hierarchy_lines(SpaceOutliner *space_outliner,
   uint pos = GPU_vertformat_attr_add(format, "pos", GPU_COMP_F32, 2, GPU_FETCH_FLOAT);
   uchar col[4];
 
-  immBindBuiltinProgram(GPU_SHADER_2D_LINE_DASHED_UNIFORM_COLOR);
+  immBindBuiltinProgram(GPU_SHADER_3D_LINE_DASHED_UNIFORM_COLOR);
 
   float viewport_size[4];
   GPU_viewport_size_get_f(viewport_size);

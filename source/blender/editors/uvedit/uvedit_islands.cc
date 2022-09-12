@@ -111,7 +111,8 @@ static float (*bm_face_array_calc_unique_uv_coords(
     coords_len_alloc += f->len;
   }
 
-  float(*coords)[2] = MEM_mallocN(sizeof(*coords) * coords_len_alloc, __func__);
+  float(*coords)[2] = static_cast<float(*)[2]>(
+      MEM_mallocN(sizeof(*coords) * coords_len_alloc, __func__));
   int coords_len = 0;
 
   for (int i = 0; i < faces_len; i++) {
@@ -152,7 +153,6 @@ static float (*bm_face_array_calc_unique_uv_coords(
       } while ((e = BM_DISK_EDGE_NEXT(e, v_pivot)) != e_first);
     } while ((l_iter = l_iter->next) != l_first);
   }
-  coords = MEM_reallocN(coords, sizeof(*coords) * coords_len);
   *r_coords_len = coords_len;
   return coords;
 }
@@ -319,7 +319,7 @@ struct SharedUVLoopData {
 
 static bool bm_loop_uv_shared_edge_check(const BMLoop *l_a, const BMLoop *l_b, void *user_data)
 {
-  const struct SharedUVLoopData *data = user_data;
+  const struct SharedUVLoopData *data = static_cast<const struct SharedUVLoopData *>(user_data);
 
   if (data->use_seams) {
     if (BM_elem_flag_test(l_a->e, BM_ELEM_SEAM)) {
@@ -346,12 +346,8 @@ int bm_mesh_calc_uv_islands(const Scene *scene,
   int island_added = 0;
   BM_mesh_elem_table_ensure(bm, BM_FACE);
 
-  struct SharedUVLoopData user_data = {
-      .offsets = uv_offsets,
-      .use_seams = use_seams,
-  };
-
-  int *groups_array = MEM_mallocN(sizeof(*groups_array) * (size_t)bm->totface, __func__);
+  int *groups_array = static_cast<int *>(
+      MEM_mallocN(sizeof(*groups_array) * (size_t)bm->totface, __func__));
 
   int(*group_index)[2];
 
@@ -376,6 +372,10 @@ int bm_mesh_calc_uv_islands(const Scene *scene,
     }
   }
 
+  struct SharedUVLoopData user_data = {0};
+  user_data.offsets = uv_offsets;
+  user_data.use_seams = use_seams;
+
   const int group_len = BM_mesh_calc_face_groups(bm,
                                                  groups_array,
                                                  &group_index,
@@ -388,7 +388,7 @@ int bm_mesh_calc_uv_islands(const Scene *scene,
   for (int i = 0; i < group_len; i++) {
     const int faces_start = group_index[i][0];
     const int faces_len = group_index[i][1];
-    BMFace **faces = MEM_mallocN(sizeof(*faces) * faces_len, __func__);
+    BMFace **faces = static_cast<BMFace **>(MEM_mallocN(sizeof(*faces) * faces_len, __func__));
 
     float bounds_min[2], bounds_max[2];
     INIT_MINMAX2(bounds_min, bounds_max);
@@ -397,7 +397,8 @@ int bm_mesh_calc_uv_islands(const Scene *scene,
       faces[j] = BM_face_at_index(bm, groups_array[faces_start + j]);
     }
 
-    struct FaceIsland *island = MEM_callocN(sizeof(*island), __func__);
+    struct FaceIsland *island = static_cast<struct FaceIsland *>(
+        MEM_callocN(sizeof(*island), __func__));
     island->faces = faces;
     island->faces_len = faces_len;
     island->offsets = uv_offsets;
@@ -467,9 +468,10 @@ void ED_uvedit_pack_islands_multi(const Scene *scene,
   float margin = scene->toolsettings->uvcalc_margin;
   double area = 0.0f;
 
-  struct FaceIsland **island_array = MEM_mallocN(sizeof(*island_array) * island_list_len,
-                                                 __func__);
-  BoxPack *boxarray = MEM_mallocN(sizeof(*boxarray) * island_list_len, __func__);
+  struct FaceIsland **island_array = static_cast<struct FaceIsland **>(
+      MEM_mallocN(sizeof(*island_array) * island_list_len, __func__));
+  BoxPack *boxarray = static_cast<BoxPack *>(
+      MEM_mallocN(sizeof(*boxarray) * island_list_len, __func__));
 
   int index;
   /* Coordinates of bounding box containing all selected UVs. */
@@ -620,7 +622,7 @@ void ED_uvedit_pack_islands_multi(const Scene *scene,
 
   for (uint ob_index = 0; ob_index < objects_len; ob_index++) {
     Object *obedit = objects[ob_index];
-    DEG_id_tag_update(obedit->data, ID_RECALC_GEOMETRY);
+    DEG_id_tag_update(static_cast<ID *>(obedit->data), ID_RECALC_GEOMETRY);
     WM_main_add_notifier(NC_GEOM | ND_DATA, obedit->data);
   }
 
