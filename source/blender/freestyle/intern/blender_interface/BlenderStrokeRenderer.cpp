@@ -55,6 +55,8 @@
 
 #include <climits>
 
+using blender::float3;
+
 namespace Freestyle {
 
 const char *BlenderStrokeRenderer::uvNames[] = {"along_stroke", "along_stroke_tips"};
@@ -576,7 +578,7 @@ void BlenderStrokeRenderer::GenerateStrokeMesh(StrokeGroup *group, bool hasTex)
   mesh->totloop = group->totloop;
   mesh->totcol = group->materials.size();
 
-  MVert *verts = (MVert *)CustomData_add_layer_named(
+  float3 *mesh_positions = (float3 *)CustomData_add_layer_named(
       &mesh->vdata, CD_PROP_FLOAT3, CD_SET_DEFAULT, nullptr, mesh->totvert, "position");
   MEdge *edges = (MEdge *)CustomData_add_layer(
       &mesh->edata, CD_MEDGE, CD_SET_DEFAULT, nullptr, mesh->totedge);
@@ -663,19 +665,17 @@ void BlenderStrokeRenderer::GenerateStrokeMesh(StrokeGroup *group, bool hasTex)
         else {
           if (!visible) {
             // first vertex
-            verts->co[0] = svRep[0]->point2d()[0];
-            verts->co[1] = svRep[0]->point2d()[1];
-            verts->co[2] = get_stroke_vertex_z();
+            mesh_positions[vertex_index][0] = svRep[0]->point2d()[0];
+            mesh_positions[vertex_index][1] = svRep[0]->point2d()[1];
+            mesh_positions[vertex_index][2] = get_stroke_vertex_z();
 
-            ++verts;
             ++vertex_index;
 
             // second vertex
-            verts->co[0] = svRep[1]->point2d()[0];
-            verts->co[1] = svRep[1]->point2d()[1];
-            verts->co[2] = get_stroke_vertex_z();
+            mesh_positions[vertex_index][0] = svRep[1]->point2d()[0];
+            mesh_positions[vertex_index][1] = svRep[1]->point2d()[1];
+            mesh_positions[vertex_index][2] = get_stroke_vertex_z();
 
-            ++verts;
             ++vertex_index;
 
             // first edge
@@ -687,10 +687,9 @@ void BlenderStrokeRenderer::GenerateStrokeMesh(StrokeGroup *group, bool hasTex)
           visible = true;
 
           // vertex
-          verts->co[0] = svRep[2]->point2d()[0];
-          verts->co[1] = svRep[2]->point2d()[1];
-          verts->co[2] = get_stroke_vertex_z();
-          ++verts;
+          mesh_positions[vertex_index][0] = svRep[2]->point2d()[0];
+          mesh_positions[vertex_index][1] = svRep[2]->point2d()[1];
+          mesh_positions[vertex_index][2] = get_stroke_vertex_z();
           ++vertex_index;
 
           // edges

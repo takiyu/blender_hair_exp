@@ -68,6 +68,7 @@
 
 #include "object_intern.h"
 
+using blender::float3;
 using blender::MutableSpan;
 using blender::Span;
 
@@ -1287,12 +1288,12 @@ static blender::Vector<int> getSurroundingVerts(Mesh *me, int vert)
  * coord is the place the average is stored,
  * points is the point cloud, count is the number of points in the cloud.
  */
-static void getSingleCoordinate(MVert *points, int count, float coord[3])
+static void getSingleCoordinate(float3 *points, int count, float coord[3])
 {
   int i;
   zero_v3(coord);
   for (i = 0; i < count; i++) {
-    add_v3_v3(coord, points[i].co);
+    add_v3_v3(coord, points[i]);
   }
   mul_v3_fl(coord, 1.0f / count);
 }
@@ -1358,7 +1359,7 @@ static void moveCloserToDistanceFromPlane(Depsgraph *depsgraph,
 
   Mesh *me_deform;
   MDeformWeight *dw, *dw_eval;
-  MVert m;
+  float3 m;
   MDeformVert *dvert = me->deform_verts_for_write().data() + index;
   MDeformVert *dvert_eval = mesh_eval->deform_verts_for_write().data() + index;
   int totweight = dvert->totweight;
@@ -1383,9 +1384,9 @@ static void moveCloserToDistanceFromPlane(Depsgraph *depsgraph,
   do {
     wasChange = false;
     me_deform = mesh_get_eval_deform(depsgraph, scene_eval, object_eval, &CD_MASK_BAREMESH);
-    const Span<MVert> verts = me_deform->positions();
-    m = verts[index];
-    copy_v3_v3(oldPos, m.co);
+    const Span<float3> positions = me_deform->positions();
+    m = positions[index];
+    copy_v3_v3(oldPos, m);
     distToStart = dot_v3v3(norm, oldPos) + d;
 
     if (distToBe == originalDistToBe) {
@@ -1426,9 +1427,8 @@ static void moveCloserToDistanceFromPlane(Depsgraph *depsgraph,
         }
         dw_eval->weight = dw->weight;
         me_deform = mesh_get_eval_deform(depsgraph, scene_eval, object_eval, &CD_MASK_BAREMESH);
-        m = verts[index];
-        getVerticalAndHorizontalChange(
-            norm, d, coord, oldPos, distToStart, m.co, changes, dists, i);
+        m = positions[index];
+        getVerticalAndHorizontalChange(norm, d, coord, oldPos, distToStart, m, changes, dists, i);
         dw->weight = oldw;
         dw_eval->weight = oldw;
         if (!k) {
@@ -1532,28 +1532,28 @@ static void vgroup_fix(
   int i;
 
   Mesh *me = static_cast<Mesh *>(ob->data);
-  MVert *mvert = me->positions_for_write().data();
+  float3 *positions = me->positions_for_write().data();
   if (!(me->editflag & ME_EDIT_PAINT_VERT_SEL)) {
     return;
   }
   const bke::AttributeAccessor attributes = me->attributes();
   const VArray<bool> selection_vert = attributes.lookup_or_default<bool>(
       ".selection_vert", ATTR_DOMAIN_POINT, false);
-  for (i = 0; i < me->totvert && mvert; i++, mvert++) {
+  for (i = 0; i < me->totvert && positions; i++) {
     if (selection_vert[i]) {
       blender::Vector<int> verts = getSurroundingVerts(me, i);
       const int count = verts.size();
       if (!verts.is_empty()) {
-        MVert m;
-        MVert *p = static_cast<MVert *>(MEM_callocN(sizeof(MVert) * (count), "deformedPoints"));
+        float3 m;
+        float3 *p = static_cast<float3 *>(MEM_callocN(sizeof(float3) * (count), "deformedPoints"));
         int k;
 
         Mesh *me_deform = mesh_get_eval_deform(
             depsgraph, scene_eval, object_eval, &CD_MASK_BAREMESH);
-        const Span<MVert> verts_deform = me_deform->positions();
+        const Span<float3> positions_deform = me_deform->positions();
         k = count;
         while (k--) {
-          p[k] = verts_deform[verts[k]];
+          p[k] = positions_deform[verts[k]];
         }
 
         if (count >= 3) {
@@ -1561,8 +1561,8 @@ static void vgroup_fix(
           float coord[3];
           float norm[3];
           getSingleCoordinate(p, count, coord);
-          m = verts_deform[i];
-          sub_v3_v3v3(norm, m.co, coord);
+          m = positions_deform[i];
+          sub_v3_v3v3(norm, m, coord);
           mag = normalize_v3(norm);
           if (mag) { /* zeros fix */
             d = -dot_v3v3(norm, coord);

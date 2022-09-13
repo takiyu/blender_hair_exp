@@ -19,7 +19,6 @@ struct Mesh;
 struct MLoop;
 struct MPoly;
 struct MultiresModifierData;
-struct MVert;
 struct Object;
 struct Subdiv;
 struct SubdivCCG;

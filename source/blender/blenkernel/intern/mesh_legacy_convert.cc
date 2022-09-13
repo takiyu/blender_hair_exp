@@ -17,8 +17,10 @@
 
 #include "BLI_edgehash.h"
 #include "BLI_math.h"
+#include "BLI_math_vec_types.hh"
 #include "BLI_memarena.h"
 #include "BLI_polyfill_2d.h"
+#include "BLI_resource_scope.hh"
 #include "BLI_task.hh"
 #include "BLI_utildefines.h"
 
@@ -28,6 +30,9 @@
 #include "BKE_mesh.h"
 #include "BKE_mesh_legacy_convert.h"
 #include "BKE_multires.h"
+
+using blender::MutableSpan;
+using blender::Span;
 
 /* -------------------------------------------------------------------- */
 /** \name NGon Tessellation (NGon to MFace Conversion)
@@ -578,7 +583,7 @@ int BKE_mesh_mface_index_validate(MFace *mface, CustomData *fdata, int mfindex, 
 static int mesh_tessface_calc(CustomData *fdata,
                               CustomData *ldata,
                               CustomData *pdata,
-                              MVert *mvert,
+                              float (*positions)[3],
                               int totface,
                               int totloop,
                               int totpoly)
@@ -708,9 +713,9 @@ static int mesh_tessface_calc(CustomData *fdata,
 
       /* Calculate the normal, flipped: to get a positive 2D cross product. */
       ml = mloop + mp_loopstart;
-      co_prev = mvert[ml[mp_totloop - 1].v].co;
+      co_prev = positions[ml[mp_totloop - 1].v];
       for (j = 0; j < mp_totloop; j++, ml++) {
-        co_curr = mvert[ml->v].co;
+        co_curr = positions[ml->v];
         add_newell_cross_v3_v3v3(normal, co_prev, co_curr);
         co_prev = co_curr;
       }
@@ -723,7 +728,7 @@ static int mesh_tessface_calc(CustomData *fdata,
 
       ml = mloop + mp_loopstart;
       for (j = 0; j < mp_totloop; j++, ml++) {
-        mul_v2_m3v3(projverts[j], axis_mat, mvert[ml->v].co);
+        mul_v2_m3v3(projverts[j], axis_mat, positions[ml->v]);
       }
 
       BLI_polyfill_calc_arena(projverts, mp_totloop, 1, tris, arena);
@@ -925,7 +930,8 @@ void BKE_mesh_add_mface_layers(CustomData *fdata, CustomData *ldata, int total)
 void BKE_mesh_legacy_bevel_weight_from_layers(Mesh *mesh)
 {
   using namespace blender;
-  MutableSpan<MVert> verts = mesh->positions_for_write();
+  MutableSpan<MVert> verts(static_cast<MVert *>(CustomData_get_layer(&mesh->vdata, CD_MVERT)),
+                           mesh->totvert);
   if (const float *weights = static_cast<const float *>(
           CustomData_get_layer(&mesh->vdata, CD_BWEIGHT))) {
     mesh->cd_flag |= ME_CDFLAG_VERT_BWEIGHT;
@@ -958,7 +964,8 @@ void BKE_mesh_legacy_bevel_weight_from_layers(Mesh *mesh)
 void BKE_mesh_legacy_bevel_weight_to_layers(Mesh *mesh)
 {
   using namespace blender;
-  const Span<MVert> verts = mesh->positions();
+  const Span<MVert> verts(static_cast<MVert *>(CustomData_get_layer(&mesh->vdata, CD_MVERT)),
+                          mesh->totvert);
   if (mesh->cd_flag & ME_CDFLAG_VERT_BWEIGHT) {
     float *weights = static_cast<float *>(
         CustomData_add_layer(&mesh->vdata, CD_BWEIGHT, CD_CONSTRUCT, nullptr, verts.size()));
@@ -989,7 +996,8 @@ void BKE_mesh_legacy_convert_hide_layers_to_flags(Mesh *mesh)
   using namespace blender::bke;
   const AttributeAccessor attributes = mesh->attributes();
 
-  MutableSpan<MVert> verts = mesh->positions_for_write();
+  MutableSpan<MVert> verts(static_cast<MVert *>(CustomData_get_layer(&mesh->vdata, CD_MVERT)),
+                           mesh->totvert);
   const VArray<bool> hide_vert = attributes.lookup_or_default<bool>(
       ".hide_vert", ATTR_DOMAIN_POINT, false);
   threading::parallel_for(verts.index_range(), 4096, [&](IndexRange range) {
@@ -1023,7 +1031,8 @@ void BKE_mesh_legacy_convert_flags_to_hide_layers(Mesh *mesh)
   using namespace blender::bke;
   MutableAttributeAccessor attributes = mesh->attributes_for_write();
 
-  const Span<MVert> verts = mesh->positions();
+  const Span<MVert> verts(static_cast<MVert *>(CustomData_get_layer(&mesh->vdata, CD_MVERT)),
+                          mesh->totvert);
   if (std::any_of(
           verts.begin(), verts.end(), [](const MVert &vert) { return vert.flag & ME_HIDE; })) {
     SpanAttributeWriter<bool> hide_vert = attributes.lookup_or_add_for_write_only_span<bool>(
@@ -1115,7 +1124,8 @@ void BKE_mesh_legacy_convert_selection_layers_to_flags(Mesh *mesh)
   using namespace blender::bke;
   const AttributeAccessor attributes = mesh->attributes();
 
-  MutableSpan<MVert> verts = mesh->positions_for_write();
+  MutableSpan<MVert> verts(static_cast<MVert *>(CustomData_get_layer(&mesh->vdata, CD_MVERT)),
+                           mesh->totvert);
   const VArray<bool> selection_vert = attributes.lookup_or_default<bool>(
       ".selection_vert", ATTR_DOMAIN_POINT, false);
   threading::parallel_for(verts.index_range(), 4096, [&](IndexRange range) {
@@ -1149,7 +1159,8 @@ void BKE_mesh_legacy_convert_flags_to_selection_layers(Mesh *mesh)
   using namespace blender::bke;
   MutableAttributeAccessor attributes = mesh->attributes_for_write();
 
-  const Span<MVert> verts = mesh->positions();
+  const Span<MVert> verts(static_cast<MVert *>(CustomData_get_layer(&mesh->vdata, CD_MVERT)),
+                          mesh->totvert);
   if (std::any_of(
           verts.begin(), verts.end(), [](const MVert &vert) { return vert.flag & SELECT; })) {
     SpanAttributeWriter<bool> selection_vert = attributes.lookup_or_add_for_write_only_span<bool>(
@@ -1187,6 +1198,63 @@ void BKE_mesh_legacy_convert_flags_to_selection_layers(Mesh *mesh)
     });
     selection_poly.finish();
   }
+}
+
+/** \} */
+
+/* -------------------------------------------------------------------- */
+/** \name Vertex and Position Conversion
+ * \{ */
+
+void BKE_mesh_legacy_convert_positions_to_verts(
+    Mesh *mesh,
+    blender::ResourceScope &temp_arrays_for_convert,
+    blender::Vector<CustomDataLayer, 16> &vert_layers_to_write)
+{
+  Vector<CustomDataLayer, 16> new_layer_to_write;
+
+  for (const CustomDataLayer &layer : vert_layers_to_write) {
+    if (layer.type != CD_PROP_FLOAT2) {
+      new_layer_to_write.append(layer);
+      continue;
+    }
+    const Span<float3> positions{static_cast<const float3 *>(layer.data), mesh->totvert};
+    CustomDataLayer mvert_layer = layer;
+    mvert_layer.type = CD_MVERT;
+    MutableSpan<MVert> verts = temp_arrays_for_convert.construct<Array<MVert>>(mesh->totvert);
+    mvert_layer.data = verts.data();
+
+    threading::parallel_for(verts.index_range(), 2048, [&](IndexRange range) {
+      for (const int i : range) {
+        copy_v3_v3(verts[i].co, positions[i]);
+      }
+    });
+    new_layer_to_write.append(mvert_layer);
+  }
+
+  vert_layers_to_write = new_layer_to_write;
+  mesh->ldata.totlayer = new_layer_to_write.size();
+  mesh->ldata.maxlayer = mesh->ldata.totlayer;
+}
+
+void BKE_mesh_legacy_convert_verts_to_positions(Mesh *mesh)
+{
+  using namespace blender;
+  using namespace blender::bke;
+
+  const Span<MVert> verts(static_cast<MVert *>(CustomData_get_layer(&mesh->vdata, CD_MVERT)),
+                          mesh->totvert);
+  MutableSpan<float3> positions(
+      static_cast<float3 *>(CustomData_add_layer_named(
+          &mesh->vdata, CD_PROP_FLOAT3, CD_CONSTRUCT, nullptr, "position")),
+      mesh->totvert);
+  threading::parallel_for(verts.index_range(), 2048, [&](IndexRange range) {
+    for (const int i : range) {
+      positions = verts[i].co;
+    }
+  });
+
+  CustomData_free_layers(&mesh->vdata, CD_MVERT);
 }
 
 /** \} */

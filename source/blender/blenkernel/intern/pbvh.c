@@ -1960,7 +1960,7 @@ void BKE_pbvh_node_get_loops(PBVH *pbvh,
   }
 }
 
-const int *BKE_pbvh_node_get_vert_indices(PBVHNode *node);
+const int *BKE_pbvh_node_get_vert_indices(PBVHNode *node)
 {
   return node->vert_indices;
 }
@@ -3062,7 +3062,6 @@ void BKE_pbvh_node_color_buffer_free(PBVH *pbvh)
 void pbvh_vertex_iter_init(PBVH *pbvh, PBVHNode *node, PBVHVertexIter *vi, int mode)
 {
   struct CCGElem **grids;
-  struct MVert *verts;
   int *grid_indices;
   int totgrid, gridsize, uniq_verts, totvert;
 
@@ -3095,7 +3094,7 @@ void pbvh_vertex_iter_init(PBVH *pbvh, PBVHNode *node, PBVHVertexIter *vi, int m
     vi->totvert = uniq_verts;
   }
   vi->vert_indices = vert_indices;
-  vi->mverts = verts;
+  vi->mverts = pbvh->positions;
 
   if (pbvh->header.type == PBVH_BMESH) {
     BLI_gsetIterator_init(&vi->bm_unique_verts, node->bm_unique_verts);

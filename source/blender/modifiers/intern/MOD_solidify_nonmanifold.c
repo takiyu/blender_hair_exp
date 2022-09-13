@@ -184,7 +184,7 @@ Mesh *MOD_solidify_nonmanifold_modifyMesh(ModifierData *md,
 
   const bool do_flat_faces = dvert && (smd->flag & MOD_SOLIDIFY_NONMANIFOLD_FLAT_FACES);
 
-  const MVert *orig_mvert = BKE_mesh_positions(mesh);
+  const float(*orig_positions)[3] = BKE_mesh_positions(mesh);
   const MEdge *orig_medge = BKE_mesh_edges(mesh);
   const MPoly *orig_mpoly = BKE_mesh_polys(mesh);
   const MLoop *orig_mloop = BKE_mesh_loops(mesh);
@@ -219,7 +219,7 @@ Mesh *MOD_solidify_nonmanifold_modifyMesh(ModifierData *md,
       if (len_squared_v3(poly_nors[i]) < 0.5f) {
         const MEdge *e = orig_medge + orig_mloop[mp->loopstart].e;
         float edgedir[3];
-        sub_v3_v3v3(edgedir, orig_mvert[e->v2].co, orig_mvert[e->v1].co);
+        sub_v3_v3v3(edgedir, orig_positions[e->v2], orig_positions[e->v1]);
         if (fabsf(edgedir[2]) < fabsf(edgedir[1])) {
           poly_nors[i][2] = 1.0f;
         }
@@ -292,9 +292,9 @@ Mesh *MOD_solidify_nonmanifold_modifyMesh(ModifierData *md,
       verts_num, sizeof(*orig_mvert_co), "orig_mvert_co in solidify");
   /* Fill in the original vertex positions. */
   for (uint i = 0; i < verts_num; i++) {
-    orig_mvert_co[i][0] = orig_mvert[i].co[0];
-    orig_mvert_co[i][1] = orig_mvert[i].co[1];
-    orig_mvert_co[i][2] = orig_mvert[i].co[2];
+    orig_mvert_co[i][0] = orig_positions[i][0];
+    orig_mvert_co[i][1] = orig_positions[i][1];
+    orig_mvert_co[i][2] = orig_positions[i][2];
   }
 
   /* Create edge to #NewEdgeRef map. */
@@ -1397,9 +1397,8 @@ Mesh *MOD_solidify_nonmanifold_modifyMesh(ModifierData *md,
       }
     }
 
-    const MVert *mv = orig_mvert;
     gs_ptr = orig_vert_groups_arr;
-    for (uint i = 0; i < verts_num; i++, mv++, gs_ptr++) {
+    for (uint i = 0; i < verts_num; i++, gs_ptr++) {
       if (*gs_ptr) {
         EdgeGroup *g = *gs_ptr;
         for (uint j = 0; g->valid; j++, g++) {
@@ -1961,7 +1960,7 @@ Mesh *MOD_solidify_nonmanifold_modifyMesh(ModifierData *md,
                                              (int)(new_loops_num),
                                              (int)(new_polys_num));
 
-  MVert *mvert = BKE_mesh_positions_for_write(result);
+  float(*positions)[3] = BKE_mesh_positions_for_write(result);
   MEdge *medge = BKE_mesh_edges_for_write(result);
   MPoly *mpoly = BKE_mesh_polys_for_write(result);
   MLoop *mloop = BKE_mesh_loops_for_write(result);
@@ -2003,7 +2002,7 @@ Mesh *MOD_solidify_nonmanifold_modifyMesh(ModifierData *md,
         for (uint j = 0; g->valid; j++, g++) {
           if (g->new_vert != MOD_SOLIDIFY_EMPTY_TAG) {
             CustomData_copy_data(&mesh->vdata, &result->vdata, (int)i, (int)g->new_vert, 1);
-            copy_v3_v3(mvert[g->new_vert].co, g->co);
+            copy_v3_v3(positions[g->new_vert], g->co);
           }
         }
       }
@@ -2109,8 +2108,7 @@ Mesh *MOD_solidify_nonmanifold_modifyMesh(ModifierData *md,
   /* Make boundary edges/faces. */
   {
     gs_ptr = orig_vert_groups_arr;
-    const MVert *mv = orig_mvert;
-    for (uint i = 0; i < verts_num; i++, gs_ptr++, mv++) {
+    for (uint i = 0; i < verts_num; i++, gs_ptr++) {
       EdgeGroup *gs = *gs_ptr;
       if (gs) {
         EdgeGroup *g = gs;

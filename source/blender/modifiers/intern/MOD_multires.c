@@ -220,7 +220,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
                           mesh->flag & ME_AUTOSMOOTH &&
                           CustomData_has_layer(&mesh->ldata, CD_CUSTOMLOOPNORMAL);
   /* NOTE: Orco needs final coordinates on CPU side, which are expected to be
-   * accessible via MVert. For this reason we do not evaluate multires to
+   * accessible via mesh vertices. For this reason we do not evaluate multires to
    * grids when orco is requested. */
   const bool for_orco = (ctx->flag & MOD_APPLY_ORCO) != 0;
   /* Needed when rendering or baking will in sculpt mode. */
@@ -245,7 +245,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
       sculpt_session->multires.level = mmd->sculptlvl;
       sculpt_session->totvert = mesh->totvert;
       sculpt_session->totpoly = mesh->totpoly;
-      sculpt_session->mvert = NULL;
+      sculpt_session->positions = NULL;
       sculpt_session->mpoly = NULL;
       sculpt_session->mloop = NULL;
     }

@@ -179,14 +179,8 @@ static void meshcache_do(MeshCacheModifierData *mcmd,
       /* the moons align! */
       int i;
 
-      float(*vertexCos_Source)[3] = MEM_malloc_arrayN(
-          verts_num, sizeof(*vertexCos_Source), __func__);
       float(*vertexCos_New)[3] = MEM_malloc_arrayN(verts_num, sizeof(*vertexCos_New), __func__);
-      const MVert *mv = BKE_mesh_positions(me);
-
-      for (i = 0; i < verts_num; i++, mv++) {
-        copy_v3_v3(vertexCos_Source[i], mv->co);
-      }
+      const float(*positions)[3] = BKE_mesh_positions(me);
 
       BKE_mesh_calc_relative_deform(
           BKE_mesh_polys(me),
@@ -194,8 +188,8 @@ static void meshcache_do(MeshCacheModifierData *mcmd,
           BKE_mesh_loops(me),
           me->totvert,
 
-          (const float(*)[3])vertexCos_Source, /* From the original Mesh. */
-          (const float(*)[3])vertexCos_Real,   /* the input we've been given (shape keys!) */
+          (const float(*)[3])positions,      /* From the original Mesh. */
+          (const float(*)[3])vertexCos_Real, /* the input we've been given (shape keys!) */
 
           (const float(*)[3])vertexCos, /* The result of this modifier. */
           vertexCos_New                 /* The result of this function. */
@@ -204,7 +198,6 @@ static void meshcache_do(MeshCacheModifierData *mcmd,
       /* write the corrected locations back into the result */
       memcpy(vertexCos, vertexCos_New, sizeof(*vertexCos) * verts_num);
 
-      MEM_freeN(vertexCos_Source);
       MEM_freeN(vertexCos_New);
     }
   }

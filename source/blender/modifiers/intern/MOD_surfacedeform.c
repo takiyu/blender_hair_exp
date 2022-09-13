@@ -1171,7 +1171,7 @@ static bool surfacedeformBind(Object *ob,
                               Mesh *mesh)
 {
   BVHTreeFromMesh treeData = {NULL};
-  const MVert *mvert = BKE_mesh_positions(target);
+  const float(*positions)[3] = BKE_mesh_positions(target);
   const MPoly *mpoly = BKE_mesh_polys(target);
   const MEdge *medge = BKE_mesh_edges(target);
   const MLoop *mloop = BKE_mesh_loops(target);
@@ -1270,7 +1270,7 @@ static bool surfacedeformBind(Object *ob,
   invert_m4_m4(data.imat, smd_orig->mat);
 
   for (int i = 0; i < target_verts_num; i++) {
-    mul_v3_m4v3(data.targetCos[i], smd_orig->mat, mvert[i].co);
+    mul_v3_m4v3(data.targetCos[i], smd_orig->mat, positions[i]);
   }
 
   TaskParallelSettings settings;

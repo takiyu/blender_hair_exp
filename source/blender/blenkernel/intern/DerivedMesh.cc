@@ -678,6 +678,7 @@ static void mesh_calc_modifiers(struct Depsgraph *depsgraph,
    * float array rather than MVert*. Tracked along with mesh_final as an
    * optimization to avoid copying coordinates back and forth if there are
    * multiple sequential deform only modifiers. */
+  /* TODO(@Hans): Remove this. */
   float(*deformed_verts)[3] = nullptr;
   int num_deformed_verts = mesh_input->totvert;
   bool isPrevDeform = false;

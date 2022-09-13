@@ -15,7 +15,6 @@ extern "C" {
 struct MLoop;
 struct MLoopTri;
 struct MPoly;
-struct MVert;
 
 /* Axis-aligned bounding box */
 typedef struct {
@@ -56,7 +55,7 @@ struct PBVHNode {
   int *prim_indices;
   unsigned int totprim; /* Number of primitives inside prim_indices. */
 
-  /* Array of indices into the mesh's MVert array. Contains the
+  /* Array of indices into the mesh's vertex array. Contains the
    * indices of all vertices used by faces that are within this
    * node's bounding box.
    *

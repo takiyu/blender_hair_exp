@@ -210,7 +210,7 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
 
   const int totvert_final = totvert - tot_vtargetmap;
 
-  const MVert *mv;
+  const int *mv;
   float(*positions)[3] = MEM_malloc_arrayN(totvert_final, sizeof(float[3]), __func__);
   int *oldv = MEM_malloc_arrayN(totvert_final, sizeof(*oldv), __func__);
   int *newv = MEM_malloc_arrayN(totvert, sizeof(*newv), __func__);

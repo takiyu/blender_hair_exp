@@ -255,7 +255,7 @@ int ConeConfig::calculate_total_corners()
   return corner_total;
 }
 
-static void calculate_cone_verts(const MutableSpan<MVert> &verts, const ConeConfig &config)
+static void calculate_cone_verts(const MutableSpan<float3> positions, const ConeConfig &config)
 {
   Array<float2> circle(config.circle_segments);
   const float angle_delta = 2.0f * (M_PI / static_cast<float>(config.circle_segments));
@@ -270,7 +270,7 @@ static void calculate_cone_verts(const MutableSpan<MVert> &verts, const ConeConf
 
   /* Top cone tip or triangle fan center. */
   if (config.top_has_center_vert) {
-    copy_v3_fl3(verts[vert_index++].co, 0.0f, 0.0f, config.height);
+    positions[vert_index++] = {0.0f, 0.0f, config.height};
   }
 
   /* Top fill including the outer edge of the fill. */
@@ -282,7 +282,7 @@ static void calculate_cone_verts(const MutableSpan<MVert> &verts, const ConeConf
       for (const int j : IndexRange(config.circle_segments)) {
         const float x = circle[j].x * top_fill_radius;
         const float y = circle[j].y * top_fill_radius;
-        copy_v3_fl3(verts[vert_index++].co, x, y, config.height);
+        positions[vert_index++] = {x, y, config.height};
       }
     }
   }
@@ -297,7 +297,7 @@ static void calculate_cone_verts(const MutableSpan<MVert> &verts, const ConeConf
     for (const int j : IndexRange(config.circle_segments)) {
       const float x = circle[j].x * ring_radius;
       const float y = circle[j].y * ring_radius;
-      copy_v3_fl3(verts[vert_index++].co, x, y, ring_height);
+      positions[vert_index++] = {x, y, ring_height};
     }
   }
 
@@ -310,14 +310,14 @@ static void calculate_cone_verts(const MutableSpan<MVert> &verts, const ConeConf
       for (const int j : IndexRange(config.circle_segments)) {
         const float x = circle[j].x * bottom_fill_radius;
         const float y = circle[j].y * bottom_fill_radius;
-        copy_v3_fl3(verts[vert_index++].co, x, y, -config.height);
+        positions[vert_index++] = {x, y, -config.height};
       }
     }
   }
 
   /* Bottom cone tip or triangle fan center. */
   if (config.bottom_has_center_vert) {
-    copy_v3_fl3(verts[vert_index++].co, 0.0f, 0.0f, -config.height);
+    positions[vert_index++] = {0.0f, 0.0f, -config.height};
   }
 }
 
@@ -657,7 +657,7 @@ static Mesh *create_vertex_mesh()
 {
   /* Returns a mesh with a single vertex at the origin. */
   Mesh *mesh = BKE_mesh_new_nomain(1, 0, 0, 0, 0);
-  copy_v3_fl3(mesh->positions_for_write().first().co, 0.0f, 0.0f, 0.0f);
+  mesh->positions_for_write().first() = float3(0);
   return mesh;
 }
 
@@ -689,12 +689,12 @@ Mesh *create_cylinder_or_cone_mesh(const float radius_top,
       config.tot_verts, config.tot_edges, 0, config.tot_corners, config.tot_faces);
   BKE_id_material_eval_ensure_default_slot(&mesh->id);
 
-  MutableSpan<MVert> verts = mesh->positions_for_write();
+  MutableSpan<float3> positions = mesh->positions_for_write();
   MutableSpan<MEdge> edges = mesh->edges_for_write();
   MutableSpan<MPoly> polys = mesh->polys_for_write();
   MutableSpan<MLoop> loops = mesh->loops_for_write();
 
-  calculate_cone_verts(verts, config);
+  calculate_cone_verts(positions, config);
   calculate_cone_edges(edges, config);
   calculate_cone_faces(loops, polys, config);
   calculate_cone_uvs(mesh, config);

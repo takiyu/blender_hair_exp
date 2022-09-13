@@ -29,6 +29,7 @@
 #include "BLI_math.h"
 #include "BLI_math_vector.hh"
 #include "BLI_memarena.h"
+#include "BLI_resource_scope.hh"
 #include "BLI_span.hh"
 #include "BLI_string.h"
 #include "BLI_task.hh"
@@ -227,6 +228,7 @@ static void mesh_blend_write(BlendWriter *writer, ID *id, const void *id_address
   Vector<CustomDataLayer, 16> edge_layers;
   Vector<CustomDataLayer, 16> loop_layers;
   Vector<CustomDataLayer, 16> poly_layers;
+  blender::ResourceScope temp_arrays_for_legacy_format;
 
   /* cache only - don't write */
   mesh->mface = nullptr;
@@ -251,9 +253,6 @@ static void mesh_blend_write(BlendWriter *writer, ID *id, const void *id_address
   else {
     Set<std::string> names_to_skip;
     if (!BLO_write_is_undo(writer)) {
-      BKE_mesh_legacy_convert_hide_layers_to_flags(mesh);
-      BKE_mesh_legacy_convert_material_indices_to_mpoly(mesh);
-      BKE_mesh_legacy_bevel_weight_from_layers(mesh);
       /* When converting to the old mesh format, don't save redundant attributes. */
       names_to_skip.add_multiple_new({".hide_vert",
                                       ".hide_edge",
@@ -275,6 +274,13 @@ static void mesh_blend_write(BlendWriter *writer, ID *id, const void *id_address
     CustomData_blend_write_prepare(mesh->edata, edge_layers, names_to_skip);
     CustomData_blend_write_prepare(mesh->ldata, loop_layers, names_to_skip);
     CustomData_blend_write_prepare(mesh->pdata, poly_layers, names_to_skip);
+
+    if (!BLO_write_is_undo(writer)) {
+      BKE_mesh_legacy_convert_positions_to_verts(mesh, temp_arrays_for_legacy_format, vert_layers);
+      BKE_mesh_legacy_convert_hide_layers_to_flags(mesh);
+      BKE_mesh_legacy_convert_material_indices_to_mpoly(mesh);
+      BKE_mesh_legacy_bevel_weight_from_layers(mesh);
+    }
   }
 
   BLO_write_id_struct(writer, Mesh, id_address, &mesh->id);
@@ -359,6 +365,7 @@ static void mesh_blend_read_data(BlendDataReader *reader, ID *id)
     BKE_mesh_legacy_convert_flags_to_hide_layers(mesh);
     BKE_mesh_legacy_convert_mpoly_to_material_indices(mesh);
     BKE_mesh_legacy_bevel_weight_to_layers(mesh);
+    BKE_mesh_legacy_convert_verts_to_positions(mesh);
   }
 
   /* We don't expect to load normals from files, since they are derived data. */
@@ -479,9 +486,8 @@ static int customdata_compare(
   const float thresh_sq = thresh * thresh;
   CustomDataLayer *l1, *l2;
   int layer_count1 = 0, layer_count2 = 0, j;
-  const uint64_t cd_mask_non_generic = CD_MASK_MVERT | CD_MASK_MEDGE | CD_MASK_MPOLY |
-                                       CD_MASK_MLOOPUV | CD_MASK_PROP_BYTE_COLOR |
-                                       CD_MASK_MDEFORMVERT;
+  const uint64_t cd_mask_non_generic = CD_MASK_MEDGE | CD_MASK_MPOLY | CD_MASK_MLOOPUV |
+                                       CD_MASK_PROP_BYTE_COLOR | CD_MASK_MDEFORMVERT;
   const uint64_t cd_mask_all_attr = CD_MASK_PROP_ALL | cd_mask_non_generic;
   const Span<MLoop> loops_1 = m1->loops();
   const Span<MLoop> loops_2 = m2->loops();

@@ -130,17 +130,17 @@ void MOD_get_texture_coords(MappingInfoModifierData *dmd,
     texmapping = MOD_DISP_MAP_LOCAL;
   }
 
-  const MVert *mv = BKE_mesh_positions(mesh);
-  for (i = 0; i < verts_num; i++, mv++, r_texco++) {
+  const float(*positions)[3] = BKE_mesh_positions(mesh);
+  for (i = 0; i < verts_num; i++, r_texco++) {
     switch (texmapping) {
       case MOD_DISP_MAP_LOCAL:
-        copy_v3_v3(*r_texco, cos != NULL ? *cos : mv->co);
+        copy_v3_v3(*r_texco, cos != NULL ? *cos : positions[i]);
         break;
       case MOD_DISP_MAP_GLOBAL:
-        mul_v3_m4v3(*r_texco, ob->obmat, cos != NULL ? *cos : mv->co);
+        mul_v3_m4v3(*r_texco, ob->obmat, cos != NULL ? *cos : positions[i]);
         break;
       case MOD_DISP_MAP_OBJECT:
-        mul_v3_m4v3(*r_texco, ob->obmat, cos != NULL ? *cos : mv->co);
+        mul_v3_m4v3(*r_texco, ob->obmat, cos != NULL ? *cos : positions[i]);
         mul_m4_v3(mapref_imat, *r_texco);
         break;
     }

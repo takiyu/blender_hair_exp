@@ -922,7 +922,7 @@ static void calc_dual_mesh(GeometrySet &geometry_set,
                       mesh_in.attributes(),
                       mesh_out->attributes_for_write());
 
-  MutableSpan<MVert> dst_verts = mesh_out->positions_for_write();
+  mesh_out->positions_for_write().copy_from(vertex_positions);
   MutableSpan<MEdge> dst_edges = mesh_out->edges_for_write();
   MutableSpan<MPoly> dst_polys = mesh_out->polys_for_write();
   MutableSpan<MLoop> dst_loops = mesh_out->loops_for_write();
@@ -936,9 +936,6 @@ static void calc_dual_mesh(GeometrySet &geometry_set,
   for (const int i : IndexRange(mesh_out->totloop)) {
     dst_loops[i].v = loops[i];
     dst_loops[i].e = loop_edges[i];
-  }
-  for (const int i : IndexRange(mesh_out->totvert)) {
-    copy_v3_v3(dst_verts[i].co, vertex_positions[i]);
   }
   dst_edges.copy_from(new_edges);
   geometry_set.replace_mesh(mesh_out);

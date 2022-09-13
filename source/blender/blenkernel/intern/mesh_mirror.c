@@ -131,7 +131,6 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
                           (axis == 2 && mmd->flag & MOD_MIR_BISECT_AXIS_Z));
 
   Mesh *result;
-  MVert *mv, *mv_prev;
   MEdge *me;
   MLoop *ml;
   MPoly *mp;
@@ -239,10 +238,11 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
   }
 
   /* mirror vertex coordinates */
-  mv_prev = BKE_mesh_positions_for_write(result);
-  mv = mv_prev + maxVerts;
-  for (i = 0; i < maxVerts; i++, mv++, mv_prev++) {
-    mul_m4_v3(mtx, mv->co);
+  float(*positions)[3] = BKE_mesh_positions(result);
+  for (i = 0; i < maxVerts; i++) {
+    const int vert_index_prev = i;
+    const int vert_index = maxVerts + i;
+    mul_m4_v3(mtx, positions[vert_index]);
 
     if (do_vtargetmap) {
       /* Compare location of the original and mirrored vertex,
@@ -259,13 +259,14 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
        * old, incorrect behavior of merging the source vertex into its copy.
        */
       if (use_correct_order_on_merge) {
-        if (UNLIKELY(len_squared_v3v3(mv_prev->co, mv->co) < tolerance_sq)) {
+        if (UNLIKELY(len_squared_v3v3(positions[vert_index_prev], positions[vert_index]) <
+                     tolerance_sq)) {
           *vtmap_b = i;
           tot_vtargetmap++;
 
           /* average location */
-          mid_v3_v3v3(mv->co, mv_prev->co, mv->co);
-          copy_v3_v3(mv_prev->co, mv->co);
+          mid_v3_v3v3(positions[vert_index], positions[vert_index_prev], positions[vert_index]);
+          copy_v3_v3(positions[vert_index_prev], positions[vert_index]);
         }
         else {
           *vtmap_b = -1;
@@ -275,13 +276,14 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
         *vtmap_a = -1;
       }
       else {
-        if (UNLIKELY(len_squared_v3v3(mv_prev->co, mv->co) < tolerance_sq)) {
+        if (UNLIKELY(len_squared_v3v3(positions[vert_index_prev], positions[vert_index]) <
+                     tolerance_sq)) {
           *vtmap_a = maxVerts + i;
           tot_vtargetmap++;
 
           /* average location */
-          mid_v3_v3v3(mv->co, mv_prev->co, mv->co);
-          copy_v3_v3(mv_prev->co, mv->co);
+          mid_v3_v3v3(positions[vert_index], positions[vert_index_prev], positions[vert_index]);
+          copy_v3_v3(positions[vert_index_prev], positions[vert_index]);
         }
         else {
           *vtmap_a = -1;

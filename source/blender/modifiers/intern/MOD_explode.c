@@ -93,7 +93,6 @@ static void createFacepa(ExplodeModifierData *emd, ParticleSystemModifierData *p
 {
   ParticleSystem *psys = psmd->psys;
   MFace *fa = NULL, *mface = NULL;
-  MVert *mvert = NULL;
   ParticleData *pa;
   KDTree_3d *tree;
   RNG *rng;
@@ -102,7 +101,7 @@ static void createFacepa(ExplodeModifierData *emd, ParticleSystemModifierData *p
   int i, p, v1, v2, v3, v4 = 0;
   const bool invert_vgroup = (emd->flag & eExplodeFlag_INVERT_VGROUP) != 0;
 
-  mvert = BKE_mesh_positions_for_write(mesh);
+  float(*positions)[3] = BKE_mesh_positions_for_write(mesh);
   mface = (MFace *)CustomData_get_layer(&mesh->fdata, CD_MFACE);
   totvert = mesh->totvert;
   totface = mesh->totface;
@@ -162,10 +161,10 @@ static void createFacepa(ExplodeModifierData *emd, ParticleSystemModifierData *p
 
   /* set face-particle-indexes to nearest particle to face center */
   for (i = 0, fa = mface; i < totface; i++, fa++) {
-    add_v3_v3v3(center, mvert[fa->v1].co, mvert[fa->v2].co);
-    add_v3_v3(center, mvert[fa->v3].co);
+    add_v3_v3v3(center, positions[fa->v1], positions[fa->v2]);
+    add_v3_v3(center, positions[fa->v3]);
     if (fa->v4) {
-      add_v3_v3(center, mvert[fa->v4].co);
+      add_v3_v3(center, positions[fa->v4]);
       mul_v3_fl(center, 0.25);
     }
     else {
@@ -643,7 +642,7 @@ static Mesh *cutEdges(ExplodeModifierData *emd, Mesh *mesh)
   Mesh *split_m;
   MFace *mf = NULL, *df1 = NULL;
   MFace *mface = CustomData_get_layer(&mesh->fdata, CD_MFACE);
-  MVert *dupve, *mv;
+  float *dupve, *mv;
   EdgeHash *edgehash;
   EdgeHashIterator *ehi;
   int totvert = mesh->totvert;
@@ -732,18 +731,12 @@ static Mesh *cutEdges(ExplodeModifierData *emd, Mesh *mesh)
 
   layers_num = CustomData_number_of_layers(&split_m->fdata, CD_MTFACE);
 
-  const MVert *mesh_verts = BKE_mesh_positions(mesh);
-  MVert *split_m_verts = BKE_mesh_positions_for_write(split_m);
+  const float(*positions)[3] = BKE_mesh_positions(mesh);
+  float(*split_m_positions)[3] = BKE_mesh_positions_for_write(split_m);
 
   /* copy new faces & verts (is it really this painful with custom data??) */
   for (i = 0; i < totvert; i++) {
-    MVert source;
-    MVert *dest;
-    source = mesh_verts[i];
-    dest = &split_m_verts[i];
-
     CustomData_copy_data(&mesh->vdata, &split_m->vdata, i, i, 1);
-    *dest = source;
   }
 
   /* override original facepa (original pointer is saved in caller function) */
@@ -761,16 +754,16 @@ static Mesh *cutEdges(ExplodeModifierData *emd, Mesh *mesh)
   for (; !BLI_edgehashIterator_isDone(ehi); BLI_edgehashIterator_step(ehi)) {
     BLI_edgehashIterator_getKey(ehi, &ed_v1, &ed_v2);
     esplit = POINTER_AS_INT(BLI_edgehashIterator_getValue(ehi));
-    mv = &split_m_verts[ed_v2];
-    dupve = &split_m_verts[esplit];
+    mv = &split_m_positions[ed_v2];
+    dupve = &split_m_positions[esplit];
 
     CustomData_copy_data(&split_m->vdata, &split_m->vdata, ed_v2, esplit, 1);
 
-    *dupve = *mv;
+    copy_v3_v3(dupve, mv);
 
-    mv = &split_m_verts[ed_v1];
+    mv = &split_m_positions[ed_v1];
 
-    mid_v3_v3v3(dupve->co, dupve->co, mv->co);
+    mid_v3_v3v3(dupve, dupve, mv);
   }
   BLI_edgehashIterator_free(ehi);
 
@@ -991,26 +984,25 @@ static Mesh *explodeMesh(ExplodeModifierData *emd,
 
   psmd->psys->lattice_deform_data = psys_create_lattice_deform_data(&sim);
 
-  const MVert *mesh_verts = BKE_mesh_positions(mesh);
-  MVert *explode_verts = BKE_mesh_positions_for_write(explode);
+  const float(*positions)[3] = BKE_mesh_positions(mesh);
+  float(*explode_positions)[3] = BKE_mesh_positions_for_write(explode);
 
   /* duplicate & displace vertices */
   ehi = BLI_edgehashIterator_new(vertpahash);
   for (; !BLI_edgehashIterator_isDone(ehi); BLI_edgehashIterator_step(ehi)) {
-    MVert source;
-    MVert *dest;
+    float *dest;
 
     /* get particle + vertex from hash */
     BLI_edgehashIterator_getKey(ehi, &ed_v1, &ed_v2);
     ed_v2 -= totvert;
     v = POINTER_AS_INT(BLI_edgehashIterator_getValue(ehi));
 
-    source = mesh_verts[ed_v1];
-    dest = &explode_verts[v];
+    copy_v3_v3(explode_positions[v], positions[ed_v1]);
+    dest = &explode_positions[v];
 
     CustomData_copy_data(&mesh->vdata, &explode->vdata, ed_v1, v, 1);
 
-    *dest = source;
+    copy_v3_v3(explode_positions[v], positions[ed_v1]);
 
     if (ed_v2 != totpart) {
       /* get particle */
@@ -1021,7 +1013,7 @@ static Mesh *explodeMesh(ExplodeModifierData *emd,
       state.time = ctime;
       psys_get_particle_state(&sim, ed_v2, &state, 1);
 
-      vertco = explode_verts[v].co;
+      vertco = explode_positions[v];
       mul_m4_v3(ctx->object->obmat, vertco);
 
       sub_v3_v3(vertco, birth.co);
