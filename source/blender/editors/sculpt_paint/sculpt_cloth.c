@@ -804,7 +804,7 @@ static void do_cloth_brush_solve_simulation_task_cb_ex(
 
     copy_v3_v3(vd.co, cloth_sim->pos[vd.index]);
 
-    if (vd.mvert) {
+    if (vd.is_mesh) {
       BKE_pbvh_vert_tag_update_normal(ss->pbvh, vd.vertex);
     }
   }

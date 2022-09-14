@@ -1211,6 +1211,7 @@ void BKE_mesh_legacy_convert_positions_to_verts(
     blender::ResourceScope &temp_arrays_for_convert,
     blender::Vector<CustomDataLayer, 16> &vert_layers_to_write)
 {
+  using namespace blender;
   Vector<CustomDataLayer, 16> new_layer_to_write;
 
   for (const CustomDataLayer &layer : vert_layers_to_write) {
@@ -1246,15 +1247,15 @@ void BKE_mesh_legacy_convert_verts_to_positions(Mesh *mesh)
                           mesh->totvert);
   MutableSpan<float3> positions(
       static_cast<float3 *>(CustomData_add_layer_named(
-          &mesh->vdata, CD_PROP_FLOAT3, CD_CONSTRUCT, nullptr, "position")),
+          &mesh->vdata, CD_PROP_FLOAT3, CD_CONSTRUCT, nullptr, mesh->totvert, "position")),
       mesh->totvert);
   threading::parallel_for(verts.index_range(), 2048, [&](IndexRange range) {
     for (const int i : range) {
-      positions = verts[i].co;
+      positions[i] = verts[i].co;
     }
   });
 
-  CustomData_free_layers(&mesh->vdata, CD_MVERT);
+  CustomData_free_layers(&mesh->vdata, CD_MVERT, mesh->totvert);
 }
 
 /** \} */

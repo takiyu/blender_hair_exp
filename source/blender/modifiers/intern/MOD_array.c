@@ -553,9 +553,6 @@ static Mesh *arrayModifier_doArray(ArrayModifierData *amd,
 
   /* Subdivision-surface for eg won't have mesh data in the custom-data arrays.
    * Now add #position/#MEdge/#MPoly layers. */
-  if (!src_positions) {
-    memcpy(result_positions, src_positions, sizeof(float[3]) * mesh->totvert);
-  }
   if (!CustomData_has_layer(&mesh->edata, CD_MEDGE)) {
     memcpy(result_edges, src_edges, sizeof(MEdge) * mesh->totedge);
   }

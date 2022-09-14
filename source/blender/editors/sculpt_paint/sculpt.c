@@ -1504,7 +1504,7 @@ static void paint_mesh_restore_co_task_cb(void *__restrict userdata,
       else {
         copy_v3_v3(vd.fno, orig_data.no);
       }
-      if (vd.mvert) {
+      if (vd.is_mesh) {
         BKE_pbvh_vert_tag_update_normal(ss->pbvh, vd.vertex);
       }
     }
@@ -3139,7 +3139,7 @@ static void do_gravity_task_cb_ex(void *__restrict userdata,
 
     mul_v3_v3fl(proxy[vd.i], offset, fade);
 
-    if (vd.mvert) {
+    if (vd.is_mesh) {
       BKE_pbvh_vert_tag_update_normal(ss->pbvh, vd.vertex);
     }
   }

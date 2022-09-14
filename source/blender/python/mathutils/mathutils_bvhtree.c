@@ -1150,7 +1150,7 @@ static PyObject *C_BVHTree_FromObject(PyObject *UNUSED(cls), PyObject *args, PyO
 
     const float(*positions)[3] = BKE_mesh_positions(mesh);
     for (int i = 0; i < mesh->totvert; i++) {
-      copy_v3_v3(coords[i], positions[i].co);
+      copy_v3_v3(coords[i], positions[i]);
     }
 
     mloop = BKE_mesh_loops(mesh);

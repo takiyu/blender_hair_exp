@@ -317,7 +317,6 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
 
   result = BKE_mesh_new_nomain_from_template(mesh, maxvert, maxedge, 0, maxloop, maxpoly);
 
-  const float(*orig_positions)[3] = BKE_mesh_positions(mesh);
   const MPoly *orig_mpoly = BKE_mesh_polys(mesh);
   const MLoop *orig_mloop = BKE_mesh_loops(mesh);
   float(*positions)[3] = BKE_mesh_positions_for_write(result);

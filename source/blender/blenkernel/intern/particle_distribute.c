@@ -567,7 +567,7 @@ static void distribute_from_volume_exec(ParticleTask *thread, ParticleData *pa, 
   ParticleThreadContext *ctx = thread->ctx;
   Mesh *mesh = ctx->mesh;
   const float *v1, *v2, *v3, *v4;
-  const float nor[3], co[3];
+  float nor[3], co[3];
   float cur_d, min_d, randu, randv;
   int distr = ctx->distr;
   int i, intersect, tot;

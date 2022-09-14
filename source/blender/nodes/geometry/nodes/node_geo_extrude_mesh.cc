@@ -984,7 +984,7 @@ static void extrude_mesh_face_regions(Mesh &mesh,
               positions[i_orig] += offset;
             }
             else {
-              new_vert_range[i_new] += offset;
+              positions[new_vert_range[i_new]] += offset;
             }
           }
         });
@@ -999,7 +999,7 @@ static void extrude_mesh_face_regions(Mesh &mesh,
               positions[i_orig] += offset;
             }
             else {
-              new_vert_range[i_new] += offset;
+              positions[new_vert_range[i_new]] += offset;
             }
           }
         });

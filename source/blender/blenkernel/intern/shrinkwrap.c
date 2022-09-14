@@ -1121,7 +1121,7 @@ static void shrinkwrap_calc_nearest_surface_point_cb_ex(void *__restrict userdat
 
   /* Convert the vertex to tree coordinates */
   if (calc->positions) {
-    copy_v3_v3(tmp_co, calc->positions[i].co);
+    copy_v3_v3(tmp_co, calc->positions[i]);
   }
   else {
     copy_v3_v3(tmp_co, co);
@@ -1427,7 +1427,7 @@ void shrinkwrapModifier_deform(ShrinkwrapModifierData *smd,
           dm, &ssmd, scene, NULL, (ob->mode & OB_MODE_EDIT) ? SUBSURF_IN_EDIT_MODE : 0);
 
       if (ss_mesh) {
-        calc.positions = ss_mesh->getVertArray(ss_mesh);
+        calc.positions = (float(*)[3])ss_mesh->getVertArray(ss_mesh);
         if (calc.positions) {
           /* TRICKY: this code assumes subsurface will have the transformed original vertices
            * in their original order at the end of the vert array. */

@@ -1151,7 +1151,7 @@ int *mesh_get_x_mirror_faces(Object *ob, BMEditMesh *em, Mesh *me_eval)
   ED_mesh_mirror_spatial_table_begin(ob, em, me_eval);
 
   for (const int i : positions.index_range()) {
-    mirrorverts[a] = mesh_get_x_mirror_vert(ob, me_eval, a, use_topology);
+    mirrorverts[i] = mesh_get_x_mirror_vert(ob, me_eval, i, use_topology);
   }
 
   ED_mesh_mirror_spatial_table_end(ob);

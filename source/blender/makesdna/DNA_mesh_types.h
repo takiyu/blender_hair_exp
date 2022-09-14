@@ -13,12 +13,15 @@
 #include "DNA_meshdata_types.h"
 #include "DNA_session_uuid_types.h"
 
+#ifdef __cplusplus
+#  include "BLI_math_vec_types.hh"
+#endif
+
 /** Workaround to forward-declare C++ type in C header. */
 #ifdef __cplusplus
 namespace blender {
 template<typename T> class Span;
 template<typename T> class MutableSpan;
-struct float3;
 namespace bke {
 class AttributeAccessor;
 class MutableAttributeAccessor;
@@ -255,8 +258,8 @@ typedef struct Mesh {
 
   /**
    * Flag for choosing whether or not so store bevel weight and crease as custom data layers in the
-   * edit mesh (they are always stored in #MVert and #MEdge currently). In the future, this data
-   * may be stored as generic named attributes (see T89054 and T93602).
+   * edit mesh (they are always stored in mesh vertices and #MEdge currently). In the future, this
+   * data may be stored as generic named attributes (see T89054 and T93602).
    */
   char cd_flag;
 

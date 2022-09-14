@@ -215,7 +215,7 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
 
   MOD_get_vgroup(ctx->object, mesh, smd->defgrp_name, &dvert, &defgrp_index);
 
-  const const float(*orig_positions)[3] = BKE_mesh_positions(mesh);
+  const float(*orig_positions)[3] = BKE_mesh_positions(mesh);
   const MEdge *orig_medge = BKE_mesh_edges(mesh);
   const MPoly *orig_mpoly = BKE_mesh_polys(mesh);
   const MLoop *orig_mloop = BKE_mesh_loops(mesh);
@@ -571,7 +571,7 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
 
       ofs_new_vgroup = ofs_new;
 
-      int vert_index;
+      uint vert_index;
       INIT_VERT_ARRAY_OFFSETS(false);
 
       for (i_orig = 0; i_orig < i_end; i_orig++, vert_index++) {
@@ -623,7 +623,7 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
       ofs_new_vgroup = ofs_orig;
 
       /* as above but swapped */
-      int vert_index;
+      uint vert_index;
       INIT_VERT_ARRAY_OFFSETS(true);
 
       for (i_orig = 0; i_orig < i_end; i_orig++, vert_index++) {
@@ -925,7 +925,7 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
       uint i_orig, i_end;
       bool do_shell_align;
 
-      int vert_index;
+      uint vert_index;
       INIT_VERT_ARRAY_OFFSETS(false);
 
       for (i_orig = 0; i_orig < i_end; i_orig++, vert_index++) {
@@ -943,7 +943,7 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
       bool do_shell_align;
 
       /* same as above but swapped, intentional use of 'ofs_new' */
-      int vert_index;
+      uint vert_index;
       INIT_VERT_ARRAY_OFFSETS(true);
 
       for (i_orig = 0; i_orig < i_end; i_orig++, vert_index++) {

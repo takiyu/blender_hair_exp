@@ -264,7 +264,7 @@ static void get_closest_mesh_corners(const Mesh &mesh,
                                      const MutableSpan<float> r_distances_sq,
                                      const MutableSpan<float3> r_positions)
 {
-  const Span<float3> positions = mesh.positions();
+  const Span<float3> mesh_positions = mesh.positions();
   const Span<MPoly> polys = mesh.polys();
   const Span<MLoop> loops = mesh.loops();
 
@@ -279,12 +279,12 @@ static void get_closest_mesh_corners(const Mesh &mesh,
 
     /* Find the closest vertex in the polygon. */
     float min_distance_sq = FLT_MAX;
-     int closest_vert;
+    int closest_vert;
     int closest_loop_index = 0;
     for (const int loop_index : IndexRange(poly.loopstart, poly.totloop)) {
       const MLoop &loop = loops[loop_index];
       const int vertex_index = loop.v;
-      const float distance_sq = math::distance_squared(position, positions[vertex_index]);
+      const float distance_sq = math::distance_squared(position, mesh_positions[vertex_index]);
       if (distance_sq < min_distance_sq) {
         min_distance_sq = distance_sq;
         closest_loop_index = loop_index;
@@ -295,7 +295,7 @@ static void get_closest_mesh_corners(const Mesh &mesh,
       r_corner_indices[i] = closest_loop_index;
     }
     if (!r_positions.is_empty()) {
-      r_positions[i] = positions[closest_vert];
+      r_positions[i] = mesh_positions[closest_vert];
     }
     if (!r_distances_sq.is_empty()) {
       r_distances_sq[i] = min_distance_sq;

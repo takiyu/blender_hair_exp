@@ -28,7 +28,6 @@ struct MLoopCol;
 struct MLoopTri;
 struct MPoly;
 struct MPropCol;
-struct;
 struct Mesh;
 struct PBVH;
 struct SubdivCCG;

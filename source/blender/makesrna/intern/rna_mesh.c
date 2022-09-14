@@ -404,12 +404,12 @@ static int rna_MeshLoopTriangle_index_get(PointerRNA *ptr)
 
 static void rna_MeshVertex_co_get(PointerRNA *ptr, float *value)
 {
-  copy_v3_v3(value, (const float(*)[3])ptr->data);
+  copy_v3_v3(value, (const float *)ptr->data);
 }
 
-static void rna_MeshVertex_co_set(PointerRNA *ptr, float *value)
+static void rna_MeshVertex_co_set(PointerRNA *ptr, const float *value)
 {
-  copy_v3_v3((float(*)[3])ptr->data, value);
+  copy_v3_v3((float *)ptr->data, value);
 }
 
 static void rna_MeshVertex_normal_get(PointerRNA *ptr, float *value)
@@ -803,7 +803,7 @@ static void rna_MeshVertex_groups_begin(CollectionPropertyIterator *iter, Pointe
 static void rna_MeshVertex_undeformed_co_get(PointerRNA *ptr, float values[3])
 {
   Mesh *me = rna_mesh(ptr);
-  const float(*position)[3] = (const float(*)[3])ptr->data;
+  const float *position = (const float *)ptr->data;
   const float(*orco)[3] = CustomData_get_layer(&me->vdata, CD_ORCO);
 
   if (orco) {

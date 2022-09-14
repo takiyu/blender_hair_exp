@@ -85,7 +85,7 @@ static void subdiv_mesh_ctx_cache_uv_layers(SubdivMeshContext *ctx)
 static void subdiv_mesh_ctx_cache_custom_data_layers(SubdivMeshContext *ctx)
 {
   Mesh *subdiv_mesh = ctx->subdiv_mesh;
-  ctx->subdiv_positions = BKE_mesh_positions_for_write(subdiv_mesh);
+  ctx->subdiv_positions = subdiv_mesh->positions_for_write().data();
   ctx->subdiv_edges = BKE_mesh_edges_for_write(subdiv_mesh);
   ctx->subdiv_polys = BKE_mesh_polys_for_write(subdiv_mesh);
   ctx->subdiv_loops = BKE_mesh_loops_for_write(subdiv_mesh);

@@ -642,7 +642,7 @@ static Mesh *cutEdges(ExplodeModifierData *emd, Mesh *mesh)
   Mesh *split_m;
   MFace *mf = NULL, *df1 = NULL;
   MFace *mface = CustomData_get_layer(&mesh->fdata, CD_MFACE);
-  float *dupve, *mv;
+  float *dupve;
   EdgeHash *edgehash;
   EdgeHashIterator *ehi;
   int totvert = mesh->totvert;
@@ -731,7 +731,6 @@ static Mesh *cutEdges(ExplodeModifierData *emd, Mesh *mesh)
 
   layers_num = CustomData_number_of_layers(&split_m->fdata, CD_MTFACE);
 
-  const float(*positions)[3] = BKE_mesh_positions(mesh);
   float(*split_m_positions)[3] = BKE_mesh_positions_for_write(split_m);
 
   /* copy new faces & verts (is it really this painful with custom data??) */
@@ -754,16 +753,13 @@ static Mesh *cutEdges(ExplodeModifierData *emd, Mesh *mesh)
   for (; !BLI_edgehashIterator_isDone(ehi); BLI_edgehashIterator_step(ehi)) {
     BLI_edgehashIterator_getKey(ehi, &ed_v1, &ed_v2);
     esplit = POINTER_AS_INT(BLI_edgehashIterator_getValue(ehi));
-    mv = &split_m_positions[ed_v2];
-    dupve = &split_m_positions[esplit];
 
     CustomData_copy_data(&split_m->vdata, &split_m->vdata, ed_v2, esplit, 1);
 
-    copy_v3_v3(dupve, mv);
+    dupve = split_m_positions[esplit];
+    copy_v3_v3(dupve, split_m_positions[ed_v2]);
 
-    mv = &split_m_positions[ed_v1];
-
-    mid_v3_v3v3(dupve, dupve, mv);
+    mid_v3_v3v3(dupve, dupve, split_m_positions[ed_v1]);
   }
   BLI_edgehashIterator_free(ehi);
 
@@ -990,7 +986,6 @@ static Mesh *explodeMesh(ExplodeModifierData *emd,
   /* duplicate & displace vertices */
   ehi = BLI_edgehashIterator_new(vertpahash);
   for (; !BLI_edgehashIterator_isDone(ehi); BLI_edgehashIterator_step(ehi)) {
-    float *dest;
 
     /* get particle + vertex from hash */
     BLI_edgehashIterator_getKey(ehi, &ed_v1, &ed_v2);
@@ -998,7 +993,6 @@ static Mesh *explodeMesh(ExplodeModifierData *emd,
     v = POINTER_AS_INT(BLI_edgehashIterator_getValue(ehi));
 
     copy_v3_v3(explode_positions[v], positions[ed_v1]);
-    dest = &explode_positions[v];
 
     CustomData_copy_data(&mesh->vdata, &explode->vdata, ed_v1, v, 1);
 

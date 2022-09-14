@@ -91,7 +91,7 @@ static void editbmesh_calc_modifier_final_normals_or_defer(
 
 /* -------------------------------------------------------------------- */
 
-static float (*dm_getVertArray(DerivedMesh *dm))[3]
+static float *dm_getVertArray(DerivedMesh *dm)
 {
   float(*positions)[3] = (float(*)[3])CustomData_get_layer_named(
       &dm->vertData, CD_PROP_FLOAT3, "position");
@@ -103,7 +103,7 @@ static float (*dm_getVertArray(DerivedMesh *dm))[3]
     dm->copyVertArray(dm, positions);
   }
 
-  return positions;
+  return (float *)positions;
 }
 
 static MEdge *dm_getEdgeArray(DerivedMesh *dm)
@@ -352,10 +352,6 @@ static void mesh_set_only_copy(Mesh *mesh, const CustomData_MeshMasks *mask)
 
 void *DM_get_vert_data_layer(DerivedMesh *dm, int type)
 {
-  if (type == CD_MVERT) {
-    return dm->getVertArray(dm);
-  }
-
   return CustomData_get_layer(&dm->vertData, type);
 }
 
@@ -674,11 +670,7 @@ static void mesh_calc_modifiers(struct Depsgraph *depsgraph,
 
   BLI_assert((mesh_input->id.tag & LIB_TAG_COPIED_ON_WRITE_EVAL_RESULT) == 0);
 
-  /* Deformed vertex locations array. Deform only modifier need this type of
-   * float array rather than MVert*. Tracked along with mesh_final as an
-   * optimization to avoid copying coordinates back and forth if there are
-   * multiple sequential deform only modifiers. */
-  /* TODO(@Hans): Remove this. */
+  /* TODO(Hans): Remove use of "deformed_verts" in mesh modifier stack. */
   float(*deformed_verts)[3] = nullptr;
   int num_deformed_verts = mesh_input->totvert;
   bool isPrevDeform = false;

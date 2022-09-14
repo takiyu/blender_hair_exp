@@ -456,7 +456,9 @@ void GeometryExporter::createVertsSource(std::string geom_id, Mesh *me)
   for (const int i : positions.index_range()) {
     Vector co;
     if (export_settings.get_apply_global_orientation()) {
-      bc_add_global_transform(co, positions[i], export_settings.get_global_transform());
+      float co_c[3];
+      copy_v3_v3(co_c, positions[i]);
+      bc_add_global_transform(co, co_c, export_settings.get_global_transform());
     }
     else {
       copy_v3_v3(co, positions[i]);

@@ -102,9 +102,9 @@ class MeshesToIMeshInfo {
                                           const Mesh **r_orig_mesh,
                                           int *r_orig_mesh_index,
                                           int *r_index_in_orig_mesh) const;
-  const float3 *input_mvert_for_orig_index(int orig_index,
-                                           const Mesh **r_orig_mesh,
-                                           int *r_index_in_orig_mesh) const;
+  void input_mvert_for_orig_index(int orig_index,
+                                  const Mesh **r_orig_mesh,
+                                  int *r_index_in_orig_mesh) const;
   const MEdge *input_medge_for_orig_index(int orig_index,
                                           const Mesh **r_orig_mesh,
                                           int *r_index_in_orig_mesh) const;
@@ -182,9 +182,9 @@ const MPoly *MeshesToIMeshInfo::input_mpoly_for_orig_index(int orig_index,
  * `Mesh` that it came from and return it in `*r_orig_mesh`.
  * Also find the index of the vertex in that `Mesh` and return it in
  * `*r_index_in_orig_mesh`. */
-const float3 *MeshesToIMeshInfo::input_mvert_for_orig_index(int orig_index,
-                                                            const Mesh **r_orig_mesh,
-                                                            int *r_index_in_orig_mesh) const
+void MeshesToIMeshInfo::input_mvert_for_orig_index(int orig_index,
+                                                   const Mesh **r_orig_mesh,
+                                                   int *r_index_in_orig_mesh) const
 {
   int orig_mesh_index = input_mesh_for_imesh_vert(orig_index);
   BLI_assert(0 <= orig_mesh_index && orig_mesh_index < meshes.size());
@@ -192,14 +192,12 @@ const float3 *MeshesToIMeshInfo::input_mvert_for_orig_index(int orig_index,
   const Span<float3> positions = me->positions();
   int index_in_mesh = orig_index - mesh_vert_offset[orig_mesh_index];
   BLI_assert(0 <= index_in_mesh && index_in_mesh < me->totvert);
-  const float3 *mv = &positions[index_in_mesh];
   if (r_orig_mesh) {
     *r_orig_mesh = me;
   }
   if (r_index_in_orig_mesh) {
     *r_index_in_orig_mesh = index_in_mesh;
   }
-  return mv;
 }
 
 /* Similarly for edges. */
@@ -723,7 +721,7 @@ static Mesh *imesh_to_mesh(IMesh *im, MeshesToIMeshInfo &mim)
     if (v->orig != NO_INDEX) {
       const Mesh *orig_me;
       int index_in_orig_me;
-      const float3 *orig_mv = mim.input_mvert_for_orig_index(v->orig, &orig_me, &index_in_orig_me);
+      mim.input_mvert_for_orig_index(v->orig, &orig_me, &index_in_orig_me);
       copy_vert_attributes(result, orig_me, vi, index_in_orig_me);
     }
   }

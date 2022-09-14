@@ -596,7 +596,7 @@ static ParamHandle *construct_param_handle_subsurfed(const Scene *scene,
   /* holds original indices for subsurfed mesh */
   const int *origVertIndices, *origEdgeIndices, *origPolyIndices;
   /* Holds vertices of subsurfed mesh */
-  float (*subsurfedPositions)[3];
+  float(*subsurfedPositions)[3];
   MEdge *subsurfedEdges;
   MPoly *subsurfedPolys;
   MLoop *subsurfedLoops;
@@ -641,7 +641,7 @@ static ParamHandle *construct_param_handle_subsurfed(const Scene *scene,
   }
 
   /* get the derived data */
-  subsurfedPositions = derivedMesh->getVertArray(derivedMesh);
+  subsurfedPositions = (float(*)[3])derivedMesh->getVertArray(derivedMesh);
   subsurfedEdges = derivedMesh->getEdgeArray(derivedMesh);
   subsurfedPolys = derivedMesh->getPolyArray(derivedMesh);
   subsurfedLoops = derivedMesh->getLoopArray(derivedMesh);
@@ -703,10 +703,10 @@ static ParamHandle *construct_param_handle_subsurfed(const Scene *scene,
     vkeys[2] = (ParamKey)mloop[2].v;
     vkeys[3] = (ParamKey)mloop[3].v;
 
-    co[0] = subsurfedVerts[mloop[0].v].co;
-    co[1] = subsurfedVerts[mloop[1].v].co;
-    co[2] = subsurfedVerts[mloop[2].v].co;
-    co[3] = subsurfedVerts[mloop[3].v].co;
+    co[0] = subsurfedPositions[mloop[0].v];
+    co[1] = subsurfedPositions[mloop[1].v];
+    co[2] = subsurfedPositions[mloop[2].v];
+    co[3] = subsurfedPositions[mloop[3].v];
 
     /* This is where all the magic is done.
      * If the vertex exists in the, we pass the original uv pointer to the solver, thus

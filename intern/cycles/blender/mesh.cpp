@@ -1250,7 +1250,7 @@ void BlenderSync::sync_mesh_motion(BL::Depsgraph b_depsgraph,
     float3 *mP = attr_mP->data_float3() + motion_step * numverts;
     float3 *mN = (attr_mN) ? attr_mN->data_float3() + motion_step * numverts : NULL;
 
-    const float(*positions)[3] = static_cast<const float(*)[3]>((b_mesh.vertices[0].ptr.data);
+    const float(*positions)[3] = static_cast<const float(*)[3]>(b_mesh.vertices[0].ptr.data);
 
     /* NOTE: We don't copy more that existing amount of vertices to prevent
      * possible memory corruption.

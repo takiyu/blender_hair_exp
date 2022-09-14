@@ -1699,7 +1699,7 @@ void BKE_mesh_normals_loop_split(const float (*positions)[3],
   common_data.lnors_spacearr = r_lnors_spacearr;
   common_data.loopnors = r_loopnors;
   common_data.clnors_data = clnors_data;
-  common_data.mverts = positions;
+  common_data.positions = positions;
   common_data.medges = medges;
   common_data.mloops = mloops;
   common_data.mpolys = mpolys;

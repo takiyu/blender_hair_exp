@@ -536,12 +536,13 @@ typedef struct PBVHVertexIter {
   int gridsize;
 
   /* mesh */
-  float (*positions)[3];
+  float (*mesh_positions)[3];
   float (*vert_normals)[3];
   const bool *hide_vert;
   int totvert;
   const int *vert_indices;
   float *vmask;
+  bool is_mesh;
 
   /* bmesh */
   struct GSetIterator bm_unique_verts;
@@ -551,7 +552,6 @@ typedef struct PBVHVertexIter {
 
   /* result: these are all computed in the macro, but we assume
    * that compiler optimization's will skip the ones we don't use */
-  float mesh_position[3];
   struct BMVert *bm_vert;
   float *co;
   float *no;
@@ -596,8 +596,7 @@ void pbvh_vertex_iter_init(PBVH *pbvh, PBVHNode *node, PBVHVertexIter *vi, int m
             } \
           } \
         } \
-        else if (vi.mverts) { \
-          vi.mesh_position = &vi.positions[vi.vert_indices[vi.gx]]; \
+        else if (vi.mesh_positions) { \
           if (vi.respect_hide) { \
             vi.visible = !(vi.hide_vert && vi.hide_vert[vi.vert_indices[vi.gx]]); \
             if (mode == PBVH_ITER_UNIQUE && !vi.visible) { \
@@ -607,7 +606,7 @@ void pbvh_vertex_iter_init(PBVH *pbvh, PBVHNode *node, PBVHVertexIter *vi, int m
           else { \
             BLI_assert(vi.visible); \
           } \
-          vi.co = vi.mesh_position; \
+          vi.co = vi.mesh_positions[vi.vert_indices[vi.gx]]; \
           vi.no = vi.vert_normals[vi.vert_indices[vi.gx]]; \
           vi.index = vi.vertex.i = vi.vert_indices[vi.i]; \
           if (vi.vmask) { \

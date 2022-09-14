@@ -497,9 +497,9 @@ static TriTessFace *mesh_calc_tri_tessface(Mesh *me, bool tangent, Mesh *me_eval
     const MLoopTri *lt = &looptri[i];
     const MPoly *mp = &polys[lt->poly];
 
-    triangles[i].positions[0] = &positions[loops[lt->tri[0]].v];
-    triangles[i].positions[1] = &positions[loops[lt->tri[1]].v];
-    triangles[i].positions[2] = &positions[loops[lt->tri[2]].v];
+    triangles[i].positions[0] = positions[loops[lt->tri[0]].v];
+    triangles[i].positions[1] = positions[loops[lt->tri[1]].v];
+    triangles[i].positions[2] = positions[loops[lt->tri[2]].v];
     triangles[i].vert_normals[0] = vert_normals[loops[lt->tri[0]].v];
     triangles[i].vert_normals[1] = vert_normals[loops[lt->tri[1]].v];
     triangles[i].vert_normals[2] = vert_normals[loops[lt->tri[2]].v];

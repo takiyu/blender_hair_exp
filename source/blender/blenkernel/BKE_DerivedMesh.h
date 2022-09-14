@@ -127,7 +127,10 @@ struct DerivedMesh {
    * and freed on the next ->release(). consider using getVert/Edge/Face if
    * you are only interested in a few verts/edges/faces.
    */
-  float (*) (*getVertArray)(DerivedMesh *dm)[3];
+  /**
+   * \warning The real return type is `float(*)[3]`.
+   */
+  float *(*getVertArray)(DerivedMesh *dm);
   struct MEdge *(*getEdgeArray)(DerivedMesh *dm);
   struct MLoop *(*getLoopArray)(DerivedMesh *dm);
   struct MPoly *(*getPolyArray)(DerivedMesh *dm);

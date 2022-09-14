@@ -244,4 +244,3 @@ DerivedMesh *CDDM_from_mesh(Mesh *mesh)
 {
   return cdDM_from_mesh_ex(mesh, CD_REFERENCE, &CD_MASK_MESH);
 }
-<<<<<<< HEAD

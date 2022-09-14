@@ -257,7 +257,7 @@ static void data_transfer_dtdata_type_preprocess(Mesh *me_src,
   if (dtdata_type == DT_TYPE_LNOR) {
     /* Compute custom normals into regular loop normals, which will be used for the transfer. */
 
-    const float(*positions)[3] = BKE_mesh_positions(me_dst);
+    const float(*positions_dst)[3] = BKE_mesh_positions(me_dst);
     const int num_verts_dst = me_dst->totvert;
     const MEdge *edges_dst = BKE_mesh_edges(me_dst);
     const int num_edges_dst = me_dst->totedge;

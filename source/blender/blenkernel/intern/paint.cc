@@ -2253,7 +2253,7 @@ static PBVH *build_pbvh_from_regular_mesh(Object *ob, Mesh *me_eval_deform, bool
                       me,
                       polys.data(),
                       loops.data(),
-                      reinterpret_cast<const float(*)[3]>(positions.data()),
+                      reinterpret_cast<float(*)[3]>(positions.data()),
                       me->totvert,
                       &me->vdata,
                       &me->ldata,

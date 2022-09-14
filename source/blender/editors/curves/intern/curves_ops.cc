@@ -542,7 +542,7 @@ static void snap_curves_to_surface_exec_object(Object &curves_ob,
   CurvesGeometry &curves = CurvesGeometry::wrap(curves_id.geometry);
 
   const Mesh &surface_mesh = *static_cast<const Mesh *>(surface_ob.data);
-  const Span<float3> positions = surface_mesh.positions();
+  const Span<float3> surface_positions = surface_mesh.positions();
   const Span<MLoop> loops = surface_mesh.loops();
   const Span<MLoopTri> surface_looptris = {BKE_mesh_runtime_looptri_ensure(&surface_mesh),
                                            BKE_mesh_runtime_looptri_len(&surface_mesh)};
@@ -603,9 +603,9 @@ static void snap_curves_to_surface_exec_object(Object &curves_ob,
             const float2 &uv0 = surface_uv_map[corner0];
             const float2 &uv1 = surface_uv_map[corner1];
             const float2 &uv2 = surface_uv_map[corner2];
-            const float3 &p0_su = positions[loops[corner0].v];
-            const float3 &p1_su = positions[loops[corner1].v];
-            const float3 &p2_su = positions[loops[corner2].v];
+            const float3 &p0_su = surface_positions[loops[corner0].v];
+            const float3 &p1_su = surface_positions[loops[corner1].v];
+            const float3 &p2_su = surface_positions[loops[corner2].v];
             float3 bary_coords;
             interp_weights_tri_v3(bary_coords, p0_su, p1_su, p2_su, new_first_point_pos_su);
             const float2 uv = attribute_math::mix3(bary_coords, uv0, uv1, uv2);
@@ -639,9 +639,9 @@ static void snap_curves_to_surface_exec_object(Object &curves_ob,
           const MLoopTri &looptri = *lookup_result.looptri;
           const float3 &bary_coords = lookup_result.bary_weights;
 
-          const float3 &p0_su = verts[loops[looptri.tri[0]].v].co;
-          const float3 &p1_su = verts[loops[looptri.tri[1]].v].co;
-          const float3 &p2_su = verts[loops[looptri.tri[2]].v].co;
+          const float3 &p0_su = surface_positions[loops[looptri.tri[0]].v];
+          const float3 &p1_su = surface_positions[loops[looptri.tri[1]].v];
+          const float3 &p2_su = surface_positions[loops[looptri.tri[2]].v];
 
           float3 new_first_point_pos_su;
           interp_v3_v3v3v3(new_first_point_pos_su, p0_su, p1_su, p2_su, bary_coords);

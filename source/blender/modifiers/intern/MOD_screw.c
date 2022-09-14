@@ -873,7 +873,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
     CustomData_copy_data(&mesh->vdata, &result->vdata, 0, (int)varray_stride, (int)totvert);
 
     for (j = 0; j < totvert; j++) {
-      const int vert_index_new = varray_stride + j;
+      vert_index_new = (int)varray_stride + (int)j;
       /* set normal */
       if (vert_connect) {
         if (do_normal_create) {

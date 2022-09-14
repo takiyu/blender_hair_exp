@@ -248,7 +248,8 @@ static void get_vertices(const Mesh *mesh, USDMeshData &usd_mesh_data)
 
   const Span<float3> positions = mesh->positions();
   for (const int i : positions.index_range()) {
-    usd_mesh_data.points.push_back(pxr::GfVec3f(positions[i]));
+    const float3 &position = positions[i];
+    usd_mesh_data.points.push_back(pxr::GfVec3f(position.x, position.y, position.z));
   }
 }
 

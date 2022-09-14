@@ -10,6 +10,11 @@
 #include "BLI_utildefines.h"
 
 #ifdef __cplusplus
+#  include "BLI_resource_scope.hh"
+#  include "BLI_vector.hh"
+#endif
+
+#ifdef __cplusplus
 extern "C" {
 #endif
 
@@ -55,6 +60,15 @@ void BKE_mesh_legacy_convert_material_indices_to_mpoly(struct Mesh *mesh);
  * Only add the attribute when the indices are not all zero.
  */
 void BKE_mesh_legacy_convert_mpoly_to_material_indices(struct Mesh *mesh);
+
+#ifdef __cplusplus
+void BKE_mesh_legacy_convert_positions_to_verts(
+    Mesh *mesh,
+    blender::ResourceScope &temp_arrays_for_convert,
+    blender::Vector<CustomDataLayer, 16> &vert_layers_to_write);
+#endif
+
+void BKE_mesh_legacy_convert_verts_to_positions(Mesh *mesh);
 
 /**
  * Recreate #MFace Tessellation.

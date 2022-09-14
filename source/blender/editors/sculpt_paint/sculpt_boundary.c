@@ -704,7 +704,7 @@ static void do_boundary_brush_bend_task_cb_ex(void *__restrict userdata,
                      angle * boundary->edit_info[vd.index].strength_factor * mask * automask);
     add_v3_v3(target_co, boundary->bend.pivot_positions[vd.index]);
 
-    if (vd.mvert) {
+    if (vd.is_mesh) {
       BKE_pbvh_vert_tag_update_normal(ss->pbvh, vd.vertex);
     }
   }
@@ -750,7 +750,7 @@ static void do_boundary_brush_slide_task_cb_ex(void *__restrict userdata,
                    boundary->edit_info[vd.index].strength_factor * disp * mask * automask *
                        strength);
 
-    if (vd.mvert) {
+    if (vd.is_mesh) {
       BKE_pbvh_vert_tag_update_normal(ss->pbvh, vd.vertex);
     }
   }
@@ -796,7 +796,7 @@ static void do_boundary_brush_inflate_task_cb_ex(void *__restrict userdata,
                    boundary->edit_info[vd.index].strength_factor * disp * mask * automask *
                        strength);
 
-    if (vd.mvert) {
+    if (vd.is_mesh) {
       BKE_pbvh_vert_tag_update_normal(ss->pbvh, vd.vertex);
     }
   }
@@ -839,7 +839,7 @@ static void do_boundary_brush_grab_task_cb_ex(void *__restrict userdata,
                    ss->cache->grab_delta_symmetry,
                    boundary->edit_info[vd.index].strength_factor * mask * automask * strength);
 
-    if (vd.mvert) {
+    if (vd.is_mesh) {
       BKE_pbvh_vert_tag_update_normal(ss->pbvh, vd.vertex);
     }
   }
@@ -893,7 +893,7 @@ static void do_boundary_brush_twist_task_cb_ex(void *__restrict userdata,
                      angle * mask * automask * boundary->edit_info[vd.index].strength_factor);
     add_v3_v3(target_co, boundary->twist.pivot_position);
 
-    if (vd.mvert) {
+    if (vd.is_mesh) {
       BKE_pbvh_vert_tag_update_normal(ss->pbvh, vd.vertex);
     }
   }
@@ -952,7 +952,7 @@ static void do_boundary_brush_smooth_task_cb_ex(void *__restrict userdata,
     madd_v3_v3v3fl(
         target_co, vd.co, disp, boundary->edit_info[vd.index].strength_factor * mask * strength);
 
-    if (vd.mvert) {
+    if (vd.is_mesh) {
       BKE_pbvh_vert_tag_update_normal(ss->pbvh, vd.vertex);
     }
   }

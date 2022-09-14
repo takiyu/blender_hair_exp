@@ -73,6 +73,7 @@
 
 #include "object_intern.h" /* own include */
 
+using blender::float3;
 using blender::IndexRange;
 using blender::Span;
 

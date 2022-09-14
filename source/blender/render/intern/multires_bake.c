@@ -472,7 +472,7 @@ static void do_multires_bake(MultiresBakeRender *bkr,
   MultiresBakeThread *handles;
   MultiresBakeQueue queue;
 
-  const float(*positions)[3] = dm->getVertArray(dm);
+  const float(*positions)[3] = (float(*)[3])dm->getVertArray(dm);
   MPoly *mpoly = dm->getPolyArray(dm);
   MLoop *mloop = dm->getLoopArray(dm);
   MLoopUV *mloopuv = dm->getLoopDataArray(dm, CD_MLOOPUV);
@@ -485,9 +485,8 @@ static void do_multires_bake(MultiresBakeRender *bkr,
 
   Mesh *temp_mesh = BKE_mesh_new_nomain(
       dm->getNumVerts(dm), dm->getNumEdges(dm), 0, dm->getNumLoops(dm), dm->getNumPolys(dm));
-  memcpy(BKE_mesh_positions_for_write(temp_mesh),
-         dm->getVertArray(dm),
-         temp_mesh->totvert * sizeof(float[3]));
+  memcpy(
+      BKE_mesh_positions_for_write(temp_mesh), positions, temp_mesh->totvert * sizeof(float[3]));
   memcpy(BKE_mesh_edges_for_write(temp_mesh),
          dm->getEdgeArray(dm),
          temp_mesh->totedge * sizeof(MEdge));
@@ -503,7 +502,7 @@ static void do_multires_bake(MultiresBakeRender *bkr,
   if (require_tangent) {
     if (CustomData_get_layer_index(&dm->loopData, CD_TANGENT) == -1) {
       BKE_mesh_calc_loop_tangent_ex(
-          dm->getVertArray(dm),
+          positions,
           dm->getPolyArray(dm),
           dm->getNumPolys(dm),
           dm->getLoopArray(dm),

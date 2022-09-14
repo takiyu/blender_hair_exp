@@ -696,10 +696,7 @@ void USDMeshReader::read_mesh_sample(ImportSettings *settings,
   if (new_mesh || (settings->read_flag & MOD_MESHSEQ_READ_VERT) != 0) {
     MutableSpan<float3> verts = mesh->positions_for_write();
     for (int i = 0; i < positions_.size(); i++) {
-      float3 &mvert = verts[i];
-      mvert.co[0] = positions_[i][0];
-      mvert.co[1] = positions_[i][1];
-      mvert.co[2] = positions_[i][2];
+      verts[i] = {positions_[i][0], positions_[i][1], positions_[i][2]};
     }
 
     read_vertex_creases(mesh, motionSampleTime);

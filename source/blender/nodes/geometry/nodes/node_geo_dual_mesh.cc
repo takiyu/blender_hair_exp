@@ -868,7 +868,7 @@ static void calc_dual_mesh(GeometrySet &geometry_set,
       new_to_old_face_corners_map.append(sorted_corners.first());
       boundary_vertex_to_relevant_face_map.append(
           std::pair(loop_indices.last(), last_face_center));
-      vertex_positions.append(src_positions[i].co);
+      vertex_positions.append(src_positions[i]);
       const int boundary_vertex = loop_indices.last();
       add_edge(src_edges,
                edge1,

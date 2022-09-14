@@ -550,7 +550,7 @@ static void duplicate_faces(GeometrySet &geometry_set,
   MutableSpan<MPoly> new_polys = new_mesh->polys_for_write();
   MutableSpan<MLoop> new_loops = new_mesh->loops_for_write();
 
-  Array<int> vert_mapping(new_verts.size());
+  Array<int> vert_mapping(new_mesh->totvert);
   Array<int> edge_mapping(new_edges.size());
   Array<int> loop_mapping(new_loops.size());
 

@@ -135,8 +135,8 @@ static void extract_pos_nor_iter_ledge_mesh(const MeshRenderData *mr,
   MeshExtract_PosNor_Data *data = static_cast<MeshExtract_PosNor_Data *>(_data);
   const int ml_index = mr->loop_len + ledge_index * 2;
   PosNorLoop *vert = &data->vbo_data[ml_index];
-  copy_v3_v3(vert[0].pos, mr->positions[med->v1].co);
-  copy_v3_v3(vert[1].pos, mr->positions[med->v2].co);
+  copy_v3_v3(vert[0].pos, mr->positions[med->v1]);
+  copy_v3_v3(vert[1].pos, mr->positions[med->v2]);
   vert[0].nor = data->normals[med->v1].low;
   vert[1].nor = data->normals[med->v2].low;
 }

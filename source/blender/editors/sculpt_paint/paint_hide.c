@@ -70,7 +70,6 @@ static void partialvis_update_mesh(Object *ob,
   Mesh *me = ob->data;
   const float(*positions)[3] = BKE_pbvh_get_positions(pbvh);
   const float *paint_mask;
-  const int *vert_indices;
   int totvert, i;
   bool any_changed = false, any_visible = false;
 

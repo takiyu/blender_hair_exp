@@ -562,7 +562,7 @@ static void ss_sync_ccg_from_derivedmesh(CCGSubSurf *ss,
   CCGVertHDL *fVerts = NULL;
   BLI_array_declare(fVerts);
 #endif
-  float(*positions)[3] = dm->getVertArray(dm);
+  float(*positions)[3] = (float(*)[3])dm->getVertArray(dm);
   MEdge *medge = dm->getEdgeArray(dm);
   MEdge *me;
   MLoop *mloop = dm->getLoopArray(dm), *ml;
@@ -899,12 +899,12 @@ static void ccgDM_copyFinalVertArray(DerivedMesh *dm, float (*r_positions)[3])
     int x, y, S, numVerts = ccgSubSurf_getFaceNumVerts(f);
 
     vd = ccgSubSurf_getFaceCenterData(f);
-    ccgDM_to_MVert(&r_positions[i++], &key, vd);
+    ccgDM_to_MVert(r_positions[i++], &key, vd);
 
     for (S = 0; S < numVerts; S++) {
       for (x = 1; x < gridSize - 1; x++) {
         vd = ccgSubSurf_getFaceGridEdgeData(ss, f, S, x);
-        ccgDM_to_MVert(&r_positions[i++], &key, vd);
+        ccgDM_to_MVert(r_positions[i++], &key, vd);
       }
     }
 
@@ -912,7 +912,7 @@ static void ccgDM_copyFinalVertArray(DerivedMesh *dm, float (*r_positions)[3])
       for (y = 1; y < gridSize - 1; y++) {
         for (x = 1; x < gridSize - 1; x++) {
           vd = ccgSubSurf_getFaceGridData(ss, f, S, x, y);
-          ccgDM_to_MVert(&r_positions[i++], &key, vd);
+          ccgDM_to_MVert(r_positions[i++], &key, vd);
         }
       }
     }
@@ -928,7 +928,7 @@ static void ccgDM_copyFinalVertArray(DerivedMesh *dm, float (*r_positions)[3])
        * unit length. This is most likely caused by edges with no faces which are now zeroed out,
        * see comment in: `ccgSubSurf__calcVertNormals()`. */
       vd = ccgSubSurf_getEdgeData(ss, e, x);
-      ccgDM_to_MVert(&r_positions[i++], &key, vd);
+      ccgDM_to_MVert(r_positions[i++], &key, vd);
     }
   }
 
@@ -937,7 +937,7 @@ static void ccgDM_copyFinalVertArray(DerivedMesh *dm, float (*r_positions)[3])
     CCGVert *v = ccgdm->vertMap[index].vert;
 
     vd = ccgSubSurf_getVertData(ss, v);
-    ccgDM_to_MVert(&r_positions[i++], &key, vd);
+    ccgDM_to_MVert(r_positions[i++], &key, vd);
   }
 }
 

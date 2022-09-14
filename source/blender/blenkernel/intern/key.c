@@ -2183,12 +2183,9 @@ void BKE_keyblock_convert_to_curve(KeyBlock *kb, Curve *UNUSED(cu), ListBase *nu
 
 void BKE_keyblock_update_from_mesh(const Mesh *me, KeyBlock *kb)
 {
-  float(*fp)[3];
-  int a, tot;
-
   BLI_assert(me->totvert == kb->totelem);
 
-  tot = me->totvert;
+  const int tot = me->totvert;
   if (tot == 0) {
     return;
   }

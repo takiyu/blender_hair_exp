@@ -58,12 +58,6 @@ static void requiredDataMask(Object *UNUSED(ob),
   if (smd->vgroup_name[0] != '\0') {
     r_cddata_masks->vmask |= CD_MASK_MDEFORMVERT;
   }
-
-  if ((smd->shrinkType == MOD_SHRINKWRAP_PROJECT) &&
-      (smd->projAxis == MOD_SHRINKWRAP_PROJECT_OVER_NORMAL)) {
-    /* XXX Really? These should always be present, always... */
-    r_cddata_masks->vmask |= CD_MASK_MVERT;
-  }
 }
 
 static bool isDisabled(const struct Scene *UNUSED(scene),
