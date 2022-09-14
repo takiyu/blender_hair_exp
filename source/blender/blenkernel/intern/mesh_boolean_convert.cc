@@ -717,13 +717,13 @@ static Mesh *imesh_to_mesh(IMesh *im, MeshesToIMeshInfo &mim)
   MutableSpan<float3> positions = result->positions_for_write();
   for (int vi : im->vert_index_range()) {
     const Vert *v = im->vert(vi);
-    copy_v3fl_v3db(positions[vi], v->co);
     if (v->orig != NO_INDEX) {
       const Mesh *orig_me;
       int index_in_orig_me;
       mim.input_mvert_for_orig_index(v->orig, &orig_me, &index_in_orig_me);
       copy_vert_attributes(result, orig_me, vi, index_in_orig_me);
     }
+    copy_v3fl_v3db(positions[vi], v->co);
   }
 
   /* Set the loopstart and totloop for each output poly,

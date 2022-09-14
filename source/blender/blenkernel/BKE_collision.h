@@ -16,6 +16,7 @@ struct CollisionModifierData;
 struct Depsgraph;
 struct MVertTri;
 struct Object;
+struct Scene;
 
 ////////////////////////////////////////
 // used for collisions in collision.c
