@@ -368,7 +368,6 @@ static void extract_range_iter_lvert_mesh(void *__restrict userdata,
 
   const ExtractorIterData *data = static_cast<ExtractorIterData *>(userdata);
   const MeshRenderData *mr = data->mr;
-  const int lvert_index = data->loose_elems[iter];
   for (const ExtractorRunData &run_data : data->extractors) {
     run_data.extractor->iter_lvert_mesh(
         mr, iter, POINTER_OFFSET(extract_data, run_data.data_offset));

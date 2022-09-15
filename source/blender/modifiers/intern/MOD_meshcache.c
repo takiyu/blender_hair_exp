@@ -176,9 +176,6 @@ static void meshcache_do(MeshCacheModifierData *mcmd,
       BKE_modifier_set_error(ob, &mcmd->modifier, "'Integrate' requires faces");
     }
     else {
-      /* the moons align! */
-      int i;
-
       float(*vertexCos_New)[3] = MEM_malloc_arrayN(verts_num, sizeof(*vertexCos_New), __func__);
       const float(*positions)[3] = BKE_mesh_positions(me);
 

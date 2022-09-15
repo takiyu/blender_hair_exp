@@ -337,9 +337,6 @@ static void copy_masked_verts_to_new_mesh(const Mesh &src_mesh,
                                           Span<int> vertex_map)
 {
   BLI_assert(src_mesh.totvert == vertex_map.size());
-  const Span<float3> src_positions = src_mesh.positions();
-  MutableSpan<float3> dst_positions = dst_mesh.positions_for_write();
-
   for (const int i_src : vertex_map.index_range()) {
     const int i_dst = vertex_map[i_src];
     if (i_dst == -1) {
