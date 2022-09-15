@@ -254,7 +254,8 @@ static void mesh_blend_write(BlendWriter *writer, ID *id, const void *id_address
     Set<std::string> names_to_skip;
     if (!BLO_write_is_undo(writer)) {
       /* When converting to the old mesh format, don't save redundant attributes. */
-      names_to_skip.add_multiple_new({".hide_vert",
+      names_to_skip.add_multiple_new({"position",
+                                      ".hide_vert",
                                       ".hide_edge",
                                       ".hide_poly",
                                       "material_index",
@@ -262,8 +263,13 @@ static void mesh_blend_write(BlendWriter *writer, ID *id, const void *id_address
                                       ".selection_edge",
                                       ".selection_poly"});
 
+      mesh->mvert = BKE_mesh_legacy_convert_positions_to_verts(
+          mesh, temp_arrays_for_legacy_format, vert_layers);
+      BKE_mesh_legacy_convert_hide_layers_to_flags(mesh);
+      BKE_mesh_legacy_convert_material_indices_to_mpoly(mesh);
+      BKE_mesh_legacy_bevel_weight_from_layers(mesh);
+
       /* Set deprecated mesh data pointers for forward compatibility. */
-      mesh->mvert = static_cast<MVert *>(CustomData_get_layer(&mesh->vdata, CD_MVERT));
       mesh->medge = const_cast<MEdge *>(mesh->edges().data());
       mesh->mpoly = const_cast<MPoly *>(mesh->polys().data());
       mesh->mloop = const_cast<MLoop *>(mesh->loops().data());
@@ -274,13 +280,6 @@ static void mesh_blend_write(BlendWriter *writer, ID *id, const void *id_address
     CustomData_blend_write_prepare(mesh->edata, edge_layers, names_to_skip);
     CustomData_blend_write_prepare(mesh->ldata, loop_layers, names_to_skip);
     CustomData_blend_write_prepare(mesh->pdata, poly_layers, names_to_skip);
-
-    if (!BLO_write_is_undo(writer)) {
-      BKE_mesh_legacy_convert_positions_to_verts(mesh, temp_arrays_for_legacy_format, vert_layers);
-      BKE_mesh_legacy_convert_hide_layers_to_flags(mesh);
-      BKE_mesh_legacy_convert_material_indices_to_mpoly(mesh);
-      BKE_mesh_legacy_bevel_weight_from_layers(mesh);
-    }
   }
 
   BLO_write_id_struct(writer, Mesh, id_address, &mesh->id);

@@ -930,8 +930,7 @@ void BKE_mesh_add_mface_layers(CustomData *fdata, CustomData *ldata, int total)
 void BKE_mesh_legacy_bevel_weight_from_layers(Mesh *mesh)
 {
   using namespace blender;
-  MutableSpan<MVert> verts(static_cast<MVert *>(CustomData_get_layer(&mesh->vdata, CD_MVERT)),
-                           mesh->totvert);
+  MutableSpan<MVert> verts(mesh->mvert, mesh->totvert);
   if (const float *weights = static_cast<const float *>(
           CustomData_get_layer(&mesh->vdata, CD_BWEIGHT))) {
     mesh->cd_flag |= ME_CDFLAG_VERT_BWEIGHT;
@@ -964,8 +963,7 @@ void BKE_mesh_legacy_bevel_weight_from_layers(Mesh *mesh)
 void BKE_mesh_legacy_bevel_weight_to_layers(Mesh *mesh)
 {
   using namespace blender;
-  const Span<MVert> verts(static_cast<MVert *>(CustomData_get_layer(&mesh->vdata, CD_MVERT)),
-                          mesh->totvert);
+  const Span<MVert> verts(mesh->mvert, mesh->totvert);
   if (mesh->cd_flag & ME_CDFLAG_VERT_BWEIGHT) {
     float *weights = static_cast<float *>(
         CustomData_add_layer(&mesh->vdata, CD_BWEIGHT, CD_CONSTRUCT, nullptr, verts.size()));
@@ -996,8 +994,7 @@ void BKE_mesh_legacy_convert_hide_layers_to_flags(Mesh *mesh)
   using namespace blender::bke;
   const AttributeAccessor attributes = mesh->attributes();
 
-  MutableSpan<MVert> verts(static_cast<MVert *>(CustomData_get_layer(&mesh->vdata, CD_MVERT)),
-                           mesh->totvert);
+  MutableSpan<MVert> verts(mesh->mvert, mesh->totvert);
   const VArray<bool> hide_vert = attributes.lookup_or_default<bool>(
       ".hide_vert", ATTR_DOMAIN_POINT, false);
   threading::parallel_for(verts.index_range(), 4096, [&](IndexRange range) {
@@ -1031,8 +1028,7 @@ void BKE_mesh_legacy_convert_flags_to_hide_layers(Mesh *mesh)
   using namespace blender::bke;
   MutableAttributeAccessor attributes = mesh->attributes_for_write();
 
-  const Span<MVert> verts(static_cast<MVert *>(CustomData_get_layer(&mesh->vdata, CD_MVERT)),
-                          mesh->totvert);
+  const Span<MVert> verts(mesh->mvert, mesh->totvert);
   if (std::any_of(
           verts.begin(), verts.end(), [](const MVert &vert) { return vert.flag & ME_HIDE; })) {
     SpanAttributeWriter<bool> hide_vert = attributes.lookup_or_add_for_write_only_span<bool>(
@@ -1124,8 +1120,7 @@ void BKE_mesh_legacy_convert_selection_layers_to_flags(Mesh *mesh)
   using namespace blender::bke;
   const AttributeAccessor attributes = mesh->attributes();
 
-  MutableSpan<MVert> verts(static_cast<MVert *>(CustomData_get_layer(&mesh->vdata, CD_MVERT)),
-                           mesh->totvert);
+  MutableSpan<MVert> verts(mesh->mvert, mesh->totvert);
   const VArray<bool> selection_vert = attributes.lookup_or_default<bool>(
       ".selection_vert", ATTR_DOMAIN_POINT, false);
   threading::parallel_for(verts.index_range(), 4096, [&](IndexRange range) {
@@ -1159,8 +1154,7 @@ void BKE_mesh_legacy_convert_flags_to_selection_layers(Mesh *mesh)
   using namespace blender::bke;
   MutableAttributeAccessor attributes = mesh->attributes_for_write();
 
-  const Span<MVert> verts(static_cast<MVert *>(CustomData_get_layer(&mesh->vdata, CD_MVERT)),
-                          mesh->totvert);
+  const Span<MVert> verts(mesh->mvert, mesh->totvert);
   if (std::any_of(
           verts.begin(), verts.end(), [](const MVert &vert) { return vert.flag & SELECT; })) {
     SpanAttributeWriter<bool> selection_vert = attributes.lookup_or_add_for_write_only_span<bool>(
@@ -1206,36 +1200,28 @@ void BKE_mesh_legacy_convert_flags_to_selection_layers(Mesh *mesh)
 /** \name Vertex and Position Conversion
  * \{ */
 
-void BKE_mesh_legacy_convert_positions_to_verts(
+MVert *BKE_mesh_legacy_convert_positions_to_verts(
     Mesh *mesh,
     blender::ResourceScope &temp_arrays_for_convert,
     blender::Vector<CustomDataLayer, 16> &vert_layers_to_write)
 {
   using namespace blender;
-  Vector<CustomDataLayer, 16> new_layer_to_write;
 
-  for (const CustomDataLayer &layer : vert_layers_to_write) {
-    if (layer.type != CD_PROP_FLOAT2) {
-      new_layer_to_write.append(layer);
-      continue;
+  const Span<float3> positions = mesh->positions();
+
+  CustomDataLayer mvert_layer{};
+  mvert_layer.type = CD_MVERT;
+  MutableSpan<MVert> verts = temp_arrays_for_convert.construct<Array<MVert>>(mesh->totvert);
+  mvert_layer.data = verts.data();
+
+  threading::parallel_for(verts.index_range(), 2048, [&](IndexRange range) {
+    for (const int i : range) {
+      copy_v3_v3(verts[i].co, positions[i]);
     }
-    const Span<float3> positions{static_cast<const float3 *>(layer.data), mesh->totvert};
-    CustomDataLayer mvert_layer = layer;
-    mvert_layer.type = CD_MVERT;
-    MutableSpan<MVert> verts = temp_arrays_for_convert.construct<Array<MVert>>(mesh->totvert);
-    mvert_layer.data = verts.data();
+  });
 
-    threading::parallel_for(verts.index_range(), 2048, [&](IndexRange range) {
-      for (const int i : range) {
-        copy_v3_v3(verts[i].co, positions[i]);
-      }
-    });
-    new_layer_to_write.append(mvert_layer);
-  }
-
-  vert_layers_to_write = new_layer_to_write;
-  mesh->ldata.totlayer = new_layer_to_write.size();
-  mesh->ldata.maxlayer = mesh->ldata.totlayer;
+  vert_layers_to_write.append(mvert_layer);
+  return verts.data();
 }
 
 void BKE_mesh_legacy_convert_verts_to_positions(Mesh *mesh)

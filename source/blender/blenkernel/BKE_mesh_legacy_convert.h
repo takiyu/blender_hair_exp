@@ -64,7 +64,7 @@ void BKE_mesh_legacy_convert_material_indices_to_mpoly(struct Mesh *mesh);
 void BKE_mesh_legacy_convert_mpoly_to_material_indices(struct Mesh *mesh);
 
 #ifdef __cplusplus
-void BKE_mesh_legacy_convert_positions_to_verts(
+struct MVert *BKE_mesh_legacy_convert_positions_to_verts(
     Mesh *mesh,
     blender::ResourceScope &temp_arrays_for_convert,
     blender::Vector<CustomDataLayer, 16> &vert_layers_to_write);
