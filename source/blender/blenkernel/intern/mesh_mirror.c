@@ -238,7 +238,7 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
   }
 
   /* mirror vertex coordinates */
-  float(*positions)[3] = BKE_mesh_positions(result);
+  float(*positions)[3] = BKE_mesh_positions_for_write(result);
   for (i = 0; i < maxVerts; i++) {
     const int vert_index_prev = i;
     const int vert_index = maxVerts + i;
