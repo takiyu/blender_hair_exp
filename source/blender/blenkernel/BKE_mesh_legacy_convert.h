@@ -14,6 +14,8 @@
 #  include "BLI_vector.hh"
 #endif
 
+#include "DNA_customdata_types.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
