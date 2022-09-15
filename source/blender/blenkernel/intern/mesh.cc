@@ -266,6 +266,7 @@ static void mesh_blend_write(BlendWriter *writer, ID *id, const void *id_address
       mesh->mvert = BKE_mesh_legacy_convert_positions_to_verts(
           mesh, temp_arrays_for_legacy_format, vert_layers);
       BKE_mesh_legacy_convert_hide_layers_to_flags(mesh);
+      BKE_mesh_legacy_convert_selection_layers_to_flags(mesh);
       BKE_mesh_legacy_convert_material_indices_to_mpoly(mesh);
       BKE_mesh_legacy_bevel_weight_from_layers(mesh);
 
