@@ -384,7 +384,7 @@ typedef struct TFace {
 
 /** #Mesh_Runtime.wrapper_type */
 typedef enum eMeshWrapperType {
-  /** Use mesh data (#Mesh.mvert, #Mesh.medge, #Mesh.mloop, #Mesh.mpoly). */
+  /** Use mesh data (#positions, #Mesh.medge, #Mesh.mloop, #Mesh.mpoly). */
   ME_WRAPPER_TYPE_MDATA = 0,
   /** Use edit-mesh data (#Mesh.edit_mesh, #Mesh_Runtime.edit_data). */
   ME_WRAPPER_TYPE_BMESH = 1,

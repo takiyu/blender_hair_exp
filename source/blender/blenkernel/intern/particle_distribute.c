@@ -97,7 +97,7 @@ static void distribute_grid(Mesh *mesh, ParticleSystem *psys)
 {
   ParticleData *pa = NULL;
   float min[3], max[3], delta[3], d;
-  float(*positions)[3] = BKE_mesh_positions_for_write(mesh);
+  const float(*positions)[3] = BKE_mesh_positions(mesh);
   int totvert = mesh->totvert, from = psys->part->from;
   int i, j, k, p, res = psys->part->grid_res, size[3], axis;
 

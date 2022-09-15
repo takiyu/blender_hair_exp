@@ -19,9 +19,7 @@ extern "C" {
  * \{ */
 
 /**
- * Mesh Vertices.
- *
- * Typically accessed from #Mesh.mvert
+ * Deprecated mesh vertex data structure. Now stored with generic attributes.
  */
 #ifdef DNA_DEPRECATED_ALLOW
 typedef struct MVert {
@@ -178,9 +176,9 @@ enum {
  *
  * // access vertex locations.
  * float *vtri_co[3] = {
- *     mvert[mloop[lt->tri[0]].v].co,
- *     mvert[mloop[lt->tri[1]].v].co,
- *     mvert[mloop[lt->tri[2]].v].co,
+ *     positions[mloop[lt->tri[0]].v],
+ *     positions[mloop[lt->tri[1]].v],
+ *     positions[mloop[lt->tri[2]].v],
  * };
  *
  * // access UV coordinates (works for all loop data, vertex colors... etc).

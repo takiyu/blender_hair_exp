@@ -654,9 +654,9 @@ static int bm_to_mesh_shape_layer_index_from_kb(BMesh *bm, KeyBlock *currkey)
  *
  * \param bm: The source BMesh.
  * \param key: The destination key.
- * \param mvert: The destination vertex array (in some situations it's coordinates are updated).
+ * \param positions: The destination vertex array (in some situations its coordinates are updated).
  * \param active_shapekey_to_mvert: When editing a non-basis shape key, the coordinates for the
- * basis are typically copied into the `mvert` array since it makes sense for the meshes
+ * basis are typically copied into the `positions` array since it makes sense for the meshes
  * vertex coordinates to match the "Basis" key.
  * When enabled, skip this step and copy #BMVert.co directly to the mesh position.
  * See #BMeshToMeshParams.active_shapekey_to_mvert doc-string.
@@ -743,7 +743,7 @@ static void bm_to_mesh_shape(BMesh *bm,
    * while users might not notice since the shape-key is applied in the viewport,
    * exporters for example may still use the underlying coordinates, see: T30771 & T96135.
    *
-   * Needed when editing any shape that isn't the (`key->refkey`), the vertices in `me->mvert`
+   * Needed when editing any shape that isn't the (`key->refkey`), the vertices in mesh positions
    * currently have vertex coordinates set from the current-shape (initialized from #BMVert.co).
    * In this case it's important to overwrite these coordinates with the basis-keys coordinates. */
   bool update_vertex_coords_from_refkey = false;
