@@ -166,10 +166,10 @@ static void dm_mvert_map_doubles(int *doubles_map,
   sorted_verts_source = MEM_malloc_arrayN(source_verts_num, sizeof(SortVertsElem), __func__);
 
   /* Copy target vertices index and cos into SortVertsElem array */
-  svert_from_mvert(sorted_verts_target, positions + target_start, target_start, target_end);
+  svert_from_mvert(sorted_verts_target, positions, target_start, target_end);
 
   /* Copy source vertices index and cos into SortVertsElem array */
-  svert_from_mvert(sorted_verts_source, positions + source_start, source_start, source_end);
+  svert_from_mvert(sorted_verts_source, positions, source_start, source_end);
 
   /* sort arrays according to sum of vertex coordinates (sumco) */
   qsort(sorted_verts_target, target_verts_num, sizeof(SortVertsElem), svert_sum_cmp);
@@ -425,7 +425,6 @@ static Mesh *arrayModifier_doArray(ArrayModifierData *amd,
   /* Build up offset array, accumulating all settings options. */
 
   unit_m4(offset);
-  const float(*src_positions)[3] = BKE_mesh_positions(mesh);
   const MEdge *src_edges = BKE_mesh_edges(mesh);
   const MPoly *src_polys = BKE_mesh_polys(mesh);
   const MLoop *src_loops = BKE_mesh_loops(mesh);
