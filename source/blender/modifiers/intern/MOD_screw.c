@@ -431,9 +431,6 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
 
   /* Set the locations of the first set of verts */
 
-  int vert_index_new = 0;
-  int vert_index_orig = 0;
-
   BLI_bitmap *vert_tag = BLI_BITMAP_NEW(totvert, __func__);
 
   /* Copy the first set of edges */
@@ -511,7 +508,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
     /* Copy Vert Locations */
     /* - We can do this in a later loop - only do here if no normal calc */
     if (!totedge) {
-      for (i = 0; i < totvert; i++, vert_index_new++, vert_index_orig++) {
+      for (i = 0; i < totvert; i++) {
         copy_v3_v3(positions_new[i], positions_orig[i]);
         /* No edges: this is really a dummy normal. */
         normalize_v3_v3(vc->no, positions_new[i]);
@@ -525,9 +522,9 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
       if (ob_axis != NULL) {
         /* `mtx_tx` is initialized early on. */
         for (i = 0; i < totvert; i++, vc++) {
-          vc->co[0] = positions_new[i][0] = positions_orig[vert_index_orig][0];
-          vc->co[1] = positions_new[i][1] = positions_orig[vert_index_orig][1];
-          vc->co[2] = positions_new[i][2] = positions_orig[vert_index_orig][2];
+          vc->co[0] = positions_new[i][0] = positions_orig[i][0];
+          vc->co[1] = positions_new[i][1] = positions_orig[i][1];
+          vc->co[2] = positions_new[i][2] = positions_orig[i][2];
 
           vc->flag = 0;
           vc->e[0] = vc->e[1] = NULL;
@@ -873,7 +870,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
     CustomData_copy_data(&mesh->vdata, &result->vdata, 0, (int)varray_stride, (int)totvert);
 
     for (j = 0; j < totvert; j++) {
-      vert_index_new = (int)varray_stride + (int)j;
+      int vert_index_new = (int)varray_stride + (int)j;
       /* set normal */
       if (vert_connect) {
         if (do_normal_create) {
