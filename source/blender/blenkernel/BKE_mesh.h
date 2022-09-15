@@ -184,6 +184,8 @@ struct Mesh *BKE_mesh_new_nomain_from_curve(const struct Object *ob);
 struct Mesh *BKE_mesh_new_nomain_from_curve_displist(const struct Object *ob,
                                                      const struct ListBase *dispbase);
 
+bool BKE_mesh_attribute_required(const char *name);
+
 bool BKE_mesh_ensure_facemap_customdata(struct Mesh *me);
 bool BKE_mesh_clear_facemap_customdata(struct Mesh *me);
 

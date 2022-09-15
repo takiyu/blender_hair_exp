@@ -763,6 +763,11 @@ const char *BKE_mesh_cmp(Mesh *me1, Mesh *me2, float thresh)
   return nullptr;
 }
 
+bool BKE_mesh_attribute_required(const char *name)
+{
+  return StringRef(name) == "position";
+}
+
 void BKE_mesh_ensure_skin_customdata(Mesh *me)
 {
   BMesh *bm = me->edit_mesh ? me->edit_mesh->bm : nullptr;

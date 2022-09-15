@@ -1331,7 +1331,7 @@ void BKE_mesh_nomain_to_meshkey(Mesh *mesh_src, Mesh *mesh_dst, KeyBlock *kb)
 {
   BLI_assert(mesh_src->id.tag & LIB_TAG_NO_MAIN);
 
-  int a, totvert = mesh_src->totvert;
+  const int totvert = mesh_src->totvert;
 
   if (totvert == 0 || mesh_dst->totvert == 0 || mesh_dst->totvert != totvert) {
     return;
