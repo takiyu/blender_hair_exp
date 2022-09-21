@@ -930,15 +930,21 @@ static void convert_bmesh_hide_flags_to_mesh_attributes(BMesh &bm,
   bke::MutableAttributeAccessor attributes = mesh.attributes_for_write();
   BM_mesh_elem_table_ensure(&bm, BM_VERT | BM_EDGE | BM_FACE);
 
-  write_fn_to_attribute<bool>(attributes, ".hide_vert", ATTR_DOMAIN_POINT, [&](const int i) {
-    return BM_elem_flag_test(BM_vert_at_index(&bm, i), BM_ELEM_HIDDEN);
-  });
-  write_fn_to_attribute<bool>(attributes, ".hide_edge", ATTR_DOMAIN_EDGE, [&](const int i) {
-    return BM_elem_flag_test(BM_edge_at_index(&bm, i), BM_ELEM_HIDDEN);
-  });
-  write_fn_to_attribute<bool>(attributes, ".hide_poly", ATTR_DOMAIN_FACE, [&](const int i) {
-    return BM_elem_flag_test(BM_face_at_index(&bm, i), BM_ELEM_HIDDEN);
-  });
+  if (need_hide_vert) {
+    write_fn_to_attribute<bool>(attributes, ".hide_vert", ATTR_DOMAIN_POINT, [&](const int i) {
+      return BM_elem_flag_test(BM_vert_at_index(&bm, i), BM_ELEM_HIDDEN);
+    });
+  }
+  if (need_hide_edge) {
+    write_fn_to_attribute<bool>(attributes, ".hide_edge", ATTR_DOMAIN_EDGE, [&](const int i) {
+      return BM_elem_flag_test(BM_edge_at_index(&bm, i), BM_ELEM_HIDDEN);
+    });
+  }
+  if (need_hide_poly) {
+    write_fn_to_attribute<bool>(attributes, ".hide_poly", ATTR_DOMAIN_FACE, [&](const int i) {
+      return BM_elem_flag_test(BM_face_at_index(&bm, i), BM_ELEM_HIDDEN);
+    });
+  }
 }
 
 static void convert_bmesh_selection_flags_to_mesh_attributes(BMesh &bm,
@@ -1316,7 +1322,7 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
 
     if (BM_elem_flag_test(eve, BM_ELEM_HIDDEN)) {
       if (!hide_vert_attribute) {
-        hide_vert_attribute = mesh_attributes.lookup_or_add_for_write_only_span<bool>(
+        hide_vert_attribute = mesh_attributes.lookup_or_add_for_write_span<bool>(
             ".hide_vert", ATTR_DOMAIN_POINT);
       }
       hide_vert_attribute.span[i] = true;
@@ -1346,8 +1352,8 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
     med->flag = BM_edge_flag_to_mflag(eed);
     if (BM_elem_flag_test(eed, BM_ELEM_HIDDEN)) {
       if (!hide_edge_attribute) {
-        hide_edge_attribute = mesh_attributes.lookup_or_add_for_write_only_span<bool>(
-            ".hide_edge", ATTR_DOMAIN_EDGE);
+        hide_edge_attribute = mesh_attributes.lookup_or_add_for_write_span<bool>(".hide_edge",
+                                                                                 ATTR_DOMAIN_EDGE);
       }
       hide_edge_attribute.span[i] = true;
     }
@@ -1390,8 +1396,8 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
     mp->flag = BM_face_flag_to_mflag(efa);
     if (BM_elem_flag_test(efa, BM_ELEM_HIDDEN)) {
       if (!hide_poly_attribute) {
-        hide_poly_attribute = mesh_attributes.lookup_or_add_for_write_only_span<bool>(
-            ".hide_poly", ATTR_DOMAIN_FACE);
+        hide_poly_attribute = mesh_attributes.lookup_or_add_for_write_span<bool>(".hide_poly",
+                                                                                 ATTR_DOMAIN_FACE);
       }
       hide_poly_attribute.span[i] = true;
     }
@@ -1406,7 +1412,7 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
     mp->loopstart = j;
     if (efa->mat_nr != 0) {
       if (!material_index_attribute) {
-        material_index_attribute = mesh_attributes.lookup_or_add_for_write_only_span<int>(
+        material_index_attribute = mesh_attributes.lookup_or_add_for_write_span<int>(
             "material_index", ATTR_DOMAIN_FACE);
       }
       material_index_attribute.span[i] = efa->mat_nr;
@@ -1428,30 +1434,15 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
   }
   bm->elem_index_dirty &= ~(BM_FACE | BM_LOOP);
 
-  if (material_index_attribute) {
-    material_index_attribute.finish();
-  }
-
   assert_bmesh_has_no_mesh_only_attributes(*bm);
 
-  if (hide_vert_attribute) {
-    hide_vert_attribute.finish();
-  }
-  if (hide_edge_attribute) {
-    hide_edge_attribute.finish();
-  }
-  if (hide_poly_attribute) {
-    hide_poly_attribute.finish();
-  }
-  if (selection_vert_attribute) {
-    selection_vert_attribute.finish();
-  }
-  if (selection_edge_attribute) {
-    selection_edge_attribute.finish();
-  }
-  if (selection_poly_attribute) {
-    selection_poly_attribute.finish();
-  }
+  material_index_attribute.finish();
+  hide_vert_attribute.finish();
+  hide_edge_attribute.finish();
+  hide_poly_attribute.finish();
+  selection_vert_attribute.finish();
+  selection_edge_attribute.finish();
+  selection_poly_attribute.finish();
 
   me->cd_flag = BM_mesh_cd_flag_from_bmesh(bm);
 }
