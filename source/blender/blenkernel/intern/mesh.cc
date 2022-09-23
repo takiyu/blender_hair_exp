@@ -259,9 +259,9 @@ static void mesh_blend_write(BlendWriter *writer, ID *id, const void *id_address
                                       ".hide_edge",
                                       ".hide_poly",
                                       "material_index",
-                                      ".selection_vert",
-                                      ".selection_edge",
-                                      ".selection_poly"});
+                                      ".select_vert",
+                                      ".select_edge",
+                                      ".select_poly"});
 
       /* Set deprecated mesh data pointers for forward compatibility. */
       mesh->mvert = const_cast<MVert *>(mesh->verts().data());
@@ -697,11 +697,6 @@ static int customdata_compare(
         case CD_PROP_BOOL: {
           const bool *l1_data = (bool *)l1->data;
           const bool *l2_data = (bool *)l2->data;
-          /* TODO(@HooglyBoogly): Remove this after test files have been updated for selection
-           * attribute changes. */
-          if (StringRef(l1->name).startswith(".selection")) {
-            continue;
-          }
           for (int i = 0; i < total_length; i++) {
             if (l1_data[i] != l2_data[i]) {
               return MESHCMP_ATTRIBUTE_VALUE_MISMATCH;
@@ -1664,32 +1659,32 @@ void BKE_mesh_mselect_validate(Mesh *me)
       (me->totselect), sizeof(MSelect), "Mesh selection history");
 
   const AttributeAccessor attributes = me->attributes();
-  const VArray<bool> selection_vert = attributes.lookup_or_default<bool>(
-      ".selection_vert", ATTR_DOMAIN_POINT, false);
-  const VArray<bool> selection_edge = attributes.lookup_or_default<bool>(
-      ".selection_edge", ATTR_DOMAIN_EDGE, false);
-  const VArray<bool> selection_poly = attributes.lookup_or_default<bool>(
-      ".selection_poly", ATTR_DOMAIN_FACE, false);
+  const VArray<bool> select_vert = attributes.lookup_or_default<bool>(
+      ".select_vert", ATTR_DOMAIN_POINT, false);
+  const VArray<bool> select_edge = attributes.lookup_or_default<bool>(
+      ".select_edge", ATTR_DOMAIN_EDGE, false);
+  const VArray<bool> select_poly = attributes.lookup_or_default<bool>(
+      ".select_poly", ATTR_DOMAIN_FACE, false);
 
   for (i_src = 0, i_dst = 0; i_src < me->totselect; i_src++) {
     int index = mselect_src[i_src].index;
     switch (mselect_src[i_src].type) {
       case ME_VSEL: {
-        if (selection_vert[index]) {
+        if (select_vert[index]) {
           mselect_dst[i_dst] = mselect_src[i_src];
           i_dst++;
         }
         break;
       }
       case ME_ESEL: {
-        if (selection_edge[index]) {
+        if (select_edge[index]) {
           mselect_dst[i_dst] = mselect_src[i_src];
           i_dst++;
         }
         break;
       }
       case ME_FSEL: {
-        if (selection_poly[index]) {
+        if (select_poly[index]) {
           mselect_dst[i_dst] = mselect_src[i_src];
           i_dst++;
         }

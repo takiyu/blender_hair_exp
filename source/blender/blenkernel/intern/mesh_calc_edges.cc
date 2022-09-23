@@ -247,19 +247,19 @@ void BKE_mesh_calc_edges(Mesh *mesh, bool keep_existing_edges, const bool select
 
   if (select_new_edges) {
     MutableAttributeAccessor attributes = mesh->attributes_for_write();
-    SpanAttributeWriter<bool> selection_edge = attributes.lookup_or_add_for_write_span<bool>(
-        ".selection_edge", ATTR_DOMAIN_EDGE);
-    if (selection_edge) {
+    SpanAttributeWriter<bool> select_edge = attributes.lookup_or_add_for_write_span<bool>(
+        ".select_edge", ATTR_DOMAIN_EDGE);
+    if (select_edge) {
       int new_edge_index = 0;
       for (const EdgeMap &edge_map : edge_maps) {
         for (EdgeMap::Item item : edge_map.items()) {
           if (item.value.original_edge == nullptr) {
-            selection_edge.span[new_edge_index] = true;
+            select_edge.span[new_edge_index] = true;
           }
           new_edge_index++;
         }
       }
-      selection_edge.finish();
+      select_edge.finish();
     }
   }
 

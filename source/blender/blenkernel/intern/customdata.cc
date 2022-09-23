@@ -2376,9 +2376,9 @@ static bool attribute_stored_in_bmesh_flag(const StringRef name)
               ".hide_vert",
               ".hide_edge",
               ".hide_poly",
-              ".selection_vert",
-              ".selection_edge",
-              ".selection_poly",
+              ".select_vert",
+              ".select_edge",
+              ".select_poly",
               "material_index");
 }
 

@@ -1156,10 +1156,10 @@ static void mesh_add_verts(Mesh *mesh, int len)
   mesh->totvert = totvert;
 
   bke::MutableAttributeAccessor attributes = mesh->attributes_for_write();
-  bke::SpanAttributeWriter<bool> selection_vert = attributes.lookup_or_add_for_write_span<bool>(
-      ".selection_vert", ATTR_DOMAIN_POINT);
-  selection_vert.span.take_back(len).fill(true);
-  selection_vert.finish();
+  bke::SpanAttributeWriter<bool> select_vert = attributes.lookup_or_add_for_write_span<bool>(
+      ".select_vert", ATTR_DOMAIN_POINT);
+  select_vert.span.take_back(len).fill(true);
+  select_vert.finish();
 }
 
 static void mesh_add_edges(Mesh *mesh, int len)
@@ -1195,10 +1195,10 @@ static void mesh_add_edges(Mesh *mesh, int len)
   }
 
   bke::MutableAttributeAccessor attributes = mesh->attributes_for_write();
-  bke::SpanAttributeWriter<bool> selection_edge = attributes.lookup_or_add_for_write_span<bool>(
-      ".selection_edge", ATTR_DOMAIN_EDGE);
-  selection_edge.span.take_back(len).fill(true);
-  selection_edge.finish();
+  bke::SpanAttributeWriter<bool> select_edge = attributes.lookup_or_add_for_write_span<bool>(
+      ".select_edge", ATTR_DOMAIN_EDGE);
+  select_edge.span.take_back(len).fill(true);
+  select_edge.finish();
 }
 
 static void mesh_add_loops(Mesh *mesh, int len)
@@ -1256,10 +1256,10 @@ static void mesh_add_polys(Mesh *mesh, int len)
   mesh->totpoly = totpoly;
 
   bke::MutableAttributeAccessor attributes = mesh->attributes_for_write();
-  bke::SpanAttributeWriter<bool> selection_poly = attributes.lookup_or_add_for_write_span<bool>(
-      ".selection_poly", ATTR_DOMAIN_FACE);
-  selection_poly.span.take_back(len).fill(true);
-  selection_poly.finish();
+  bke::SpanAttributeWriter<bool> select_poly = attributes.lookup_or_add_for_write_span<bool>(
+      ".select_poly", ATTR_DOMAIN_FACE);
+  select_poly.span.take_back(len).fill(true);
+  select_poly.finish();
 }
 
 /* -------------------------------------------------------------------- */

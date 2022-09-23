@@ -449,27 +449,27 @@ static void rna_MeshVertex_hide_set(PointerRNA *ptr, bool value)
 static bool rna_MeshVertex_select_get(PointerRNA *ptr)
 {
   const Mesh *mesh = rna_mesh(ptr);
-  const bool *selection_vert = (const bool *)CustomData_get_layer_named(
-      &mesh->vdata, CD_PROP_BOOL, ".selection_vert");
+  const bool *select_vert = (const bool *)CustomData_get_layer_named(
+      &mesh->vdata, CD_PROP_BOOL, ".select_vert");
   const int index = rna_MeshVertex_index_get(ptr);
-  return selection_vert == NULL ? false : selection_vert[index];
+  return select_vert == NULL ? false : select_vert[index];
 }
 
 static void rna_MeshVertex_select_set(PointerRNA *ptr, bool value)
 {
   Mesh *mesh = rna_mesh(ptr);
-  bool *selection_vert = (bool *)CustomData_duplicate_referenced_layer_named(
-      &mesh->vdata, CD_PROP_BOOL, ".selection_vert", mesh->totvert);
-  if (!selection_vert) {
+  bool *select_vert = (bool *)CustomData_duplicate_referenced_layer_named(
+      &mesh->vdata, CD_PROP_BOOL, ".select_vert", mesh->totvert);
+  if (!select_vert) {
     if (!value) {
       /* Skip adding layer if it doesn't exist already anyway and we're not hiding an element. */
       return;
     }
-    selection_vert = (bool *)CustomData_add_layer_named(
-        &mesh->vdata, CD_PROP_BOOL, CD_SET_DEFAULT, NULL, mesh->totvert, ".selection_vert");
+    select_vert = (bool *)CustomData_add_layer_named(
+        &mesh->vdata, CD_PROP_BOOL, CD_SET_DEFAULT, NULL, mesh->totvert, ".select_vert");
   }
   const int index = rna_MeshVertex_index_get(ptr);
-  selection_vert[index] = value;
+  select_vert[index] = value;
 }
 
 static float rna_MeshVertex_bevel_weight_get(PointerRNA *ptr)
@@ -625,27 +625,27 @@ static void rna_MeshPolygon_hide_set(PointerRNA *ptr, bool value)
 static bool rna_MeshPolygon_select_get(PointerRNA *ptr)
 {
   const Mesh *mesh = rna_mesh(ptr);
-  const bool *selection_poly = (const bool *)CustomData_get_layer_named(
-      &mesh->pdata, CD_PROP_BOOL, ".selection_poly");
+  const bool *select_poly = (const bool *)CustomData_get_layer_named(
+      &mesh->pdata, CD_PROP_BOOL, ".select_poly");
   const int index = rna_MeshPolygon_index_get(ptr);
-  return selection_poly == NULL ? false : selection_poly[index];
+  return select_poly == NULL ? false : select_poly[index];
 }
 
 static void rna_MeshPolygon_select_set(PointerRNA *ptr, bool value)
 {
   Mesh *mesh = rna_mesh(ptr);
-  bool *selection_poly = (bool *)CustomData_duplicate_referenced_layer_named(
-      &mesh->pdata, CD_PROP_BOOL, ".selection_poly", mesh->totpoly);
-  if (!selection_poly) {
+  bool *select_poly = (bool *)CustomData_duplicate_referenced_layer_named(
+      &mesh->pdata, CD_PROP_BOOL, ".select_poly", mesh->totpoly);
+  if (!select_poly) {
     if (!value) {
       /* Skip adding layer if it doesn't exist already anyway and we're not hiding an element. */
       return;
     }
-    selection_poly = (bool *)CustomData_add_layer_named(
-        &mesh->pdata, CD_PROP_BOOL, CD_SET_DEFAULT, NULL, mesh->totpoly, ".selection_poly");
+    select_poly = (bool *)CustomData_add_layer_named(
+        &mesh->pdata, CD_PROP_BOOL, CD_SET_DEFAULT, NULL, mesh->totpoly, ".select_poly");
   }
   const int index = rna_MeshPolygon_index_get(ptr);
-  selection_poly[index] = value;
+  select_poly[index] = value;
 }
 
 static int rna_MeshPolygon_material_index_get(PointerRNA *ptr)
@@ -1436,27 +1436,27 @@ static void rna_MeshEdge_hide_set(PointerRNA *ptr, bool value)
 static bool rna_MeshEdge_select_get(PointerRNA *ptr)
 {
   const Mesh *mesh = rna_mesh(ptr);
-  const bool *selection_edge = (const bool *)CustomData_get_layer_named(
-      &mesh->edata, CD_PROP_BOOL, ".selection_edge");
+  const bool *select_edge = (const bool *)CustomData_get_layer_named(
+      &mesh->edata, CD_PROP_BOOL, ".select_edge");
   const int index = rna_MeshEdge_index_get(ptr);
-  return selection_edge == NULL ? false : selection_edge[index];
+  return select_edge == NULL ? false : select_edge[index];
 }
 
 static void rna_MeshEdge_select_set(PointerRNA *ptr, bool value)
 {
   Mesh *mesh = rna_mesh(ptr);
-  bool *selection_edge = (bool *)CustomData_duplicate_referenced_layer_named(
-      &mesh->edata, CD_PROP_BOOL, ".selection_edge", mesh->totedge);
-  if (!selection_edge) {
+  bool *select_edge = (bool *)CustomData_duplicate_referenced_layer_named(
+      &mesh->edata, CD_PROP_BOOL, ".select_edge", mesh->totedge);
+  if (!select_edge) {
     if (!value) {
       /* Skip adding layer if it doesn't exist already anyway and we're not hiding an element. */
       return;
     }
-    selection_edge = (bool *)CustomData_add_layer_named(
-        &mesh->edata, CD_PROP_BOOL, CD_SET_DEFAULT, NULL, mesh->totedge, ".selection_edge");
+    select_edge = (bool *)CustomData_add_layer_named(
+        &mesh->edata, CD_PROP_BOOL, CD_SET_DEFAULT, NULL, mesh->totedge, ".select_edge");
   }
   const int index = rna_MeshEdge_index_get(ptr);
-  selection_edge[index] = value;
+  select_edge[index] = value;
 }
 
 static int rna_MeshLoopTriangle_material_index_get(PointerRNA *ptr)

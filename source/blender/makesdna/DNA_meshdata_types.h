@@ -29,7 +29,7 @@ typedef struct MVert {
    * Deprecated flag for storing hide status and selection, which are now stored in separate
    * generic attributes. Kept for file read and write.
    */
-  char flag DNA_DEPRECATED;
+  char flag_legacy;
   /**
    * Deprecated bevel weight storage, now located in #CD_BWEIGHT, except for file read and write.
    */
@@ -41,7 +41,7 @@ typedef struct MVert {
 
 #ifdef DNA_DEPRECATED_ALLOW
 enum {
-  /** Deprecated selection status. Now stored in ".selection_vert" attribute. */
+  /** Deprecated selection status. Now stored in ".select_vert" attribute. */
   /*  SELECT = (1 << 0), */
   /** Deprecated hide status. Now stored in ".hide_vert" attribute. */
   ME_HIDE = (1 << 4),
@@ -67,7 +67,7 @@ typedef struct MEdge {
 
 /** #MEdge.flag */
 enum {
-  /** Deprecated selection status. Now stored in ".selection_edge" attribute. */
+  /** Deprecated selection status. Now stored in ".select_edge" attribute. */
   /*  SELECT = (1 << 0), */
   ME_EDGEDRAW = (1 << 1),
   ME_SEAM = (1 << 2),
@@ -98,7 +98,7 @@ typedef struct MPoly {
 enum {
   ME_SMOOTH = (1 << 0),
 #ifdef DNA_DEPRECATED_ALLOW
-  /** Deprecated selection status. Now stored in ".selection_poly" attribute. */
+  /** Deprecated selection status. Now stored in ".select_poly" attribute. */
   ME_FACE_SEL = (1 << 1),
 #endif
   /** Deprecated hide status. Now stored in ".hide_poly" attribute. */
