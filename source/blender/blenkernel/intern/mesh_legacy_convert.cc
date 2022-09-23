@@ -919,6 +919,33 @@ void BKE_mesh_add_mface_layers(CustomData *fdata, CustomData *ldata, int total)
 /** \} */
 
 /* -------------------------------------------------------------------- */
+/** \name Face Set Conversion
+ * \{ */
+
+void BKE_mesh_legacy_face_set_from_generic(Mesh *mesh)
+{
+  using namespace blender;
+  for (CustomDataLayer &layer : MutableSpan(mesh->pdata.layers, mesh->pdata.totlayer)) {
+    if (StringRef(layer.name) == ".sculpt_face_set") {
+      layer.type = CD_SCULPT_FACE_SETS;
+    }
+  }
+}
+
+void BKE_mesh_legacy_face_set_to_generic(Mesh *mesh)
+{
+  using namespace blender;
+  for (CustomDataLayer &layer : MutableSpan(mesh->pdata.layers, mesh->pdata.totlayer)) {
+    if (layer.type == CD_SCULPT_FACE_SETS) {
+      BLI_strncpy(layer.name, ".sculpt_face_set", sizeof(layer.name));
+      layer.type = CD_PROP_INT32;
+    }
+  }
+}
+
+/** \} */
+
+/* -------------------------------------------------------------------- */
 /** \name Bevel Weight Conversion
  * \{ */
 
@@ -973,6 +1000,44 @@ void BKE_mesh_legacy_bevel_weight_to_layers(Mesh *mesh)
         CustomData_add_layer(&mesh->edata, CD_BWEIGHT, CD_CONSTRUCT, nullptr, edges.size()));
     for (const int i : edges.index_range()) {
       weights[i] = edges[i].bweight_legacy / 255.0f;
+    }
+  }
+}
+
+/** \} */
+
+/* -------------------------------------------------------------------- */
+/** \name Edge Crease Conversion
+ * \{ */
+
+void BKE_mesh_legacy_edge_crease_from_layers(Mesh *mesh)
+{
+  using namespace blender;
+  MutableSpan<MEdge> edges = mesh->edges_for_write();
+  if (const float *creases = static_cast<const float *>(
+          CustomData_get_layer(&mesh->edata, CD_CREASE))) {
+    mesh->cd_flag |= ME_CDFLAG_EDGE_CREASE;
+    for (const int i : edges.index_range()) {
+      edges[i].crease_legacy = std::clamp(creases[i], 0.0f, 1.0f) * 255.0f;
+    }
+  }
+  else {
+    mesh->cd_flag &= ~ME_CDFLAG_EDGE_CREASE;
+    for (const int i : edges.index_range()) {
+      edges[i].crease_legacy = 0;
+    }
+  }
+}
+
+void BKE_mesh_legacy_edge_crease_to_layers(Mesh *mesh)
+{
+  using namespace blender;
+  const Span<MEdge> edges = mesh->edges();
+  if (mesh->cd_flag & ME_CDFLAG_EDGE_CREASE) {
+    float *creases = static_cast<float *>(
+        CustomData_add_layer(&mesh->edata, CD_CREASE, CD_CONSTRUCT, nullptr, edges.size()));
+    for (const int i : edges.index_range()) {
+      creases[i] = edges[i].crease_legacy / 255.0f;
     }
   }
 }
