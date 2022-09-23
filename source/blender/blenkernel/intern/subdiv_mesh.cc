@@ -39,7 +39,6 @@ struct SubdivMeshContext {
   const SubdivToMeshSettings *settings;
   const Mesh *coarse_mesh;
   const float (*coarse_positions)[3];
-
   const MEdge *coarse_edges;
   const MPoly *coarse_polys;
   const MLoop *coarse_loops;
