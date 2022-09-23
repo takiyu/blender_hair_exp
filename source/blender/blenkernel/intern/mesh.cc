@@ -151,8 +151,6 @@ static void mesh_copy_data(Main *bmain, ID *id_dst, const ID *id_src, const int 
     mesh_tessface_clear_intern(mesh_dst, false);
   }
 
-  mesh_dst->cd_flag = mesh_src->cd_flag;
-
   mesh_dst->edit_mesh = nullptr;
 
   mesh_dst->mselect = (MSelect *)MEM_dupallocN(mesh_dst->mselect);
@@ -259,9 +257,9 @@ static void mesh_blend_write(BlendWriter *writer, ID *id, const void *id_address
                                       ".hide_edge",
                                       ".hide_poly",
                                       "material_index",
-                                      ".selection_vert",
-                                      ".selection_edge",
-                                      ".selection_poly"});
+                                      ".select_vert",
+                                      ".select_edge",
+                                      ".select_poly"});
 
       mesh->mvert = BKE_mesh_legacy_convert_positions_to_verts(
           mesh, temp_arrays_for_legacy_format, vert_layers);
@@ -269,6 +267,8 @@ static void mesh_blend_write(BlendWriter *writer, ID *id, const void *id_address
       BKE_mesh_legacy_convert_selection_layers_to_flags(mesh);
       BKE_mesh_legacy_convert_material_indices_to_mpoly(mesh);
       BKE_mesh_legacy_bevel_weight_from_layers(mesh);
+      BKE_mesh_legacy_face_set_from_generic(mesh);
+      BKE_mesh_legacy_edge_crease_from_layers(mesh);
 
       /* Set deprecated mesh data pointers for forward compatibility. */
       mesh->medge = const_cast<MEdge *>(mesh->edges().data());
@@ -686,11 +686,6 @@ static int customdata_compare(
         case CD_PROP_BOOL: {
           const bool *l1_data = (bool *)l1->data;
           const bool *l2_data = (bool *)l2->data;
-          /* TODO(@HooglyBoogly): Remove this after test files have been updated for selection
-           * attribute changes. */
-          if (StringRef(l1->name).startswith(".selection")) {
-            continue;
-          }
           for (int i = 0; i < total_length; i++) {
             if (l1_data[i] != l2_data[i]) {
               return MESHCMP_ATTRIBUTE_VALUE_MISMATCH;
@@ -1024,7 +1019,6 @@ Mesh *BKE_mesh_new_nomain_from_template_ex(const Mesh *me_src,
   me_dst->totloop = loops_len;
   me_dst->totpoly = polys_len;
 
-  me_dst->cd_flag = me_src->cd_flag;
   BKE_mesh_copy_parameters_for_eval(me_dst, me_src);
 
   CustomData_copy(&me_src->vdata, &me_dst->vdata, mask.vmask, CD_SET_DEFAULT, verts_len);
@@ -1607,7 +1601,7 @@ void BKE_mesh_do_versions_cd_flag_init(Mesh *mesh)
         break;
       }
     }
-    if (edge.crease != 0) {
+    if (edge.crease_legacy != 0) {
       mesh->cd_flag |= ME_CDFLAG_EDGE_CREASE;
       if (mesh->cd_flag & ME_CDFLAG_EDGE_BWEIGHT) {
         break;
@@ -1641,32 +1635,32 @@ void BKE_mesh_mselect_validate(Mesh *me)
       (me->totselect), sizeof(MSelect), "Mesh selection history");
 
   const AttributeAccessor attributes = me->attributes();
-  const VArray<bool> selection_vert = attributes.lookup_or_default<bool>(
-      ".selection_vert", ATTR_DOMAIN_POINT, false);
-  const VArray<bool> selection_edge = attributes.lookup_or_default<bool>(
-      ".selection_edge", ATTR_DOMAIN_EDGE, false);
-  const VArray<bool> selection_poly = attributes.lookup_or_default<bool>(
-      ".selection_poly", ATTR_DOMAIN_FACE, false);
+  const VArray<bool> select_vert = attributes.lookup_or_default<bool>(
+      ".select_vert", ATTR_DOMAIN_POINT, false);
+  const VArray<bool> select_edge = attributes.lookup_or_default<bool>(
+      ".select_edge", ATTR_DOMAIN_EDGE, false);
+  const VArray<bool> select_poly = attributes.lookup_or_default<bool>(
+      ".select_poly", ATTR_DOMAIN_FACE, false);
 
   for (i_src = 0, i_dst = 0; i_src < me->totselect; i_src++) {
     int index = mselect_src[i_src].index;
     switch (mselect_src[i_src].type) {
       case ME_VSEL: {
-        if (selection_vert[index]) {
+        if (select_vert[index]) {
           mselect_dst[i_dst] = mselect_src[i_src];
           i_dst++;
         }
         break;
       }
       case ME_ESEL: {
-        if (selection_edge[index]) {
+        if (select_edge[index]) {
           mselect_dst[i_dst] = mselect_src[i_src];
           i_dst++;
         }
         break;
       }
       case ME_FSEL: {
-        if (selection_poly[index]) {
+        if (select_poly[index]) {
           mselect_dst[i_dst] = mselect_src[i_src];
           i_dst++;
         }

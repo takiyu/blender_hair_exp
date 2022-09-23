@@ -220,7 +220,7 @@ static void extract_edituv_lines_iter_poly_mesh(const MeshRenderData *mr,
   }
   else {
     mp_hidden = (mr->hide_poly) ? mr->hide_poly[mp_index] : false;
-    mp_select = mr->selection_poly && mr->selection_poly[mp_index];
+    mp_select = mr->select_poly && mr->select_poly[mp_index];
   }
 
   for (int ml_index = mp->loopstart; ml_index < ml_index_end; ml_index += 1) {
@@ -300,7 +300,7 @@ static void extract_edituv_lines_iter_subdiv_mesh(const DRWSubdivCache *subdiv_c
   }
   else {
     mp_hidden = (mr->hide_poly) ? mr->hide_poly[coarse_poly_index] : false;
-    mp_select = mr->selection_poly && mr->selection_poly[coarse_poly_index];
+    mp_select = mr->select_poly && mr->select_poly[coarse_poly_index];
   }
 
   uint start_loop_idx = subdiv_quad_index * 4;

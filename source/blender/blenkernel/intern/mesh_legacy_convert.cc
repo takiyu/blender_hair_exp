@@ -924,6 +924,33 @@ void BKE_mesh_add_mface_layers(CustomData *fdata, CustomData *ldata, int total)
 /** \} */
 
 /* -------------------------------------------------------------------- */
+/** \name Face Set Conversion
+ * \{ */
+
+void BKE_mesh_legacy_face_set_from_generic(Mesh *mesh)
+{
+  using namespace blender;
+  for (CustomDataLayer &layer : MutableSpan(mesh->pdata.layers, mesh->pdata.totlayer)) {
+    if (StringRef(layer.name) == ".sculpt_face_set") {
+      layer.type = CD_SCULPT_FACE_SETS;
+    }
+  }
+}
+
+void BKE_mesh_legacy_face_set_to_generic(Mesh *mesh)
+{
+  using namespace blender;
+  for (CustomDataLayer &layer : MutableSpan(mesh->pdata.layers, mesh->pdata.totlayer)) {
+    if (layer.type == CD_SCULPT_FACE_SETS) {
+      BLI_strncpy(layer.name, ".sculpt_face_set", sizeof(layer.name));
+      layer.type = CD_PROP_INT32;
+    }
+  }
+}
+
+/** \} */
+
+/* -------------------------------------------------------------------- */
 /** \name Bevel Weight Conversion
  * \{ */
 
@@ -985,6 +1012,44 @@ void BKE_mesh_legacy_bevel_weight_to_layers(Mesh *mesh)
 /** \} */
 
 /* -------------------------------------------------------------------- */
+/** \name Edge Crease Conversion
+ * \{ */
+
+void BKE_mesh_legacy_edge_crease_from_layers(Mesh *mesh)
+{
+  using namespace blender;
+  MutableSpan<MEdge> edges = mesh->edges_for_write();
+  if (const float *creases = static_cast<const float *>(
+          CustomData_get_layer(&mesh->edata, CD_CREASE))) {
+    mesh->cd_flag |= ME_CDFLAG_EDGE_CREASE;
+    for (const int i : edges.index_range()) {
+      edges[i].crease_legacy = std::clamp(creases[i], 0.0f, 1.0f) * 255.0f;
+    }
+  }
+  else {
+    mesh->cd_flag &= ~ME_CDFLAG_EDGE_CREASE;
+    for (const int i : edges.index_range()) {
+      edges[i].crease_legacy = 0;
+    }
+  }
+}
+
+void BKE_mesh_legacy_edge_crease_to_layers(Mesh *mesh)
+{
+  using namespace blender;
+  const Span<MEdge> edges = mesh->edges();
+  if (mesh->cd_flag & ME_CDFLAG_EDGE_CREASE) {
+    float *creases = static_cast<float *>(
+        CustomData_add_layer(&mesh->edata, CD_CREASE, CD_CONSTRUCT, nullptr, edges.size()));
+    for (const int i : edges.index_range()) {
+      creases[i] = edges[i].crease_legacy / 255.0f;
+    }
+  }
+}
+
+/** \} */
+
+/* -------------------------------------------------------------------- */
 /** \name Hide Attribute and Legacy Flag Conversion
  * \{ */
 
@@ -999,7 +1064,7 @@ void BKE_mesh_legacy_convert_hide_layers_to_flags(Mesh *mesh)
       ".hide_vert", ATTR_DOMAIN_POINT, false);
   threading::parallel_for(verts.index_range(), 4096, [&](IndexRange range) {
     for (const int i : range) {
-      SET_FLAG_FROM_TEST(verts[i].flag, hide_vert[i], ME_HIDE);
+      SET_FLAG_FROM_TEST(verts[i].flag_legacy, hide_vert[i], ME_HIDE);
     }
   });
 
@@ -1029,13 +1094,14 @@ void BKE_mesh_legacy_convert_flags_to_hide_layers(Mesh *mesh)
   MutableAttributeAccessor attributes = mesh->attributes_for_write();
 
   const Span<MVert> verts(mesh->mvert, mesh->totvert);
-  if (std::any_of(
-          verts.begin(), verts.end(), [](const MVert &vert) { return vert.flag & ME_HIDE; })) {
+  if (std::any_of(verts.begin(), verts.end(), [](const MVert &vert) {
+        return vert.flag_legacy & ME_HIDE;
+      })) {
     SpanAttributeWriter<bool> hide_vert = attributes.lookup_or_add_for_write_only_span<bool>(
         ".hide_vert", ATTR_DOMAIN_POINT);
     threading::parallel_for(verts.index_range(), 4096, [&](IndexRange range) {
       for (const int i : range) {
-        hide_vert.span[i] = verts[i].flag & ME_HIDE;
+        hide_vert.span[i] = verts[i].flag_legacy & ME_HIDE;
       }
     });
     hide_vert.finish();
@@ -1121,29 +1187,29 @@ void BKE_mesh_legacy_convert_selection_layers_to_flags(Mesh *mesh)
   const AttributeAccessor attributes = mesh->attributes();
 
   MutableSpan<MVert> verts(mesh->mvert, mesh->totvert);
-  const VArray<bool> selection_vert = attributes.lookup_or_default<bool>(
-      ".selection_vert", ATTR_DOMAIN_POINT, false);
+  const VArray<bool> select_vert = attributes.lookup_or_default<bool>(
+      ".select_vert", ATTR_DOMAIN_POINT, false);
   threading::parallel_for(verts.index_range(), 4096, [&](IndexRange range) {
     for (const int i : range) {
-      SET_FLAG_FROM_TEST(verts[i].flag, selection_vert[i], SELECT);
+      SET_FLAG_FROM_TEST(verts[i].flag_legacy, select_vert[i], SELECT);
     }
   });
 
   MutableSpan<MEdge> edges = mesh->edges_for_write();
-  const VArray<bool> selection_edge = attributes.lookup_or_default<bool>(
-      ".selection_edge", ATTR_DOMAIN_EDGE, false);
+  const VArray<bool> select_edge = attributes.lookup_or_default<bool>(
+      ".select_edge", ATTR_DOMAIN_EDGE, false);
   threading::parallel_for(edges.index_range(), 4096, [&](IndexRange range) {
     for (const int i : range) {
-      SET_FLAG_FROM_TEST(edges[i].flag, selection_edge[i], SELECT);
+      SET_FLAG_FROM_TEST(edges[i].flag, select_edge[i], SELECT);
     }
   });
 
   MutableSpan<MPoly> polys = mesh->polys_for_write();
-  const VArray<bool> selection_poly = attributes.lookup_or_default<bool>(
-      ".selection_poly", ATTR_DOMAIN_FACE, false);
+  const VArray<bool> select_poly = attributes.lookup_or_default<bool>(
+      ".select_poly", ATTR_DOMAIN_FACE, false);
   threading::parallel_for(polys.index_range(), 4096, [&](IndexRange range) {
     for (const int i : range) {
-      SET_FLAG_FROM_TEST(polys[i].flag, selection_poly[i], ME_FACE_SEL);
+      SET_FLAG_FROM_TEST(polys[i].flag, select_poly[i], ME_FACE_SEL);
     }
   });
 }
@@ -1155,42 +1221,43 @@ void BKE_mesh_legacy_convert_flags_to_selection_layers(Mesh *mesh)
   MutableAttributeAccessor attributes = mesh->attributes_for_write();
 
   const Span<MVert> verts(mesh->mvert, mesh->totvert);
-  if (std::any_of(
-          verts.begin(), verts.end(), [](const MVert &vert) { return vert.flag & SELECT; })) {
-    SpanAttributeWriter<bool> selection_vert = attributes.lookup_or_add_for_write_only_span<bool>(
-        ".selection_vert", ATTR_DOMAIN_POINT);
+  if (std::any_of(verts.begin(), verts.end(), [](const MVert &vert) {
+        return vert.flag_legacy & SELECT;
+      })) {
+    SpanAttributeWriter<bool> select_vert = attributes.lookup_or_add_for_write_only_span<bool>(
+        ".select_vert", ATTR_DOMAIN_POINT);
     threading::parallel_for(verts.index_range(), 4096, [&](IndexRange range) {
       for (const int i : range) {
-        selection_vert.span[i] = verts[i].flag & SELECT;
+        select_vert.span[i] = verts[i].flag_legacy & SELECT;
       }
     });
-    selection_vert.finish();
+    select_vert.finish();
   }
 
   const Span<MEdge> edges = mesh->edges();
   if (std::any_of(
           edges.begin(), edges.end(), [](const MEdge &edge) { return edge.flag & SELECT; })) {
-    SpanAttributeWriter<bool> selection_edge = attributes.lookup_or_add_for_write_only_span<bool>(
-        ".selection_edge", ATTR_DOMAIN_EDGE);
+    SpanAttributeWriter<bool> select_edge = attributes.lookup_or_add_for_write_only_span<bool>(
+        ".select_edge", ATTR_DOMAIN_EDGE);
     threading::parallel_for(edges.index_range(), 4096, [&](IndexRange range) {
       for (const int i : range) {
-        selection_edge.span[i] = edges[i].flag & SELECT;
+        select_edge.span[i] = edges[i].flag & SELECT;
       }
     });
-    selection_edge.finish();
+    select_edge.finish();
   }
 
   const Span<MPoly> polys = mesh->polys();
   if (std::any_of(
           polys.begin(), polys.end(), [](const MPoly &poly) { return poly.flag & ME_FACE_SEL; })) {
-    SpanAttributeWriter<bool> selection_poly = attributes.lookup_or_add_for_write_only_span<bool>(
-        ".selection_poly", ATTR_DOMAIN_FACE);
+    SpanAttributeWriter<bool> select_poly = attributes.lookup_or_add_for_write_only_span<bool>(
+        ".select_poly", ATTR_DOMAIN_FACE);
     threading::parallel_for(polys.index_range(), 4096, [&](IndexRange range) {
       for (const int i : range) {
-        selection_poly.span[i] = polys[i].flag & ME_FACE_SEL;
+        select_poly.span[i] = polys[i].flag & ME_FACE_SEL;
       }
     });
-    selection_poly.finish();
+    select_poly.finish();
   }
 }
 

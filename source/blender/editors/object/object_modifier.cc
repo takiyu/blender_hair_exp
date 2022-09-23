@@ -602,8 +602,8 @@ bool ED_object_modifier_convert_psys_to_mesh(ReportList *UNUSED(reports),
   MEdge *medge = edges.data();
 
   bke::MutableAttributeAccessor attributes = me->attributes_for_write();
-  bke::SpanAttributeWriter<bool> selection_vert = attributes.lookup_or_add_for_write_span<bool>(
-      ".selection_vert", ATTR_DOMAIN_POINT);
+  bke::SpanAttributeWriter<bool> select_vert = attributes.lookup_or_add_for_write_span<bool>(
+      ".select_vert", ATTR_DOMAIN_POINT);
 
   /* copy coordinates */
   int vert_index = 0;
@@ -621,7 +621,7 @@ bool ED_object_modifier_convert_psys_to_mesh(ReportList *UNUSED(reports),
       }
       else {
         /* cheap trick to select the roots */
-        selection_vert.span[vert_index] = true;
+        select_vert.span[vert_index] = true;
       }
     }
   }
@@ -640,12 +640,12 @@ bool ED_object_modifier_convert_psys_to_mesh(ReportList *UNUSED(reports),
       }
       else {
         /* cheap trick to select the roots */
-        selection_vert.span[vert_index] = true;
+        select_vert.span[vert_index] = true;
       }
     }
   }
 
-  selection_vert.finish();
+  select_vert.finish();
 
   DEG_relations_tag_update(bmain);
 

@@ -463,15 +463,15 @@ static bool weight_paint_set(Object *ob, float paintweight)
   struct WPaintPrev wpp;
   wpaint_prev_create(&wpp, dvert, me->totvert);
 
-  const bool *selection_vert = (const bool *)CustomData_get_layer_named(
-      &me->vdata, CD_PROP_BOOL, ".selection_vert");
-  const bool *selection_poly = (const bool *)CustomData_get_layer_named(
-      &me->pdata, CD_PROP_BOOL, ".selection_poly");
+  const bool *select_vert = (const bool *)CustomData_get_layer_named(
+      &me->vdata, CD_PROP_BOOL, ".select_vert");
+  const bool *select_poly = (const bool *)CustomData_get_layer_named(
+      &me->pdata, CD_PROP_BOOL, ".select_poly");
 
   for (index = 0, mp = polys; index < me->totpoly; index++, mp++) {
     uint fidx = mp->totloop - 1;
 
-    if ((paint_selmode == SCE_SELECT_FACE) && !(selection_poly && selection_poly[index])) {
+    if ((paint_selmode == SCE_SELECT_FACE) && !(select_poly && select_poly[index])) {
       continue;
     }
 
@@ -479,7 +479,7 @@ static bool weight_paint_set(Object *ob, float paintweight)
       uint vidx = loops[mp->loopstart + fidx].v;
 
       if (!dvert[vidx].flag) {
-        if ((paint_selmode == SCE_SELECT_VERTEX) && !(selection_vert && selection_vert[vidx])) {
+        if ((paint_selmode == SCE_SELECT_VERTEX) && !(select_vert && select_vert[vidx])) {
           continue;
         }
 

@@ -100,6 +100,8 @@ typedef struct MultiresReshapeContext {
 
   /* Vertex crease custom data layer, null if none is present. */
   const float *cd_vertex_crease;
+  /* Edge crease custom data layer, null if none is present. */
+  const float *cd_edge_crease;
 } MultiresReshapeContext;
 
 /**

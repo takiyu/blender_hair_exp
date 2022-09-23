@@ -1228,7 +1228,6 @@ static void customdata_weld(
   int src_i, dest_i;
   int j;
 
-  int crease = 0;
   short flag = 0;
 
   /* interpolates a layer at a time */
@@ -1254,7 +1253,6 @@ static void customdata_weld(
       if (type == CD_MEDGE) {
         for (j = 0; j < count; j++) {
           MEdge *me_src = &((MEdge *)src_data)[src_indices[j]];
-          crease += me_src->crease;
           flag |= me_src->flag;
         }
       }
@@ -1290,10 +1288,6 @@ static void customdata_weld(
     const int type = layer_dst->type;
     if (type == CD_MEDGE) {
       MEdge *me = &((MEdge *)layer_dst->data)[dest_index];
-      crease *= fac;
-      CLAMP_MAX(crease, 255);
-
-      me->crease = (char)crease;
       me->flag = flag;
     }
     else if (CustomData_layer_has_interp(dest, dest_i)) {

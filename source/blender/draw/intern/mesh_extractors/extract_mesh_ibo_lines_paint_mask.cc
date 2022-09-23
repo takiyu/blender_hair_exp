@@ -52,7 +52,7 @@ static void extract_lines_paint_mask_iter_poly_mesh(const MeshRenderData *mr,
 
       const int ml_index_last = mp->totloop + mp->loopstart - 1;
       const int ml_index_other = (ml_index == ml_index_last) ? mp->loopstart : (ml_index + 1);
-      if (mr->selection_poly && mr->selection_poly[mp_index]) {
+      if (mr->select_poly && mr->select_poly[mp_index]) {
         if (BLI_BITMAP_TEST_AND_SET_ATOMIC(data->select_map, e_index)) {
           /* Hide edge as it has more than 2 selected loop. */
           GPU_indexbuf_set_line_restart(&data->elb, e_index);
@@ -126,7 +126,7 @@ static void extract_lines_paint_mask_iter_subdiv_mesh(const DRWSubdivCache *subd
             ((mr->e_origindex) && (mr->e_origindex[coarse_edge_index] == ORIGINDEX_NONE)))) {
         const uint ml_index_other = (loop_idx == (end_loop_idx - 1)) ? start_loop_idx :
                                                                        loop_idx + 1;
-        if (mr->selection_poly && mr->selection_poly[coarse_quad_index]) {
+        if (mr->select_poly && mr->select_poly[coarse_quad_index]) {
           if (BLI_BITMAP_TEST_AND_SET_ATOMIC(data->select_map, coarse_edge_index)) {
             /* Hide edge as it has more than 2 selected loop. */
             GPU_indexbuf_set_line_restart(&data->elb, subdiv_edge_index);
