@@ -23,7 +23,7 @@ extern "C" {
  */
 #ifdef DNA_DEPRECATED_ALLOW
 typedef struct MVert {
-  float co[3] DNA_DEPRECATED;
+  float co_legacy[3];
   /**
    * Deprecated flag for storing hide status and selection, which are now stored in separate
    * generic attributes. Kept for file read and write.

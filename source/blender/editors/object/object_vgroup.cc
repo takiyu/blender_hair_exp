@@ -1531,15 +1531,14 @@ static void vgroup_fix(
   int i;
 
   Mesh *me = static_cast<Mesh *>(ob->data);
-  float3 *positions = me->positions_for_write().data();
   if (!(me->editflag & ME_EDIT_PAINT_VERT_SEL)) {
     return;
   }
   const bke::AttributeAccessor attributes = me->attributes();
-  const VArray<bool> selection_vert = attributes.lookup_or_default<bool>(
-      ".selection_vert", ATTR_DOMAIN_POINT, false);
+  const VArray<bool> select_vert = attributes.lookup_or_default<bool>(
+      ".select_vert", ATTR_DOMAIN_POINT, false);
   for (i = 0; i < me->totvert; i++) {
-    if (selection_vert[i]) {
+    if (select_vert[i]) {
       blender::Vector<int> verts = getSurroundingVerts(me, i);
       const int count = verts.size();
       if (!verts.is_empty()) {

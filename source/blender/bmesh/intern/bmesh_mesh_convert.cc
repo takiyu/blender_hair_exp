@@ -1261,7 +1261,7 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
     }
     if (BM_elem_flag_test(eve, BM_ELEM_SELECT)) {
       if (!select_vert_attribute) {
-        select_vert_attribute = mesh_attributes.lookup_or_add_for_write_only_span<bool>(
+        select_vert_attribute = mesh_attributes.lookup_or_add_for_write_span<bool>(
             ".select_vert", ATTR_DOMAIN_POINT);
       }
       select_vert_attribute.span[i] = true;
@@ -1291,7 +1291,7 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
     }
     if (BM_elem_flag_test(eed, BM_ELEM_SELECT)) {
       if (!select_edge_attribute) {
-        select_edge_attribute = mesh_attributes.lookup_or_add_for_write_only_span<bool>(
+        select_edge_attribute = mesh_attributes.lookup_or_add_for_write_span<bool>(
             ".select_edge", ATTR_DOMAIN_EDGE);
       }
       select_edge_attribute.span[i] = true;
@@ -1331,7 +1331,7 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
     }
     if (BM_elem_flag_test(efa, BM_ELEM_SELECT)) {
       if (!select_poly_attribute) {
-        select_poly_attribute = mesh_attributes.lookup_or_add_for_write_only_span<bool>(
+        select_poly_attribute = mesh_attributes.lookup_or_add_for_write_span<bool>(
             ".select_poly", ATTR_DOMAIN_FACE);
       }
       select_poly_attribute.span[i] = true;

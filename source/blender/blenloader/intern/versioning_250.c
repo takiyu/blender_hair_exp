@@ -998,7 +998,7 @@ void blo_do_versions_250(FileData *fd, Library *lib, Main *bmain)
         tot = MIN2(me->totvert, key->refkey->totelem);
         MVert *verts = (MVert *)CustomData_get_layer(&me->vdata, CD_MVERT);
         for (a = 0; a < tot; a++, data += 3) {
-          copy_v3_v3(verts[a].co, data);
+          copy_v3_v3(verts[a].co_legacy, data);
         }
       }
     }

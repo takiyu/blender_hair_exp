@@ -1283,7 +1283,7 @@ MVert *BKE_mesh_legacy_convert_positions_to_verts(
 
   threading::parallel_for(verts.index_range(), 2048, [&](IndexRange range) {
     for (const int i : range) {
-      copy_v3_v3(verts[i].co, positions[i]);
+      copy_v3_v3(verts[i].co_legacy, positions[i]);
     }
   });
 
@@ -1304,7 +1304,7 @@ void BKE_mesh_legacy_convert_verts_to_positions(Mesh *mesh)
       mesh->totvert);
   threading::parallel_for(verts.index_range(), 2048, [&](IndexRange range) {
     for (const int i : range) {
-      positions[i] = verts[i].co;
+      positions[i] = verts[i].co_legacy;
     }
   });
 
