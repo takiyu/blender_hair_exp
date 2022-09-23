@@ -1416,19 +1416,15 @@ void BKE_mesh_material_remap(Mesh *me, const uint *remap, uint remap_len)
   }
   else {
     MutableAttributeAccessor attributes = me->attributes_for_write();
-    AttributeWriter<int> material_indices = attributes.lookup_for_write<int>("material_index");
+    SpanAttributeWriter<int> material_indices = attributes.lookup_or_add_for_write_span<int>(
+        "material_index", ATTR_DOMAIN_FACE);
     if (!material_indices) {
       return;
     }
-    if (material_indices.domain != ATTR_DOMAIN_FACE) {
-      BLI_assert_unreachable();
-      return;
+    for (const int i : material_indices.span.index_range()) {
+      MAT_NR_REMAP(material_indices.span[i]);
     }
-    MutableVArraySpan<int> indices_span(material_indices.varray);
-    for (const int i : indices_span.index_range()) {
-      MAT_NR_REMAP(indices_span[i]);
-    }
-    indices_span.save();
+    material_indices.span.save();
     material_indices.finish();
   }
 
@@ -1616,14 +1612,14 @@ void BKE_mesh_do_versions_cd_flag_init(Mesh *mesh)
   const Span<MEdge> edges = mesh->edges();
 
   for (const MVert &vert : verts) {
-    if (vert.bweight != 0) {
+    if (vert.bweight_legacy != 0) {
       mesh->cd_flag |= ME_CDFLAG_VERT_BWEIGHT;
       break;
     }
   }
 
   for (const MEdge &edge : edges) {
-    if (edge.bweight != 0) {
+    if (edge.bweight_legacy != 0) {
       mesh->cd_flag |= ME_CDFLAG_EDGE_BWEIGHT;
       if (mesh->cd_flag & ME_CDFLAG_EDGE_CREASE) {
         break;

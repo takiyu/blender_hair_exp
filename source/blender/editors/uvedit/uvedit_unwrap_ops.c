@@ -778,7 +778,7 @@ static bool minimize_stretch_init(bContext *C, wmOperator *op)
 
   uint objects_len = 0;
   Object **objects = BKE_view_layer_array_from_objects_in_edit_mode_unique_data_with_uvs(
-      view_layer, CTX_wm_view3d(C), &objects_len);
+      scene, view_layer, CTX_wm_view3d(C), &objects_len);
 
   if (!uvedit_have_selection_multi(scene, objects, objects_len, &options)) {
     MEM_freeN(objects);
@@ -1096,7 +1096,7 @@ static int pack_islands_exec(bContext *C, wmOperator *op)
 
   uint objects_len = 0;
   Object **objects = BKE_view_layer_array_from_objects_in_edit_mode_unique_data_with_uvs(
-      view_layer, CTX_wm_view3d(C), &objects_len);
+      scene, view_layer, CTX_wm_view3d(C), &objects_len);
 
   /* Early exit in case no UVs are selected. */
   if (!uvedit_have_selection_multi(scene, objects, objects_len, &options)) {
@@ -1188,7 +1188,7 @@ static int average_islands_scale_exec(bContext *C, wmOperator *op)
 
   uint objects_len = 0;
   Object **objects = BKE_view_layer_array_from_objects_in_edit_mode_unique_data_with_uvs(
-      view_layer, CTX_wm_view3d(C), &objects_len);
+      scene, view_layer, CTX_wm_view3d(C), &objects_len);
 
   if (!uvedit_have_selection_multi(scene, objects, objects_len, &options)) {
     MEM_freeN(objects);
@@ -1813,7 +1813,7 @@ static void uv_map_clip_correct(const Scene *scene,
 /** \name UV Unwrap Operator
  * \{ */
 
-/* Assumes UV Map exists, doesn't run update funcs. */
+/* Assumes UV Map exists, doesn't run update functions. */
 static void uvedit_unwrap(const Scene *scene,
                           Object *obedit,
                           const UnwrapOptions *options,
@@ -1899,7 +1899,7 @@ static int unwrap_exec(bContext *C, wmOperator *op)
 
   uint objects_len = 0;
   Object **objects = BKE_view_layer_array_from_objects_in_edit_mode_unique_data(
-      view_layer, CTX_wm_view3d(C), &objects_len);
+      scene, view_layer, CTX_wm_view3d(C), &objects_len);
 
   UnwrapOptions options = {
       .topology_from_uvs = false,
@@ -2251,7 +2251,7 @@ static int smart_project_exec(bContext *C, wmOperator *op)
 
   uint objects_len = 0;
   Object **objects = BKE_view_layer_array_from_objects_in_edit_mode_unique_data(
-      view_layer, v3d, &objects_len);
+      scene, view_layer, v3d, &objects_len);
 
   Object **objects_changed = MEM_mallocN(sizeof(*objects_changed) * objects_len, __func__);
   uint object_changed_len = 0;
@@ -2515,7 +2515,7 @@ static int uv_from_view_exec(bContext *C, wmOperator *op)
   /* NOTE: objects that aren't touched are set to NULL (to skip clipping). */
   uint objects_len = 0;
   Object **objects = BKE_view_layer_array_from_objects_in_edit_mode_unique_data(
-      view_layer, v3d, &objects_len);
+      scene, view_layer, v3d, &objects_len);
 
   if (use_orthographic) {
     /* Calculate average object position. */
@@ -2666,12 +2666,13 @@ void UV_OT_project_from_view(wmOperatorType *ot)
 
 static int reset_exec(bContext *C, wmOperator *UNUSED(op))
 {
+  const Scene *scene = CTX_data_scene(C);
   ViewLayer *view_layer = CTX_data_view_layer(C);
   View3D *v3d = CTX_wm_view3d(C);
 
   uint objects_len = 0;
   Object **objects = BKE_view_layer_array_from_objects_in_edit_mode_unique_data(
-      view_layer, v3d, &objects_len);
+      scene, view_layer, v3d, &objects_len);
   for (uint ob_index = 0; ob_index < objects_len; ob_index++) {
     Object *obedit = objects[ob_index];
     Mesh *me = (Mesh *)obedit->data;
@@ -2780,7 +2781,7 @@ static int sphere_project_exec(bContext *C, wmOperator *op)
   ViewLayer *view_layer = CTX_data_view_layer(C);
   uint objects_len = 0;
   Object **objects = BKE_view_layer_array_from_objects_in_edit_mode_unique_data(
-      view_layer, v3d, &objects_len);
+      scene, view_layer, v3d, &objects_len);
   for (uint ob_index = 0; ob_index < objects_len; ob_index++) {
     Object *obedit = objects[ob_index];
     BMEditMesh *em = BKE_editmesh_from_object(obedit);
@@ -2890,7 +2891,7 @@ static int cylinder_project_exec(bContext *C, wmOperator *op)
   ViewLayer *view_layer = CTX_data_view_layer(C);
   uint objects_len = 0;
   Object **objects = BKE_view_layer_array_from_objects_in_edit_mode_unique_data(
-      view_layer, v3d, &objects_len);
+      scene, view_layer, v3d, &objects_len);
   for (uint ob_index = 0; ob_index < objects_len; ob_index++) {
     Object *obedit = objects[ob_index];
     BMEditMesh *em = BKE_editmesh_from_object(obedit);
@@ -3031,7 +3032,7 @@ static int cube_project_exec(bContext *C, wmOperator *op)
   ViewLayer *view_layer = CTX_data_view_layer(C);
   uint objects_len = 0;
   Object **objects = BKE_view_layer_array_from_objects_in_edit_mode_unique_data(
-      view_layer, v3d, &objects_len);
+      scene, view_layer, v3d, &objects_len);
   for (uint ob_index = 0; ob_index < objects_len; ob_index++) {
     Object *obedit = objects[ob_index];
     BMEditMesh *em = BKE_editmesh_from_object(obedit);

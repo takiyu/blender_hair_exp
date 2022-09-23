@@ -3673,7 +3673,7 @@ bool CustomData_bmesh_merge(const CustomData *source,
     destold.layers = static_cast<CustomDataLayer *>(MEM_dupallocN(destold.layers));
   }
 
-  if (CustomData_merge(source, dest, mask, alloctype, 0) == false) {
+  if (CustomData_merge_mesh_to_bmesh(source, dest, mask, alloctype, 0) == false) {
     if (destold.layers) {
       MEM_freeN(destold.layers);
     }
@@ -5468,3 +5468,8 @@ eCustomDataType cpp_type_to_custom_data_type(const blender::CPPType &type)
 /** \} */
 
 }  // namespace blender::bke
+
+size_t CustomData_get_elem_size(CustomDataLayer *layer)
+{
+  return LAYERTYPEINFO[layer->type].size;
+}

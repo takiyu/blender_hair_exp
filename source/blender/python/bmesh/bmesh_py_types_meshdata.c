@@ -334,7 +334,7 @@ static int mathutils_bmloopcol_set(BaseMathObject *bmo, int UNUSED(subtype))
 
 static int mathutils_bmloopcol_get_index(BaseMathObject *bmo, int subtype, int UNUSED(index))
 {
-  /* lazy, avoid repeteing the case statement */
+  /* Lazy, avoid repeating the case statement. */
   if (mathutils_bmloopcol_get(bmo, subtype) == -1) {
     return -1;
   }
@@ -345,7 +345,7 @@ static int mathutils_bmloopcol_set_index(BaseMathObject *bmo, int subtype, int i
 {
   const float f = bmo->data[index];
 
-  /* lazy, avoid repeteing the case statement */
+  /* Lazy, avoid repeating the case statement. */
   if (mathutils_bmloopcol_get(bmo, subtype) == -1) {
     return -1;
   }
