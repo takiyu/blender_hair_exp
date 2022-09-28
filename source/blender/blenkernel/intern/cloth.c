@@ -251,7 +251,6 @@ static int do_step_cloth(
   ClothVertex *verts = NULL;
   Cloth *cloth;
   ListBase *effectors = NULL;
-  MVert *mvert;
   uint i = 0;
   int ret = 0;
   bool vert_mass_changed = false;

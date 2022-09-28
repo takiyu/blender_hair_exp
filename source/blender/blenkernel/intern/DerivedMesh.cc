@@ -668,7 +668,8 @@ static void mesh_calc_modifiers(struct Depsgraph *depsgraph,
 
   BLI_assert((mesh_input->id.tag & LIB_TAG_COPIED_ON_WRITE_EVAL_RESULT) == 0);
 
-  /* TODO(Hans): Remove use of "deformed_verts" in mesh modifier stack. */
+  /* TODO: Remove use of "deformed_verts" in mesh modifier stack since mesh positions are now in a
+   * contiguous array. */
   float(*deformed_verts)[3] = nullptr;
   int num_deformed_verts = mesh_input->totvert;
   bool isPrevDeform = false;
