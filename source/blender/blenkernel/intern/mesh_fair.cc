@@ -83,7 +83,7 @@ class FairingContext {
                   LoopWeight *loop_weight)
   {
 
-    fair_verts_ex(affected, (int)depth, vertex_weight, loop_weight);
+    fair_verts_ex(affected, int(depth), vertex_weight, loop_weight);
   }
 
  protected:

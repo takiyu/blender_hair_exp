@@ -30,22 +30,21 @@ class OpenVDBMeshAdapter {
 };
 
 OpenVDBMeshAdapter::OpenVDBMeshAdapter(const Mesh &mesh, float4x4 transform)
-    : positions_(mesh.positions()), loops_(mesh.loops()), transform_(transform)
+    : positions_(mesh.positions()),
+      loops_(mesh.loops()),
+      looptris_(mesh.looptris()),
+      transform_(transform)
 {
-  /* This only updates a cache and can be considered to be logically const. */
-  const MLoopTri *looptris = BKE_mesh_runtime_looptri_ensure(&mesh);
-  const int looptris_len = BKE_mesh_runtime_looptri_len(&mesh);
-  looptris_ = Span(looptris, looptris_len);
 }
 
 size_t OpenVDBMeshAdapter::polygonCount() const
 {
-  return static_cast<size_t>(looptris_.size());
+  return size_t(looptris_.size());
 }
 
 size_t OpenVDBMeshAdapter::pointCount() const
 {
-  return static_cast<size_t>(positions_.size());
+  return size_t(positions_.size());
 }
 
 size_t OpenVDBMeshAdapter::vertexCount(size_t UNUSED(polygon_index)) const

@@ -362,6 +362,10 @@ typedef struct Mesh {
   /** Write access to vertex group data. */
   blender::MutableSpan<MDeformVert> deform_verts_for_write();
 
+  /**
+   * Cached triangulation of the mesh.
+   */
+  blender::Span<MLoopTri> looptris() const;
 #endif
 } Mesh;
 

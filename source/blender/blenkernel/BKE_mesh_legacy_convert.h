@@ -11,7 +11,9 @@
 
 #ifdef __cplusplus
 #  include "BLI_resource_scope.hh"
+#  include "BLI_span.hh"
 #  include "BLI_vector.hh"
+#  include "DNA_customdata_types.h"
 #endif
 
 #include "DNA_customdata_types.h"
@@ -24,10 +26,13 @@ struct CustomData;
 struct Mesh;
 struct MFace;
 
+#ifdef __cplusplus
+
 /**
  * Move face sets to the legacy type from a generic type.
  */
-void BKE_mesh_legacy_face_set_from_generic(struct Mesh *mesh);
+void BKE_mesh_legacy_face_set_from_generic(
+    Mesh *mesh, blender::MutableSpan<CustomDataLayer> poly_layers_to_write);
 /**
  * Copy face sets to the generic data type from the legacy type.
  */
@@ -81,14 +86,14 @@ void BKE_mesh_legacy_convert_material_indices_to_mpoly(struct Mesh *mesh);
  */
 void BKE_mesh_legacy_convert_mpoly_to_material_indices(struct Mesh *mesh);
 
-#ifdef __cplusplus
 struct MVert *BKE_mesh_legacy_convert_positions_to_verts(
     Mesh *mesh,
     blender::ResourceScope &temp_arrays_for_convert,
     blender::Vector<CustomDataLayer, 16> &vert_layers_to_write);
-#endif
 
 void BKE_mesh_legacy_convert_verts_to_positions(Mesh *mesh);
+
+#endif
 
 /**
  * Recreate #MFace Tessellation.
