@@ -58,7 +58,7 @@ const char *no_procedural_access_message =
 
 bool allow_procedural_attribute_access(StringRef attribute_name)
 {
-  if (attribute_name.startswith(".selection")) {
+  if (attribute_name.startswith(".select")) {
     return false;
   }
   if (attribute_name.startswith(".sculpt")) {
@@ -76,6 +76,7 @@ bool allow_procedural_attribute_access(StringRef attribute_name)
   if (attribute_name.startswith("." UV_PINNED_NAME ".")) {
     return false;
   }
+
   return true;
 }
 

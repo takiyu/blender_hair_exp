@@ -74,7 +74,7 @@ GPU_SHADER_CREATE_INFO(overlay_edit_mesh_edge)
 
 /* The Non-Geometry shader variant passes directly to fragment. */
 GPU_SHADER_CREATE_INFO(overlay_edit_mesh_edge_no_geom)
-    .do_static_compilation(true)
+    // .do_static_compilation(true) /* TODO fix on GL */
     .define("EDGE")
     .vertex_in(0, Type::VEC3, "pos")
     .vertex_in(1, Type::UCHAR4, "data")
@@ -90,7 +90,7 @@ GPU_SHADER_CREATE_INFO(overlay_edit_mesh_edge_flat)
     .additional_info("overlay_edit_mesh_edge");
 
 GPU_SHADER_CREATE_INFO(overlay_edit_mesh_edge_flat_no_geom)
-    .do_static_compilation(true)
+    // .do_static_compilation(true) /* TODO fix on GL */
     .define("FLAT")
     .additional_info("overlay_edit_mesh_edge_no_geom");
 
@@ -165,7 +165,7 @@ GPU_SHADER_CREATE_INFO(overlay_edit_mesh_edge_clipped)
     .additional_info("overlay_edit_mesh_edge", "drw_clipped");
 
 GPU_SHADER_CREATE_INFO(overlay_edit_mesh_edge_clipped_no_geom)
-    .do_static_compilation(true)
+    // .do_static_compilation(true) /* TODO fix on GL */
     .additional_info("overlay_edit_mesh_edge_no_geom", "drw_clipped");
 
 GPU_SHADER_CREATE_INFO(overlay_edit_mesh_edge_flat_clipped)
@@ -173,7 +173,7 @@ GPU_SHADER_CREATE_INFO(overlay_edit_mesh_edge_flat_clipped)
     .additional_info("overlay_edit_mesh_edge_flat", "drw_clipped");
 
 GPU_SHADER_CREATE_INFO(overlay_edit_mesh_edge_flat_clipped_no_geom)
-    .do_static_compilation(true)
+    // .do_static_compilation(true) /* TODO fix on GL */
     .additional_info("overlay_edit_mesh_edge_flat_no_geom", "drw_clipped");
 
 GPU_SHADER_CREATE_INFO(overlay_edit_mesh_face_clipped)
@@ -363,7 +363,7 @@ GPU_SHADER_CREATE_INFO(overlay_edit_curve_handle)
     .additional_info("draw_mesh", "draw_globals");
 
 GPU_SHADER_CREATE_INFO(overlay_edit_curve_handle_no_geom)
-    .do_static_compilation(true)
+    // .do_static_compilation(true) /* TODO fix on GL */
     .typedef_source("overlay_shader_shared.h")
     /* NOTE: Color already in Linear space. Which is what we want. */
     .define("srgbTarget", "false")
@@ -382,7 +382,7 @@ GPU_SHADER_CREATE_INFO(overlay_edit_curve_handle_clipped)
     .additional_info("overlay_edit_curve_handle", "drw_clipped");
 
 GPU_SHADER_CREATE_INFO(overlay_edit_curve_handle_clipped_no_geom)
-    .do_static_compilation(true)
+    // .do_static_compilation(true) /* TODO fix on GL */
     .additional_info("overlay_edit_curve_handle_no_geom", "drw_clipped");
 
 GPU_SHADER_CREATE_INFO(overlay_edit_curve_point)
@@ -587,8 +587,20 @@ GPU_SHADER_CREATE_INFO(overlay_uniform_color)
     .fragment_source("overlay_uniform_color_frag.glsl")
     .additional_info("draw_mesh");
 
+GPU_SHADER_CREATE_INFO(overlay_uniform_color_pointcloud)
+    .do_static_compilation(true)
+    .push_constant(Type::VEC4, "ucolor")
+    .fragment_out(0, Type::VEC4, "fragColor")
+    .vertex_source("overlay_pointcloud_only_vert.glsl")
+    .fragment_source("overlay_uniform_color_frag.glsl")
+    .additional_info("draw_pointcloud");
+
 GPU_SHADER_CREATE_INFO(overlay_uniform_color_clipped)
     .do_static_compilation(true)
     .additional_info("overlay_depth_only", "drw_clipped");
+
+GPU_SHADER_CREATE_INFO(overlay_uniform_color_pointcloud_clipped)
+    .do_static_compilation(true)
+    .additional_info("overlay_uniform_color_pointcloud", "drw_clipped");
 
 /** \} */

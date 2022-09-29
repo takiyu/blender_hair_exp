@@ -65,7 +65,7 @@ void GeometryExporter::operator()(Object *ob)
 
   exportedGeometry.insert(geom_id);
 
-  bool has_color = (bool)CustomData_has_layer(&me->fdata, CD_MCOL);
+  bool has_color = bool(CustomData_has_layer(&me->fdata, CD_MCOL));
 
   create_normals(nor, norind, me);
 
@@ -78,7 +78,7 @@ void GeometryExporter::operator()(Object *ob)
   /* writes <source> for normal coords */
   createNormalsSource(geom_id, me, nor);
 
-  bool has_uvs = (bool)CustomData_has_layer(&me->ldata, CD_PROP_FLOAT2);
+  bool has_uvs = bool(CustomData_has_layer(&me->ldata, CD_PROP_FLOAT2));
 
   /* writes <source> for uv coords if mesh has uv coords */
   if (has_uvs) {
@@ -148,7 +148,7 @@ void GeometryExporter::export_key_mesh(Object *ob, Mesh *me, KeyBlock *kb)
 
   exportedGeometry.insert(geom_id);
 
-  bool has_color = (bool)CustomData_has_layer(&me->fdata, CD_MCOL);
+  bool has_color = bool(CustomData_has_layer(&me->fdata, CD_MCOL));
 
   create_normals(nor, norind, me);
 
@@ -161,7 +161,7 @@ void GeometryExporter::export_key_mesh(Object *ob, Mesh *me, KeyBlock *kb)
   /* writes <source> for normal coords */
   createNormalsSource(geom_id, me, nor);
 
-  bool has_uvs = (bool)CustomData_has_layer(&me->ldata, CD_PROP_FLOAT2);
+  bool has_uvs = bool(CustomData_has_layer(&me->ldata, CD_PROP_FLOAT2));
 
   /* writes <source> for uv coords if mesh has uv coords */
   if (has_uvs) {
@@ -204,7 +204,7 @@ void GeometryExporter::createLooseEdgeList(Object *ob, Mesh *me, std::string &ge
   const Span<MEdge> edges = me->edges();
   int totedges = me->totedge;
   int edges_in_linelist = 0;
-  std::vector<unsigned int> edge_list;
+  std::vector<uint> edge_list;
   int index;
 
   /* Find all loose edges in Mesh
@@ -245,7 +245,7 @@ void GeometryExporter::createLooseEdgeList(Object *ob, Mesh *me, std::string &ge
 
 static void prepareToAppendValues(bool is_triangulated,
                                   COLLADASW::PrimitivesBase &primitive_list,
-                                  std::vector<unsigned long> &vcount_list)
+                                  std::vector<ulong> &vcount_list)
 {
   /* performs the actual writing */
   if (is_triangulated) {
@@ -286,7 +286,7 @@ static COLLADASW::PrimitivesBase *create_primitive_list(bool is_triangulated,
 
 static bool collect_vertex_counts_per_poly(Mesh *me,
                                            int material_index,
-                                           std::vector<unsigned long> &vcount_list)
+                                           std::vector<ulong> &vcount_list)
 {
   const Span<MPoly> polys = me->polys();
   const blender::bke::AttributeAccessor attributes = me->attributes();
@@ -326,7 +326,7 @@ void GeometryExporter::create_mesh_primitive_list(short material_index,
   const Span<MPoly> polys = me->polys();
   const Span<MLoop> loops = me->loops();
 
-  std::vector<unsigned long> vcount_list;
+  std::vector<ulong> vcount_list;
 
   bool is_triangulated = collect_vertex_counts_per_poly(me, material_index, vcount_list);
   int polygon_count = vcount_list.size();
@@ -586,7 +586,7 @@ void GeometryExporter::createNormalsSource(std::string geom_id, Mesh *me, std::v
   COLLADASW::FloatSourceF source(mSW);
   source.setId(getIdBySemantics(geom_id, COLLADASW::InputSemantic::NORMAL));
   source.setArrayId(getIdBySemantics(geom_id, COLLADASW::InputSemantic::NORMAL) + ARRAY_ID_SUFFIX);
-  source.setAccessorCount((unsigned long)nor.size());
+  source.setAccessorCount(ulong(nor.size()));
   source.setAccessorStride(3);
   COLLADASW::SourceBase::ParameterNameList &param = source.getParameterNameList();
   param.push_back("X");
@@ -613,7 +613,7 @@ void GeometryExporter::create_normals(std::vector<Normal> &normals,
                                       std::vector<BCPolygonNormalsIndices> &polygons_normals,
                                       Mesh *me)
 {
-  std::map<Normal, unsigned int> shared_normal_indices;
+  std::map<Normal, uint> shared_normal_indices;
   int last_normal_index = -1;
 
   const Span<MVert> verts = me->verts();
@@ -646,7 +646,7 @@ void GeometryExporter::create_normals(std::vector<Normal> &normals,
 
     BCPolygonNormalsIndices poly_indices;
     for (int loop_index = 0; loop_index < mpoly->totloop; loop_index++) {
-      unsigned int loop_idx = mpoly->loopstart + loop_index;
+      uint loop_idx = mpoly->loopstart + loop_index;
       if (use_vertex_normals) {
         float normalized[3];
 

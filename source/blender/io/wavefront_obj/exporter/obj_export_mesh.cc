@@ -306,15 +306,16 @@ void OBJMesh::store_uv_coords_and_indices()
   const float limit[2] = {STD_UV_CONNECT_LIMIT, STD_UV_CONNECT_LIMIT};
 
   UvVertMap *uv_vert_map = BKE_mesh_uv_vert_map_create(
-      polys.data(),
-      nullptr,
-      loops.data(),
-      reinterpret_cast<const float(*)[2]>(uv_map.data()),
-      polys.size(),
-      totvert,
-      limit,
-      false,
-      false);
+                                                       polys.data(),
+                                                       nullptr,
+                                                       nullptr,
+                                                       loops.data(),
+                                                       reinterpret_cast<const float(*)[2]>(uv_map.data()),
+                                                       polys.size(),
+                                                       totvert,
+                                                       limit,
+                                                       false,
+                                                       false);
 
   uv_indices_.resize(polys.size());
   /* At least total vertices of a mesh will be present in its texture map. So
@@ -372,7 +373,7 @@ float3 OBJMesh::calc_poly_normal(const int poly_index) const
 static float round_float_to_n_digits(const float f, int round_digits)
 {
   float scale = powf(10.0, round_digits);
-  return ceilf((scale * f - 0.49999999f)) / scale;
+  return ceilf(scale * f - 0.49999999f) / scale;
 }
 
 static float3 round_float3_to_n_digits(const float3 &v, int round_digits)
@@ -514,7 +515,7 @@ std::optional<std::array<int, 2>> OBJMesh::calc_loose_edge_vert_indices(const in
   const Span<MEdge> edges = export_mesh_eval_->edges();
   const MEdge &edge = edges[edge_index];
   if (edge.flag & ME_LOOSEEDGE) {
-    return std::array<int, 2>{static_cast<int>(edge.v1), static_cast<int>(edge.v2)};
+    return std::array<int, 2>{int(edge.v1), int(edge.v2)};
   }
   return std::nullopt;
 }
