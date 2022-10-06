@@ -8,6 +8,9 @@
 
 #pragma once
 
+#include <string.h>
+
+#include "BLI_string.h"
 #include "BLI_sys_types.h"
 
 #include "BKE_customdata.h"
@@ -137,6 +140,44 @@ void BKE_id_attributes_render_color_set(struct ID *id, struct CustomDataLayer *a
 struct CustomDataLayer *BKE_id_attributes_color_find(const struct ID *id, const char *name);
 
 bool BKE_id_attribute_calc_unique_name(struct ID *id, const char *name, char *outname);
+
+
+inline char const *get_uv_map_vert_selection_name(char const *uv_map_name, char *buffer)
+{
+  size_t len = strlen(uv_map_name);
+
+  BLI_assert(strlen(UV_VERTSEL_NAME) == 2);
+  if (len >= MAX_CUSTOMDATA_LAYER_NAME - 5) {
+    /* TODO(martijn) come up with a way to generate a non-colliding shortening... */
+  }
+  BLI_snprintf(buffer, MAX_CUSTOMDATA_LAYER_NAME, ".%s.%s", UV_VERTSEL_NAME, uv_map_name);
+  return buffer;
+}
+
+inline char const *get_uv_map_edge_selection_name(char const *uv_map_name, char *buffer)
+{
+  size_t len = strlen(uv_map_name);
+
+  BLI_assert(strlen(UV_VERTSEL_NAME) == 2);
+  if (len >= MAX_CUSTOMDATA_LAYER_NAME - 5) {
+    /* TODO(martijn) come up with a way to generate a non-colliding shortening... */
+  }
+  BLI_snprintf(buffer, MAX_CUSTOMDATA_LAYER_NAME, ".%s.%s", UV_EDGESEL_NAME, uv_map_name);
+  return buffer;
+}
+
+inline char const *get_uv_map_pin_name(char const *uv_map_name, char *buffer)
+{
+  size_t len = strlen(uv_map_name);
+
+  BLI_assert(strlen(UV_VERTSEL_NAME) == 2);
+  if (len >= MAX_CUSTOMDATA_LAYER_NAME - 5) {
+    /* TODO(martijn) come up with a way to generate a non-colliding shortening... */
+  }
+  BLI_snprintf(buffer, MAX_CUSTOMDATA_LAYER_NAME, ".%s.%s", UV_PINNED_NAME, uv_map_name);
+  return buffer;
+}
+
 
 #ifdef __cplusplus
 }

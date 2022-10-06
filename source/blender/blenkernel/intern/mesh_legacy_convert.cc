@@ -1193,10 +1193,13 @@ void BKE_mesh_legacy_convert_uvs_to_struct(
 
   /* Don't write the boolean UV map sublayers which will be written in the legacy #MLoopUV type. */
   Set<std::string> uv_sublayers_to_skip;
+  char vert_name[MAX_CUSTOMDATA_LAYER_NAME];
+  char edge_name[MAX_CUSTOMDATA_LAYER_NAME];
+  char pin_name[MAX_CUSTOMDATA_LAYER_NAME];
   for (const CustomDataLayer &layer : face_corner_layers_to_write) {
-    uv_sublayers_to_skip.add_multiple_new({get_uv_map_vert_selection_name(layer.name),
-                                           get_uv_map_edge_selection_name(layer.name),
-                                           get_uv_map_pin_name(layer.name)});
+    uv_sublayers_to_skip.add_multiple_new({get_uv_map_vert_selection_name(layer.name, vert_name),
+                                           get_uv_map_edge_selection_name(layer.name, edge_name),
+                                           get_uv_map_pin_name(layer.name, pin_name)});
   }
 
   for (const CustomDataLayer &layer : face_corner_layers_to_write) {
@@ -1214,12 +1217,13 @@ void BKE_mesh_legacy_convert_uvs_to_struct(
         mesh->totloop);
     mloopuv_layer.data = mloopuv.data();
 
+	char buffer[MAX_CUSTOMDATA_LAYER_NAME];
     const VArray<bool> vert_selection = attributes.lookup_or_default<bool>(
-        get_uv_map_vert_selection_name(layer.name), ATTR_DOMAIN_CORNER, false);
+        get_uv_map_vert_selection_name(layer.name, buffer), ATTR_DOMAIN_CORNER, false);
     const VArray<bool> edge_selection = attributes.lookup_or_default<bool>(
-        get_uv_map_edge_selection_name(layer.name), ATTR_DOMAIN_CORNER, false);
+        get_uv_map_edge_selection_name(layer.name, buffer), ATTR_DOMAIN_CORNER, false);
     const VArray<bool> pin = attributes.lookup_or_default<bool>(
-        get_uv_map_pin_name(layer.name), ATTR_DOMAIN_CORNER, false);
+        get_uv_map_pin_name(layer.name, buffer), ATTR_DOMAIN_CORNER, false);
 
     threading::parallel_for(mloopuv.index_range(), 2048, [&](IndexRange range) {
       for (const int i : range) {
@@ -1310,13 +1314,14 @@ void BKE_mesh_legacy_convert_uvs_to_generic(Mesh *mesh)
     CustomData_free_layer_named(&mesh->ldata, name.c_str(), mesh->totloop);
     CustomData_add_layer_named(
         &mesh->ldata, CD_PROP_FLOAT2, CD_ASSIGN, coords, mesh->totloop, name.c_str());
+    char buffer[MAX_CUSTOMDATA_LAYER_NAME];
     if (vert_selection) {
       CustomData_add_layer_named(&mesh->ldata,
                                  CD_PROP_BOOL,
                                  CD_ASSIGN,
                                  vert_selection,
                                  mesh->totloop,
-                                 get_uv_map_vert_selection_name(name).c_str());
+                                 get_uv_map_vert_selection_name(name.c_str(), buffer));
     }
     if (edge_selection) {
       CustomData_add_layer_named(&mesh->ldata,
@@ -1324,7 +1329,7 @@ void BKE_mesh_legacy_convert_uvs_to_generic(Mesh *mesh)
                                  CD_ASSIGN,
                                  edge_selection,
                                  mesh->totloop,
-                                 get_uv_map_edge_selection_name(name).c_str());
+                                 get_uv_map_edge_selection_name(name.c_str(), buffer));
     }
     if (pin) {
       CustomData_add_layer_named(&mesh->ldata,
@@ -1332,7 +1337,7 @@ void BKE_mesh_legacy_convert_uvs_to_generic(Mesh *mesh)
                                  CD_ASSIGN,
                                  pin,
                                  mesh->totloop,
-                                 get_uv_map_pin_name(name).c_str());
+                                 get_uv_map_pin_name(name.c_str(), buffer));
     }
   }
 

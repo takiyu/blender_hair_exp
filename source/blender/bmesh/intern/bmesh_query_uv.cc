@@ -29,16 +29,17 @@ BMUVOffsets BM_uv_map_get_offsets(const BMesh *bm)
     return {-1, -1, -1, -1};
   }
 
-  const StringRef name = bm->ldata.layers[layer_index].name;
+  char const *name = bm->ldata.layers[layer_index].name;
+  char buffer[MAX_CUSTOMDATA_LAYER_NAME];
 
   BMUVOffsets offsets;
   offsets.uv = bm->ldata.layers[layer_index].offset;
   offsets.select_vert = CustomData_get_offset_named(
-      &bm->ldata, CD_PROP_BOOL, get_uv_map_vert_selection_name(name).c_str());
+      &bm->ldata, CD_PROP_BOOL, get_uv_map_vert_selection_name(name, buffer));
   offsets.select_edge = CustomData_get_offset_named(
-      &bm->ldata, CD_PROP_BOOL, get_uv_map_edge_selection_name(name).c_str());
+      &bm->ldata, CD_PROP_BOOL, get_uv_map_edge_selection_name(name, buffer));
   offsets.pin = CustomData_get_offset_named(
-      &bm->ldata, CD_PROP_BOOL, get_uv_map_pin_name(name).c_str());
+      &bm->ldata, CD_PROP_BOOL, get_uv_map_pin_name(name, buffer));
 
   return offsets;
 }

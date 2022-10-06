@@ -170,17 +170,19 @@ bool BKE_id_attribute_rename(ID *id,
 
   if (layer->type == CD_PROP_FLOAT2) {
     /* Rename UV sub-attributes. */
+    char buffer_src[MAX_CUSTOMDATA_LAYER_NAME];
+    char buffer_dst[MAX_CUSTOMDATA_LAYER_NAME];
     BKE_id_attribute_rename(id,
-                            get_uv_map_vert_selection_name(layer->name).c_str(),
-                            get_uv_map_vert_selection_name(result_name).c_str(),
+                            get_uv_map_vert_selection_name(layer->name, buffer_src),
+                            get_uv_map_vert_selection_name(result_name, buffer_dst),
                             reports);
     BKE_id_attribute_rename(id,
-                            get_uv_map_edge_selection_name(layer->name).c_str(),
-                            get_uv_map_edge_selection_name(result_name).c_str(),
+                            get_uv_map_edge_selection_name(layer->name, buffer_src),
+                            get_uv_map_edge_selection_name(result_name, buffer_dst),
                             reports);
     BKE_id_attribute_rename(id,
-                            get_uv_map_pin_name(layer->name).c_str(),
-                            get_uv_map_pin_name(result_name).c_str(),
+                            get_uv_map_pin_name(layer->name, buffer_src),
+                            get_uv_map_pin_name(result_name, buffer_dst),
                             reports);
   }
 

@@ -827,21 +827,6 @@ class CustomDataAttributes {
   bool foreach_attribute(const AttributeForeachCallback callback, eAttrDomain domain) const;
 };
 
-inline std::string get_uv_map_vert_selection_name(const StringRef uv_map_name)
-{
-  return std::string(".") + UV_VERTSEL_NAME + "." + uv_map_name;
-}
-
-inline std::string get_uv_map_edge_selection_name(const StringRef uv_map_name)
-{
-  return std::string(".") + UV_EDGESEL_NAME + "." + uv_map_name;
-}
-
-inline std::string get_uv_map_pin_name(const StringRef uv_map_name)
-{
-  return std::string(".") + UV_PINNED_NAME + "." + uv_map_name;
-}
-
 /* -------------------------------------------------------------------- */
 /** \name #AttributeIDRef Inline Methods
  * \{ */
