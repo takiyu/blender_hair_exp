@@ -121,7 +121,7 @@ void BKE_mesh_calc_loop_tangent_single(Mesh *mesh,
 {
   using namespace blender;
   using namespace blender::bke;
-  float(*loopuvs)[2];
+
   if (!uvmap) {
     uvmap = CustomData_get_active_layer_name(&mesh->ldata, CD_PROP_FLOAT2);
   }
