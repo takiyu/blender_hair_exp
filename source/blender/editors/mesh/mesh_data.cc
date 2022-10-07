@@ -379,7 +379,7 @@ int ED_mesh_color_add(Mesh *me,
                       const char *name,
                       const bool active_set,
                       const bool do_init,
-                      ReportList *UNUSED(reports))
+                      ReportList * /*reports*/)
 {
   /* NOTE: keep in sync with #ED_mesh_uv_add. */
 
@@ -465,7 +465,7 @@ static bool layers_poll(bContext *C)
 int ED_mesh_sculpt_color_add(Mesh *me,
                              const char *name,
                              const bool do_init,
-                             ReportList *UNUSED(reports))
+                             ReportList * /*reports*/)
 {
   /* NOTE: keep in sync with #ED_mesh_uv_add. */
 
@@ -567,7 +567,7 @@ void MESH_OT_uv_texture_add(wmOperatorType *ot)
   ot->flag = OPTYPE_REGISTER | OPTYPE_UNDO;
 }
 
-static int mesh_uv_texture_remove_exec(bContext *C, wmOperator *UNUSED(op))
+static int mesh_uv_texture_remove_exec(bContext *C, wmOperator * /*op*/)
 {
   Object *ob = ED_object_context(C);
   Mesh *me = static_cast<Mesh *>(ob->data);
@@ -640,7 +640,7 @@ static int mesh_customdata_add_exec__internal(bContext *C, char htype, int type)
     BM_data_layer_add(mesh->edit_mesh->bm, data, type);
   }
   else {
-    CustomData_add_layer(data, type, CD_SET_DEFAULT, NULL, tot);
+    CustomData_add_layer(data, type, CD_SET_DEFAULT, nullptr, tot);
   }
 
   DEG_id_tag_update(&mesh->id, 0);
@@ -674,7 +674,7 @@ static bool mesh_customdata_mask_clear_poll(bContext *C)
   }
   return false;
 }
-static int mesh_customdata_mask_clear_exec(bContext *C, wmOperator *UNUSED(op))
+static int mesh_customdata_mask_clear_exec(bContext *C, wmOperator * /*op*/)
 {
   int ret_a = mesh_customdata_clear_exec__internal(C, BM_VERT, CD_PAINT_MASK);
   int ret_b = mesh_customdata_clear_exec__internal(C, BM_LOOP, CD_GRID_PAINT_MASK);
@@ -725,7 +725,7 @@ static bool mesh_customdata_skin_add_poll(bContext *C)
   return (mesh_customdata_skin_state(C) == 0);
 }
 
-static int mesh_customdata_skin_add_exec(bContext *C, wmOperator *UNUSED(op))
+static int mesh_customdata_skin_add_exec(bContext *C, wmOperator * /*op*/)
 {
   Object *ob = ED_object_context(C);
   Mesh *me = static_cast<Mesh *>(ob->data);
@@ -758,7 +758,7 @@ static bool mesh_customdata_skin_clear_poll(bContext *C)
   return (mesh_customdata_skin_state(C) == 1);
 }
 
-static int mesh_customdata_skin_clear_exec(bContext *C, wmOperator *UNUSED(op))
+static int mesh_customdata_skin_clear_exec(bContext *C, wmOperator * /*op*/)
 {
   return mesh_customdata_clear_exec__internal(C, BM_VERT, CD_MVERT_SKIN);
 }
@@ -779,7 +779,7 @@ void MESH_OT_customdata_skin_clear(wmOperatorType *ot)
 }
 
 /* Clear custom loop normals */
-static int mesh_customdata_custom_splitnormals_add_exec(bContext *C, wmOperator *UNUSED(op))
+static int mesh_customdata_custom_splitnormals_add_exec(bContext *C, wmOperator * /*op*/)
 {
   Mesh *me = ED_mesh_context(C);
 
@@ -842,7 +842,7 @@ void MESH_OT_customdata_custom_splitnormals_add(wmOperatorType *ot)
   ot->flag = OPTYPE_REGISTER | OPTYPE_UNDO;
 }
 
-static int mesh_customdata_custom_splitnormals_clear_exec(bContext *C, wmOperator *UNUSED(op))
+static int mesh_customdata_custom_splitnormals_clear_exec(bContext *C, wmOperator * /*op*/)
 {
   Mesh *me = ED_mesh_context(C);
 
@@ -892,7 +892,7 @@ static bool mesh_customdata_bevel_weight_vertex_add_poll(bContext *C)
   return mesh_customdata_bevel_weight_vertex_state(C) == 0;
 }
 
-static int mesh_customdata_bevel_weight_vertex_add_exec(bContext *C, wmOperator *UNUSED(op))
+static int mesh_customdata_bevel_weight_vertex_add_exec(bContext *C, wmOperator * /*op*/)
 {
   return mesh_customdata_add_exec__internal(C, BM_VERT, CD_BWEIGHT);
 }
@@ -914,7 +914,7 @@ static bool mesh_customdata_bevel_weight_vertex_clear_poll(bContext *C)
   return (mesh_customdata_bevel_weight_vertex_state(C) == 1);
 }
 
-static int mesh_customdata_bevel_weight_vertex_clear_exec(bContext *C, wmOperator *UNUSED(op))
+static int mesh_customdata_bevel_weight_vertex_clear_exec(bContext *C, wmOperator * /*op*/)
 {
   return mesh_customdata_clear_exec__internal(C, BM_VERT, CD_BWEIGHT);
 }
@@ -952,7 +952,7 @@ static bool mesh_customdata_bevel_weight_edge_add_poll(bContext *C)
   return mesh_customdata_bevel_weight_edge_state(C) == 0;
 }
 
-static int mesh_customdata_bevel_weight_edge_add_exec(bContext *C, wmOperator *UNUSED(op))
+static int mesh_customdata_bevel_weight_edge_add_exec(bContext *C, wmOperator * /*op*/)
 {
   return mesh_customdata_add_exec__internal(C, BM_EDGE, CD_BWEIGHT);
 }
@@ -974,7 +974,7 @@ static bool mesh_customdata_bevel_weight_edge_clear_poll(bContext *C)
   return mesh_customdata_bevel_weight_edge_state(C) == 1;
 }
 
-static int mesh_customdata_bevel_weight_edge_clear_exec(bContext *C, wmOperator *UNUSED(op))
+static int mesh_customdata_bevel_weight_edge_clear_exec(bContext *C, wmOperator * /*op*/)
 {
   return mesh_customdata_clear_exec__internal(C, BM_EDGE, CD_BWEIGHT);
 }
@@ -1012,7 +1012,7 @@ static bool mesh_customdata_crease_edge_add_poll(bContext *C)
   return mesh_customdata_crease_edge_state(C) == 0;
 }
 
-static int mesh_customdata_crease_edge_add_exec(bContext *C, wmOperator *UNUSED(op))
+static int mesh_customdata_crease_edge_add_exec(bContext *C, wmOperator * /*op*/)
 {
   return mesh_customdata_add_exec__internal(C, BM_EDGE, CD_CREASE);
 }
@@ -1034,7 +1034,7 @@ static bool mesh_customdata_crease_edge_clear_poll(bContext *C)
   return mesh_customdata_crease_edge_state(C) == 1;
 }
 
-static int mesh_customdata_crease_edge_clear_exec(bContext *C, wmOperator *UNUSED(op))
+static int mesh_customdata_crease_edge_clear_exec(bContext *C, wmOperator * /*op*/)
 {
   return mesh_customdata_clear_exec__internal(C, BM_EDGE, CD_CREASE);
 }
@@ -1072,7 +1072,7 @@ static bool mesh_customdata_crease_vertex_add_poll(bContext *C)
   return mesh_customdata_crease_vertex_state(C) == 0;
 }
 
-static int mesh_customdata_crease_vertex_add_exec(bContext *C, wmOperator *UNUSED(op))
+static int mesh_customdata_crease_vertex_add_exec(bContext *C, wmOperator * /*op*/)
 {
   return mesh_customdata_add_exec__internal(C, BM_VERT, CD_CREASE);
 }
@@ -1094,7 +1094,7 @@ static bool mesh_customdata_crease_vertex_clear_poll(bContext *C)
   return (mesh_customdata_crease_vertex_state(C) == 1);
 }
 
-static int mesh_customdata_crease_vertex_clear_exec(bContext *C, wmOperator *UNUSED(op))
+static int mesh_customdata_crease_vertex_clear_exec(bContext *C, wmOperator * /*op*/)
 {
   return mesh_customdata_clear_exec__internal(C, BM_VERT, CD_CREASE);
 }

@@ -28,7 +28,7 @@ struct MeshExtract_PosNor_Data {
 };
 
 static void extract_pos_nor_init(const MeshRenderData *mr,
-                                 MeshBatchCache *UNUSED(cache),
+                                 MeshBatchCache * /*cache*/,
                                  void *buf,
                                  void *tls_data)
 {
@@ -66,7 +66,7 @@ static void extract_pos_nor_init(const MeshRenderData *mr,
 
 static void extract_pos_nor_iter_poly_bm(const MeshRenderData *mr,
                                          const BMFace *f,
-                                         const int UNUSED(f_index),
+                                         const int /*f_index*/,
                                          void *_data)
 {
   MeshExtract_PosNor_Data *data = static_cast<MeshExtract_PosNor_Data *>(_data);
@@ -169,9 +169,9 @@ static void extract_pos_nor_iter_lvert_mesh(const MeshRenderData *mr,
   vert->nor = data->normals[v_index].low;
 }
 
-static void extract_pos_nor_finish(const MeshRenderData *UNUSED(mr),
-                                   MeshBatchCache *UNUSED(cache),
-                                   void *UNUSED(buf),
+static void extract_pos_nor_finish(const MeshRenderData * /*mr*/,
+                                   MeshBatchCache * /*cache*/,
+                                   void * /*buf*/,
                                    void *_data)
 {
   MeshExtract_PosNor_Data *data = static_cast<MeshExtract_PosNor_Data *>(_data);
@@ -199,10 +199,10 @@ static GPUVertFormat *get_custom_normals_format()
 }
 
 static void extract_pos_nor_init_subdiv(const DRWSubdivCache *subdiv_cache,
-                                        const MeshRenderData *UNUSED(mr),
+                                        const MeshRenderData * /*mr*/,
                                         MeshBatchCache *cache,
                                         void *buffer,
-                                        void *UNUSED(data))
+                                        void * /*data*/)
 {
   GPUVertBuf *vbo = static_cast<GPUVertBuf *>(buffer);
   const DRWSubdivLooseGeom &loose_geom = subdiv_cache->loose_geom;
@@ -280,9 +280,9 @@ static void extract_pos_nor_init_subdiv(const DRWSubdivCache *subdiv_cache,
 }
 
 static void extract_pos_nor_loose_geom_subdiv(const DRWSubdivCache *subdiv_cache,
-                                              const MeshRenderData *UNUSED(mr),
+                                              const MeshRenderData * /*mr*/,
                                               void *buffer,
-                                              void *UNUSED(data))
+                                              void * /*data*/)
 {
   const DRWSubdivLooseGeom &loose_geom = subdiv_cache->loose_geom;
   if (loose_geom.loop_len == 0) {
@@ -371,7 +371,7 @@ struct MeshExtract_PosNorHQ_Data {
 };
 
 static void extract_pos_nor_hq_init(const MeshRenderData *mr,
-                                    MeshBatchCache *UNUSED(cache),
+                                    MeshBatchCache * /*cache*/,
                                     void *buf,
                                     void *tls_data)
 {
@@ -409,7 +409,7 @@ static void extract_pos_nor_hq_init(const MeshRenderData *mr,
 
 static void extract_pos_nor_hq_iter_poly_bm(const MeshRenderData *mr,
                                             const BMFace *f,
-                                            const int UNUSED(f_index),
+                                            const int /*f_index*/,
                                             void *_data)
 {
   MeshExtract_PosNorHQ_Data *data = static_cast<MeshExtract_PosNorHQ_Data *>(_data);
@@ -427,7 +427,7 @@ static void extract_pos_nor_hq_iter_poly_bm(const MeshRenderData *mr,
 
 static void extract_pos_nor_hq_iter_poly_mesh(const MeshRenderData *mr,
                                               const MPoly *mp,
-                                              const int UNUSED(mp_index),
+                                              const int /*mp_index*/,
                                               void *_data)
 {
   MeshExtract_PosNorHQ_Data *data = static_cast<MeshExtract_PosNorHQ_Data *>(_data);
@@ -519,9 +519,9 @@ static void extract_pos_nor_hq_iter_lvert_mesh(const MeshRenderData *mr,
   vert->nor[3] = 0;
 }
 
-static void extract_pos_nor_hq_finish(const MeshRenderData *UNUSED(mr),
-                                      MeshBatchCache *UNUSED(cache),
-                                      void *UNUSED(buf),
+static void extract_pos_nor_hq_finish(const MeshRenderData * /*mr*/,
+                                      MeshBatchCache * /*cache*/,
+                                      void * /*buf*/,
                                       void *_data)
 {
   MeshExtract_PosNorHQ_Data *data = static_cast<MeshExtract_PosNorHQ_Data *>(_data);

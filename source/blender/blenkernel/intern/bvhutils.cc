@@ -179,7 +179,7 @@ static void bvhtree_balance(BVHTree *tree, const bool isolate)
 /* Math stuff for ray casting on mesh faces and for nearest surface */
 
 float bvhtree_ray_tri_intersection(const BVHTreeRay *ray,
-                                   const float UNUSED(m_dist),
+                                   const float /*m_dist*/,
                                    const float v0[3],
                                    const float v1[3],
                                    const float v2[3])

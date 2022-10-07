@@ -266,47 +266,65 @@ static VChar *objchr_to_ftvfontdata(VFont *vfont, FT_ULong charcode)
   return che;
 }
 
-static VFontData *objfnt_to_ftvfontdata(PackedFile *pf)
+static FT_Face vfont_face_load_from_packed_file(PackedFile *pf)
 {
-  /* Variables */
-  FT_Face face;
-  const FT_ULong charcode_reserve = 256;
-  FT_ULong charcode = 0, lcode;
-  FT_UInt glyph_index;
-  VFontData *vfd;
+  FT_Face face = NULL;
+  FT_New_Memory_Face(library, pf->data, pf->size, 0, &face);
+  if (!face) {
+    return NULL;
+  }
 
-  /* load the freetype font */
-  err = FT_New_Memory_Face(library, pf->data, pf->size, 0, &face);
+  /* Font must contain vectors, not bitmaps. */
+  if (!(face->face_flags & FT_FACE_FLAG_SCALABLE)) {
+    FT_Done_Face(face);
+    return NULL;
+  }
 
-  if (err) {
+  /* Select a character map. */
+  FT_Error err_charmap = FT_Select_Charmap(face, FT_ENCODING_UNICODE);
+  if (err_charmap) {
+    err_charmap = FT_Select_Charmap(face, FT_ENCODING_APPLE_ROMAN);
+  }
+  if (err_charmap && face->num_charmaps > 0) {
+    err_charmap = FT_Select_Charmap(face, face->charmaps[0]->encoding);
+  }
+  if (err_charmap) {
+    FT_Done_Face(face);
+    return NULL;
+  }
+
+  /* Test that we can load glyphs from this font. */
+  FT_UInt glyph_index = 0;
+  FT_Get_First_Char(face, &glyph_index);
+  if (!glyph_index ||
+      FT_Load_Glyph(face, glyph_index, FT_LOAD_NO_SCALE | FT_LOAD_NO_BITMAP) != FT_Err_Ok) {
+    FT_Done_Face(face);
+    return NULL;
+  }
+
+  return face;
+}
+
+VFontData *BKE_vfontdata_from_freetypefont(PackedFile *pf)
+{
+  if (FT_Init_FreeType(&library) != FT_Err_Ok) {
+    return NULL;
+  }
+
+  FT_Face face = vfont_face_load_from_packed_file(pf);
+  if (!face) {
+    FT_Done_FreeType(library);
     return NULL;
   }
 
   /* allocate blender font */
-  vfd = MEM_callocN(sizeof(*vfd), "FTVFontData");
+  VFontData *vfd = MEM_callocN(sizeof(*vfd), "FTVFontData");
 
   /* Get the name. */
   if (face->family_name) {
     BLI_snprintf(vfd->name, sizeof(vfd->name), "%s %s", face->family_name, face->style_name);
     BLI_str_utf8_invalid_strip(vfd->name, strlen(vfd->name));
   }
-
-  /* Select a character map. */
-  err = FT_Select_Charmap(face, FT_ENCODING_UNICODE);
-  if (err) {
-    err = FT_Select_Charmap(face, FT_ENCODING_APPLE_ROMAN);
-  }
-  if (err && face->num_charmaps > 0) {
-    err = FT_Select_Charmap(face, face->charmaps[0]->encoding);
-  }
-  if (err) {
-    FT_Done_Face(face);
-    MEM_freeN(vfd);
-    return NULL;
-  }
-
-  /* Extract the first 256 character from TTF */
-  lcode = charcode = FT_Get_First_Char(face, &glyph_index);
 
   /* Blender default BFont is not "complete". */
   const bool complete_font = (face->ascender != 0) && (face->descender != 0) &&
@@ -335,67 +353,21 @@ static VFontData *objfnt_to_ftvfontdata(PackedFile *pf)
     vfd->scale = 1.0f / 1000.0f;
   }
 
-  /* Load characters */
-  vfd->characters = BLI_ghash_int_new_ex(__func__, charcode_reserve);
+  /* Load the first 256 glyphs. */
 
-  while (charcode < charcode_reserve) {
-    /* Generate the font data */
-    freetypechar_to_vchar(face, charcode, vfd);
+  const FT_ULong preload_count = 256;
+  vfd->characters = BLI_ghash_int_new_ex(__func__, preload_count);
 
-    /* Next glyph */
+  FT_ULong charcode = 0;
+  FT_UInt glyph_index;
+  for (int i = 0; i < preload_count; i++) {
     charcode = FT_Get_Next_Char(face, charcode, &glyph_index);
-
-    /* Check that we won't start infinite loop */
-    if (charcode <= lcode) {
+    if (!charcode || !glyph_index) {
       break;
     }
-    lcode = charcode;
+    freetypechar_to_vchar(face, charcode, vfd);
   }
 
-  return vfd;
-}
-
-static bool check_freetypefont(PackedFile *pf)
-{
-  FT_Face face = NULL;
-  FT_UInt glyph_index = 0;
-  bool success = false;
-
-  err = FT_New_Memory_Face(library, pf->data, pf->size, 0, &face);
-  if (err) {
-    return false;
-    // XXX error("This is not a valid font");
-  }
-
-  FT_Get_First_Char(face, &glyph_index);
-  if (glyph_index) {
-    err = FT_Load_Glyph(face, glyph_index, FT_LOAD_NO_SCALE | FT_LOAD_NO_BITMAP);
-    if (!err) {
-      success = (face->glyph->format == ft_glyph_format_outline);
-    }
-  }
-
-  FT_Done_Face(face);
-
-  return success;
-}
-
-VFontData *BKE_vfontdata_from_freetypefont(PackedFile *pf)
-{
-  VFontData *vfd = NULL;
-
-  /* init Freetype */
-  err = FT_Init_FreeType(&library);
-  if (err) {
-    /* XXX error("Failed to load the Freetype font library"); */
-    return NULL;
-  }
-
-  if (check_freetypefont(pf)) {
-    vfd = objfnt_to_ftvfontdata(pf);
-  }
-
-  /* free Freetype */
   FT_Done_FreeType(library);
 
   return vfd;
