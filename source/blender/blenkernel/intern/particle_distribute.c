@@ -1096,7 +1096,7 @@ static int psys_thread_context_init_distribute(ParticleThreadContext *ctx,
     maxweight /= totarea;
   }
   else {
-    float min = 1.0f / (float)(MIN2(totelem, totpart));
+    float min = 1.0f / (float)MIN2(totelem, totpart);
     for (i = 0; i < totelem; i++) {
       element_weight[i] = min;
     }
