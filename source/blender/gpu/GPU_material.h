@@ -300,7 +300,7 @@ void GPU_pass_cache_free(void);
 typedef struct GPUMaterialAttribute {
   struct GPUMaterialAttribute *next, *prev;
   int type;                /* eCustomDataType */
-  char name[72];           /* MAX_CUSTOMDATA_LAYER_NAME */
+  char name[68];           /* MAX_CUSTOMDATA_LAYER_NAME */
   char input_name[12 + 1]; /* GPU_MAX_SAFE_ATTR_NAME + 1 */
   eGPUType gputype;
   eGPUDefaultValue default_value; /* Only for volumes attributes. */
@@ -334,10 +334,10 @@ typedef struct GPUUniformAttr {
   struct GPUUniformAttr *next, *prev;
 
   /* Meaningful part of the attribute set key. */
-  char name[72]; /* MAX_CUSTOMDATA_LAYER_NAME */
+  char name[68]; /* MAX_CUSTOMDATA_LAYER_NAME */
   /** Escaped name with [""]. */
-  char name_id_prop[72 * 2 + 4];
-  /** Hash of name[72] + use_dupli. */
+  char name_id_prop[68 * 2 + 4];
+  /** Hash of name[68] + use_dupli. */
   uint32_t hash_code;
   bool use_dupli;
 
