@@ -784,7 +784,7 @@ typedef struct FluidFlowSettings {
   float texture_offset;
   char _pad2[4];
   /* MAX_CUSTOMDATA_LAYER_NAME. */
-  char uvlayer_name[64];
+  char uvlayer_name[72];
   short vgroup_density;
 
   short type;     /* Smoke, flames, both, outflow, liquid. */

@@ -1160,7 +1160,7 @@ typedef struct NodeShaderTexPointDensity {
   short color_source;
   short ob_color_source;
   /** Vertex attribute layer for color source, MAX_CUSTOMDATA_LAYER_NAME. */
-  char vertex_attribute_name[64];
+  char vertex_attribute_name[72];
   /* Used at runtime only by sampling RNA API. */
   PointDensity pd;
   int cached_resolution;

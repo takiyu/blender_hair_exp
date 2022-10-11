@@ -323,7 +323,7 @@ void BKE_mesh_add_loop_tangent_named_layer_for_uv(CustomData *uv_data,
 
 void BKE_mesh_calc_loop_tangent_step_0(const CustomData *loopData,
                                        bool calc_active_tangent,
-                                       const char (*tangent_names)[MAX_NAME],
+                                       const char (*tangent_names)[MAX_CUSTOMDATA_LAYER_NAME],
                                        int tangent_names_count,
                                        bool *rcalc_act,
                                        bool *rcalc_ren,
@@ -403,7 +403,7 @@ void BKE_mesh_calc_loop_tangent_ex(const MVert *mvert,
 
                                    CustomData *loopdata,
                                    bool calc_active_tangent,
-                                   const char (*tangent_names)[MAX_NAME],
+                                   const char (*tangent_names)[MAX_CUSTOMDATA_LAYER_NAME],
                                    int tangent_names_len,
                                    const float (*vert_normals)[3],
                                    const float (*poly_normals)[3],
@@ -418,8 +418,8 @@ void BKE_mesh_calc_loop_tangent_ex(const MVert *mvert,
   int ren_uv_n = -1;
   bool calc_act = false;
   bool calc_ren = false;
-  char act_uv_name[MAX_NAME];
-  char ren_uv_name[MAX_NAME];
+  char act_uv_name[MAX_CUSTOMDATA_LAYER_NAME];
+  char ren_uv_name[MAX_CUSTOMDATA_LAYER_NAME];
   short tangent_mask = 0;
   short tangent_mask_curr = *tangent_mask_curr_p;
 
@@ -576,7 +576,7 @@ void BKE_mesh_calc_loop_tangent_ex(const MVert *mvert,
 
 void BKE_mesh_calc_loop_tangents(Mesh *me_eval,
                                  bool calc_active_tangent,
-                                 const char (*tangent_names)[MAX_NAME],
+                                 const char (*tangent_names)[MAX_CUSTOMDATA_LAYER_NAME],
                                  int tangent_names_len)
 {
   BKE_mesh_runtime_looptri_ensure(me_eval);
