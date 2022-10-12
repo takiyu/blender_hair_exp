@@ -278,7 +278,7 @@ class TEXTURE_UL_texpaintslots(UIList):
         # mat = data
 
         if self.layout_type in {'DEFAULT', 'COMPACT'}:
-            layout.prop(item, "name", text="", emboss=False, icon_value=item.icon_value)
+            layout.label(text=item.name, icon_value=item.icon_value)
         elif self.layout_type == 'GRID':
             layout.alignment = 'CENTER'
             layout.label(text="")
@@ -976,7 +976,7 @@ class VIEW3D_PT_sculpt_options(Panel, View3DPaintPanel):
         col.prop(sculpt, "use_automasking_cavity_inverted", text="Cavity (Inverted)")
         col.prop(sculpt, "use_automasking_start_normal", text="Area Normal")
         col.prop(sculpt, "use_automasking_view_normal", text="View Normal")
-        
+
         if sculpt.use_automasking_start_normal:
             col.separator()
 

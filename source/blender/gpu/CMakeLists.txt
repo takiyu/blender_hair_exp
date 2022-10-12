@@ -332,6 +332,7 @@ set(GLSL_SRC
   shaders/compositor/compositor_alpha_crop.glsl
   shaders/compositor/compositor_bilateral_blur.glsl
   shaders/compositor/compositor_blur.glsl
+  shaders/compositor/compositor_blur_variable_size.glsl
   shaders/compositor/compositor_bokeh_image.glsl
   shaders/compositor/compositor_box_mask.glsl
   shaders/compositor/compositor_convert.glsl
@@ -346,6 +347,7 @@ set(GLSL_SRC
   shaders/compositor/compositor_morphological_distance_feather.glsl
   shaders/compositor/compositor_morphological_distance_threshold.glsl
   shaders/compositor/compositor_morphological_step.glsl
+  shaders/compositor/compositor_parallel_reduction.glsl
   shaders/compositor/compositor_projector_lens_distortion.glsl
   shaders/compositor/compositor_realize_on_domain.glsl
   shaders/compositor/compositor_screen_lens_distortion.glsl
@@ -548,7 +550,6 @@ set(SRC_SHADER_CREATE_INFOS
   ../draw/engines/gpencil/shaders/infos/gpencil_vfx_info.hh
   ../draw/engines/overlay/shaders/infos/overlay_antialiasing_info.hh
   ../draw/engines/overlay/shaders/infos/overlay_armature_info.hh
-  ../draw/engines/overlay/shaders/infos/overlay_viewer_attribute_info.hh
   ../draw/engines/overlay/shaders/infos/overlay_background_info.hh
   ../draw/engines/overlay/shaders/infos/overlay_edit_mode_info.hh
   ../draw/engines/overlay/shaders/infos/overlay_extra_info.hh
@@ -558,6 +559,7 @@ set(SRC_SHADER_CREATE_INFOS
   ../draw/engines/overlay/shaders/infos/overlay_paint_info.hh
   ../draw/engines/overlay/shaders/infos/overlay_sculpt_curves_info.hh
   ../draw/engines/overlay/shaders/infos/overlay_sculpt_info.hh
+  ../draw/engines/overlay/shaders/infos/overlay_viewer_attribute_info.hh
   ../draw/engines/overlay/shaders/infos/overlay_volume_info.hh
   ../draw/engines/overlay/shaders/infos/overlay_wireframe_info.hh
   ../draw/engines/select/shaders/infos/select_id_info.hh
@@ -612,6 +614,7 @@ set(SRC_SHADER_CREATE_INFOS
   shaders/compositor/infos/compositor_alpha_crop_info.hh
   shaders/compositor/infos/compositor_bilateral_blur_info.hh
   shaders/compositor/infos/compositor_blur_info.hh
+  shaders/compositor/infos/compositor_blur_variable_size_info.hh
   shaders/compositor/infos/compositor_bokeh_image_info.hh
   shaders/compositor/infos/compositor_box_mask_info.hh
   shaders/compositor/infos/compositor_convert_info.hh
@@ -626,6 +629,7 @@ set(SRC_SHADER_CREATE_INFOS
   shaders/compositor/infos/compositor_morphological_distance_info.hh
   shaders/compositor/infos/compositor_morphological_distance_threshold_info.hh
   shaders/compositor/infos/compositor_morphological_step_info.hh
+  shaders/compositor/infos/compositor_parallel_reduction_info.hh
   shaders/compositor/infos/compositor_projector_lens_distortion_info.hh
   shaders/compositor/infos/compositor_realize_on_domain_info.hh
   shaders/compositor/infos/compositor_screen_lens_distortion_info.hh

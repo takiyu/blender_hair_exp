@@ -663,7 +663,8 @@ void BKE_pbvh_build_grids(PBVH *pbvh,
                           CCGKey *key,
                           void **gridfaces,
                           DMFlagMat *flagmats,
-                          BLI_bitmap **grid_hidden)
+                          BLI_bitmap **grid_hidden,
+                          Mesh *me)
 {
   const int gridsize = key->grid_size;
 
@@ -675,6 +676,14 @@ void BKE_pbvh_build_grids(PBVH *pbvh,
   pbvh->gridkey = *key;
   pbvh->grid_hidden = grid_hidden;
   pbvh->leaf_limit = max_ii(LEAF_LIMIT / (gridsize * gridsize), 1);
+
+  /* We need the base mesh attribute layout for PBVH draw. */
+  pbvh->vdata = &me->vdata;
+  pbvh->ldata = &me->ldata;
+  pbvh->pdata = &me->pdata;
+
+  /* We also need the base mesh for PBVH draw. */
+  pbvh->mesh = me;
 
   BB cb;
   BB_reset(&cb);
@@ -2035,11 +2044,16 @@ void BKE_pbvh_node_get_proxies(PBVHNode *node, PBVHProxyNode **proxies, int *pro
 void BKE_pbvh_node_get_bm_orco_data(PBVHNode *node,
                                     int (**r_orco_tris)[3],
                                     int *r_orco_tris_num,
-                                    float (**r_orco_coords)[3])
+                                    float (**r_orco_coords)[3],
+                                    BMVert ***r_orco_verts)
 {
   *r_orco_tris = node->bm_ortri;
   *r_orco_tris_num = node->bm_tot_ortri;
   *r_orco_coords = node->bm_orco;
+
+  if (r_orco_verts) {
+    *r_orco_verts = node->bm_orvert;
+  }
 }
 
 bool BKE_pbvh_node_has_vert_with_normal_update_tag(PBVH *pbvh, PBVHNode *node)

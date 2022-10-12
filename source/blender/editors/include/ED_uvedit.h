@@ -112,7 +112,7 @@ bool uvedit_uv_select_test(const struct Scene *scene, struct BMLoop *l, BMUVOffs
  * Changes selection state of a single UV Face.
  */
 void uvedit_face_select_set(const struct Scene *scene,
-                            struct BMesh *em,
+                            struct BMesh *bm,
                             struct BMFace *efa,
                             bool select,
                             bool do_history,
@@ -123,7 +123,7 @@ void uvedit_face_select_set(const struct Scene *scene,
  * Changes selection state of a single UV Edge.
  */
 void uvedit_edge_select_set(const struct Scene *scene,
-                            struct BMesh *em,
+                            struct BMesh *bm,
                             struct BMLoop *l,
                             bool select,
                             bool do_history,
@@ -134,7 +134,7 @@ void uvedit_edge_select_set(const struct Scene *scene,
  * Changes selection state of a single UV vertex.
  */
 void uvedit_uv_select_set(const struct Scene *scene,
-                          struct BMesh *em,
+                          struct BMesh *bm,
                           struct BMLoop *l,
                           bool select,
                           bool do_history,
@@ -349,8 +349,6 @@ bool ED_uvedit_udim_params_from_image_space(const struct SpaceImage *sima,
 
 struct UVPackIsland_Params {
   uint rotate : 1;
-  /** -1 not to align to axis, otherwise 0,1 for X,Y. */
-  int rotate_align_axis : 2;
   uint only_selected_uvs : 1;
   uint only_selected_faces : 1;
   uint use_seams : 1;

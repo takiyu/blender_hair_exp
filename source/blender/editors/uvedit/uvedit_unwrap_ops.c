@@ -1125,7 +1125,6 @@ static int pack_islands_exec(bContext *C, wmOperator *op)
                                use_udim_params ? &udim_params : NULL,
                                &(struct UVPackIsland_Params){
                                    .rotate = rotate,
-                                   .rotate_align_axis = -1,
                                    .only_selected_uvs = true,
                                    .only_selected_faces = true,
                                    .correct_aspect = true,
@@ -2398,8 +2397,6 @@ static int smart_project_exec(bContext *C, wmOperator *op)
                                  NULL,
                                  &(struct UVPackIsland_Params){
                                      .rotate = true,
-                                     /* We could make this optional. */
-                                     .rotate_align_axis = 1,
                                      .only_selected_uvs = only_selected_uvs,
                                      .only_selected_faces = true,
                                      .correct_aspect = correct_aspect,

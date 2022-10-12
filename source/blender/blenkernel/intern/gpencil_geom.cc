@@ -1856,6 +1856,10 @@ bool BKE_gpencil_stroke_close(bGPDstroke *gps)
     pt->strength = interpf(pt2->strength, pt1->strength, step);
     pt->flag = 0;
     interp_v4_v4v4(pt->vert_color, pt1->vert_color, pt2->vert_color, step);
+    /* Set point as selected. */
+    if (gps->flag & GP_STROKE_SELECT) {
+      pt->flag |= GP_SPOINT_SELECT;
+    }
 
     /* Set weights. */
     if (gps->dvert != nullptr) {
@@ -3861,7 +3865,7 @@ static int generate_arc_from_point_to_point(ListBase *list,
   /* Number of points is 2^(n+1) + 1 on half a circle (n=subdivisions)
    * so we multiply by (angle / pi) to get the right amount of
    * points to insert. */
-  int num_points = (int)(((1 << (subdivisions + 1)) - 1) * (angle / M_PI));
+  int num_points = int(((1 << (subdivisions + 1)) - 1) * (angle / M_PI));
   if (num_points > 0) {
     float angle_incr = angle / float(num_points);
 
