@@ -884,19 +884,22 @@ void BM_data_layer_ensure_named(BMesh *bm, CustomData *data, int type, const cha
 void BM_uv_map_ensure_vert_selection_attribute(BMesh *bm, const char *uv_map_name)
 {
   char name[MAX_CUSTOMDATA_LAYER_NAME];
-  BM_data_layer_ensure_named(bm, &bm->ldata, CD_PROP_FLOAT2, get_uv_map_vert_selection_name(uv_map_name, name));
+  BM_data_layer_ensure_named(
+      bm, &bm->ldata, CD_PROP_FLOAT2, get_uv_map_vert_selection_name(uv_map_name, name));
 }
 
 void BM_uv_map_ensure_edge_selection_attribute(BMesh *bm, const char *uv_map_name)
 {
   char name[MAX_CUSTOMDATA_LAYER_NAME];
-  BM_data_layer_ensure_named(bm, &bm->ldata, CD_PROP_FLOAT2, get_uv_map_edge_selection_name(uv_map_name, name));
+  BM_data_layer_ensure_named(
+      bm, &bm->ldata, CD_PROP_FLOAT2, get_uv_map_edge_selection_name(uv_map_name, name));
 }
 
 void BM_uv_map_ensure_pin_attribute(BMesh *bm, const char *uv_map_name)
 {
   char name[MAX_CUSTOMDATA_LAYER_NAME];
-  BM_data_layer_ensure_named(bm, &bm->ldata, CD_PROP_FLOAT2, get_uv_map_pin_name(uv_map_name, name));
+  BM_data_layer_ensure_named(
+      bm, &bm->ldata, CD_PROP_FLOAT2, get_uv_map_pin_name(uv_map_name, name));
 }
 
 void BM_data_layer_free(BMesh *bm, CustomData *data, int type)

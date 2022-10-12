@@ -141,7 +141,6 @@ struct CustomDataLayer *BKE_id_attributes_color_find(const struct ID *id, const 
 
 bool BKE_id_attribute_calc_unique_name(struct ID *id, const char *name, char *outname);
 
-
 inline char const *get_uv_map_vert_selection_name(char const *uv_map_name, char *buffer)
 {
   size_t len = strlen(uv_map_name);
@@ -177,7 +176,6 @@ inline char const *get_uv_map_pin_name(char const *uv_map_name, char *buffer)
   BLI_snprintf(buffer, MAX_CUSTOMDATA_LAYER_NAME, ".%s.%s", UV_PINNED_NAME, uv_map_name);
   return buffer;
 }
-
 
 #ifdef __cplusplus
 }

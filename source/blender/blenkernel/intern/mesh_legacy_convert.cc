@@ -1213,11 +1213,11 @@ void BKE_mesh_legacy_convert_uvs_to_struct(
     const Span<float2> coords{static_cast<const float2 *>(layer.data), mesh->totloop};
     CustomDataLayer mloopuv_layer = layer;
     mloopuv_layer.type = CD_MLOOPUV;
-    MutableSpan<MLoopUV> mloopuv = temp_mloopuv_for_convert. construct<Array<MLoopUV>>(
+    MutableSpan<MLoopUV> mloopuv = temp_mloopuv_for_convert.construct<Array<MLoopUV>>(
         mesh->totloop);
     mloopuv_layer.data = mloopuv.data();
 
-	char buffer[MAX_CUSTOMDATA_LAYER_NAME];
+    char buffer[MAX_CUSTOMDATA_LAYER_NAME];
     const VArray<bool> vert_selection = attributes.lookup_or_default<bool>(
         get_uv_map_vert_selection_name(layer.name, buffer), ATTR_DOMAIN_CORNER, false);
     const VArray<bool> edge_selection = attributes.lookup_or_default<bool>(
@@ -1349,7 +1349,6 @@ void BKE_mesh_legacy_convert_uvs_to_generic(Mesh *mesh)
       &mesh->ldata,
       CD_PROP_FLOAT2,
       CustomData_get_named_layer_index(&mesh->ldata, CD_PROP_FLOAT2, default_uv.c_str()));
-
 }
 
 /** \name Selection Attribute and Legacy Flag Conversion

@@ -3529,7 +3529,7 @@ bool CustomData_set_layer_name(CustomData *data, const int type, const int n, co
 const char *CustomData_get_layer_name(const CustomData *data, const int type, const int n)
 {
   const int layer_index = CustomData_get_layer_index_n(data, type, n);
-  
+
   return (layer_index == -1) ? nullptr : data->layers[layer_index].name;
 }
 

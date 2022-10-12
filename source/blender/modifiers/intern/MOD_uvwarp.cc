@@ -198,7 +198,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
   loops_num = mesh->totloop;
 
   /* make sure we are not modifying the original UV map */
-  float (*mloopuv)[2] = static_cast<float (*)[2]>(CustomData_duplicate_referenced_layer_named(
+  float(*mloopuv)[2] = static_cast<float(*)[2]>(CustomData_duplicate_referenced_layer_named(
       &mesh->ldata, CD_PROP_FLOAT2, uvname, loops_num));
   MOD_get_vgroup(ctx->object, mesh, umd->vgroup_name, &dvert, &defgrp_index);
 
