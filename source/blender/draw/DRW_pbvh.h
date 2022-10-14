@@ -27,7 +27,6 @@ struct Object;
 struct Mesh;
 struct MLoopTri;
 struct CustomData;
-struct MVert;
 struct MEdge;
 struct MLoop;
 struct MPoly;

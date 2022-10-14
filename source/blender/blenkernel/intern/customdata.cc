@@ -2105,9 +2105,6 @@ static const char *LAYERTYPENAMES[CD_NUMTYPES] = {
     "CDHairLength",
 };
 
-/* TODO(Hans): Fix uses of #CD_MASK_BAREMESH and #CD_MASK_BAREMESH_ORIGINDEX to include "position".
- */
-
 const CustomData_MeshMasks CD_MASK_BAREMESH = {
     /* vmask */ CD_MASK_PROP_FLOAT3,
     /* emask */ CD_MASK_MEDGE,
@@ -2123,8 +2120,8 @@ const CustomData_MeshMasks CD_MASK_BAREMESH_ORIGINDEX = {
     /* lmask */ CD_MASK_MLOOP,
 };
 const CustomData_MeshMasks CD_MASK_MESH = {
-    /* vmask */ (CD_MASK_PROP_FLOAT3 | CD_MASK_MDEFORMVERT | CD_MASK_MVERT_SKIN | CD_MASK_PAINT_MASK |
-                 CD_MASK_PROP_ALL | CD_MASK_CREASE | CD_MASK_BWEIGHT),
+    /* vmask */ (CD_MASK_PROP_FLOAT3 | CD_MASK_MDEFORMVERT | CD_MASK_MVERT_SKIN |
+                 CD_MASK_PAINT_MASK | CD_MASK_PROP_ALL | CD_MASK_CREASE | CD_MASK_BWEIGHT),
     /* emask */
     (CD_MASK_MEDGE | CD_MASK_FREESTYLE_EDGE | CD_MASK_PROP_ALL | CD_MASK_BWEIGHT | CD_MASK_CREASE),
     /* fmask */ 0,

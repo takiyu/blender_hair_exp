@@ -274,16 +274,6 @@ typedef struct TFace {
 
 /* **************** MESH ********************* */
 
-/** #Mesh_Runtime.wrapper_type */
-typedef enum eMeshWrapperType {
-  /** Use mesh data (#positions, #Mesh.medge, #Mesh.mloop, #Mesh.mpoly). */
-  ME_WRAPPER_TYPE_MDATA = 0,
-  /** Use edit-mesh data (#Mesh.edit_mesh, #Mesh_Runtime.edit_data). */
-  ME_WRAPPER_TYPE_BMESH = 1,
-  /** Use subdivision mesh data (#Mesh_Runtime.mesh_eval). */
-  ME_WRAPPER_TYPE_SUBD = 2,
-} eMeshWrapperType;
-
 /** #Mesh.texflag */
 enum {
   ME_AUTOSPACE = 1,

@@ -864,6 +864,7 @@ static void write_fn_to_attribute(blender::bke::MutableAttributeAccessor attribu
 static void assert_bmesh_has_no_mesh_only_attributes(const BMesh &bm)
 {
   (void)bm; /* Unused in the release builds. */
+  BLI_assert(CustomData_get_layer_named(&bm.vdata, CD_PROP_FLOAT3, "position") == nullptr);
 
   /* The "hide" attributes are stored as flags on #BMesh. */
   BLI_assert(CustomData_get_layer_named(&bm.vdata, CD_PROP_BOOL, ".hide_vert") == nullptr);
@@ -942,6 +943,7 @@ static void convert_bmesh_selection_flags_to_mesh_attributes(BMesh &bm,
 
 void BM_mesh_bm_to_me(Main *bmain, BMesh *bm, Mesh *me, const struct BMeshToMeshParams *params)
 {
+  using namespace blender;
   BMVert *v, *eve;
   BMEdge *e;
   BMFace *f;
@@ -1228,8 +1230,10 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
   me->totloop = bm->totloop;
   me->totpoly = bm->totface;
 
-  CustomData_add_layer_named(
-      &me->vdata, CD_PROP_FLOAT3, CD_CONSTRUCT, nullptr, bm->totvert, "position");
+  if (!CustomData_get_layer_named(&me->vdata, CD_PROP_FLOAT3, "position")) {
+    CustomData_add_layer_named(
+        &me->vdata, CD_PROP_FLOAT3, CD_CONSTRUCT, nullptr, bm->totvert, "position");
+  }
   CustomData_add_layer(&me->edata, CD_MEDGE, CD_SET_DEFAULT, nullptr, bm->totedge);
   CustomData_add_layer(&me->ldata, CD_MLOOP, CD_SET_DEFAULT, nullptr, bm->totloop);
   CustomData_add_layer(&me->pdata, CD_MPOLY, CD_SET_DEFAULT, nullptr, bm->totface);
