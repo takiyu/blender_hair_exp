@@ -18,6 +18,8 @@
 
 #include "BKE_customdata.h"
 #include "BKE_editmesh.h"
+#include "BKE_editmesh_cache.h"
+#include "BKE_mesh.h"
 
 #include "draw_cache_extract.hh"
 
@@ -118,7 +120,7 @@ BLI_INLINE const Mesh *editmesh_final_or_this(const Object *object, const Mesh *
 
 BLI_INLINE const CustomData *mesh_cd_ldata_get_from_mesh(const Mesh *me)
 {
-  switch ((eMeshWrapperType)me->runtime.wrapper_type) {
+  switch (me->runtime->wrapper_type) {
     case ME_WRAPPER_TYPE_SUBD:
     case ME_WRAPPER_TYPE_MDATA:
       return &me->ldata;
@@ -134,7 +136,7 @@ BLI_INLINE const CustomData *mesh_cd_ldata_get_from_mesh(const Mesh *me)
 
 BLI_INLINE const CustomData *mesh_cd_pdata_get_from_mesh(const Mesh *me)
 {
-  switch ((eMeshWrapperType)me->runtime.wrapper_type) {
+  switch (me->runtime->wrapper_type) {
     case ME_WRAPPER_TYPE_SUBD:
     case ME_WRAPPER_TYPE_MDATA:
       return &me->pdata;
@@ -150,7 +152,7 @@ BLI_INLINE const CustomData *mesh_cd_pdata_get_from_mesh(const Mesh *me)
 
 BLI_INLINE const CustomData *mesh_cd_edata_get_from_mesh(const Mesh *me)
 {
-  switch ((eMeshWrapperType)me->runtime.wrapper_type) {
+  switch (me->runtime->wrapper_type) {
     case ME_WRAPPER_TYPE_SUBD:
     case ME_WRAPPER_TYPE_MDATA:
       return &me->edata;
@@ -166,7 +168,7 @@ BLI_INLINE const CustomData *mesh_cd_edata_get_from_mesh(const Mesh *me)
 
 BLI_INLINE const CustomData *mesh_cd_vdata_get_from_mesh(const Mesh *me)
 {
-  switch ((eMeshWrapperType)me->runtime.wrapper_type) {
+  switch (me->runtime->wrapper_type) {
     case ME_WRAPPER_TYPE_SUBD:
     case ME_WRAPPER_TYPE_MDATA:
       return &me->vdata;

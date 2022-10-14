@@ -286,7 +286,7 @@ static void imapaint_pick_uv(
   const ePaintCanvasSource mode = scene->toolsettings->imapaint.mode;
 
   const MLoopTri *lt = BKE_mesh_runtime_looptri_ensure(me_eval);
-  const int tottri = me_eval->runtime.looptris.len;
+  const int tottri = BKE_mesh_runtime_looptri_len(me_eval);
 
   const float(*positions)[3] = BKE_mesh_positions(me_eval);
   const MLoop *mloop = BKE_mesh_loops(me_eval);

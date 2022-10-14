@@ -48,7 +48,7 @@ enum {
 /**
  * Mesh Edges.
  *
- * Typically accessed from #Mesh.medge
+ * Typically accessed with #Mesh.edges()
  */
 typedef struct MEdge {
   /** Un-ordered vertex indices (cannot match). */
@@ -76,10 +76,10 @@ enum {
 };
 
 /**
- * Mesh Faces
+ * Mesh Faces.
  * This only stores the polygon size & flags, the vertex & edge indices are stored in the #MLoop.
  *
- * Typically accessed from #Mesh.mpoly.
+ * Typically accessed with #Mesh.polys().
  */
 typedef struct MPoly {
   /** Offset into loop array and number of loops in the face. */
@@ -106,7 +106,7 @@ enum {
  * Mesh Face Corners.
  * "Loop" is an internal name for the corner of a polygon (#MPoly).
  *
- * Typically accessed from #Mesh.mloop.
+ * Typically accessed with #Mesh.loops().
  */
 typedef struct MLoop {
   /** Vertex index. */
@@ -373,7 +373,7 @@ typedef struct MDisps {
 
   /**
    * Used for hiding parts of a multires mesh.
-   * Essentially the multires equivalent of the mesh ".hide_vert" boolean layer.
+   * Essentially the multires equivalent of the mesh ".hide_vert" boolean attribute.
    *
    * \note This is a bitmap, keep in sync with type used in BLI_bitmap.h
    */
