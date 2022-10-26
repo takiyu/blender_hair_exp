@@ -556,22 +556,13 @@ BLI_INLINE void mesh_batch_cache_add_request(MeshBatchCache *cache, DRWBatchFlag
 
 static bool mesh_batch_cache_valid(Object *object, Mesh *me)
 {
-  MeshBatchCache *cache = static_cast<MeshBatchCache *>(me->runtime.batch_cache);
+  MeshBatchCache *cache = static_cast<MeshBatchCache *>(me->runtime->batch_cache);
 
   if (cache == nullptr) {
     return false;
   }
 
-  if (object->sculpt && object->sculpt->pbvh) {
-    if (cache->pbvh_is_drawing != BKE_pbvh_is_drawing(object->sculpt->pbvh)) {
-      return false;
-    }
-
-    if (BKE_pbvh_is_drawing(object->sculpt->pbvh) &&
-        BKE_pbvh_draw_cache_invalid(object->sculpt->pbvh)) {
-      return false;
-    }
-  }
+  /* Note: PBVH draw data should not be checked here. */
 
   if (cache->is_editmode != (me->edit_mesh != nullptr)) {
     return false;
@@ -590,11 +581,11 @@ static bool mesh_batch_cache_valid(Object *object, Mesh *me)
 
 static void mesh_batch_cache_init(Object *object, Mesh *me)
 {
-  MeshBatchCache *cache = static_cast<MeshBatchCache *>(me->runtime.batch_cache);
+  MeshBatchCache *cache = static_cast<MeshBatchCache *>(me->runtime->batch_cache);
 
   if (!cache) {
-    me->runtime.batch_cache = MEM_cnew<MeshBatchCache>(__func__);
-    cache = static_cast<MeshBatchCache *>(me->runtime.batch_cache);
+    me->runtime->batch_cache = MEM_cnew<MeshBatchCache>(__func__);
+    cache = static_cast<MeshBatchCache *>(me->runtime->batch_cache);
   }
   else {
     memset(cache, 0, sizeof(*cache));
@@ -636,7 +627,7 @@ void DRW_mesh_batch_cache_validate(Object *object, Mesh *me)
 
 static MeshBatchCache *mesh_batch_cache_get(Mesh *me)
 {
-  return static_cast<MeshBatchCache *>(me->runtime.batch_cache);
+  return static_cast<MeshBatchCache *>(me->runtime->batch_cache);
 }
 
 static void mesh_batch_cache_check_vertex_group(MeshBatchCache *cache,
@@ -744,7 +735,7 @@ static void mesh_batch_cache_discard_uvedit_select(MeshBatchCache *cache)
 
 void DRW_mesh_batch_cache_dirty_tag(Mesh *me, eMeshBatchDirtyMode mode)
 {
-  MeshBatchCache *cache = static_cast<MeshBatchCache *>(me->runtime.batch_cache);
+  MeshBatchCache *cache = static_cast<MeshBatchCache *>(me->runtime->batch_cache);
   if (cache == nullptr) {
     return;
   }
@@ -832,7 +823,7 @@ static void mesh_batch_cache_free_subdiv_cache(MeshBatchCache *cache)
 
 static void mesh_batch_cache_clear(Mesh *me)
 {
-  MeshBatchCache *cache = static_cast<MeshBatchCache *>(me->runtime.batch_cache);
+  MeshBatchCache *cache = static_cast<MeshBatchCache *>(me->runtime->batch_cache);
   if (!cache) {
     return;
   }
@@ -864,7 +855,7 @@ static void mesh_batch_cache_clear(Mesh *me)
 void DRW_mesh_batch_cache_free(Mesh *me)
 {
   mesh_batch_cache_clear(me);
-  MEM_SAFE_FREE(me->runtime.batch_cache);
+  MEM_SAFE_FREE(me->runtime->batch_cache);
 }
 
 /** \} */
@@ -1019,8 +1010,7 @@ GPUBatch **DRW_mesh_batch_cache_get_surface_shaded(Object *object,
   BLI_assert(gpumat_array_len == cache->mat_len);
 
   mesh_cd_layers_type_merge(&cache->cd_needed, cd_needed);
-  ThreadMutex *mesh_render_mutex = (ThreadMutex *)me->runtime.render_mutex;
-  drw_attributes_merge(&cache->attr_needed, &attrs_needed, mesh_render_mutex);
+  drw_attributes_merge(&cache->attr_needed, &attrs_needed, me->runtime->render_mutex);
   mesh_batch_cache_request_surface_batches(cache);
   return cache->surface_per_mat;
 }
@@ -1048,8 +1038,7 @@ GPUBatch *DRW_mesh_batch_cache_get_surface_vertpaint(Object *object, Mesh *me)
   DRW_Attributes attrs_needed{};
   request_active_and_default_color_attributes(*object, *me, attrs_needed);
 
-  ThreadMutex *mesh_render_mutex = (ThreadMutex *)me->runtime.render_mutex;
-  drw_attributes_merge(&cache->attr_needed, &attrs_needed, mesh_render_mutex);
+  drw_attributes_merge(&cache->attr_needed, &attrs_needed, me->runtime->render_mutex);
 
   mesh_batch_cache_request_surface_batches(cache);
   return cache->batch.surface;
@@ -1062,8 +1051,7 @@ GPUBatch *DRW_mesh_batch_cache_get_surface_sculpt(Object *object, Mesh *me)
   DRW_Attributes attrs_needed{};
   request_active_and_default_color_attributes(*object, *me, attrs_needed);
 
-  ThreadMutex *mesh_render_mutex = (ThreadMutex *)me->runtime.render_mutex;
-  drw_attributes_merge(&cache->attr_needed, &attrs_needed, mesh_render_mutex);
+  drw_attributes_merge(&cache->attr_needed, &attrs_needed, me->runtime->render_mutex);
 
   mesh_batch_cache_request_surface_batches(cache);
   return cache->batch.surface;
@@ -1302,7 +1290,7 @@ GPUBatch *DRW_mesh_batch_cache_get_surface_edges(Object *object, Mesh *me)
 
 void DRW_mesh_batch_cache_free_old(Mesh *me, int ctime)
 {
-  MeshBatchCache *cache = static_cast<MeshBatchCache *>(me->runtime.batch_cache);
+  MeshBatchCache *cache = static_cast<MeshBatchCache *>(me->runtime->batch_cache);
 
   if (cache == nullptr) {
     return;
@@ -1448,8 +1436,6 @@ void DRW_mesh_batch_cache_create_requested(struct TaskGraph *task_graph,
       }
     }
 
-    ThreadMutex *mesh_render_mutex = (ThreadMutex *)me->runtime.render_mutex;
-
     /* Verify that all surface batches have needed attribute layers.
      */
     /* TODO(fclem): We could be a bit smarter here and only do it per
@@ -1487,12 +1473,13 @@ void DRW_mesh_batch_cache_create_requested(struct TaskGraph *task_graph,
       cache->batch_ready &= ~(MBC_SURFACE);
 
       mesh_cd_layers_type_merge(&cache->cd_used, cache->cd_needed);
-      drw_attributes_merge(&cache->attr_used, &cache->attr_needed, mesh_render_mutex);
+      drw_attributes_merge(&cache->attr_used, &cache->attr_needed, me->runtime->render_mutex);
     }
     mesh_cd_layers_type_merge(&cache->cd_used_over_time, cache->cd_needed);
     mesh_cd_layers_type_clear(&cache->cd_needed);
 
-    drw_attributes_merge(&cache->attr_used_over_time, &cache->attr_needed, mesh_render_mutex);
+    drw_attributes_merge(
+        &cache->attr_used_over_time, &cache->attr_needed, me->runtime->render_mutex);
     drw_attributes_clear(&cache->attr_needed);
   }
 
@@ -1539,7 +1526,7 @@ void DRW_mesh_batch_cache_create_requested(struct TaskGraph *task_graph,
   const bool do_update_sculpt_normals = ob->sculpt && ob->sculpt->pbvh;
   if (do_update_sculpt_normals) {
     Mesh *mesh = static_cast<Mesh *>(ob->data);
-    BKE_pbvh_update_normals(ob->sculpt->pbvh, mesh->runtime.subdiv_ccg);
+    BKE_pbvh_update_normals(ob->sculpt->pbvh, mesh->runtime->subdiv_ccg);
   }
 
   cache->batch_ready |= batch_requested;
@@ -1550,8 +1537,8 @@ void DRW_mesh_batch_cache_create_requested(struct TaskGraph *task_graph,
     Mesh *editmesh_eval_cage = BKE_object_get_editmesh_eval_cage(ob);
 
     do_cage = editmesh_eval_final != editmesh_eval_cage;
-    do_uvcage = !(editmesh_eval_final->runtime.is_original_bmesh &&
-                  editmesh_eval_final->runtime.wrapper_type == ME_WRAPPER_TYPE_BMESH);
+    do_uvcage = !(editmesh_eval_final->runtime->is_original_bmesh &&
+                  editmesh_eval_final->runtime->wrapper_type == ME_WRAPPER_TYPE_BMESH);
   }
 
   const bool do_subdivision = BKE_subsurf_modifier_has_gpu_subdiv(me);

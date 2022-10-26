@@ -41,6 +41,7 @@
 #include "BKE_paint.h"
 #include "BKE_pbvh.h"
 #include "BKE_report.h"
+#include "BKE_scene.h"
 #include "BKE_subdiv_ccg.h"
 #include "BKE_subsurf.h"
 
@@ -1120,8 +1121,8 @@ void SCULPT_tag_update_overlays(bContext *C)
 
   DEG_id_tag_update(&ob->id, ID_RECALC_SHADING);
 
-  View3D *v3d = CTX_wm_view3d(C);
-  if (!BKE_sculptsession_use_pbvh_draw(ob, v3d)) {
+  RegionView3D *rv3d = CTX_wm_region_view3d(C);
+  if (!BKE_sculptsession_use_pbvh_draw(ob, rv3d)) {
     DEG_id_tag_update(&ob->id, ID_RECALC_GEOMETRY);
   }
 }
@@ -2457,7 +2458,7 @@ float SCULPT_brush_strength_factor(SculptSession *ss,
 {
   StrokeCache *cache = ss->cache;
   const Scene *scene = cache->vc->scene;
-  const MTex *mtex = &br->mtex;
+  const MTex *mtex = BKE_brush_mask_texture_get(br, OB_MODE_SCULPT);
   float avg = 1.0f;
   float rgba[4];
   float point[3];
@@ -2469,7 +2470,7 @@ float SCULPT_brush_strength_factor(SculptSession *ss,
   }
   else if (mtex->brush_map_mode == MTEX_MAP_MODE_3D) {
     /* Get strength by feeding the vertex location directly into a texture. */
-    avg = BKE_brush_sample_tex_3d(scene, br, point, rgba, 0, ss->tex_pool);
+    avg = BKE_brush_sample_tex_3d(scene, br, mtex, point, rgba, 0, ss->tex_pool);
   }
   else {
     float symm_point[3], point_2d[2];
@@ -2498,19 +2499,19 @@ float SCULPT_brush_strength_factor(SculptSession *ss,
       x = symm_point[0];
       y = symm_point[1];
 
-      x *= br->mtex.size[0];
-      y *= br->mtex.size[1];
+      x *= mtex->size[0];
+      y *= mtex->size[1];
 
-      x += br->mtex.ofs[0];
-      y += br->mtex.ofs[1];
+      x += mtex->ofs[0];
+      y += mtex->ofs[1];
 
-      avg = paint_get_tex_pixel(&br->mtex, x, y, ss->tex_pool, thread_id);
+      avg = paint_get_tex_pixel(mtex, x, y, ss->tex_pool, thread_id);
 
       avg += br->texture_sample_bias;
     }
     else {
       const float point_3d[3] = {point_2d[0], point_2d[1], 0.0f};
-      avg = BKE_brush_sample_tex_3d(scene, br, point_3d, rgba, 0, ss->tex_pool);
+      avg = BKE_brush_sample_tex_3d(scene, br, mtex, point_3d, rgba, 0, ss->tex_pool);
     }
   }
 
@@ -4812,12 +4813,12 @@ static bool sculpt_needs_connectivity_info(const Sculpt *sd,
 void SCULPT_stroke_modifiers_check(const bContext *C, Object *ob, const Brush *brush)
 {
   SculptSession *ss = ob->sculpt;
-  View3D *v3d = CTX_wm_view3d(C);
+  RegionView3D *rv3d = CTX_wm_region_view3d(C);
   Sculpt *sd = CTX_data_tool_settings(C)->sculpt;
 
   bool need_pmap = sculpt_needs_connectivity_info(sd, brush, ss, 0);
   if (ss->shapekey_active || ss->deform_modifiers_active ||
-      (!BKE_sculptsession_use_pbvh_draw(ob, v3d) && need_pmap)) {
+      (!BKE_sculptsession_use_pbvh_draw(ob, rv3d) && need_pmap)) {
     Depsgraph *depsgraph = CTX_data_depsgraph_pointer(C);
     BKE_sculpt_update_object_for_edit(
         depsgraph, ob, need_pmap, false, SCULPT_tool_is_paint(brush->sculpt_tool));
@@ -5248,7 +5249,6 @@ void SCULPT_flush_update_step(bContext *C, SculptUpdateType update_flags)
   SculptSession *ss = ob->sculpt;
   ARegion *region = CTX_wm_region(C);
   MultiresModifierData *mmd = ss->multires.modifier;
-  View3D *v3d = CTX_wm_view3d(C);
   RegionView3D *rv3d = CTX_wm_region_view3d(C);
 
   if (rv3d) {
@@ -5273,7 +5273,7 @@ void SCULPT_flush_update_step(bContext *C, SculptUpdateType update_flags)
 
   /* Only current viewport matters, slower update for all viewports will
    * be done in sculpt_flush_update_done. */
-  if (!BKE_sculptsession_use_pbvh_draw(ob, v3d)) {
+  if (!BKE_sculptsession_use_pbvh_draw(ob, rv3d)) {
     /* Slow update with full dependency graph update and all that comes with it.
      * Needed when there are modifiers or full shading in the 3D viewport. */
     DEG_id_tag_update(&ob->id, ID_RECALC_GEOMETRY);
@@ -5315,16 +5315,15 @@ void SCULPT_flush_update_done(const bContext *C, Object *ob, SculptUpdateType up
   /* After we are done drawing the stroke, check if we need to do a more
    * expensive depsgraph tag to update geometry. */
   wmWindowManager *wm = CTX_wm_manager(C);
-  View3D *current_v3d = CTX_wm_view3d(C);
-  RegionView3D *rv3d = CTX_wm_region_view3d(C);
+  RegionView3D *current_rv3d = CTX_wm_region_view3d(C);
   SculptSession *ss = ob->sculpt;
   Mesh *mesh = ob->data;
 
   /* Always needed for linked duplicates. */
   bool need_tag = (ID_REAL_USERS(&mesh->id) > 1);
 
-  if (rv3d) {
-    rv3d->rflag &= ~RV3D_PAINTING;
+  if (current_rv3d) {
+    current_rv3d->rflag &= ~RV3D_PAINTING;
   }
 
   LISTBASE_FOREACH (wmWindow *, win, &wm->windows) {
@@ -5334,16 +5333,17 @@ void SCULPT_flush_update_done(const bContext *C, Object *ob, SculptUpdateType up
       if (sl->spacetype != SPACE_VIEW3D) {
         continue;
       }
-      View3D *v3d = (View3D *)sl;
-      if (v3d != current_v3d) {
-        need_tag |= !BKE_sculptsession_use_pbvh_draw(ob, v3d);
-      }
 
       /* Tag all 3D viewports for redraw now that we are done. Others
        * viewports did not get a full redraw, and anti-aliasing for the
        * current viewport was deactivated. */
       LISTBASE_FOREACH (ARegion *, region, &area->regionbase) {
         if (region->regiontype == RGN_TYPE_WINDOW) {
+          RegionView3D *rv3d = region->regiondata;
+          if (rv3d != current_rv3d) {
+            need_tag |= !BKE_sculptsession_use_pbvh_draw(ob, rv3d);
+          }
+
           ED_region_tag_redraw(region);
         }
       }
@@ -5377,15 +5377,17 @@ void SCULPT_flush_update_done(const bContext *C, Object *ob, SculptUpdateType up
 
   BKE_sculpt_attributes_destroy_temporary_stroke(ob);
 
-  if (BKE_pbvh_type(ss->pbvh) == PBVH_BMESH) {
-    BKE_pbvh_bmesh_after_stroke(ss->pbvh);
-  }
+  if (update_flags & SCULPT_UPDATE_COORDS) {
+    if (BKE_pbvh_type(ss->pbvh) == PBVH_BMESH) {
+      BKE_pbvh_bmesh_after_stroke(ss->pbvh);
+    }
 
-  /* Optimization: if there is locked key and active modifiers present in */
-  /* the stack, keyblock is updating at each step. otherwise we could update */
-  /* keyblock only when stroke is finished. */
-  if (ss->shapekey_active && !ss->deform_modifiers_active) {
-    sculpt_update_keyblock(ob);
+    /* Optimization: if there is locked key and active modifiers present in */
+    /* the stack, keyblock is updating at each step. otherwise we could update */
+    /* keyblock only when stroke is finished. */
+    if (ss->shapekey_active && !ss->deform_modifiers_active) {
+      sculpt_update_keyblock(ob);
+    }
   }
 
   if (need_tag) {
@@ -5624,6 +5626,7 @@ static void sculpt_stroke_done(const bContext *C, struct PaintStroke *UNUSED(str
     }
     else {
       BKE_sculpt_attributes_destroy_temporary_stroke(ob);
+      SCULPT_flush_update_done(C, ob, SCULPT_UPDATE_COLOR);
     }
   }
   else {
@@ -5666,7 +5669,7 @@ static int sculpt_brush_stroke_invoke(bContext *C, wmOperator *op, const wmEvent
   }
   if (SCULPT_tool_is_mask(brush->sculpt_tool)) {
     MultiresModifierData *mmd = BKE_sculpt_multires_active(ss->scene, ob);
-    BKE_sculpt_mask_layers_ensure(ob, mmd);
+    BKE_sculpt_mask_layers_ensure(CTX_data_depsgraph_pointer(C), CTX_data_main(C), ob, mmd);
   }
   if (SCULPT_tool_is_face_sets(brush->sculpt_tool)) {
     Mesh *mesh = BKE_object_get_original_mesh(ob);

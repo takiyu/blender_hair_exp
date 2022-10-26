@@ -598,6 +598,22 @@ static BoxPack *pack_islands_params(const blender::Vector<FaceIsland *> &island_
   return box_array;
 }
 
+static bool island_has_pins(FaceIsland *island)
+{
+  BMLoop *l;
+  BMIter iter;
+  const int cd_loop_uv_offset = island->cd_loop_uv_offset;
+  for (int i = 0; i < island->faces_len; i++) {
+    BM_ITER_ELEM (l, &iter, island->faces[i], BM_LOOPS_OF_FACE) {
+      MLoopUV *luv = static_cast<MLoopUV *>(BM_ELEM_CD_GET_VOID_P(l, cd_loop_uv_offset));
+      if (luv->flag & MLOOPUV_PINNED) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 /* -------------------------------------------------------------------- */
 /** \name Public UV Island Packing
  *
@@ -607,6 +623,7 @@ static BoxPack *pack_islands_params(const blender::Vector<FaceIsland *> &island_
 void ED_uvedit_pack_islands_multi(const Scene *scene,
                                   Object **objects,
                                   const uint objects_len,
+                                  BMesh **bmesh_override,
                                   const struct UVMapUDIM_Params *udim_params,
                                   const struct UVPackIsland_Params *params)
 {
@@ -614,10 +631,18 @@ void ED_uvedit_pack_islands_multi(const Scene *scene,
 
   for (uint ob_index = 0; ob_index < objects_len; ob_index++) {
     Object *obedit = objects[ob_index];
-    BMEditMesh *em = BKE_editmesh_from_object(obedit);
+    BMesh *bm = nullptr;
+    if (bmesh_override) {
+      /* Note: obedit is still required for aspect ratio and ID_RECALC_GEOMETRY. */
+      bm = bmesh_override[ob_index];
+    }
+    else {
+      BMEditMesh *em = BKE_editmesh_from_object(obedit);
+      bm = em->bm;
+    }
+    BLI_assert(bm);
 
     const BMUVOffsets offsets = BM_uv_map_get_offsets(em->bm);
-
     if (offsets.uv == -1) {
       continue;
     }
@@ -633,7 +658,7 @@ void ED_uvedit_pack_islands_multi(const Scene *scene,
 
     ListBase island_list = {nullptr};
     bm_mesh_calc_uv_islands(scene,
-                            em->bm,
+                            bm,
                             &island_list,
                             params->only_selected_faces,
                             params->only_selected_uvs,
@@ -641,8 +666,14 @@ void ED_uvedit_pack_islands_multi(const Scene *scene,
                             aspect_y,
                             offsets);
 
-    int index;
-    LISTBASE_FOREACH_INDEX (struct FaceIsland *, island, &island_list, index) {
+    /* Remove from linked list and append to blender::Vector. */
+    LISTBASE_FOREACH_MUTABLE (struct FaceIsland *, island, &island_list) {
+      BLI_remlink(&island_list, island);
+      if (params->ignore_pinned && island_has_pins(island)) {
+        MEM_freeN(island->faces);
+        MEM_freeN(island);
+        continue;
+      }
       island_vector.append(island);
     }
   }
