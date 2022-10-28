@@ -602,11 +602,10 @@ static bool island_has_pins(FaceIsland *island)
 {
   BMLoop *l;
   BMIter iter;
-  const int cd_loop_uv_offset = island->cd_loop_uv_offset;
+  const int pin_offset = island->offsets.pin;
   for (int i = 0; i < island->faces_len; i++) {
     BM_ITER_ELEM (l, &iter, island->faces[i], BM_LOOPS_OF_FACE) {
-      MLoopUV *luv = static_cast<MLoopUV *>(BM_ELEM_CD_GET_VOID_P(l, cd_loop_uv_offset));
-      if (luv->flag & MLOOPUV_PINNED) {
+      if (BM_ELEM_CD_GET_BOOL(l, pin_offset)) {
         return true;
       }
     }
@@ -642,7 +641,7 @@ void ED_uvedit_pack_islands_multi(const Scene *scene,
     }
     BLI_assert(bm);
 
-    const BMUVOffsets offsets = BM_uv_map_get_offsets(em->bm);
+    const BMUVOffsets offsets = BM_uv_map_get_offsets(bm);
     if (offsets.uv == -1) {
       continue;
     }
