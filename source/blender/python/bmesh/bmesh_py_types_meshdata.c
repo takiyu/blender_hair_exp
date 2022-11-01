@@ -36,10 +36,10 @@
 
 typedef struct BPy_BMLoopUV {
   PyObject_VAR_HEAD
-  float uv[2];
-  bool vertsel;
-  bool edgesel;
-  bool pinned;
+  float *uv;
+  bool *vertsel;
+  bool *edgesel;
+  bool *pinned;
 } BPy_BMLoopUV;
 
 PyDoc_STRVAR(bpy_bmloopuv_uv_doc,
@@ -66,31 +66,42 @@ PyDoc_STRVAR(bpy_bmloopuv_select_edge_doc, "UV edge select state.\n\n:type: bool
 
 static PyObject *bpy_bmloopuv_pin_uv_get(BPy_BMLoopUV *self, void *UNUSED(closure))
 {
-  return PyBool_FromLong(self->pinned);
+  return self->pinned ? PyBool_FromLong(*self->pinned) : false;
 }
 static int bpy_bmloopuv_pin_uv_set(BPy_BMLoopUV *self, PyObject *value, void *UNUSED(closure))
 {
-  self->pinned = PyC_Long_AsBool(value);
+  if (self->pinned) {
+    *self->pinned = PyC_Long_AsBool(value);
+  }
+  /* TODO(martijn) if (!self->pinmned) that means the layed does not exist , or at least didn't exist
+   * when the PY object was created
+   * we *should* create it here instead of just bailing...
+   * same for vertsel and edgesel
+   */
   return 0;
 }
 
 static PyObject *bpy_bmloopuv_select_get(BPy_BMLoopUV *self, void *UNUSED(closure))
 {
-  return PyBool_FromLong(self->vertsel);
+  return self->vertsel ? PyBool_FromLong(*self->vertsel) : false;
 }
 static int bpy_bmloopuv_select_set(BPy_BMLoopUV *self, PyObject *value, void *UNUSED(closure))
 {
-  self->vertsel = PyC_Long_AsBool(value);
+  if (self->vertsel) {
+    *self->vertsel = PyC_Long_AsBool(value);
+  }
   return 0;
 }
 
 static PyObject *bpy_bmloopuv_select_edge_get(BPy_BMLoopUV *self, void *UNUSED(closure))
 {
-  return PyBool_FromLong(self->edgesel);
+  return self->edgesel ? PyBool_FromLong(*self->edgesel) : false;
 }
 static int bpy_bmloopuv_select_edge_set(BPy_BMLoopUV *self, PyObject *value, void *UNUSED(closure))
 {
-  self->edgesel = PyC_Long_AsBool(value);
+  if (self->edgesel) {
+    *self->edgesel = PyC_Long_AsBool(value);
+  }
   return 0;
 }
 
@@ -166,9 +177,9 @@ PyObject *BPy_BMLoopUV_CreatePyObject(struct BMesh *bm, const int loop_index)
 
   BMLoop *l = BM_loop_at_index_find(bm, loop_index);
   float *luv = BM_ELEM_CD_GET_FLOAT_P(l, offsets.uv);
-  self->vertsel = BM_ELEM_CD_GET_OPT_BOOL(l, offsets.select_vert);
-  self->edgesel = BM_ELEM_CD_GET_OPT_BOOL(l, offsets.select_edge);
-  self->pinned = BM_ELEM_CD_GET_OPT_BOOL(l, offsets.pin);
+  self->vertsel = BM_ELEM_CD_GET_OPT_BOOL_P(l, offsets.select_vert);
+  self->edgesel = BM_ELEM_CD_GET_OPT_BOOL_P(l, offsets.select_edge);
+  self->pinned = BM_ELEM_CD_GET_OPT_BOOL_P(l, offsets.pin);
   copy_v2_v2(self->uv, luv);
 
   return (PyObject *)self;
