@@ -148,7 +148,7 @@ static void deformVerts(ModifierData *md,
 
       for (uint i = 0; i < mvert_num; i++) {
         /* we save global positions */
-        mul_m4_v3(ob->obmat, collmd->x[i]);
+        mul_m4_v3(ob->object_to_world, collmd->x[i]);
       }
 
       collmd->xnew = MEM_dupallocN(collmd->x);         /* Frame end position. */
@@ -187,7 +187,7 @@ static void deformVerts(ModifierData *md,
 
       for (uint i = 0; i < mvert_num; i++) {
         /* we save global positions */
-        mul_m4_v3(ob->obmat, collmd->xnew[i]);
+        mul_m4_v3(ob->object_to_world, collmd->xnew[i]);
 
         /* detect motion */
         is_static = is_static && equals_v3v3(collmd->x[i], collmd->xnew[i]);

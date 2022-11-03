@@ -153,7 +153,7 @@ static void deformVerts(ModifierData *md,
     float(*positions)[3] = BKE_mesh_positions_for_write(surmd->mesh);
     for (i = 0; i < mesh_verts_num; i++) {
       float *vec = positions[i];
-      mul_m4_v3(ctx->object->obmat, vec);
+      mul_m4_v3(ctx->object->object_to_world, vec);
 
       if (init) {
         surmd->v[i][0] = surmd->v[i][1] = surmd->v[i][2] = 0.0f;

@@ -133,7 +133,7 @@ static void join_mesh_single(Depsgraph *depsgraph,
       float cmat[4][4];
 
       /* Watch this: switch matrix multiplication order really goes wrong. */
-      mul_m4_m4m4(cmat, imat, ob_src->obmat);
+      mul_m4_m4m4(cmat, imat, ob_src->object_to_world);
 
       /* transform vertex coordinates into new space */
       for (a = 0; a < me->totvert; a++) {
@@ -386,7 +386,7 @@ int ED_mesh_join_objects_exec(bContext *C, wmOperator *op)
    * NOTE: This doesn't apply recursive parenting. */
   if (join_parent) {
     ob->parent = nullptr;
-    BKE_object_apply_mat4_ex(ob, ob->obmat, ob->parent, ob->parentinv, false);
+    BKE_object_apply_mat4_ex(ob, ob->object_to_world, ob->parent, ob->parentinv, false);
   }
 
   /* that way the active object is always selected */
@@ -595,7 +595,7 @@ int ED_mesh_join_objects_exec(bContext *C, wmOperator *op)
 
   /* Inverse transform for all selected meshes in this object,
    * See #object_join_exec for detailed comment on why the safe version is used. */
-  invert_m4_m4_safe_ortho(imat, ob->obmat);
+  invert_m4_m4_safe_ortho(imat, ob->object_to_world);
 
   /* Add back active mesh first.
    * This allows to keep things similar as they were, as much as possible

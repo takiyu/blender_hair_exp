@@ -383,7 +383,7 @@ bool paintface_minmax(Object *ob, float r_min[3], float r_max[3])
     return ok;
   }
 
-  copy_m3_m4(bmat, ob->obmat);
+  copy_m3_m4(bmat, ob->object_to_world);
 
   const Span<float3> positions = me->positions();
   const Span<MPoly> polys = me->polys();
@@ -403,7 +403,7 @@ bool paintface_minmax(Object *ob, float r_min[3], float r_max[3])
     const MLoop *ml = &loops[poly.loopstart];
     for (int b = 0; b < poly.totloop; b++, ml++) {
       mul_v3_m3v3(vec, bmat, positions[ml->v]);
-      add_v3_v3v3(vec, vec, ob->obmat[3]);
+      add_v3_v3v3(vec, vec, ob->object_to_world[3]);
       minmax_v3v3_v3(r_min, r_max, vec);
     }
 
