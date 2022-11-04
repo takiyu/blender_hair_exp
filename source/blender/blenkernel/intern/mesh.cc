@@ -259,10 +259,10 @@ static void mesh_blend_write(BlendWriter *writer, ID *id, const void *id_address
     Set<std::string> names_to_skip;
     if (!BLO_write_is_undo(writer)) {
       /* When converting to the old mesh format, don't save redundant attributes. */
-      names_to_skip.add_multiple_new({"position",
-                                      ".hide_vert",
+      names_to_skip.add_multiple_new({".hide_vert",
                                       ".hide_edge",
                                       ".hide_poly",
+                                      "position",
                                       "material_index",
                                       ".select_vert",
                                       ".select_edge",
