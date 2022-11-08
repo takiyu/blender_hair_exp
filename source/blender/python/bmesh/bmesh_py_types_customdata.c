@@ -1130,7 +1130,7 @@ PyObject *BPy_BMLayerItem_GetItem(BPy_BMElem *py_ele, BPy_BMLayerItem *py_layer)
       ret = PyBytes_FromStringAndSize(mstring->s, mstring->s_len);
       break;
     }
-    case CD_MLOOPUV: {
+    case CD_PROP_FLOAT2: {
       if (UNLIKELY(py_ele->bm != py_layer->bm)) {
         PyErr_SetString(PyExc_ValueError, "BMElem[layer]: layer is from another mesh");
         return NULL;
