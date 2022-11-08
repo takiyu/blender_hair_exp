@@ -73,10 +73,10 @@ static int bpy_bmloopuv_pin_uv_set(BPy_BMLoopUV *self, PyObject *value, void *UN
   if (self->pinned) {
     *self->pinned = PyC_Long_AsBool(value);
   }
-  /* TODO(martijn) if (!self->pinmned) that means the layed does not exist , or at least didn't exist
-   * when the PY object was created
-   * we *should* create it here instead of just bailing...
-   * same for vertsel and edgesel
+  /* TODO(martijn) if (!self->pinned) that means the layed does not exist , or at least didn't exist
+   * when the PY object was created. We *should* create it here instead of just bailing, but we can't
+   * because that would invalidate all existing BPy_BMLoopUV objects' interal pointers.
+   * the same goes for vertsel and edgesel below.
    */
   return 0;
 }
@@ -152,19 +152,21 @@ int BPy_BMLoopUV_AssignPyObject(struct BMesh *bm, const int loop_index, PyObject
   }
 
   BPy_BMLoopUV *src = (BPy_BMLoopUV *)value;
-  const char *active_uv_name = CustomData_get_active_layer_name(&bm->ldata, CD_PROP_FLOAT2);
-  BM_uv_map_ensure_vert_selection_attribute(bm, active_uv_name);
-  BM_uv_map_ensure_edge_selection_attribute(bm, active_uv_name);
-  BM_uv_map_ensure_pin_attribute(bm, active_uv_name);
   const BMUVOffsets offsets = BM_uv_map_get_offsets(bm);
 
   BMLoop *l = BM_loop_at_index_find(bm, loop_index);
   float *luv = BM_ELEM_CD_GET_FLOAT_P(l, offsets.uv);
   copy_v2_v2(luv, src->uv);
 
-  BM_ELEM_CD_SET_BOOL(l, offsets.select_vert, src->vertsel);
-  BM_ELEM_CD_SET_BOOL(l, offsets.select_edge, src->edgesel);
-  BM_ELEM_CD_SET_BOOL(l, offsets.pin, src->pinned);
+  if (offsets.select_vert >=0) {
+    BM_ELEM_CD_SET_BOOL(l, offsets.select_vert, *src->vertsel);
+  }
+  if (offsets.select_edge >=0) {
+    BM_ELEM_CD_SET_BOOL(l, offsets.select_edge, *src->edgesel);
+  }
+  if (offsets.pin >=0) {
+    BM_ELEM_CD_SET_BOOL(l, offsets.pin, *src->pinned);
+  }
 
   return 0;
 }
