@@ -178,11 +178,10 @@ PyObject *BPy_BMLoopUV_CreatePyObject(struct BMesh *bm, const int loop_index)
   const BMUVOffsets offsets = BM_uv_map_get_offsets(bm);
 
   BMLoop *l = BM_loop_at_index_find(bm, loop_index);
-  float *luv = BM_ELEM_CD_GET_FLOAT_P(l, offsets.uv);
+  self->uv = BM_ELEM_CD_GET_FLOAT_P(l, offsets.uv);
   self->vertsel = BM_ELEM_CD_GET_OPT_BOOL_P(l, offsets.select_vert);
   self->edgesel = BM_ELEM_CD_GET_OPT_BOOL_P(l, offsets.select_edge);
   self->pinned = BM_ELEM_CD_GET_OPT_BOOL_P(l, offsets.pin);
-  copy_v2_v2(self->uv, luv);
 
   return (PyObject *)self;
 }
