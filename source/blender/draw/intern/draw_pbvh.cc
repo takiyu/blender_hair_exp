@@ -86,7 +86,7 @@ struct PBVHVbo {
   {
     char buf[512];
 
-    sprintf(buf, "%d:%d:%s", int(type), int(domain), name.c_str());
+    BLI_snprintf(buf, sizeof(buf), "%d:%d:%s", int(type), int(domain), name.c_str());
 
     key = string(buf);
     return key;
@@ -938,7 +938,8 @@ struct PBVHBatches {
 
   void create_index_faces(PBVH_GPU_Args *args)
   {
-    int *mat_index = static_cast<int*>(CustomData_get_layer_named(args->pdata, CD_PROP_INT32, "material_index"));
+    int *mat_index = static_cast<int *>(
+        CustomData_get_layer_named(args->pdata, CD_PROP_INT32, "material_index"));
 
     if (mat_index && args->totprim) {
       int poly_index = args->mlooptri[args->prim_indices[0]].poly;

@@ -4681,7 +4681,7 @@ static int uv_select_similar_vert_exec(bContext *C, wmOperator *op)
 
     const BMUVOffsets offsets = BM_uv_map_get_offsets(bm);
     float ob_m3[3][3];
-    copy_m3_m4(ob_m3, ob->obmat);
+    copy_m3_m4(ob_m3, ob->object_to_world);
 
     BMFace *face;
     BMIter iter;
@@ -4718,7 +4718,7 @@ static int uv_select_similar_vert_exec(bContext *C, wmOperator *op)
 
     const BMUVOffsets offsets = BM_uv_map_get_offsets(bm);
     float ob_m3[3][3];
-    copy_m3_m4(ob_m3, ob->obmat);
+    copy_m3_m4(ob_m3, ob->object_to_world);
 
     BMFace *face;
     BMIter iter;
@@ -4793,7 +4793,7 @@ static int uv_select_similar_edge_exec(bContext *C, wmOperator *op)
 
     const BMUVOffsets offsets = BM_uv_map_get_offsets(bm);
     float ob_m3[3][3];
-    copy_m3_m4(ob_m3, ob->obmat);
+    copy_m3_m4(ob_m3, ob->object_to_world);
 
     BMFace *face;
     BMIter iter;
@@ -4832,7 +4832,7 @@ static int uv_select_similar_edge_exec(bContext *C, wmOperator *op)
     bool changed = false;
     const BMUVOffsets offsets = BM_uv_map_get_offsets(bm);
     float ob_m3[3][3];
-    copy_m3_m4(ob_m3, ob->obmat);
+    copy_m3_m4(ob_m3, ob->object_to_world);
 
     BMFace *face;
     BMIter iter;
@@ -4898,7 +4898,7 @@ static int uv_select_similar_face_exec(bContext *C, wmOperator *op)
     BMesh *bm = em->bm;
 
     float ob_m3[3][3];
-    copy_m3_m4(ob_m3, ob->obmat);
+    copy_m3_m4(ob_m3, ob->object_to_world);
 
     const BMUVOffsets offsets = BM_uv_map_get_offsets(bm);
 
@@ -4934,7 +4934,7 @@ static int uv_select_similar_face_exec(bContext *C, wmOperator *op)
     const BMUVOffsets offsets = BM_uv_map_get_offsets(bm);
 
     float ob_m3[3][3];
-    copy_m3_m4(ob_m3, ob->obmat);
+    copy_m3_m4(ob_m3, ob->object_to_world);
 
     BMFace *face;
     BMIter iter;
@@ -5018,7 +5018,7 @@ static int uv_select_similar_island_exec(bContext *C, wmOperator *op)
     }
 
     float ob_m3[3][3];
-    copy_m3_m4(ob_m3, obedit->obmat);
+    copy_m3_m4(ob_m3, obedit->object_to_world);
 
     int index;
     LISTBASE_FOREACH_INDEX (struct FaceIsland *, island, &island_list_ptr[ob_index], index) {
@@ -5047,7 +5047,7 @@ static int uv_select_similar_island_exec(bContext *C, wmOperator *op)
       continue;
     }
     float ob_m3[3][3];
-    copy_m3_m4(ob_m3, obedit->obmat);
+    copy_m3_m4(ob_m3, obedit->object_to_world);
 
     bool changed = false;
     int index;
