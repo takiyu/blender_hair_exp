@@ -273,6 +273,7 @@ void MeshFromGeometry::create_uv_verts(Mesh *mesh)
       "UVMap", ATTR_DOMAIN_CORNER);
 
   int tot_loop_idx = 0;
+  bool added_uv = false;
 
   for (const PolyElem &curr_face : mesh_geometry_.face_elements_) {
     for (int idx = 0; idx < curr_face.corner_count_; ++idx) {
@@ -280,12 +281,27 @@ void MeshFromGeometry::create_uv_verts(Mesh *mesh)
       if (curr_corner.uv_vert_index >= 0 &&
           curr_corner.uv_vert_index < global_vertices_.uv_vertices.size()) {
         uv_map.span[tot_loop_idx] = global_vertices_.uv_vertices[curr_corner.uv_vert_index];
-        tot_loop_idx++;
+        added_uv = true;
       }
+      else {
+        uv_map.span[tot_loop_idx] = {0.f, 0.f};
+      }
+      tot_loop_idx++;
     }
   }
 
   uv_map.finish();
+
+  /* If we have an object without UVs which resides in the same .obj file
+   * as an object which *does* have UVs we can end up adding and UV layer
+   * filled with zeroes.
+   * We could maybe check before creating this layer but that would need
+   * iterating over the whole mesh to check for UVs and as this is probably
+   * the exception rather than the rule, just delete it afterwards.
+   */
+  if (!added_uv) {
+    attributes.remove("UVMap");
+  }
 }
 
 static Material *get_or_create_material(Main *bmain,
