@@ -158,15 +158,9 @@ int BPy_BMLoopUV_AssignPyObject(struct BMesh *bm, const int loop_index, PyObject
   float *luv = BM_ELEM_CD_GET_FLOAT_P(l, offsets.uv);
   copy_v2_v2(luv, src->uv);
 
-  if (offsets.select_vert >=0) {
-    BM_ELEM_CD_SET_BOOL(l, offsets.select_vert, *src->vertsel);
-  }
-  if (offsets.select_edge >=0) {
-    BM_ELEM_CD_SET_BOOL(l, offsets.select_edge, *src->edgesel);
-  }
-  if (offsets.pin >=0) {
-    BM_ELEM_CD_SET_BOOL(l, offsets.pin, *src->pinned);
-  }
+  BM_ELEM_CD_SET_BOOL(l, offsets.select_vert, *src->vertsel);
+  BM_ELEM_CD_SET_BOOL(l, offsets.select_edge, *src->edgesel);
+  BM_ELEM_CD_SET_BOOL(l, offsets.pin, *src->pinned);
 
   return 0;
 }
