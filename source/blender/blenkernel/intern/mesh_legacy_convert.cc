@@ -536,17 +536,17 @@ static void update_active_fdata_layers(CustomData *fdata, CustomData *ldata)
 {
   int act;
 
-  if (CustomData_has_layer(ldata, CD_MLOOPUV)) {
-    act = CustomData_get_active_layer(ldata, CD_MLOOPUV);
+  if (CustomData_has_layer(ldata, CD_PROP_FLOAT2)) {
+    act = CustomData_get_active_layer(ldata, CD_PROP_FLOAT2);
     CustomData_set_layer_active(fdata, CD_MTFACE, act);
 
-    act = CustomData_get_render_layer(ldata, CD_MLOOPUV);
+    act = CustomData_get_render_layer(ldata, CD_PROP_FLOAT2);
     CustomData_set_layer_render(fdata, CD_MTFACE, act);
 
-    act = CustomData_get_clone_layer(ldata, CD_MLOOPUV);
+    act = CustomData_get_clone_layer(ldata, CD_PROP_FLOAT2);
     CustomData_set_layer_clone(fdata, CD_MTFACE, act);
 
-    act = CustomData_get_stencil_layer(ldata, CD_MLOOPUV);
+    act = CustomData_get_stencil_layer(ldata, CD_PROP_FLOAT2);
     CustomData_set_layer_stencil(fdata, CD_MTFACE, act);
   }
 
@@ -579,7 +579,7 @@ static bool check_matching_legacy_layer_counts(CustomData *fdata, CustomData *ld
     ((a_num += CustomData_number_of_layers(l_a, t_a)) == \
      (b_num += CustomData_number_of_layers(l_b, t_b)))
 
-  if (!LAYER_CMP(ldata, CD_MLOOPUV, fdata, CD_MTFACE)) {
+  if (!LAYER_CMP(ldata, CD_PROP_FLOAT2, fdata, CD_MTFACE)) {
     return false;
   }
   if (!LAYER_CMP(ldata, CD_PROP_BYTE_COLOR, fdata, CD_MCOL)) {
@@ -612,7 +612,7 @@ static void add_mface_layers(CustomData *fdata, CustomData *ldata, int total)
   BLI_assert(!check_matching_legacy_layer_counts(fdata, ldata, false));
 
   for (int i = 0; i < ldata->totlayer; i++) {
-    if (ldata->layers[i].type == CD_MLOOPUV) {
+    if (ldata->layers[i].type == CD_PROP_FLOAT2) {
       CustomData_add_layer_named(
           fdata, CD_MTFACE, CD_SET_DEFAULT, nullptr, total, ldata->layers[i].name);
     }
@@ -650,7 +650,7 @@ static void mesh_ensure_tessellation_customdata(Mesh *me)
      * Callers could also check but safer to do here - campbell */
   }
   else {
-    const int tottex_original = CustomData_number_of_layers(&me->ldata, CD_MLOOPUV);
+    const int tottex_original = CustomData_number_of_layers(&me->ldata, CD_PROP_FLOAT2);
     const int totcol_original = CustomData_number_of_layers(&me->ldata, CD_PROP_BYTE_COLOR);
 
     const int tottex_tessface = CustomData_number_of_layers(&me->fdata, CD_MTFACE);
@@ -669,7 +669,7 @@ static void mesh_ensure_tessellation_customdata(Mesh *me)
          * some info to help troubleshoot what's going on. */
         printf(
             "%s: warning! Tessellation uvs or vcol data got out of sync, "
-            "had to reset!\n    CD_MTFACE: %d != CD_MLOOPUV: %d || CD_MCOL: %d != "
+            "had to reset!\n    CD_MTFACE: %d != CD_PROP_FLOAT2: %d || CD_MCOL: %d != "
             "CD_PROP_BYTE_COLOR: "
             "%d\n",
             __func__,
