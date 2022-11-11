@@ -80,6 +80,8 @@ namespace geo_log = blender::nodes::geo_eval_log;
 /** \name Internal Duplicate Context
  * \{ */
 
+static constexpr short GEOMETRY_SET_DUPLI_GENERATOR_TYPE = 1;
+
 struct DupliContext {
   Depsgraph *depsgraph;
   /** XXX child objects are selected from this group if set, could be nicer. */
@@ -88,6 +90,9 @@ struct DupliContext {
   Object *obedit;
 
   Scene *scene;
+  /** Root parent object at the scene level. */
+  Object *root_object;
+  /** Immediate parent object in the context. */
   Object *object;
   float space_mat[4][4];
   /**
@@ -106,6 +111,14 @@ struct DupliContext {
    * Use a vector instead of a stack because we want to use the #contains method.
    */
   Vector<Object *> *instance_stack;
+
+  /**
+   * Older code relies on the "dupli generator type" for various visibility or processing
+   * decisions. However, new code uses geometry instances in places that weren't using the dupli
+   * system previously. To fix this, keep track of the last dupli generator type that wasn't a
+   * geometry set instance.
+   * */
+  Vector<short> *dupli_gen_type_stack;
 
   int persistent_id[MAX_DUPLI_RECUR];
   int64_t instance_idx[MAX_DUPLI_RECUR];
@@ -133,15 +146,18 @@ static void init_context(DupliContext *r_ctx,
                          Scene *scene,
                          Object *ob,
                          const float space_mat[4][4],
-                         Vector<Object *> &instance_stack)
+                         Vector<Object *> &instance_stack,
+                         Vector<short> &dupli_gen_type_stack)
 {
   r_ctx->depsgraph = depsgraph;
   r_ctx->scene = scene;
   r_ctx->collection = nullptr;
 
+  r_ctx->root_object = ob;
   r_ctx->object = ob;
   r_ctx->obedit = OBEDIT_FROM_OBACT(ob);
   r_ctx->instance_stack = &instance_stack;
+  r_ctx->dupli_gen_type_stack = &dupli_gen_type_stack;
   if (space_mat) {
     copy_m4_m4(r_ctx->space_mat, space_mat);
   }
@@ -151,6 +167,9 @@ static void init_context(DupliContext *r_ctx,
   r_ctx->level = 0;
 
   r_ctx->gen = get_dupli_generator(r_ctx);
+  if (r_ctx->gen && r_ctx->gen->type != GEOMETRY_SET_DUPLI_GENERATOR_TYPE) {
+    r_ctx->dupli_gen_type_stack->append(r_ctx->gen->type);
+  }
 
   r_ctx->duplilist = nullptr;
   r_ctx->preview_instance_index = -1;
@@ -192,6 +211,9 @@ static bool copy_dupli_context(DupliContext *r_ctx,
   }
 
   r_ctx->gen = get_dupli_generator(r_ctx);
+  if (r_ctx->gen && r_ctx->gen->type != GEOMETRY_SET_DUPLI_GENERATOR_TYPE) {
+    r_ctx->dupli_gen_type_stack->append(r_ctx->gen->type);
+  }
   return true;
 }
 
@@ -224,7 +246,7 @@ static DupliObject *make_dupli(const DupliContext *ctx,
   dob->ob = ob;
   dob->ob_data = const_cast<ID *>(object_data);
   mul_m4_m4m4(dob->mat, (float(*)[4])ctx->space_mat, mat);
-  dob->type = ctx->gen == nullptr ? 0 : ctx->gen->type;
+  dob->type = ctx->gen == nullptr ? 0 : ctx->dupli_gen_type_stack->last();
   dob->preview_base_geometry = ctx->preview_base_geometry;
   dob->preview_instance_index = ctx->preview_instance_index;
 
@@ -265,8 +287,9 @@ static DupliObject *make_dupli(const DupliContext *ctx,
     dob->no_draw = true;
   }
 
-  /* Random number.
-   * The logic here is designed to match Cycles. */
+  /* Random number per instance.
+   * The root object in the scene, persistent ID up to the instance object, and the instance object
+   * name together result in a unique random number. */
   dob->random_id = BLI_hash_string(dob->ob->id.name + 2);
 
   if (dob->persistent_id[0] != INT_MAX) {
@@ -278,8 +301,8 @@ static DupliObject *make_dupli(const DupliContext *ctx,
     dob->random_id = BLI_hash_int_2d(dob->random_id, 0);
   }
 
-  if (ctx->object != ob) {
-    dob->random_id ^= BLI_hash_int(BLI_hash_string(ctx->object->id.name + 2));
+  if (ctx->root_object != ob) {
+    dob->random_id ^= BLI_hash_int(BLI_hash_string(ctx->root_object->id.name + 2));
   }
 
   return dob;
@@ -992,7 +1015,7 @@ static void make_duplis_geometry_set(const DupliContext *ctx)
 }
 
 static const DupliGenerator gen_dupli_geometry_set = {
-    0,
+    GEOMETRY_SET_DUPLI_GENERATOR_TYPE,
     make_duplis_geometry_set,
 };
 
@@ -1391,7 +1414,7 @@ static void make_duplis_particle_system(const DupliContext *ctx, ParticleSystem 
 
     RNG *rng = BLI_rng_new_srandom(31415926u + uint(psys->seed));
 
-    psys->lattice_deform_data = psys_create_lattice_deform_data(&sim);
+    psys_sim_data_init(&sim);
 
     /* Gather list of objects or single object. */
     int totcollection = 0;
@@ -1613,16 +1636,12 @@ static void make_duplis_particle_system(const DupliContext *ctx, ParticleSystem 
     }
 
     BLI_rng_free(rng);
+    psys_sim_data_free(&sim);
   }
 
   /* Clean up. */
   if (oblist) {
     MEM_freeN(oblist);
-  }
-
-  if (psys->lattice_deform_data) {
-    BKE_lattice_deform_data_destroy(psys->lattice_deform_data);
-    psys->lattice_deform_data = nullptr;
   }
 }
 
@@ -1717,8 +1736,9 @@ ListBase *object_duplilist(Depsgraph *depsgraph, Scene *sce, Object *ob)
   ListBase *duplilist = MEM_cnew<ListBase>("duplilist");
   DupliContext ctx;
   Vector<Object *> instance_stack;
+  Vector<short> dupli_gen_type_stack({0});
   instance_stack.append(ob);
-  init_context(&ctx, depsgraph, sce, ob, nullptr, instance_stack);
+  init_context(&ctx, depsgraph, sce, ob, nullptr, instance_stack, dupli_gen_type_stack);
   if (ctx.gen) {
     ctx.duplilist = duplilist;
     ctx.gen->make_duplis(&ctx);
@@ -1735,8 +1755,9 @@ ListBase *object_duplilist_preview(Depsgraph *depsgraph,
   ListBase *duplilist = MEM_cnew<ListBase>("duplilist");
   DupliContext ctx;
   Vector<Object *> instance_stack;
+  Vector<short> dupli_gen_type_stack({0});
   instance_stack.append(ob_eval);
-  init_context(&ctx, depsgraph, sce, ob_eval, nullptr, instance_stack);
+  init_context(&ctx, depsgraph, sce, ob_eval, nullptr, instance_stack, dupli_gen_type_stack);
   ctx.duplilist = duplilist;
 
   Object *ob_orig = DEG_get_original_object(ob_eval);
