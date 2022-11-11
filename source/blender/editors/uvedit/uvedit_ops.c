@@ -1481,7 +1481,7 @@ static int uv_hide_exec(bContext *C, wmOperator *op)
 
       BM_ITER_ELEM (l, &liter, efa, BM_LOOPS_OF_FACE) {
 
-        if (UV_VERT_SEL_TEST(l, !swap)) {
+        if (UV_VERT_SEL_TEST(l, !swap) || UV_EDGE_SEL_TEST(l, !swap)) {
           hide = 1;
           break;
         }

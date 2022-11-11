@@ -340,7 +340,7 @@ static void uvedit_prepare_pinned_indices(ParamHandle *handle,
   BMIter liter;
   BMLoop *l;
   BM_ITER_ELEM (l, &liter, efa, BM_LOOPS_OF_FACE) {
-    bool pin = BM_ELEM_CD_GET_BOOL(l, offsets.pin);
+    bool pin = BM_ELEM_CD_GET_OPT_BOOL(l, offsets.pin);
     if (options->pin_unselected && !pin) {
       pin = !uvedit_uv_select_test(scene, l, offsets);
     }

@@ -70,6 +70,7 @@ static PyObject *bpy_bmloopuv_pin_uv_get(BPy_BMLoopUV *self, void *UNUSED(closur
 }
 static int bpy_bmloopuv_pin_uv_set(BPy_BMLoopUV *self, PyObject *value, void *UNUSED(closure))
 {
+  BLI_assert(self->pinned);
   if (self->pinned) {
     *self->pinned = PyC_Long_AsBool(value);
   }
@@ -87,6 +88,7 @@ static PyObject *bpy_bmloopuv_select_get(BPy_BMLoopUV *self, void *UNUSED(closur
 }
 static int bpy_bmloopuv_select_set(BPy_BMLoopUV *self, PyObject *value, void *UNUSED(closure))
 {
+  BLI_assert(self->vertsel);
   if (self->vertsel) {
     *self->vertsel = PyC_Long_AsBool(value);
   }
@@ -99,6 +101,7 @@ static PyObject *bpy_bmloopuv_select_edge_get(BPy_BMLoopUV *self, void *UNUSED(c
 }
 static int bpy_bmloopuv_select_edge_set(BPy_BMLoopUV *self, PyObject *value, void *UNUSED(closure))
 {
+  BLI_assert(self->edgesel);
   if (self->edgesel) {
     *self->edgesel = PyC_Long_AsBool(value);
   }
