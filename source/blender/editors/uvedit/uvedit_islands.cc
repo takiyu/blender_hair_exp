@@ -726,7 +726,6 @@ void ED_uvedit_pack_islands_multi(const Scene *scene,
 
     bm_face_array_calc_bounds(
         island->faces, island->faces_len, island->offsets.uv, &island->bounds_rect);
-
   }
 
   /* Center of bounding box containing all selected UVs. */

@@ -74,9 +74,9 @@ static int bpy_bmloopuv_pin_uv_set(BPy_BMLoopUV *self, PyObject *value, void *UN
   if (self->pinned) {
     *self->pinned = PyC_Long_AsBool(value);
   }
-  /* TODO(martijn) if (!self->pinned) that means the layed does not exist , or at least didn't exist
-   * when the PY object was created. We *should* create it here instead of just bailing, but we can't
-   * because that would invalidate all existing BPy_BMLoopUV objects' interal pointers.
+  /* TODO(martijn) if (!self->pinned) that means the layed does not exist , or at least didn't
+   * exist when the PY object was created. We *should* create it here instead of just bailing, but
+   * we can't because that would invalidate all existing BPy_BMLoopUV objects' interal pointers.
    * the same goes for vertsel and edgesel below.
    */
   return 0;
