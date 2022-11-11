@@ -398,7 +398,7 @@ static float facetag_cut_cost_edge_uv(BMFace *f_a,
   BM_face_uv_calc_center_median_weighted(f_b, aspect_v2, cd_loop_uv_offset, f_b_cent);
 
   const float *co_v1 = BM_ELEM_CD_GET_FLOAT_P(l_edge, cd_loop_uv_offset);
-  const float *co_v2 = BM_ELEM_CD_GET_VOID_P(l_edge->next, cd_loop_uv_offset);
+  const float *co_v2 = BM_ELEM_CD_GET_FLOAT_P(l_edge->next, cd_loop_uv_offset);
 
 #if 0
   mid_v2_v2v2(e_cent, co_v1, co_v2);
