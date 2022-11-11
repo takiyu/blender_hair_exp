@@ -1185,7 +1185,7 @@ static void rna_ParticleTarget_name_get(PointerRNA *ptr, char *str)
 
     if (psys) {
       if (pt->ob) {
-        sprintf(str, "%s: %s", pt->ob->id.name + 2, psys->name);
+        BLI_sprintf(str, "%s: %s", pt->ob->id.name + 2, psys->name);
       }
       else {
         strcpy(str, psys->name);
@@ -1312,7 +1312,7 @@ static void rna_ParticleDupliWeight_name_get(PointerRNA *ptr, char *str)
   ParticleDupliWeight *dw = ptr->data;
 
   if (dw->ob) {
-    sprintf(str, "%s: %i", dw->ob->id.name + 2, dw->count);
+    BLI_sprintf(str, "%s: %i", dw->ob->id.name + 2, dw->count);
   }
   else {
     strcpy(str, "No object");
