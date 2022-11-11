@@ -1848,8 +1848,8 @@ static int uv_seams_from_islands_exec(bContext *C, wmOperator *op)
       continue;
     }
 
-    bool changed = false;
     const BMUVOffsets offsets = BM_uv_map_get_offsets(em->bm);
+    bool changed = false;
 
     BMFace *f;
     BM_ITER_MESH (f, &iter, bm, BM_FACES_OF_MESH) {

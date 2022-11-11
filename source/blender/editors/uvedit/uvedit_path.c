@@ -567,7 +567,6 @@ static int uv_shortest_path_pick_invoke(bContext *C, wmOperator *op, const wmEve
   Object *obedit = CTX_data_edit_object(C);
   BMEditMesh *em = BKE_editmesh_from_object(obedit);
   BMesh *bm = em->bm;
-
   const BMUVOffsets offsets = BM_uv_map_get_offsets(bm);
 
   float aspect_y;

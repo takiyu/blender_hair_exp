@@ -370,6 +370,7 @@ void GeometryExporter::create_mesh_primitive_list(short material_index,
     int layer_index = CustomData_get_layer_index_n(&me->ldata, CD_PROP_FLOAT2, i);
     if (!this->export_settings.get_active_uv_only() || layer_index == active_uv_index) {
 
+      // char *name = CustomData_get_layer_name(&me->ldata, CD_PROP_FLOAT2, i);
       COLLADASW::Input texcoord_input(
           COLLADASW::InputSemantic::TEXCOORD,
           makeUrl(makeTexcoordSourceId(geom_id, i, this->export_settings.get_active_uv_only())),
