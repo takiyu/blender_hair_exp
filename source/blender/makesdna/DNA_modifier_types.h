@@ -560,6 +560,7 @@ typedef struct DisplaceModifierData {
   char map_bone[64];
   /** MAX_CUSTOMDATA_LAYER_NAME. */
   char uvlayer_name[68];
+  char _pad1[4];
   int uvlayer_tmp;
   int texmapping;
   /* end MappingInfoModifierData */
@@ -571,7 +572,7 @@ typedef struct DisplaceModifierData {
   float midlevel;
   int space;
   short flag;
-  char _pad2[2];
+  char _pad2[6];
 } DisplaceModifierData;
 
 /** #DisplaceModifierData.flag */
