@@ -461,7 +461,7 @@ static PyObject *bpy_bmlayercollection_verify(BPy_BMLayerCollection *self)
   if (index == -1) {
     BM_data_layer_add(self->bm, data, self->type);
     index = 0;
-    /* Because addingCustomData layers to a bmesh will invalidate any existing pointers
+    /* Because adding CustomData layers to a bmesh will invalidate any existing pointers
      * in Py objects we can't lazily add the associated bool layers. So add them all right
      * now.
      */
