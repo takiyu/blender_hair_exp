@@ -44,6 +44,7 @@ namespace blender::bke {
 class ComponentAttributeProviders;
 class CurvesEditHints;
 class Instances;
+class SimplexGeometry;
 }  // namespace blender::bke
 
 class GeometryComponent;
@@ -253,6 +254,12 @@ struct GeometrySet {
   static GeometrySet create_with_instances(
       blender::bke::Instances *instances,
       GeometryOwnershipType ownership = GeometryOwnershipType::Owned);
+  /**
+   * Create a new geometry set that only contains the given simplex geometry.
+   */
+  static GeometrySet create_with_simplex(
+      blender::bke::SimplexGeometry *geometry,
+      GeometryOwnershipType ownership = GeometryOwnershipType::Owned);
 
   /* Utility methods for access. */
   /**
@@ -308,6 +315,10 @@ struct GeometrySet {
    * Returns read-only curve edit hints or null.
    */
   const blender::bke::CurvesEditHints *get_curve_edit_hints_for_read() const;
+  /**
+   * Returns read-only simplex geometry or null.
+   */
+  const blender::bke::SimplexGeometry *get_simplex_for_read() const;
 
   /**
    * Returns a mutable mesh or null. No ownership is transferred.
@@ -333,6 +344,10 @@ struct GeometrySet {
    * Returns mutable curve edit hints or null.
    */
   blender::bke::CurvesEditHints *get_curve_edit_hints_for_write();
+  /**
+   * Returns mutable simplex geometry or null.
+   */
+  blender::bke::SimplexGeometry *get_simplex_for_write();
 
   /* Utility methods for replacement. */
   /**
@@ -359,6 +374,11 @@ struct GeometrySet {
    */
   void replace_instances(blender::bke::Instances *instances,
                          GeometryOwnershipType ownership = GeometryOwnershipType::Owned);
+  /**
+   * Clear the existing simplices and replace them with the given one.
+   */
+  void replace_simplex(blender::bke::SimplexGeometry *geometry,
+                       GeometryOwnershipType ownership = GeometryOwnershipType::Owned);
 
  private:
   /**
@@ -643,4 +663,33 @@ class GeometryComponentEditData final : public GeometryComponent {
   static void remember_deformed_curve_positions_if_necessary(GeometrySet &geometry);
 
   static constexpr inline GeometryComponentType static_type = GEO_COMPONENT_TYPE_EDIT;
+};
+
+/**
+ * A geometry component that stores #SimplexGeometry.
+ */
+class SimplexComponent : public GeometryComponent {
+ private:
+  blender::bke::SimplexGeometry *geometry_ = nullptr;
+  GeometryOwnershipType ownership_ = GeometryOwnershipType::Owned;
+
+ public:
+  SimplexComponent();
+  ~SimplexComponent();
+  GeometryComponent *copy() const override;
+
+  void clear();
+
+  const blender::bke::SimplexGeometry *get_for_read() const;
+  blender::bke::SimplexGeometry *get_for_write();
+
+  void replace(blender::bke::SimplexGeometry *geometry,
+               GeometryOwnershipType ownership = GeometryOwnershipType::Owned);
+
+  bool is_empty() const final;
+
+  bool owns_direct_data() const override;
+  void ensure_owns_direct_data() override;
+
+  static constexpr inline GeometryComponentType static_type = GEO_COMPONENT_TYPE_SIMPLEX;
 };

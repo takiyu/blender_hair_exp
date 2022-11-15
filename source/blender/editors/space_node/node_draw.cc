@@ -989,6 +989,16 @@ static void create_inspection_string_for_geometry_info(const geo_log::GeometryIn
         }
         break;
       }
+      case GEO_COMPONENT_TYPE_SIMPLEX: {
+        const geo_log::GeometryInfoLog::SimplexInfo &simplex_info = *value_log.simplex_info;
+        char line[256];
+        BLI_snprintf(line,
+                     sizeof(line),
+                     TIP_("\u2022 Simplices: %s"),
+                     to_string(simplex_info.simplex_num).c_str());
+        ss << line << line_end;
+        break;
+      }
     }
   }
 
@@ -1028,6 +1038,10 @@ static void create_inspection_string_for_geometry_info(const geo_log::GeometryIn
         break;
       }
       case GEO_COMPONENT_TYPE_EDIT: {
+        break;
+      }
+      case GEO_COMPONENT_TYPE_SIMPLEX: {
+        ss << TIP_("Simplex");
         break;
       }
     }

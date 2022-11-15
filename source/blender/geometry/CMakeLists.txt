@@ -17,6 +17,7 @@ set(INC
 set(SRC
   intern/add_curves_on_mesh.cc
   intern/fillet_curves.cc
+  intern/mesh_delaunay.cc
   intern/mesh_merge_by_distance.cc
   intern/mesh_primitive_cuboid.cc
   intern/mesh_to_curve_convert.cc
@@ -32,6 +33,7 @@ set(SRC
 
   GEO_add_curves_on_mesh.hh
   GEO_fillet_curves.hh
+  GEO_mesh_delaunay.hh
   GEO_mesh_merge_by_distance.hh
   GEO_mesh_primitive_cuboid.hh
   GEO_mesh_to_curve.hh
@@ -78,3 +80,14 @@ if(WITH_TBB)
 endif()
 
 blender_add_lib(bf_geometry "${SRC}" "${INC}" "${INC_SYS}" "${LIB}")
+
+if(WITH_GTESTS)
+  set(TEST_SRC
+    tests/GEO_delaunay_test.cc
+  )
+  set(TEST_LIB
+    bf_geometry
+  )
+  include(GTestTesting)
+  blender_add_test_lib(bf_geometry_tests "${TEST_SRC}" "${INC};${TEST_INC}" "${INC_SYS}" "${LIB};${TEST_LIB}")
+endif()

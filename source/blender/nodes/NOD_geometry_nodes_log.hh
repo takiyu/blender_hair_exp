@@ -140,12 +140,16 @@ class GeometryInfoLog : public ValueLog {
     bool has_deformed_positions;
     bool has_deform_matrices;
   };
+  struct SimplexInfo {
+    int simplex_num;
+  };
 
   std::optional<MeshInfo> mesh_info;
   std::optional<CurveInfo> curve_info;
   std::optional<PointCloudInfo> pointcloud_info;
   std::optional<InstancesInfo> instances_info;
   std::optional<EditDataInfo> edit_data_info;
+  std::optional<SimplexInfo> simplex_info;
 
   GeometryInfoLog(const GeometrySet &geometry_set);
 };

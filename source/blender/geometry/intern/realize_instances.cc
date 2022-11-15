@@ -611,6 +611,12 @@ static void gather_realize_tasks_recursive(GatherTasksInfo &gather_info,
         }
         break;
       }
+      case GEO_COMPONENT_TYPE_SIMPLEX: {
+        const SimplexComponent *simplex_component = static_cast<const SimplexComponent *>(
+            component);
+        /* XXX TODO */
+        break;
+      }
     }
   }
 }

@@ -6,6 +6,7 @@
 #include "BKE_compute_contexts.hh"
 #include "BKE_curves.hh"
 #include "BKE_node_runtime.hh"
+#include "BKE_mesh_simplex.hh"
 #include "BKE_viewer_path.h"
 
 #include "FN_field_cpp_type.hh"
@@ -57,7 +58,8 @@ GeometryInfoLog::GeometryInfoLog(const GeometrySet &geometry_set)
                                            GEO_COMPONENT_TYPE_INSTANCES,
                                            GEO_COMPONENT_TYPE_MESH,
                                            GEO_COMPONENT_TYPE_POINT_CLOUD,
-                                           GEO_COMPONENT_TYPE_VOLUME};
+                                           GEO_COMPONENT_TYPE_VOLUME,
+                                           GEO_COMPONENT_TYPE_SIMPLEX};
 
   /* Keep track handled attribute names to make sure that we do not return the same name twice.
    * Currently #GeometrySet::attribute_foreach does not do that. Note that this will merge
@@ -116,6 +118,12 @@ GeometryInfoLog::GeometryInfoLog(const GeometrySet &geometry_set)
         break;
       }
       case GEO_COMPONENT_TYPE_VOLUME: {
+        break;
+      }
+      case GEO_COMPONENT_TYPE_SIMPLEX: {
+        const SimplexComponent &simplex_component = *(const SimplexComponent *)component;
+        SimplexInfo &info = this->simplex_info.emplace();
+        info.simplex_num = simplex_component.get_for_read()->simplex_num();
         break;
       }
     }

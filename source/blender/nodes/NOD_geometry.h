@@ -151,6 +151,8 @@ void register_node_type_geo_set_position(void);
 void register_node_type_geo_set_shade_smooth(void);
 void register_node_type_geo_set_spline_cyclic(void);
 void register_node_type_geo_set_spline_resolution(void);
+void register_node_type_geo_simplex_tetrahedralize(void);
+void register_node_type_geo_simplex_to_mesh(void);
 void register_node_type_geo_store_named_attribute(void);
 void register_node_type_geo_string_join(void);
 void register_node_type_geo_string_to_curves(void);

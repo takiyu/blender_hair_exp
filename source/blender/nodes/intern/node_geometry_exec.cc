@@ -95,6 +95,10 @@ void GeoNodeExecParams::check_input_geometry_set(StringRef identifier,
       case GEO_COMPONENT_TYPE_EDIT: {
         continue;
       }
+      case GEO_COMPONENT_TYPE_SIMPLEX: {
+        message += TIP_("Simplex");
+        break;
+      }
     }
     this->error_message_add(NodeWarningType::Info, std::move(message));
   }

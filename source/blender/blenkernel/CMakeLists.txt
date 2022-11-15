@@ -139,6 +139,7 @@ set(SRC
   intern/geometry_component_instances.cc
   intern/geometry_component_mesh.cc
   intern/geometry_component_pointcloud.cc
+  intern/geometry_component_simplex.cc
   intern/geometry_component_volume.cc
   intern/geometry_fields.cc
   intern/geometry_set.cc
@@ -209,6 +210,8 @@ set(SRC
   intern/mesh_remesh_voxel.cc
   intern/mesh_runtime.cc
   intern/mesh_sample.cc
+  intern/mesh_simplex.c
+  intern/mesh_simplex.cc
   intern/mesh_tangent.cc
   intern/mesh_tessellate.cc
   intern/mesh_validate.cc
@@ -427,6 +430,8 @@ set(SRC
   BKE_mesh_remesh_voxel.h
   BKE_mesh_runtime.h
   BKE_mesh_sample.hh
+  BKE_mesh_simplex.h
+  BKE_mesh_simplex.hh
   BKE_mesh_tangent.h
   BKE_mesh_types.h
   BKE_mesh_wrapper.h

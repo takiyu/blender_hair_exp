@@ -15,6 +15,7 @@
 #include "BKE_mesh_wrapper.h"
 #include "BKE_modifier.h"
 #include "BKE_pointcloud.h"
+#include "BKE_mesh_simplex.hh"
 #include "BKE_volume.h"
 
 #include "DNA_collection_types.h"
@@ -58,6 +59,8 @@ GeometryComponent *GeometryComponent::create(GeometryComponentType component_typ
       return new CurveComponent();
     case GEO_COMPONENT_TYPE_EDIT:
       return new GeometryComponentEditData();
+    case GEO_COMPONENT_TYPE_SIMPLEX:
+      return new SimplexComponent();
   }
   BLI_assert_unreachable();
   return nullptr;
@@ -346,6 +349,12 @@ const Instances *GeometrySet::get_instances_for_read() const
   return (component == nullptr) ? nullptr : component->get_for_read();
 }
 
+const blender::bke::SimplexGeometry *GeometrySet::get_simplex_for_read() const
+{
+  const SimplexComponent *component = this->get_component_for_read<SimplexComponent>();
+  return (component == nullptr) ? nullptr : component->get_for_read();
+}
+
 const blender::bke::CurvesEditHints *GeometrySet::get_curve_edit_hints_for_read() const
 {
   const GeometryComponentEditData *component =
@@ -445,6 +454,17 @@ GeometrySet GeometrySet::create_with_instances(Instances *instances,
   return geometry_set;
 }
 
+GeometrySet GeometrySet::create_with_simplex(blender::bke::SimplexGeometry *geometry,
+                                             GeometryOwnershipType ownership)
+{
+  GeometrySet geometry_set;
+  if (geometry != nullptr) {
+    SimplexComponent &component = geometry_set.get_component_for_write<SimplexComponent>();
+    component.replace(geometry, ownership);
+  }
+  return geometry_set;
+}
+
 void GeometrySet::replace_mesh(Mesh *mesh, GeometryOwnershipType ownership)
 {
   if (mesh == nullptr) {
@@ -515,6 +535,21 @@ void GeometrySet::replace_volume(Volume *volume, GeometryOwnershipType ownership
   component.replace(volume, ownership);
 }
 
+void GeometrySet::replace_simplex(blender::bke::SimplexGeometry *geometry,
+                                  GeometryOwnershipType ownership)
+{
+  if (geometry == nullptr) {
+    this->remove<SimplexComponent>();
+    return;
+  }
+  if (geometry == this->get_simplex_for_read()) {
+    return;
+  }
+  this->remove<SimplexComponent>();
+  SimplexComponent &component = this->get_component_for_write<SimplexComponent>();
+  component.replace(geometry, ownership);
+}
+
 Mesh *GeometrySet::get_mesh_for_write()
 {
   MeshComponent *component = this->get_component_ptr<MeshComponent>();
@@ -553,6 +588,16 @@ blender::bke::CurvesEditHints *GeometrySet::get_curve_edit_hints_for_write()
   GeometryComponentEditData &component =
       this->get_component_for_write<GeometryComponentEditData>();
   return component.curves_edit_hints_.get();
+}
+
+blender::bke::SimplexGeometry *GeometrySet::get_simplex_for_write()
+{
+  if (!this->has<SimplexComponent>()) {
+    return nullptr;
+  }
+  SimplexComponent &component =
+      this->get_component_for_write<SimplexComponent>();
+  return component.get_for_write();
 }
 
 void GeometrySet::attribute_foreach(const Span<GeometryComponentType> component_types,
@@ -742,6 +787,8 @@ bool BKE_object_has_geometry_set_instances(const Object *ob)
         is_instance = !ELEM(ob->type, OB_CURVES_LEGACY, OB_FONT);
         break;
       case GEO_COMPONENT_TYPE_EDIT:
+        break;
+      case GEO_COMPONENT_TYPE_SIMPLEX:
         break;
     }
     if (is_instance) {

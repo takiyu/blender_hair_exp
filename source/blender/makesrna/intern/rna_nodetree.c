@@ -10959,6 +10959,36 @@ static void def_geo_scale_elements(StructRNA *srna)
   RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_GeometryNode_socket_update");
 }
 
+static void def_geo_simplex_tetrahedralize(StructRNA *srna)
+{
+}
+
+static void def_geo_simplex_to_mesh(StructRNA *srna)
+{
+  PropertyRNA *prop;
+
+  static const EnumPropertyItem face_mode_items[] = {
+      {GEO_NODE_SIMPLEX_TO_MESH_FACES_ALL,
+       "ALL",
+       ICON_NONE,
+       "All",
+       "Generate faces for all tetrahedra"},
+      {GEO_NODE_SIMPLEX_TO_MESH_FACES_SHARED,
+       "SHARED",
+       ICON_NONE,
+       "Shared",
+       "Share face between adjacent tetrahedra (double-sided)"},
+      {0, NULL, 0, NULL, NULL},
+  };
+
+  prop = RNA_def_property(srna, "face_mode", PROP_ENUM, PROP_NONE);
+  RNA_def_property_enum_sdna(prop, NULL, "custom1");
+  RNA_def_property_enum_items(prop, face_mode_items);
+  RNA_def_property_enum_default(prop, GEO_NODE_SIMPLEX_TO_MESH_FACES_ALL);
+  RNA_def_property_ui_text(prop, "Face Mode", "Method of generating faces for tetrahedra");
+  RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_GeometryNode_socket_update");
+}
+
 /* -------------------------------------------------------------------------- */
 
 static void rna_def_shader_node(BlenderRNA *brna)

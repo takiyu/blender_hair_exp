@@ -70,6 +70,7 @@ GeometryFieldContext::GeometryFieldContext(const GeometryComponent &component,
     }
     case GEO_COMPONENT_TYPE_VOLUME:
     case GEO_COMPONENT_TYPE_EDIT:
+    case GEO_COMPONENT_TYPE_SIMPLEX:
       BLI_assert_unreachable();
       break;
   }
