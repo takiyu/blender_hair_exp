@@ -180,10 +180,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include "bmesh_class.h"
 
 /* include the rest of the API */
@@ -216,7 +212,3 @@ extern "C" {
 #include "intern/bmesh_walkers.h"
 
 #include "intern/bmesh_inline.h"
-
-#ifdef __cplusplus
-}
-#endif

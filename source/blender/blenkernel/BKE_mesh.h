@@ -413,17 +413,6 @@ float (*BKE_mesh_vertex_normals_for_write(struct Mesh *mesh))[3];
 float (*BKE_mesh_poly_normals_for_write(struct Mesh *mesh))[3];
 
 /**
- * Free any cached vertex or poly normals. Face corner (loop) normals are also derived data,
- * but are not handled with the same method yet, so they are not included. It's important that this
- * is called after the mesh changes size, since otherwise cached normal arrays might not be large
- * enough (though it may be called indirectly by other functions).
- *
- * \note Normally it's preferred to call #BKE_mesh_normals_tag_dirty instead,
- * but this can be used in specific situations to reset a mesh or reduce memory usage.
- */
-void BKE_mesh_clear_derived_normals(struct Mesh *mesh);
-
-/**
  * Mark the mesh's vertex normals non-dirty, for when they are calculated or assigned manually.
  */
 void BKE_mesh_vertex_normals_clear_dirty(struct Mesh *mesh);
@@ -493,15 +482,6 @@ void BKE_mesh_calc_normals_looptri(const struct MVert *mverts,
                                    const struct MLoopTri *looptri,
                                    int looptri_num,
                                    float (*r_tri_nors)[3]);
-void BKE_mesh_loop_manifold_fan_around_vert_next(const struct MLoop *mloops,
-                                                 const struct MPoly *mpolys,
-                                                 const int *loop_to_poly,
-                                                 const int *e2lfan_curr,
-                                                 uint mv_pivot_index,
-                                                 const struct MLoop **r_mlfan_curr,
-                                                 int *r_mlfan_curr_index,
-                                                 int *r_mlfan_vert_index,
-                                                 int *r_mpfan_curr_index);
 
 /**
  * Define sharp edges as needed to mimic 'autosmooth' from angle threshold.
@@ -629,6 +609,8 @@ void BKE_lnor_space_custom_normal_to_data(MLoopNorSpace *lnor_space,
  * Compute split normals, i.e. vertex normals associated with each poly (hence 'loop normals').
  * Useful to materialize sharp edges (or non-smooth faces) without actually modifying the geometry
  * (splitting edges).
+ *
+ * \param loop_to_poly_map: Optional pre-created map from loops to their polygon.
  */
 void BKE_mesh_normals_loop_split(const struct MVert *mverts,
                                  const float (*vert_normals)[3],
@@ -643,9 +625,9 @@ void BKE_mesh_normals_loop_split(const struct MVert *mverts,
                                  int numPolys,
                                  bool use_split_normals,
                                  float split_angle,
+                                 const int *loop_to_poly_map,
                                  MLoopNorSpaceArray *r_lnors_spacearr,
-                                 short (*clnors_data)[2],
-                                 int *r_loop_to_poly);
+                                 short (*clnors_data)[2]);
 
 void BKE_mesh_normals_loop_custom_set(const struct MVert *mverts,
                                       const float (*vert_normals)[3],
@@ -992,10 +974,10 @@ void BKE_mesh_eval_geometry(struct Depsgraph *depsgraph, struct Mesh *mesh);
 
 /* Draw Cache */
 void BKE_mesh_batch_cache_dirty_tag(struct Mesh *me, eMeshBatchDirtyMode mode);
-void BKE_mesh_batch_cache_free(struct Mesh *me);
+void BKE_mesh_batch_cache_free(void *batch_cache);
 
 extern void (*BKE_mesh_batch_cache_dirty_tag_cb)(struct Mesh *me, eMeshBatchDirtyMode mode);
-extern void (*BKE_mesh_batch_cache_free_cb)(struct Mesh *me);
+extern void (*BKE_mesh_batch_cache_free_cb)(void *batch_cache);
 
 /* mesh_debug.c */
 

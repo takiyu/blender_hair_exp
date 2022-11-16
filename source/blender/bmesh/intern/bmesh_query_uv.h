@@ -6,6 +6,10 @@
  * \ingroup bmesh
  */
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Retrieve the custom data offsets for layers used for user interaction with the active UV map.
  */
@@ -72,3 +76,7 @@ bool BM_loop_uv_share_vert_check(BMLoop *l_a,
 bool BM_face_uv_point_inside_test(const BMFace *f,
                                   const float co[2],
                                   int cd_loop_uv_offset) ATTR_WARN_UNUSED_RESULT ATTR_NONNULL();
+
+#ifdef __cplusplus
+}
+#endif
