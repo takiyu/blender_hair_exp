@@ -889,7 +889,7 @@ struct PBVHBatches {
         }
         else {
           switch (type) {
-            case CD_MLOOPUV:
+            case CD_PROP_FLOAT2:
               prefix = "u";
               break;
             default:

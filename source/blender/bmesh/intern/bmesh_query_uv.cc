@@ -24,7 +24,7 @@ BMUVOffsets BM_uv_map_get_offsets(const BMesh *bm)
 {
   using namespace blender;
   using namespace blender::bke;
-  const int layer_index = CustomData_get_layer_index(&bm->ldata, CD_PROP_FLOAT2);
+  const int layer_index = CustomData_get_active_layer_index(&bm->ldata, CD_PROP_FLOAT2);
   if (layer_index == -1) {
     return {-1, -1, -1, -1};
   }

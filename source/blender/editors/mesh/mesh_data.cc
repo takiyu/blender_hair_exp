@@ -268,7 +268,7 @@ int ED_mesh_uv_add(
       CustomData_add_layer_named(&me->ldata,
                                  CD_PROP_FLOAT2,
                                  CD_DUPLICATE,
-                                 CustomData_get_layer(&me->ldata, CD_MLOOPUV),
+                                 CustomData_get_layer(&me->ldata, CD_PROP_FLOAT2),
                                  me->totloop,
                                  name);
       is_init = true;
