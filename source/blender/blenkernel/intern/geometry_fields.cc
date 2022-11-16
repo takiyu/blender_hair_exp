@@ -7,6 +7,7 @@
 #include "BKE_instances.hh"
 #include "BKE_mesh.h"
 #include "BKE_pointcloud.h"
+#include "BKE_mesh_simplex.hh"
 #include "BKE_type_conversions.hh"
 
 #include "DNA_mesh_types.h"
@@ -90,6 +91,10 @@ GeometryFieldContext::GeometryFieldContext(const PointCloud &points)
 }
 GeometryFieldContext::GeometryFieldContext(const Instances &instances)
     : geometry_(&instances), type_(GEO_COMPONENT_TYPE_INSTANCES), domain_(ATTR_DOMAIN_INSTANCE)
+{
+}
+GeometryFieldContext::GeometryFieldContext(const SimplexGeometry &simplices)
+    : geometry_(&simplices), type_(GEO_COMPONENT_TYPE_SIMPLEX), domain_(ATTR_DOMAIN_SIMPLEX)
 {
 }
 
@@ -465,6 +470,9 @@ std::optional<eAttrDomain> try_detect_field_domain(const GeometryComponent &comp
   }
   if (component_type == GEO_COMPONENT_TYPE_INSTANCES) {
     return ATTR_DOMAIN_INSTANCE;
+  }
+  if (component_type == GEO_COMPONENT_TYPE_SIMPLEX) {
+    return ATTR_DOMAIN_SIMPLEX;
   }
   const std::shared_ptr<const fn::FieldInputs> &field_inputs = field.node().field_inputs();
   if (!field_inputs) {

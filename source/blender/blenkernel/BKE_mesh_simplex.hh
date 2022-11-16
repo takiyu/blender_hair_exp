@@ -7,6 +7,7 @@
 
 #include "DNA_simplex_types.h"
 
+#include "BKE_attribute.hh"
 #include "BKE_mesh_simplex.h"
 
 /** \file
@@ -65,6 +66,9 @@ class SimplexGeometry : public ::SimplexGeometry {
    */
   Span<Simplex> simplices() const;
   MutableSpan<Simplex> simplices_for_write();
+
+  blender::bke::AttributeAccessor attributes() const;
+  blender::bke::MutableAttributeAccessor attributes_for_write();
 
   /* --------------------------------------------------------------------
    * Operations.

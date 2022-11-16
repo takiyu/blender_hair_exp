@@ -135,6 +135,7 @@ class GeometryFieldContext : public fn::FieldContext {
   GeometryFieldContext(const CurvesGeometry &curves, eAttrDomain domain);
   GeometryFieldContext(const PointCloud &points);
   GeometryFieldContext(const Instances &instances);
+  GeometryFieldContext(const SimplexGeometry &simplices);
 };
 
 class GeometryFieldInput : public fn::FieldInput {

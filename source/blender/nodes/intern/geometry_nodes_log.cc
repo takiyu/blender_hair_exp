@@ -123,7 +123,7 @@ GeometryInfoLog::GeometryInfoLog(const GeometrySet &geometry_set)
       case GEO_COMPONENT_TYPE_SIMPLEX: {
         const SimplexComponent &simplex_component = *(const SimplexComponent *)component;
         SimplexInfo &info = this->simplex_info.emplace();
-        info.simplex_num = simplex_component.get_for_read()->simplex_num();
+        info.simplex_num = simplex_component.attribute_domain_size(ATTR_DOMAIN_SIMPLEX);
         break;
       }
     }

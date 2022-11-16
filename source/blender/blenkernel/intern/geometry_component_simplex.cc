@@ -5,6 +5,8 @@
 #include "BKE_geometry_set.hh"
 #include "BKE_mesh_simplex.hh"
 
+#include "attribute_access_intern.hh"
+
 /* -------------------------------------------------------------------- */
 /** \name Geometry Component Implementation
  * \{ */
@@ -85,6 +87,144 @@ void SimplexComponent::replace(blender::bke::SimplexGeometry *geometry, Geometry
   this->clear();
   geometry_ = geometry;
   ownership_ = ownership;
+}
+
+namespace blender::bke {
+
+template <int Corner>
+class SimplexVertexAttributeProvider final : public BuiltinAttributeProvider {
+ private:
+  static int get_corner_vertex(const Simplex &simplex)
+  {
+    return simplex.v[Corner];
+  }
+
+  static void set_corner_vertex(Simplex &simplex, int vertex)
+  {
+    simplex.v[Corner] = vertex;
+  }
+
+ public:
+  SimplexVertexAttributeProvider()
+      : BuiltinAttributeProvider("vertex" + std::to_string(Corner),
+                                 ATTR_DOMAIN_SIMPLEX,
+                                 CD_PROP_INT32,
+                                 NonCreatable,
+                                 Readonly,
+                                 NonDeletable)
+  {
+  }
+
+  GVArray try_get_for_read(const void *owner) const final
+  {
+    const SimplexGeometry *simplices = static_cast<const SimplexGeometry *>(owner);
+    if (simplices == nullptr) {
+      return {};
+    }
+    Span<Simplex> simplex_span = simplices->simplices();
+    return VArray<int>::ForDerivedSpan<Simplex, get_corner_vertex>(simplex_span);
+  }
+
+  GAttributeWriter try_get_for_write(void *owner) const final
+  {
+    SimplexGeometry *simplices = static_cast<SimplexGeometry *>(owner);
+    if (simplices == nullptr) {
+      return {};
+    }
+    MutableSpan<Simplex> simplex_span = simplices->simplices_for_write();
+    return {VMutableArray<int>::ForDerivedSpan<Simplex, get_corner_vertex, set_corner_vertex>(
+                simplex_span),
+            domain_};
+  }
+
+  bool try_delete(void * /*owner*/) const final
+  {
+    return false;
+  }
+
+  bool try_create(void * /*owner*/, const AttributeInit & /*initializer*/) const final
+  {
+    return false;
+  }
+
+  bool exists(const void * /*owner*/) const final
+  {
+    return true;
+  }
+};
+
+static ComponentAttributeProviders create_attribute_providers_for_simplices()
+{
+  static SimplexVertexAttributeProvider<0> vertex0;
+  static SimplexVertexAttributeProvider<1> vertex1;
+  static SimplexVertexAttributeProvider<2> vertex2;
+  static SimplexVertexAttributeProvider<3> vertex3;
+
+  return ComponentAttributeProviders({&vertex0, &vertex1, &vertex2, &vertex3}, {});
+}
+
+static AttributeAccessorFunctions get_simplices_accessor_functions()
+{
+  static const ComponentAttributeProviders providers = create_attribute_providers_for_simplices();
+  AttributeAccessorFunctions fn =
+      attribute_accessor_functions::accessor_functions_for_providers<providers>();
+  fn.domain_size = [](const void *owner, const eAttrDomain domain) {
+    if (owner == nullptr) {
+      return 0;
+    }
+    const SimplexGeometry *simplices = static_cast<const SimplexGeometry *>(owner);
+    switch (domain) {
+      case ATTR_DOMAIN_SIMPLEX:
+        return simplices->simplex_num();
+      default:
+        return 0;
+    }
+  };
+  fn.domain_supported = [](const void * /*owner*/, const eAttrDomain domain) {
+    return domain == ATTR_DOMAIN_SIMPLEX;
+  };
+  fn.adapt_domain = [](const void * /*owner*/,
+                       const blender::GVArray &varray,
+                       const eAttrDomain from_domain,
+                       const eAttrDomain to_domain) {
+    if (from_domain == to_domain && from_domain == ATTR_DOMAIN_SIMPLEX) {
+      return varray;
+    }
+    return blender::GVArray{};
+  };
+  return fn;
+}
+
+static const AttributeAccessorFunctions &get_simplices_accessor_functions_ref()
+{
+  static const AttributeAccessorFunctions fn = get_simplices_accessor_functions();
+  return fn;
+}
+
+blender::bke::AttributeAccessor SimplexGeometry::attributes() const
+{
+  return blender::bke::AttributeAccessor(this,
+                                         blender::bke::get_simplices_accessor_functions_ref());
+}
+
+blender::bke::MutableAttributeAccessor SimplexGeometry::attributes_for_write()
+{
+  return blender::bke::MutableAttributeAccessor(
+      this, blender::bke::get_simplices_accessor_functions_ref());
+}
+
+}  // namespace blender::bke
+
+std::optional<blender::bke::AttributeAccessor> SimplexComponent::attributes() const
+{
+  return blender::bke::AttributeAccessor(geometry_,
+                                         blender::bke::get_simplices_accessor_functions_ref());
+}
+
+std::optional<blender::bke::MutableAttributeAccessor> SimplexComponent::attributes_for_write()
+{
+  return blender::bke::MutableAttributeAccessor(
+      geometry_, blender::bke::get_simplices_accessor_functions_ref());
 }
 
 /** \} */

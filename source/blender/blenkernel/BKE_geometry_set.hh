@@ -688,6 +688,9 @@ class SimplexComponent : public GeometryComponent {
 
   bool is_empty() const final;
 
+  std::optional<blender::bke::AttributeAccessor> attributes() const final;
+  std::optional<blender::bke::MutableAttributeAccessor> attributes_for_write() final;
+
   bool owns_direct_data() const override;
   void ensure_owns_direct_data() override;
 

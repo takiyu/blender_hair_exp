@@ -30,8 +30,9 @@ typedef enum eAttrDomain {
   ATTR_DOMAIN_CORNER = 3,   /* Mesh Corner */
   ATTR_DOMAIN_CURVE = 4,    /* A single curve in a larger curve data-block */
   ATTR_DOMAIN_INSTANCE = 5, /* Instance */
+  ATTR_DOMAIN_SIMPLEX = 6,  /* Tetrahedral simplex */
 } eAttrDomain;
-#define ATTR_DOMAIN_NUM 6
+#define ATTR_DOMAIN_NUM 7
 
 typedef enum eAttrDomainMask {
   ATTR_DOMAIN_MASK_POINT = (1 << 0),

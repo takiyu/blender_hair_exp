@@ -3226,6 +3226,10 @@ static void rna_SpaceSpreadsheet_geometry_component_type_update(Main *UNUSED(bma
       sspreadsheet->attribute_domain = ATTR_DOMAIN_INSTANCE;
       break;
     }
+    case GEO_COMPONENT_TYPE_SIMPLEX: {
+      sspreadsheet->attribute_domain = ATTR_DOMAIN_SIMPLEX;
+      break;
+    }
     case GEO_COMPONENT_TYPE_VOLUME: {
       break;
     }
