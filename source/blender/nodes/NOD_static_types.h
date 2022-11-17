@@ -336,6 +336,7 @@ DefNode(GeometryNode, GEO_NODE_INPUT_MESH_FACE_AREA, 0, "MESH_FACE_AREA", InputM
 DefNode(GeometryNode, GEO_NODE_INPUT_MESH_FACE_IS_PLANAR, 0, "MESH_FACE_IS_PLANAR",InputMeshFaceIsPlanar, "Is Face Planar", "Retrieve whether all triangles in a face are on the same plane, i.e. whether have the same normal")
 DefNode(GeometryNode, GEO_NODE_INPUT_MESH_FACE_NEIGHBORS, 0, "MESH_FACE_NEIGHBORS",InputMeshFaceNeighbors, "Face Neighbors", "Retrieve topology information relating to each face of a mesh")
 DefNode(GeometryNode, GEO_NODE_INPUT_MESH_ISLAND, 0, "MESH_ISLAND", InputMeshIsland, "Mesh Island", "Retrieve information about separate connected regions in a mesh")
+DefNode(GeometryNode, GEO_NODE_INPUT_MESH_SIMPLEX_VERTICES, 0, "MESH_SIMPLEX_VERTICES", InputMeshSimplexVertices, "Mesh Simplex Vertices", "Retrieve topology information about corners of simplices")
 DefNode(GeometryNode, GEO_NODE_INPUT_MESH_VERTEX_NEIGHBORS, 0, "MESH_VERTEX_NEIGHBORS", InputMeshVertexNeighbors, "Vertex Neighbors", "Retrieve topology information relating to each vertex of a mesh")
 DefNode(GeometryNode, GEO_NODE_INPUT_NAMED_ATTRIBUTE, def_geo_input_named_attribute, "INPUT_ATTRIBUTE", InputNamedAttribute, "Named Attribute", "Retrieve the data of a specified attribute")
 DefNode(GeometryNode, GEO_NODE_INPUT_NORMAL, 0, "INPUT_NORMAL", InputNormal, "Normal", "Retrieve a unit length vector indicating the direction pointing away from the geometry at each element")

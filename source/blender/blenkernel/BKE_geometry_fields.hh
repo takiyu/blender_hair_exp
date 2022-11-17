@@ -88,6 +88,27 @@ class InstancesFieldContext : public fn::FieldContext {
   }
 };
 
+class SimplexFieldContext : public fn::FieldContext {
+ private:
+  const SimplexGeometry &geometry_;
+  const eAttrDomain domain_ = ATTR_DOMAIN_SIMPLEX;
+
+ public:
+  SimplexFieldContext(const SimplexGeometry &geometry) : geometry_(geometry)
+  {
+  }
+
+  const SimplexGeometry &geometry() const
+  {
+    return geometry_;
+  }
+
+  eAttrDomain domain() const
+  {
+    return domain_;
+  }
+};
+
 /**
  * A field context that can represent meshes, curves, point clouds, or instances,
  * used for field inputs that can work for multiple geometry types.
@@ -129,6 +150,7 @@ class GeometryFieldContext : public fn::FieldContext {
   const CurvesGeometry *curves() const;
   const PointCloud *pointcloud() const;
   const Instances *instances() const;
+  const SimplexGeometry *simplices() const;
 
  private:
   GeometryFieldContext(const Mesh &mesh, eAttrDomain domain);
@@ -189,6 +211,25 @@ class InstancesFieldInput : public fn::FieldInput {
                                  IndexMask mask,
                                  ResourceScope &scope) const override;
   virtual GVArray get_varray_for_context(const Instances &instances, IndexMask mask) const = 0;
+};
+
+class SimplexFieldInput : public fn::FieldInput {
+ public:
+  using fn::FieldInput::FieldInput;
+  GVArray get_varray_for_context(const fn::FieldContext &context,
+                                 IndexMask mask,
+                                 ResourceScope &scope) const override;
+  virtual GVArray get_varray_for_context(const SimplexGeometry &geometry,
+                                         const Mesh &mesh,
+                                         eAttrDomain domain,
+                                         IndexMask mask) const
+  {
+    return get_varray_for_context(geometry, domain, mask);
+  }
+  virtual GVArray get_varray_for_context(const SimplexGeometry &geometry,
+                                         eAttrDomain domain,
+                                         IndexMask mask) const = 0;
+  virtual std::optional<eAttrDomain> preferred_domain(const SimplexGeometry &mesh) const;
 };
 
 class AttributeFieldInput : public GeometryFieldInput {

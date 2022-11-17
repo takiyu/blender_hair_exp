@@ -136,6 +136,12 @@ const Instances *GeometryFieldContext::instances() const
   return this->type() == GEO_COMPONENT_TYPE_INSTANCES ? static_cast<const Instances *>(geometry_) :
                                                         nullptr;
 }
+const SimplexGeometry *GeometryFieldContext::simplices() const
+{
+  return this->type() == GEO_COMPONENT_TYPE_SIMPLEX ?
+             static_cast<const SimplexGeometry *>(geometry_) :
+             nullptr;
+}
 
 GVArray GeometryFieldInput::get_varray_for_context(const fn::FieldContext &context,
                                                    const IndexMask mask,
@@ -159,6 +165,10 @@ GVArray GeometryFieldInput::get_varray_for_context(const fn::FieldContext &conte
   if (const InstancesFieldContext *instances_context = dynamic_cast<const InstancesFieldContext *>(
           &context)) {
     return this->get_varray_for_context({instances_context->instances()}, mask);
+  }
+  if (const SimplexFieldContext *simplex_context = dynamic_cast<const SimplexFieldContext *>(
+          &context)) {
+    return this->get_varray_for_context({simplex_context->geometry()}, mask);
   }
   return {};
 }
@@ -245,6 +255,33 @@ GVArray InstancesFieldInput::get_varray_for_context(const fn::FieldContext &cont
     return this->get_varray_for_context(instances_context->instances(), mask);
   }
   return {};
+}
+
+GVArray SimplexFieldInput::get_varray_for_context(const fn::FieldContext &context,
+                                                  const IndexMask mask,
+                                                  ResourceScope & /*scope*/) const
+{
+  if (const GeometryFieldContext *geometry_context = dynamic_cast<const GeometryFieldContext *>(
+          &context)) {
+    if (const SimplexGeometry *geometry = geometry_context->simplices()) {
+      if (const Mesh *mesh = geometry_context->mesh()) {
+        return this->get_varray_for_context(*geometry, *mesh, geometry_context->domain(), mask);
+      }
+      else {
+        return this->get_varray_for_context(*geometry, geometry_context->domain(), mask);
+      }
+    }
+  }
+  if (const SimplexFieldContext *simplex_context = dynamic_cast<const SimplexFieldContext *>(&context)) {
+    return this->get_varray_for_context(
+        simplex_context->geometry(), simplex_context->domain(), mask);
+  }
+  return {};
+}
+
+std::optional<eAttrDomain> SimplexFieldInput::preferred_domain(const SimplexGeometry & /*geometry*/) const
+{
+  return std::nullopt;
 }
 
 GVArray AttributeFieldInput::get_varray_for_context(const GeometryFieldContext &context,

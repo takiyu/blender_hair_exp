@@ -79,6 +79,7 @@ void register_node_type_geo_input_mesh_face_area(void);
 void register_node_type_geo_input_mesh_face_is_planar(void);
 void register_node_type_geo_input_mesh_face_neighbors(void);
 void register_node_type_geo_input_mesh_island(void);
+void register_node_type_geo_input_mesh_simplex_vertices(void);
 void register_node_type_geo_input_mesh_vertex_neighbors(void);
 void register_node_type_geo_input_named_attribute(void);
 void register_node_type_geo_input_normal(void);

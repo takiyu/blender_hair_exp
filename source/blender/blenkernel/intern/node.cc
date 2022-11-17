@@ -4770,6 +4770,7 @@ static void registerGeometryNodes()
   register_node_type_geo_input_mesh_face_is_planar();
   register_node_type_geo_input_mesh_face_neighbors();
   register_node_type_geo_input_mesh_island();
+  register_node_type_geo_input_mesh_simplex_vertices();
   register_node_type_geo_input_mesh_vertex_neighbors();
   register_node_type_geo_input_named_attribute();
   register_node_type_geo_input_normal();

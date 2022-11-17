@@ -90,6 +90,7 @@ set(SRC
   nodes/node_geo_input_mesh_face_neighbors.cc
   nodes/node_geo_input_mesh_island.cc
   nodes/node_geo_input_mesh_vertex_neighbors.cc
+  nodes/node_geo_input_mesh_simplex_vertices.cc
   nodes/node_geo_input_named_attribute.cc
   nodes/node_geo_input_normal.cc
   nodes/node_geo_input_position.cc
