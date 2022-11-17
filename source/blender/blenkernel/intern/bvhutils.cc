@@ -13,6 +13,7 @@
 #include "DNA_meshdata_types.h"
 #include "DNA_pointcloud_types.h"
 
+#include "BLI_bit_vector.hh"
 #include "BLI_linklist.h"
 #include "BLI_math.h"
 #include "BLI_span.hh"
@@ -28,7 +29,9 @@
 
 #include "MEM_guardedalloc.h"
 
+using blender::BitVector;
 using blender::float3;
+using blender::IndexRange;
 using blender::Span;
 using blender::VArray;
 
@@ -577,7 +580,6 @@ static void bvhtree_from_mesh_setup_data(BVHTree *tree,
                                          const MFace *face,
                                          const MLoop *loop,
                                          const MLoopTri *looptri,
-                                         const float (*vert_normals)[3],
                                          BVHTreeFromMesh *r_data)
 {
   memset(r_data, 0, sizeof(*r_data));
@@ -589,7 +591,6 @@ static void bvhtree_from_mesh_setup_data(BVHTree *tree,
   r_data->face = face;
   r_data->loop = loop;
   r_data->looptri = looptri;
-  r_data->vert_normals = vert_normals;
 
   switch (bvh_cache_type) {
     case BVHTREE_FROM_VERTS:
@@ -671,12 +672,12 @@ static BVHTree *bvhtree_from_editmesh_verts_create_tree(float epsilon,
                                                         int tree_type,
                                                         int axis,
                                                         BMEditMesh *em,
-                                                        const BLI_bitmap *verts_mask,
+                                                        const BitVector<> &verts_mask,
                                                         int verts_num_active)
 {
   BM_mesh_elem_table_ensure(em->bm, BM_VERT);
   const int verts_num = em->bm->totvert;
-  if (verts_mask) {
+  if (!verts_mask.is_empty()) {
     BLI_assert(IN_RANGE_INCL(verts_num_active, 0, verts_num));
   }
   else {
@@ -684,17 +685,18 @@ static BVHTree *bvhtree_from_editmesh_verts_create_tree(float epsilon,
   }
 
   BVHTree *tree = BLI_bvhtree_new(verts_num_active, epsilon, tree_type, axis);
-
-  if (tree) {
-    for (int i = 0; i < verts_num; i++) {
-      if (verts_mask && !BLI_BITMAP_TEST_BOOL(verts_mask, i)) {
-        continue;
-      }
-      BMVert *eve = BM_vert_at_index(em->bm, i);
-      BLI_bvhtree_insert(tree, i, eve->co, 1);
-    }
-    BLI_assert(BLI_bvhtree_get_len(tree) == verts_num_active);
+  if (!tree) {
+    return nullptr;
   }
+
+  for (int i = 0; i < verts_num; i++) {
+    if (!verts_mask.is_empty() && !verts_mask[i]) {
+      continue;
+    }
+    BMVert *eve = BM_vert_at_index(em->bm, i);
+    BLI_bvhtree_insert(tree, i, eve->co, 1);
+  }
+  BLI_assert(BLI_bvhtree_get_len(tree) == verts_num_active);
 
   return tree;
 }
@@ -704,45 +706,44 @@ static BVHTree *bvhtree_from_mesh_verts_create_tree(float epsilon,
                                                     int axis,
                                                     const float (*positions)[3],
                                                     const int verts_num,
-                                                    const BLI_bitmap *verts_mask,
+                                                    const BitVector<> &verts_mask,
                                                     int verts_num_active)
 {
-  BVHTree *tree = nullptr;
-
-  if (verts_mask) {
+  if (!verts_mask.is_empty()) {
     BLI_assert(IN_RANGE_INCL(verts_num_active, 0, verts_num));
   }
   else {
     verts_num_active = verts_num;
   }
-
-  if (verts_num_active) {
-    tree = BLI_bvhtree_new(verts_num_active, epsilon, tree_type, axis);
-
-    if (tree) {
-      for (int i = 0; i < verts_num; i++) {
-        if (verts_mask && !BLI_BITMAP_TEST_BOOL(verts_mask, i)) {
-          continue;
-        }
-        BLI_bvhtree_insert(tree, i, positions[i], 1);
-      }
-      BLI_assert(BLI_bvhtree_get_len(tree) == verts_num_active);
-    }
+  if (verts_num_active == 0) {
+    return nullptr;
   }
+
+  BVHTree *tree = BLI_bvhtree_new(verts_num_active, epsilon, tree_type, axis);
+  if (!tree) {
+    return nullptr;
+  }
+
+  for (int i = 0; i < verts_num; i++) {
+    if (!verts_mask.is_empty() && !verts_mask[i]) {
+      continue;
+    }
+    BLI_bvhtree_insert(tree, i, positions[i], 1);
+  }
+  BLI_assert(BLI_bvhtree_get_len(tree) == verts_num_active);
 
   return tree;
 }
 
 BVHTree *bvhtree_from_editmesh_verts_ex(BVHTreeFromEditMesh *data,
                                         BMEditMesh *em,
-                                        const BLI_bitmap *verts_mask,
+                                        const BitVector<> &verts_mask,
                                         int verts_num_active,
                                         float epsilon,
                                         int tree_type,
                                         int axis)
 {
-  BVHTree *tree = nullptr;
-  tree = bvhtree_from_editmesh_verts_create_tree(
+  BVHTree *tree = bvhtree_from_editmesh_verts_create_tree(
       epsilon, tree_type, axis, em, verts_mask, verts_num_active);
 
   bvhtree_balance(tree, false);
@@ -757,20 +758,19 @@ BVHTree *bvhtree_from_editmesh_verts_ex(BVHTreeFromEditMesh *data,
 BVHTree *bvhtree_from_editmesh_verts(
     BVHTreeFromEditMesh *data, BMEditMesh *em, float epsilon, int tree_type, int axis)
 {
-  return bvhtree_from_editmesh_verts_ex(data, em, nullptr, -1, epsilon, tree_type, axis);
+  return bvhtree_from_editmesh_verts_ex(data, em, {}, -1, epsilon, tree_type, axis);
 }
 
 BVHTree *bvhtree_from_mesh_verts_ex(BVHTreeFromMesh *data,
                                     const float (*positions)[3],
                                     const int verts_num,
-                                    const BLI_bitmap *verts_mask,
+                                    const BitVector<> &verts_mask,
                                     int verts_num_active,
                                     float epsilon,
                                     int tree_type,
                                     int axis)
 {
-  BVHTree *tree = nullptr;
-  tree = bvhtree_from_mesh_verts_create_tree(
+  BVHTree *tree = bvhtree_from_mesh_verts_create_tree(
       epsilon, tree_type, axis, positions, verts_num, verts_mask, verts_num_active);
 
   bvhtree_balance(tree, false);
@@ -778,7 +778,7 @@ BVHTree *bvhtree_from_mesh_verts_ex(BVHTreeFromMesh *data,
   if (data) {
     /* Setup BVHTreeFromMesh */
     bvhtree_from_mesh_setup_data(
-        tree, BVHTREE_FROM_VERTS, positions, nullptr, nullptr, nullptr, nullptr, nullptr, data);
+        tree, BVHTREE_FROM_VERTS, positions, nullptr, nullptr, nullptr, nullptr, data);
   }
 
   return tree;
@@ -794,13 +794,13 @@ static BVHTree *bvhtree_from_editmesh_edges_create_tree(float epsilon,
                                                         int tree_type,
                                                         int axis,
                                                         BMEditMesh *em,
-                                                        const BLI_bitmap *edges_mask,
+                                                        const BitVector<> &edges_mask,
                                                         int edges_num_active)
 {
   BM_mesh_elem_table_ensure(em->bm, BM_EDGE);
   const int edges_num = em->bm->totedge;
 
-  if (edges_mask) {
+  if (!edges_mask.is_empty()) {
     BLI_assert(IN_RANGE_INCL(edges_num_active, 0, edges_num));
   }
   else {
@@ -808,23 +808,24 @@ static BVHTree *bvhtree_from_editmesh_edges_create_tree(float epsilon,
   }
 
   BVHTree *tree = BLI_bvhtree_new(edges_num_active, epsilon, tree_type, axis);
-
-  if (tree) {
-    int i;
-    BMIter iter;
-    BMEdge *eed;
-    BM_ITER_MESH_INDEX (eed, &iter, em->bm, BM_EDGES_OF_MESH, i) {
-      if (edges_mask && !BLI_BITMAP_TEST_BOOL(edges_mask, i)) {
-        continue;
-      }
-      float co[2][3];
-      copy_v3_v3(co[0], eed->v1->co);
-      copy_v3_v3(co[1], eed->v2->co);
-
-      BLI_bvhtree_insert(tree, i, co[0], 2);
-    }
-    BLI_assert(BLI_bvhtree_get_len(tree) == edges_num_active);
+  if (!tree) {
+    return nullptr;
   }
+
+  int i;
+  BMIter iter;
+  BMEdge *eed;
+  BM_ITER_MESH_INDEX (eed, &iter, em->bm, BM_EDGES_OF_MESH, i) {
+    if (!edges_mask.is_empty() && !edges_mask[i]) {
+      continue;
+    }
+    float co[2][3];
+    copy_v3_v3(co[0], eed->v1->co);
+    copy_v3_v3(co[1], eed->v2->co);
+
+    BLI_bvhtree_insert(tree, i, co[0], 2);
+  }
+  BLI_assert(BLI_bvhtree_get_len(tree) == edges_num_active);
 
   return tree;
 }
@@ -832,36 +833,37 @@ static BVHTree *bvhtree_from_editmesh_edges_create_tree(float epsilon,
 static BVHTree *bvhtree_from_mesh_edges_create_tree(const float (*positions)[3],
                                                     const MEdge *edge,
                                                     const int edge_num,
-                                                    const BLI_bitmap *edges_mask,
+                                                    const BitVector<> &edges_mask,
                                                     int edges_num_active,
                                                     float epsilon,
                                                     int tree_type,
                                                     int axis)
 {
-  BVHTree *tree = nullptr;
-
-  if (edges_mask) {
+  if (!edges_mask.is_empty()) {
     BLI_assert(IN_RANGE_INCL(edges_num_active, 0, edge_num));
   }
   else {
     edges_num_active = edge_num;
   }
+  if (edges_num_active == 0) {
+    return nullptr;
+  }
 
-  if (edges_num_active) {
-    /* Create a BVH-tree of the given target */
-    tree = BLI_bvhtree_new(edges_num_active, epsilon, tree_type, axis);
-    if (tree) {
-      for (int i = 0; i < edge_num; i++) {
-        if (edges_mask && !BLI_BITMAP_TEST_BOOL(edges_mask, i)) {
-          continue;
-        }
-        float co[2][3];
-        copy_v3_v3(co[0], positions[edge[i].v1]);
-        copy_v3_v3(co[1], positions[edge[i].v2]);
+  /* Create a BVH-tree of the given target */
+  BVHTree *tree = BLI_bvhtree_new(edges_num_active, epsilon, tree_type, axis);
+  if (!tree) {
+    return nullptr;
+  }
 
-        BLI_bvhtree_insert(tree, i, co[0], 2);
-      }
+  for (int i = 0; i < edge_num; i++) {
+    if (!edges_mask.is_empty() && !edges_mask[i]) {
+      continue;
     }
+    float co[2][3];
+    copy_v3_v3(co[0], positions[edge[i].v1]);
+    copy_v3_v3(co[1], positions[edge[i].v2]);
+
+    BLI_bvhtree_insert(tree, i, co[0], 2);
   }
 
   return tree;
@@ -869,14 +871,13 @@ static BVHTree *bvhtree_from_mesh_edges_create_tree(const float (*positions)[3],
 
 BVHTree *bvhtree_from_editmesh_edges_ex(BVHTreeFromEditMesh *data,
                                         BMEditMesh *em,
-                                        const BLI_bitmap *edges_mask,
+                                        const BitVector<> &edges_mask,
                                         int edges_num_active,
                                         float epsilon,
                                         int tree_type,
                                         int axis)
 {
-  BVHTree *tree = nullptr;
-  tree = bvhtree_from_editmesh_edges_create_tree(
+  BVHTree *tree = bvhtree_from_editmesh_edges_create_tree(
       epsilon, tree_type, axis, em, edges_mask, edges_num_active);
 
   bvhtree_balance(tree, false);
@@ -891,21 +892,20 @@ BVHTree *bvhtree_from_editmesh_edges_ex(BVHTreeFromEditMesh *data,
 BVHTree *bvhtree_from_editmesh_edges(
     BVHTreeFromEditMesh *data, BMEditMesh *em, float epsilon, int tree_type, int axis)
 {
-  return bvhtree_from_editmesh_edges_ex(data, em, nullptr, -1, epsilon, tree_type, axis);
+  return bvhtree_from_editmesh_edges_ex(data, em, {}, -1, epsilon, tree_type, axis);
 }
 
 BVHTree *bvhtree_from_mesh_edges_ex(BVHTreeFromMesh *data,
                                     const float (*positions)[3],
                                     const MEdge *edge,
                                     const int edges_num,
-                                    const BLI_bitmap *edges_mask,
+                                    const BitVector<> &edges_mask,
                                     int edges_num_active,
                                     float epsilon,
                                     int tree_type,
                                     int axis)
 {
-  BVHTree *tree = nullptr;
-  tree = bvhtree_from_mesh_edges_create_tree(
+  BVHTree *tree = bvhtree_from_mesh_edges_create_tree(
       positions, edge, edges_num, edges_mask, edges_num_active, epsilon, tree_type, axis);
 
   bvhtree_balance(tree, false);
@@ -913,7 +913,7 @@ BVHTree *bvhtree_from_mesh_edges_ex(BVHTreeFromMesh *data,
   if (data) {
     /* Setup BVHTreeFromMesh */
     bvhtree_from_mesh_setup_data(
-        tree, BVHTREE_FROM_EDGES, positions, edge, nullptr, nullptr, nullptr, nullptr, data);
+        tree, BVHTREE_FROM_EDGES, positions, edge, nullptr, nullptr, nullptr, data);
   }
 
   return tree;
@@ -931,43 +931,45 @@ static BVHTree *bvhtree_from_mesh_faces_create_tree(float epsilon,
                                                     const float (*positions)[3],
                                                     const MFace *face,
                                                     const int faces_num,
-                                                    const BLI_bitmap *faces_mask,
+                                                    const BitVector<> &faces_mask,
                                                     int faces_num_active)
 {
-  BVHTree *tree = nullptr;
+  if (faces_num == 0) {
+    return nullptr;
+  }
 
-  if (faces_num) {
-    if (faces_mask) {
-      BLI_assert(IN_RANGE_INCL(faces_num_active, 0, faces_num));
-    }
-    else {
-      faces_num_active = faces_num;
-    }
+  if (!faces_mask.is_empty()) {
+    BLI_assert(IN_RANGE_INCL(faces_num_active, 0, faces_num));
+  }
+  else {
+    faces_num_active = faces_num;
+  }
 
-    /* Create a BVH-tree of the given target. */
-    // printf("%s: building BVH, total=%d\n", __func__, numFaces);
-    tree = BLI_bvhtree_new(faces_num_active, epsilon, tree_type, axis);
-    if (tree) {
-      if (positions && face) {
-        for (int i = 0; i < faces_num; i++) {
-          float co[4][3];
-          if (faces_mask && !BLI_BITMAP_TEST_BOOL(faces_mask, i)) {
-            continue;
-          }
+  /* Create a BVH-tree of the given target. */
+  // printf("%s: building BVH, total=%d\n", __func__, numFaces);
+  BVHTree *tree = BLI_bvhtree_new(faces_num_active, epsilon, tree_type, axis);
+  if (!tree) {
+    return nullptr;
+  }
 
-          copy_v3_v3(co[0], positions[face[i].v1]);
-          copy_v3_v3(co[1], positions[face[i].v2]);
-          copy_v3_v3(co[2], positions[face[i].v3]);
-          if (face[i].v4) {
-            copy_v3_v3(co[3], positions[face[i].v4]);
-          }
-
-          BLI_bvhtree_insert(tree, i, co[0], face[i].v4 ? 4 : 3);
-        }
+  if (positions && face) {
+    for (int i = 0; i < faces_num; i++) {
+      float co[4][3];
+      if (!faces_mask.is_empty() && !faces_mask[i]) {
+        continue;
       }
-      BLI_assert(BLI_bvhtree_get_len(tree) == faces_num_active);
+
+      copy_v3_v3(co[0], positions[face[i].v1]);
+      copy_v3_v3(co[1], positions[face[i].v2]);
+      copy_v3_v3(co[2], positions[face[i].v3]);
+      if (face[i].v4) {
+        copy_v3_v3(co[3], positions[face[i].v4]);
+      }
+
+      BLI_bvhtree_insert(tree, i, co[0], face[i].v4 ? 4 : 3);
     }
   }
+  BLI_assert(BLI_bvhtree_get_len(tree) == faces_num_active);
 
   return tree;
 }
@@ -982,47 +984,49 @@ static BVHTree *bvhtree_from_editmesh_looptri_create_tree(float epsilon,
                                                           int tree_type,
                                                           int axis,
                                                           BMEditMesh *em,
-                                                          const BLI_bitmap *looptri_mask,
+                                                          const BitVector<> &looptri_mask,
                                                           int looptri_num_active)
 {
-  BVHTree *tree = nullptr;
   const int looptri_num = em->tottri;
+  if (looptri_num == 0) {
+    return nullptr;
+  }
 
-  if (looptri_num) {
-    if (looptri_mask) {
-      BLI_assert(IN_RANGE_INCL(looptri_num_active, 0, looptri_num));
-    }
-    else {
-      looptri_num_active = looptri_num;
-    }
+  if (!looptri_mask.is_empty()) {
+    BLI_assert(IN_RANGE_INCL(looptri_num_active, 0, looptri_num));
+  }
+  else {
+    looptri_num_active = looptri_num;
+  }
 
-    /* Create a BVH-tree of the given target */
-    // printf("%s: building BVH, total=%d\n", __func__, numFaces);
-    tree = BLI_bvhtree_new(looptri_num_active, epsilon, tree_type, axis);
-    if (tree) {
-      const BMLoop *(*looptris)[3] = (const BMLoop *(*)[3])em->looptris;
+  /* Create a BVH-tree of the given target */
+  // printf("%s: building BVH, total=%d\n", __func__, numFaces);
+  BVHTree *tree = BLI_bvhtree_new(looptri_num_active, epsilon, tree_type, axis);
+  if (!tree) {
+    return nullptr;
+  }
 
-      /* Insert BMesh-tessellation triangles into the BVH-tree, unless they are hidden
-       * and/or selected. Even if the faces themselves are not selected for the snapped
-       * transform, having a vertex selected means the face (and thus it's tessellated
-       * triangles) will be moving and will not be a good snap targets. */
-      for (int i = 0; i < looptri_num; i++) {
-        const BMLoop **ltri = looptris[i];
-        bool insert = looptri_mask ? BLI_BITMAP_TEST_BOOL(looptri_mask, i) : true;
+  const BMLoop *(*looptris)[3] = (const BMLoop *(*)[3])em->looptris;
 
-        if (insert) {
-          /* No reason found to block hit-testing the triangle for snap, so insert it now. */
-          float co[3][3];
-          copy_v3_v3(co[0], ltri[0]->v->co);
-          copy_v3_v3(co[1], ltri[1]->v->co);
-          copy_v3_v3(co[2], ltri[2]->v->co);
+  /* Insert BMesh-tessellation triangles into the BVH-tree, unless they are hidden
+   * and/or selected. Even if the faces themselves are not selected for the snapped
+   * transform, having a vertex selected means the face (and thus it's tessellated
+   * triangles) will be moving and will not be a good snap targets. */
+  for (int i = 0; i < looptri_num; i++) {
+    const BMLoop **ltri = looptris[i];
+    bool insert = !looptri_mask.is_empty() ? looptri_mask[i] : true;
 
-          BLI_bvhtree_insert(tree, i, co[0], 3);
-        }
-      }
-      BLI_assert(BLI_bvhtree_get_len(tree) == looptri_num_active);
+    if (insert) {
+      /* No reason found to block hit-testing the triangle for snap, so insert it now. */
+      float co[3][3];
+      copy_v3_v3(co[0], ltri[0]->v->co);
+      copy_v3_v3(co[1], ltri[1]->v->co);
+      copy_v3_v3(co[2], ltri[2]->v->co);
+
+      BLI_bvhtree_insert(tree, i, co[0], 3);
     }
   }
+  BLI_assert(BLI_bvhtree_get_len(tree) == looptri_num_active);
 
   return tree;
 }
@@ -1034,47 +1038,48 @@ static BVHTree *bvhtree_from_mesh_looptri_create_tree(float epsilon,
                                                       const MLoop *mloop,
                                                       const MLoopTri *looptri,
                                                       const int looptri_num,
-                                                      const BLI_bitmap *looptri_mask,
+                                                      const BitVector<> &looptri_mask,
                                                       int looptri_num_active)
 {
-  BVHTree *tree = nullptr;
-
-  if (looptri_mask) {
+  if (!looptri_mask.is_empty()) {
     BLI_assert(IN_RANGE_INCL(looptri_num_active, 0, looptri_num));
   }
   else {
     looptri_num_active = looptri_num;
   }
+  if (looptri_num_active == 0) {
+    return nullptr;
+  }
 
-  if (looptri_num_active) {
-    /* Create a BVH-tree of the given target */
-    // printf("%s: building BVH, total=%d\n", __func__, numFaces);
-    tree = BLI_bvhtree_new(looptri_num_active, epsilon, tree_type, axis);
-    if (tree) {
-      if (positions && looptri) {
-        for (int i = 0; i < looptri_num; i++) {
-          float co[3][3];
-          if (looptri_mask && !BLI_BITMAP_TEST_BOOL(looptri_mask, i)) {
-            continue;
-          }
+  /* Create a BVH-tree of the given target */
+  // printf("%s: building BVH, total=%d\n", __func__, numFaces);
+  BVHTree *tree = BLI_bvhtree_new(looptri_num_active, epsilon, tree_type, axis);
+  if (!tree) {
+    return nullptr;
+  }
 
-          copy_v3_v3(co[0], positions[mloop[looptri[i].tri[0]].v]);
-          copy_v3_v3(co[1], positions[mloop[looptri[i].tri[1]].v]);
-          copy_v3_v3(co[2], positions[mloop[looptri[i].tri[2]].v]);
-
-          BLI_bvhtree_insert(tree, i, co[0], 3);
-        }
+  if (positions && looptri) {
+    for (int i = 0; i < looptri_num; i++) {
+      float co[3][3];
+      if (!looptri_mask.is_empty() && !looptri_mask[i]) {
+        continue;
       }
-      BLI_assert(BLI_bvhtree_get_len(tree) == looptri_num_active);
+
+      copy_v3_v3(co[0], positions[mloop[looptri[i].tri[0]].v]);
+      copy_v3_v3(co[1], positions[mloop[looptri[i].tri[1]].v]);
+      copy_v3_v3(co[2], positions[mloop[looptri[i].tri[2]].v]);
+
+      BLI_bvhtree_insert(tree, i, co[0], 3);
     }
   }
+  BLI_assert(BLI_bvhtree_get_len(tree) == looptri_num_active);
 
   return tree;
 }
 
 BVHTree *bvhtree_from_editmesh_looptri_ex(BVHTreeFromEditMesh *data,
                                           BMEditMesh *em,
-                                          const BLI_bitmap *looptri_mask,
+                                          const BitVector<> &looptri_mask,
                                           int looptri_num_active,
                                           float epsilon,
                                           int tree_type,
@@ -1082,9 +1087,7 @@ BVHTree *bvhtree_from_editmesh_looptri_ex(BVHTreeFromEditMesh *data,
 {
   /* BMESH specific check that we have tessfaces,
    * we _could_ tessellate here but rather not - campbell */
-
-  BVHTree *tree = nullptr;
-  tree = bvhtree_from_editmesh_looptri_create_tree(
+  BVHTree *tree = bvhtree_from_editmesh_looptri_create_tree(
       epsilon, tree_type, axis, em, looptri_mask, looptri_num_active);
 
   bvhtree_balance(tree, false);
@@ -1098,7 +1101,7 @@ BVHTree *bvhtree_from_editmesh_looptri_ex(BVHTreeFromEditMesh *data,
 BVHTree *bvhtree_from_editmesh_looptri(
     BVHTreeFromEditMesh *data, BMEditMesh *em, float epsilon, int tree_type, int axis)
 {
-  return bvhtree_from_editmesh_looptri_ex(data, em, nullptr, -1, epsilon, tree_type, axis);
+  return bvhtree_from_editmesh_looptri_ex(data, em, {}, -1, epsilon, tree_type, axis);
 }
 
 BVHTree *bvhtree_from_mesh_looptri_ex(BVHTreeFromMesh *data,
@@ -1106,7 +1109,7 @@ BVHTree *bvhtree_from_mesh_looptri_ex(BVHTreeFromMesh *data,
                                       const struct MLoop *mloop,
                                       const struct MLoopTri *looptri,
                                       const int looptri_num,
-                                      const BLI_bitmap *looptri_mask,
+                                      const BitVector<> &looptri_mask,
                                       int looptri_num_active,
                                       float epsilon,
                                       int tree_type,
@@ -1128,29 +1131,27 @@ BVHTree *bvhtree_from_mesh_looptri_ex(BVHTreeFromMesh *data,
   if (data) {
     /* Setup BVHTreeFromMesh */
     bvhtree_from_mesh_setup_data(
-        tree, BVHTREE_FROM_LOOPTRI, positions, nullptr, nullptr, mloop, looptri, nullptr, data);
+        tree, BVHTREE_FROM_LOOPTRI, positions, nullptr, nullptr, mloop, looptri, data);
   }
 
   return tree;
 }
 
-static BLI_bitmap *loose_verts_map_get(const MEdge *medge,
-                                       int edges_num,
+static BitVector<> loose_verts_map_get(const Span<MEdge> edges,
                                        int verts_num,
                                        int *r_loose_vert_num)
 {
-  BLI_bitmap *loose_verts_mask = BLI_BITMAP_NEW(verts_num, __func__);
-  BLI_bitmap_set_all(loose_verts_mask, true, verts_num);
+  BitVector<> loose_verts_mask(verts_num, true);
 
-  const MEdge *e = medge;
   int num_linked_verts = 0;
-  for (; edges_num--; e++) {
-    if (BLI_BITMAP_TEST(loose_verts_mask, e->v1)) {
-      BLI_BITMAP_DISABLE(loose_verts_mask, e->v1);
+  for (const int64_t i : edges.index_range()) {
+    const MEdge &edge = edges[i];
+    if (loose_verts_mask[edge.v1]) {
+      loose_verts_mask[edge.v1].reset();
       num_linked_verts++;
     }
-    if (BLI_BITMAP_TEST(loose_verts_mask, e->v2)) {
-      BLI_BITMAP_DISABLE(loose_verts_mask, e->v2);
+    if (loose_verts_mask[edge.v2]) {
+      loose_verts_mask[edge.v2].reset();
       num_linked_verts++;
     }
   }
@@ -1160,21 +1161,16 @@ static BLI_bitmap *loose_verts_map_get(const MEdge *medge,
   return loose_verts_mask;
 }
 
-static BLI_bitmap *loose_edges_map_get(const MEdge *medge,
-                                       const int edges_len,
-                                       int *r_loose_edge_len)
+static BitVector<> loose_edges_map_get(const Span<MEdge> edges, int *r_loose_edge_len)
 {
-  BLI_bitmap *loose_edges_mask = BLI_BITMAP_NEW(edges_len, __func__);
+  BitVector<> loose_edges_mask(edges.size());
 
   int loose_edges_len = 0;
-  const MEdge *e = medge;
-  for (int i = 0; i < edges_len; i++, e++) {
-    if (e->flag & ME_LOOSEEDGE) {
-      BLI_BITMAP_ENABLE(loose_edges_mask, i);
+  for (const int64_t i : edges.index_range()) {
+    const MEdge &edge = edges[i];
+    if (edge.flag & ME_LOOSEEDGE) {
+      loose_edges_mask[i].set();
       loose_edges_len++;
-    }
-    else {
-      BLI_BITMAP_DISABLE(loose_edges_mask, i);
     }
   }
 
@@ -1183,32 +1179,31 @@ static BLI_bitmap *loose_edges_map_get(const MEdge *medge,
   return loose_edges_mask;
 }
 
-static BLI_bitmap *looptri_no_hidden_map_get(const MPoly *mpoly,
+static BitVector<> looptri_no_hidden_map_get(const Span<MPoly> polys,
                                              const VArray<bool> &hide_poly,
                                              const int looptri_len,
                                              int *r_looptri_active_len)
 {
   if (hide_poly.is_single() && !hide_poly.get_internal_single()) {
-    return nullptr;
+    return {};
   }
-  BLI_bitmap *looptri_mask = BLI_BITMAP_NEW(looptri_len, __func__);
+  BitVector<> looptri_mask(looptri_len);
 
   int looptri_no_hidden_len = 0;
-  int looptri_iter = 0;
-  int i_poly = 0;
-  while (looptri_iter != looptri_len) {
-    int mp_totlooptri = mpoly[i_poly].totloop - 2;
-    if (hide_poly[i_poly]) {
-      looptri_iter += mp_totlooptri;
+  int looptri_index = 0;
+  for (const int64_t i : polys.index_range()) {
+    const int triangles_num = ME_POLY_TRI_TOT(&polys[i]);
+    if (hide_poly[i]) {
+      looptri_index += triangles_num;
     }
     else {
-      while (mp_totlooptri--) {
-        BLI_BITMAP_ENABLE(looptri_mask, looptri_iter);
-        looptri_iter++;
+      for (const int i : IndexRange(triangles_num)) {
+        UNUSED_VARS(i);
+        looptri_mask[looptri_index].set();
+        looptri_index++;
         looptri_no_hidden_len++;
       }
     }
-    i_poly++;
   }
 
   *r_looptri_active_len = looptri_no_hidden_len;
@@ -1242,7 +1237,6 @@ BVHTree *BKE_bvhtree_from_mesh_get(struct BVHTreeFromMesh *data,
                                (const MFace *)CustomData_get_layer(&mesh->fdata, CD_MFACE),
                                loops.data(),
                                looptri,
-                               BKE_mesh_vertex_normals_ensure(mesh),
                                data);
 
   bool lock_started = false;
@@ -1257,13 +1251,12 @@ BVHTree *BKE_bvhtree_from_mesh_get(struct BVHTreeFromMesh *data,
   }
 
   /* Create BVHTree. */
-
-  BLI_bitmap *mask = nullptr;
+  BitVector<> mask;
   int mask_bits_act_len = -1;
 
   switch (bvh_cache_type) {
     case BVHTREE_FROM_LOOSEVERTS:
-      mask = loose_verts_map_get(edges.data(), mesh->totedge, mesh->totvert, &mask_bits_act_len);
+      mask = loose_verts_map_get(edges, mesh->totvert, &mask_bits_act_len);
       ATTR_FALLTHROUGH;
     case BVHTREE_FROM_VERTS:
       data->tree = bvhtree_from_mesh_verts_create_tree(
@@ -1271,7 +1264,7 @@ BVHTree *BKE_bvhtree_from_mesh_get(struct BVHTreeFromMesh *data,
       break;
 
     case BVHTREE_FROM_LOOSEEDGES:
-      mask = loose_edges_map_get(edges.data(), mesh->totedge, &mask_bits_act_len);
+      mask = loose_edges_map_get(edges, &mask_bits_act_len);
       ATTR_FALLTHROUGH;
     case BVHTREE_FROM_EDGES:
       data->tree = bvhtree_from_mesh_edges_create_tree(
@@ -1287,14 +1280,14 @@ BVHTree *BKE_bvhtree_from_mesh_get(struct BVHTreeFromMesh *data,
           c_positions,
           (const MFace *)CustomData_get_layer(&mesh->fdata, CD_MFACE),
           mesh->totface,
-          nullptr,
+          {},
           -1);
       break;
 
     case BVHTREE_FROM_LOOPTRI_NO_HIDDEN: {
       blender::bke::AttributeAccessor attributes = mesh->attributes();
       mask = looptri_no_hidden_map_get(
-          mesh->polys().data(),
+          mesh->polys(),
           attributes.lookup_or_default(".hide_poly", ATTR_DOMAIN_FACE, false),
           looptri_len,
           &mask_bits_act_len);
@@ -1317,10 +1310,6 @@ BVHTree *BKE_bvhtree_from_mesh_get(struct BVHTreeFromMesh *data,
     case BVHTREE_MAX_ITEM:
       BLI_assert(false);
       break;
-  }
-
-  if (mask != nullptr) {
-    MEM_freeN(mask);
   }
 
   bvhtree_balance(data->tree, lock_started);
@@ -1368,13 +1357,13 @@ BVHTree *BKE_bvhtree_from_editmesh_get(BVHTreeFromEditMesh *data,
 
   switch (bvh_cache_type) {
     case BVHTREE_FROM_EM_VERTS:
-      data->tree = bvhtree_from_editmesh_verts_create_tree(0.0f, tree_type, 6, em, nullptr, -1);
+      data->tree = bvhtree_from_editmesh_verts_create_tree(0.0f, tree_type, 6, em, {}, -1);
       break;
     case BVHTREE_FROM_EM_EDGES:
-      data->tree = bvhtree_from_editmesh_edges_create_tree(0.0f, tree_type, 6, em, nullptr, -1);
+      data->tree = bvhtree_from_editmesh_edges_create_tree(0.0f, tree_type, 6, em, {}, -1);
       break;
     case BVHTREE_FROM_EM_LOOPTRI:
-      data->tree = bvhtree_from_editmesh_looptri_create_tree(0.0f, tree_type, 6, em, nullptr, -1);
+      data->tree = bvhtree_from_editmesh_looptri_create_tree(0.0f, tree_type, 6, em, {}, -1);
       break;
     case BVHTREE_FROM_VERTS:
     case BVHTREE_FROM_EDGES:
