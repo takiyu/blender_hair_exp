@@ -119,7 +119,7 @@ void multires_reshape_apply_base_refit_base_mesh(MultiresReshapeContext *reshape
       float(*fake_co)[3];
       float no[3];
 
-      /* Set up poly, loops, and coords in order to call BKE_mesh_calc_poly_normal_coords(). */
+      /* Set up poly, loops, and coords in order to call BKE_mesh_calc_poly_normal(). */
       fake_poly.totloop = p->totloop;
       fake_poly.loopstart = 0;
       fake_loops = MEM_malloc_arrayN(p->totloop, sizeof(MLoop), "fake_loops");
@@ -138,7 +138,7 @@ void multires_reshape_apply_base_refit_base_mesh(MultiresReshapeContext *reshape
         }
       }
 
-      BKE_mesh_calc_poly_normal_coords(&fake_poly, fake_loops, (const float(*)[3])fake_co, no);
+      BKE_mesh_calc_poly_normal(&fake_poly, fake_loops, (const float(*)[3])fake_co, no);
       MEM_freeN(fake_loops);
       MEM_freeN(fake_co);
 

@@ -802,7 +802,7 @@ void BKE_mesh_remap_calc_edges_from_mesh(const int mode,
             const MEdge *e_src = &edges_src[*eidx_src];
             const float *other_co_src = vcos_src[BKE_mesh_edge_other_vert(e_src, vidx_src)];
             const float *other_co_dst =
-                positions_dst[BKE_mesh_edge_other_vert(e_dst, int(vidx_dst)];
+                positions_dst[BKE_mesh_edge_other_vert(e_dst, int(vidx_dst))];
             const float totdist = first_dist + len_v3v3(other_co_src, other_co_dst);
 
             if (totdist < best_totdist) {

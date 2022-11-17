@@ -247,6 +247,7 @@ static bool do_init_cloth(Object *ob, ClothModifierData *clmd, Mesh *result, int
 static int do_step_cloth(
     Depsgraph *depsgraph, Object *ob, ClothModifierData *clmd, Mesh *result, int framenr)
 {
+  using namespace blender;
   /* simulate 1 frame forward */
   ClothVertex *verts = nullptr;
   Cloth *cloth;
@@ -257,7 +258,7 @@ static int do_step_cloth(
 
   cloth = clmd->clothObject;
   verts = cloth->verts;
-  const float(*positions)[3] = BKE_mesh_positions(result);
+  const Span<float3> positions = result->positions();
   vert_mass_changed = verts->mass != clmd->sim_parms->mass;
 
   /* force any pinned verts to their constrained location. */
@@ -714,6 +715,7 @@ static float cloth_shrink_factor(ClothModifierData *clmd, ClothVertex *verts, in
 static bool cloth_from_object(
     Object *ob, ClothModifierData *clmd, Mesh *mesh, float UNUSED(framenr), int first)
 {
+  using namespace blender;
   int i = 0;
   ClothVertex *verts = nullptr;
   const float(*shapekey_rest)[3] = nullptr;
@@ -757,7 +759,7 @@ static bool cloth_from_object(
         CustomData_get_layer(&mesh->vdata, CD_CLOTH_ORCO));
   }
 
-  const float(*positions)[3] = BKE_mesh_positions(mesh);
+  const Span<float3> positions = mesh->positions();
 
   verts = clmd->clothObject->verts;
 
@@ -1151,8 +1153,9 @@ static void cloth_update_springs(ClothModifierData *clmd)
 /* Update rest verts, for dynamically deformable cloth */
 static void cloth_update_verts(Object *ob, ClothModifierData *clmd, Mesh *mesh)
 {
+  using namespace blender;
   uint i = 0;
-  const float(*positions)[3] = BKE_mesh_positions(mesh);
+  const Span<float3> positions = mesh->positions();
   ClothVertex *verts = clmd->clothObject->verts;
 
   /* vertex count is already ensured to match */
@@ -1165,9 +1168,10 @@ static void cloth_update_verts(Object *ob, ClothModifierData *clmd, Mesh *mesh)
 /* Write rest vert locations to a copy of the mesh. */
 static Mesh *cloth_make_rest_mesh(ClothModifierData *clmd, Mesh *mesh)
 {
+  using namespace blender;
   Mesh *new_mesh = BKE_mesh_copy_for_eval(mesh, false);
   ClothVertex *verts = clmd->clothObject->verts;
-  float(*positions)[3] = BKE_mesh_positions_for_write(mesh);
+  MutableSpan<float3> positions = mesh->positions_for_write();
 
   /* vertex count is already ensured to match */
   for (int i = 0; i < mesh->totvert; i++, verts++) {
@@ -1388,7 +1392,7 @@ static bool find_internal_spring_target_vertex(BVHTreeFromMesh *treedata,
   float radius;
 
   copy_v3_v3(co, treedata->positions[v_idx]);
-  negate_v3_v3(no, treedata->vert_normals[v_idx]);
+  negate_v3_v3(no, vert_normals[v_idx]);
 
   float vec_len = sin(max_diversion);
   float offset[3];

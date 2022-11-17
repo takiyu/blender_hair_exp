@@ -94,57 +94,6 @@ void BKE_mesh_calc_poly_normal(const MPoly *mpoly,
     r_no[2] = 1.0;
   }
 }
-/* duplicate of function above _but_ takes coords rather than mverts */
-static void mesh_calc_ngon_normal_coords(const MPoly *mpoly,
-                                         const MLoop *loopstart,
-                                         const float (*vertex_coords)[3],
-                                         float r_normal[3])
-{
-  const int nverts = mpoly->totloop;
-  const float *v_prev = vertex_coords[loopstart[nverts - 1].v];
-  const float *v_curr;
-
-  zero_v3(r_normal);
-
-  /* Newell's Method */
-  for (int i = 0; i < nverts; i++) {
-    v_curr = vertex_coords[loopstart[i].v];
-    add_newell_cross_v3_v3v3(r_normal, v_prev, v_curr);
-    v_prev = v_curr;
-  }
-
-  if (UNLIKELY(normalize_v3(r_normal) == 0.0f)) {
-    r_normal[2] = 1.0f; /* other axis set to 0.0 */
-  }
-}
-
-void BKE_mesh_calc_poly_normal_coords(const MPoly *mpoly,
-                                      const MLoop *loopstart,
-                                      const float (*vertex_coords)[3],
-                                      float r_no[3])
-{
-  if (mpoly->totloop > 4) {
-    mesh_calc_ngon_normal_coords(mpoly, loopstart, vertex_coords, r_no);
-  }
-  else if (mpoly->totloop == 3) {
-    normal_tri_v3(r_no,
-                  vertex_coords[loopstart[0].v],
-                  vertex_coords[loopstart[1].v],
-                  vertex_coords[loopstart[2].v]);
-  }
-  else if (mpoly->totloop == 4) {
-    normal_quad_v3(r_no,
-                   vertex_coords[loopstart[0].v],
-                   vertex_coords[loopstart[1].v],
-                   vertex_coords[loopstart[2].v],
-                   vertex_coords[loopstart[3].v]);
-  }
-  else { /* horrible, two sided face! */
-    r_no[0] = 0.0;
-    r_no[1] = 0.0;
-    r_no[2] = 1.0;
-  }
-}
 
 static void mesh_calc_ngon_center(const MPoly *mpoly,
                                   const MLoop *loopstart,

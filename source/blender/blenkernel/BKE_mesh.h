@@ -697,10 +697,6 @@ void BKE_mesh_calc_poly_normal(const struct MPoly *mpoly,
                                const struct MLoop *loopstart,
                                const float (*positions)[3],
                                float r_no[3]);
-void BKE_mesh_calc_poly_normal_coords(const struct MPoly *mpoly,
-                                      const struct MLoop *loopstart,
-                                      const float (*vertex_coords)[3],
-                                      float r_no[3]);
 void BKE_mesh_calc_poly_center(const struct MPoly *mpoly,
                                const struct MLoop *loopstart,
                                const float (*positions)[3],

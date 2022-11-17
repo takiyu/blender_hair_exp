@@ -1115,16 +1115,15 @@ BVHTree *bvhtree_from_mesh_looptri_ex(BVHTreeFromMesh *data,
                                       int tree_type,
                                       int axis)
 {
-  BVHTree *tree = nullptr;
-  tree = bvhtree_from_mesh_looptri_create_tree(epsilon,
-                                               tree_type,
-                                               axis,
-                                               positions,
-                                               mloop,
-                                               looptri,
-                                               looptri_num,
-                                               looptri_mask,
-                                               looptri_num_active);
+  BVHTree *tree = bvhtree_from_mesh_looptri_create_tree(epsilon,
+                                                        tree_type,
+                                                        axis,
+                                                        positions,
+                                                        mloop,
+                                                        looptri,
+                                                        looptri_num,
+                                                        looptri_mask,
+                                                        looptri_num_active);
 
   bvhtree_balance(tree, false);
 
@@ -1224,15 +1223,14 @@ BVHTree *BKE_bvhtree_from_mesh_get(struct BVHTreeFromMesh *data,
     looptri = BKE_mesh_runtime_looptri_ensure(mesh);
     looptri_len = BKE_mesh_runtime_looptri_len(mesh);
   }
-  const Span<float3> positions = mesh->positions();
-  const float(*c_positions)[3] = reinterpret_cast<const float(*)[3]>(positions.data());
+  const float(*positions)[3] = reinterpret_cast<const float(*)[3]>(mesh->positions().data());
   const Span<MEdge> edges = mesh->edges();
   const Span<MLoop> loops = mesh->loops();
 
   /* Setup BVHTreeFromMesh */
   bvhtree_from_mesh_setup_data(nullptr,
                                bvh_cache_type,
-                               c_positions,
+                               positions,
                                edges.data(),
                                (const MFace *)CustomData_get_layer(&mesh->fdata, CD_MFACE),
                                loops.data(),
@@ -1260,7 +1258,7 @@ BVHTree *BKE_bvhtree_from_mesh_get(struct BVHTreeFromMesh *data,
       ATTR_FALLTHROUGH;
     case BVHTREE_FROM_VERTS:
       data->tree = bvhtree_from_mesh_verts_create_tree(
-          0.0f, tree_type, 6, c_positions, mesh->totvert, mask, mask_bits_act_len);
+          0.0f, tree_type, 6, positions, mesh->totvert, mask, mask_bits_act_len);
       break;
 
     case BVHTREE_FROM_LOOSEEDGES:
@@ -1268,7 +1266,7 @@ BVHTree *BKE_bvhtree_from_mesh_get(struct BVHTreeFromMesh *data,
       ATTR_FALLTHROUGH;
     case BVHTREE_FROM_EDGES:
       data->tree = bvhtree_from_mesh_edges_create_tree(
-          c_positions, edges.data(), mesh->totedge, mask, mask_bits_act_len, 0.0f, tree_type, 6);
+          positions, edges.data(), mesh->totedge, mask, mask_bits_act_len, 0.0f, tree_type, 6);
       break;
 
     case BVHTREE_FROM_FACES:
@@ -1277,7 +1275,7 @@ BVHTree *BKE_bvhtree_from_mesh_get(struct BVHTreeFromMesh *data,
           0.0f,
           tree_type,
           6,
-          c_positions,
+          positions,
           (const MFace *)CustomData_get_layer(&mesh->fdata, CD_MFACE),
           mesh->totface,
           {},
@@ -1297,7 +1295,7 @@ BVHTree *BKE_bvhtree_from_mesh_get(struct BVHTreeFromMesh *data,
       data->tree = bvhtree_from_mesh_looptri_create_tree(0.0f,
                                                          tree_type,
                                                          6,
-                                                         c_positions,
+                                                         positions,
                                                          loops.data(),
                                                          looptri,
                                                          looptri_len,
