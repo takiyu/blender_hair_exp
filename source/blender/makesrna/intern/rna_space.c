@@ -81,6 +81,11 @@ const EnumPropertyItem rna_enum_geometry_component_type_items[] = {
      ICON_EMPTY_AXIS,
      "Instances",
      "Instances of objects or collections"},
+    {GEO_COMPONENT_TYPE_SIMPLEX,
+     "SIMPLEX",
+     ICON_MESH_DATA,
+     "Simplex",
+     "Tetrahedron simplices making up a mesh volume"},
     {0, NULL, 0, NULL, NULL},
 };
 

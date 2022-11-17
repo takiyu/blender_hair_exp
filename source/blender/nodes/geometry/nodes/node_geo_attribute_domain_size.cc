@@ -51,7 +51,7 @@ static void node_update(bNodeTree *ntree, bNode *node)
   bNodeSocket *face_corner_socket = face_socket->next;
   bNodeSocket *spline_socket = face_corner_socket->next;
   bNodeSocket *instances_socket = spline_socket->next;
-  bNodeSocket *simplices_socket = spline_socket->next;
+  bNodeSocket *simplices_socket = instances_socket->next;
 
   nodeSetSocketAvailability(ntree,
                             point_socket,
