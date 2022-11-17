@@ -380,6 +380,12 @@ bool GeometrySet::has_curves() const
   return component != nullptr && component->has_curves();
 }
 
+bool GeometrySet::has_simplex() const
+{
+  const SimplexComponent *component = this->get_component_for_read<SimplexComponent>();
+  return component != nullptr && !component->is_empty();
+}
+
 bool GeometrySet::has_realized_data() const
 {
   for (const GeometryComponentPtr &component_ptr : components_) {

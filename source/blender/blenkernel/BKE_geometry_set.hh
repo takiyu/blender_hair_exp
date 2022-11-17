@@ -283,6 +283,10 @@ struct GeometrySet {
    */
   bool has_curves() const;
   /**
+   * Returns true when the geometry set has a simplex component that has simplex geometry.
+   */
+  bool has_simplex() const;
+  /**
    * Returns true when the geometry set has any data that is not an instance.
    */
   bool has_realized_data() const;
@@ -680,6 +684,7 @@ class SimplexComponent : public GeometryComponent {
 
   void clear();
 
+  bool has_geometry() const;
   const blender::bke::SimplexGeometry *get_for_read() const;
   blender::bke::SimplexGeometry *get_for_write();
 

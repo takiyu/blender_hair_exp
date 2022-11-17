@@ -16,6 +16,7 @@
 #include "BKE_instances.hh"
 #include "BKE_mesh.h"
 #include "BKE_pointcloud.h"
+#include "BKE_mesh_simplex.hh"
 
 #include "node_geometry_util.hh"
 
@@ -382,6 +383,24 @@ static void delete_selected_instances(GeometrySet &geometry_set,
   }
 
   instances.remove(selection);
+}
+
+static void delete_selected_simplices(GeometrySet &geometry_set,
+                                      const Field<bool> &selection_field)
+{
+  bke::SimplexGeometry &geometry = *geometry_set.get_simplex_for_write();
+  bke::SimplexFieldContext field_context{geometry};
+
+  fn::FieldEvaluator evaluator{field_context, geometry.simplex_num()};
+  evaluator.set_selection(selection_field);
+  evaluator.evaluate();
+  const IndexMask selection = evaluator.get_evaluated_selection_as_mask();
+  if (selection.is_empty()) {
+    geometry_set.remove<SimplexComponent>();
+    return;
+  }
+
+  geometry.remove(selection);
 }
 
 static void compute_selected_verts_from_vertex_selection(const Span<bool> vertex_selection,
@@ -1113,6 +1132,12 @@ void separate_geometry(GeometrySet &geometry_set,
   if (geometry_set.has_instances()) {
     if (domain == ATTR_DOMAIN_INSTANCE) {
       file_ns::delete_selected_instances(geometry_set, selection_field);
+      some_valid_domain = true;
+    }
+  }
+  if (geometry_set.has_simplex()) {
+    if (domain == ATTR_DOMAIN_SIMPLEX) {
+      file_ns::delete_selected_simplices(geometry_set, selection_field);
       some_valid_domain = true;
     }
   }

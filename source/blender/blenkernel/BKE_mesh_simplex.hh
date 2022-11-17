@@ -70,6 +70,11 @@ class SimplexGeometry : public ::SimplexGeometry {
   blender::bke::AttributeAccessor attributes() const;
   blender::bke::MutableAttributeAccessor attributes_for_write();
 
+  /**
+   * Remove simplices contained in the index mask.
+   */
+  void remove(const blender::IndexMask mask);
+
   /* --------------------------------------------------------------------
    * Operations.
    */
