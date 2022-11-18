@@ -12,15 +12,6 @@
 extern "C" {
 #endif
 
-#ifdef __cplusplus
-namespace blender::bke {
-class SimplexGeometryRuntime;
-}  // namespace blender::bke
-using SimplexGeometryRuntimeHandle = blender::bke::SimplexGeometryRuntime;
-#else
-typedef struct SimplexGeometryRuntimeHandle SimplexGeometryRuntimeHandle;
-#endif
-
 /**
  * Tetrahedral simplex consisting of 4 vertices.
  */
@@ -49,11 +40,6 @@ typedef struct SimplexGeometry {
   int simplex_num;
 
   int _pad1;
-
-  /**
-   * Runtime data for curves, stored as a pointer to allow defining this as a C++ class.
-   */
-  SimplexGeometryRuntimeHandle *runtime;
 } SimplexGeometry;
 
 #ifdef __cplusplus

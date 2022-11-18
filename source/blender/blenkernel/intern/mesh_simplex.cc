@@ -19,8 +19,6 @@ SimplexGeometry::SimplexGeometry(int simplex_num)
   ((::SimplexGeometry *)this)->simplex_num = simplex_num;
   ((::SimplexGeometry *)this)->simplices = (Simplex *)MEM_calloc_arrayN(
       this->simplex_num(), sizeof(Simplex), __func__);
-
-  this->runtime = MEM_new<SimplexGeometryRuntime>(__func__);
 }
 
 static void copy_simplex_geometry(SimplexGeometry &dst, const SimplexGeometry &src)
@@ -46,8 +44,6 @@ static void move_simplex_geometry(SimplexGeometry &dst, SimplexGeometry &src)
 
   std::swap(c_dst.simplices, c_src.simplices);
   MEM_SAFE_FREE(c_src.simplices);
-
-  std::swap(c_dst.runtime, c_src.runtime);
 }
 
 SimplexGeometry::SimplexGeometry(const SimplexGeometry &other)
@@ -79,8 +75,6 @@ SimplexGeometry &SimplexGeometry::operator=(SimplexGeometry &&other)
 SimplexGeometry::~SimplexGeometry()
 {
   MEM_SAFE_FREE(((::SimplexGeometry *)this)->simplices);
-  MEM_delete(this->runtime);
-  this->runtime = nullptr;
 }
 
 void SimplexGeometry::resize(int simplex_num)
