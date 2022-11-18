@@ -10,15 +10,30 @@
 
 namespace blender::bke {
 
-SimplexGeometry::SimplexGeometry() : SimplexGeometry(0)
+static const std::string ATTR_POSITION = "position";
+static const std::string ATTR_VERTEX = "vertex";
+
+SimplexGeometry::SimplexGeometry() : SimplexGeometry(0, 0)
 {
 }
 
-SimplexGeometry::SimplexGeometry(int simplex_num)
+SimplexGeometry::SimplexGeometry(int point_num, int simplex_num)
 {
-  ((::SimplexGeometry *)this)->simplex_num = simplex_num;
-  ((::SimplexGeometry *)this)->simplices = (Simplex *)MEM_calloc_arrayN(
-      this->simplex_num(), sizeof(Simplex), __func__);
+  ::SimplexGeometry *c_this = (::SimplexGeometry *)this;
+
+  c_this->point_num = point_num;
+  c_this->simplex_num = simplex_num;
+  CustomData_reset(&this->point_data);
+  CustomData_reset(&this->simplex_data);
+
+  CustomData_add_layer_named(&this->point_data,
+                             CD_PROP_FLOAT3,
+                             CD_CONSTRUCT,
+                             nullptr,
+                             c_this->point_num,
+                             ATTR_POSITION.c_str());
+  c_this->simplex_verts = (int(*)[4])MEM_malloc_arrayN(
+      c_this->simplex_num, sizeof(int[4]), __func__);
 }
 
 static void copy_simplex_geometry(SimplexGeometry &dst, const SimplexGeometry &src)
@@ -26,9 +41,15 @@ static void copy_simplex_geometry(SimplexGeometry &dst, const SimplexGeometry &s
   ::SimplexGeometry &c_dst = (::SimplexGeometry &)dst;
   const ::SimplexGeometry &c_src = (const ::SimplexGeometry &)src;
 
+  CustomData_free(&c_dst.point_data, c_dst.point_num);
+  CustomData_free(&c_dst.simplex_data, c_dst.simplex_num);
+  c_dst.point_num = c_src.point_num;
   c_dst.simplex_num = c_src.simplex_num;
-  c_dst.simplices = (Simplex *)MEM_malloc_arrayN(c_dst.simplex_num, sizeof(Simplex), __func__);
-  dst.simplices_for_write().copy_from(src.simplices());
+  CustomData_copy(&c_src.point_data, &c_dst.point_data, CD_MASK_ALL, CD_DUPLICATE, c_dst.point_num);
+  CustomData_copy(&c_src.simplex_data, &c_dst.simplex_data, CD_MASK_ALL, CD_DUPLICATE, c_dst.simplex_num);
+
+  c_dst.simplex_verts = (int(*)[4])MEM_malloc_arrayN(c_dst.simplex_num, sizeof(int[4]), __func__);
+  dst.simplex_vertices_for_write().copy_from(src.simplex_vertices());
 
   dst.tag_topology_changed();
 }
@@ -39,11 +60,18 @@ static void move_simplex_geometry(SimplexGeometry &dst, SimplexGeometry &src)
   ::SimplexGeometry &c_dst = (::SimplexGeometry &)dst;
   ::SimplexGeometry &c_src = (::SimplexGeometry &)src;
 
+  c_dst.point_num = c_src.point_num;
+  std::swap(c_dst.point_data, c_src.point_data);
+  CustomData_free(&c_src.point_data, c_src.point_num);
+  c_src.point_num = 0;
+
   c_dst.simplex_num = c_src.simplex_num;
+  std::swap(c_dst.simplex_data, c_src.simplex_data);
+  CustomData_free(&c_src.simplex_data, c_src.simplex_num);
   c_src.simplex_num = 0;
 
-  std::swap(c_dst.simplices, c_src.simplices);
-  MEM_SAFE_FREE(c_src.simplices);
+  std::swap(c_dst.simplex_verts, c_src.simplex_verts);
+  MEM_SAFE_FREE(c_src.simplex_verts);
 }
 
 SimplexGeometry::SimplexGeometry(const SimplexGeometry &other)
@@ -74,14 +102,25 @@ SimplexGeometry &SimplexGeometry::operator=(SimplexGeometry &&other)
 
 SimplexGeometry::~SimplexGeometry()
 {
-  MEM_SAFE_FREE(((::SimplexGeometry *)this)->simplices);
+  ::SimplexGeometry *c_this = (::SimplexGeometry *)this;
+
+  CustomData_free(&c_this->point_data, c_this->point_num);
+  CustomData_free(&c_this->simplex_data, c_this->simplex_num);
+  MEM_SAFE_FREE((c_this)->simplex_verts);
 }
 
-void SimplexGeometry::resize(int simplex_num)
+void SimplexGeometry::resize(int point_num, int simplex_num)
 {
-  if (simplex_num != this->simplex_num()) {
-    MEM_reallocN(((::SimplexGeometry *)this)->simplices, sizeof(::Simplex) * this->simplex_num());
-    ((::SimplexGeometry *)this)->simplex_num = simplex_num;
+  ::SimplexGeometry *c_this = (::SimplexGeometry *)this;
+
+  if (point_num != c_this->point_num) {
+    CustomData_realloc(&c_this->point_data, c_this->point_num, point_num);
+    c_this->point_num = point_num;
+  }
+  if (simplex_num != c_this->simplex_num) {
+    CustomData_realloc(&c_this->simplex_data, c_this->simplex_num, simplex_num);
+    MEM_reallocN(c_this->simplex_verts, sizeof(int[4]) * simplex_num);
+    c_this->simplex_num = simplex_num;
   }
   this->tag_topology_changed();
 }
@@ -96,7 +135,7 @@ namespace topology {
  * The n-th point is part of the n-th side.
  */
 void simplex_geometry(Span<float3> positions,
-                      const Simplex &tet,
+                      const int4 &verts,
                       float3 &v0,
                       float3 &v1,
                       float3 &v2,
@@ -106,7 +145,6 @@ void simplex_geometry(Span<float3> positions,
                       float3 &n2,
                       float3 &n3)
 {
-  const unsigned int *verts = tet.v;
   v0 = positions[verts[0]];
   v1 = positions[verts[1]];
   v2 = positions[verts[2]];
@@ -122,10 +160,10 @@ void simplex_geometry(Span<float3> positions,
   n2 = -(n0 + n1 + n3);
 }
 
-bool simplex_contains_point(const Span<float3> positions, const Simplex &tet, const float3 &point)
+bool simplex_contains_point(const Span<float3> positions, const int4 &verts, const float3 &point)
 {
   float3 v[4], n[4];
-  simplex_geometry(positions, tet, v[0], v[1], v[2], v[3], n[0], n[1], n[2], n[3]);
+  simplex_geometry(positions, verts, v[0], v[1], v[2], v[3], n[0], n[1], n[2], n[3]);
 
   const float dot0 = math::dot(point - v[0], n[0]);
   const float dot1 = math::dot(point - v[1], n[1]);

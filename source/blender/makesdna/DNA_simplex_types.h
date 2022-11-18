@@ -13,16 +13,6 @@ extern "C" {
 #endif
 
 /**
- * Tetrahedral simplex consisting of 4 vertices.
- */
-typedef struct Simplex {
-  /* Point indices making up the tetrahedron.
-   * The vertices form 4 triangles: ABC, BAD, CBD, DAC.
-   */
-  unsigned int v[4];
-} Simplex;
-
-/**
  * A reusable data structure for geometry consisting of simplices (tetrahedra).
  *
  * The data structure is meant to be embedded in other data-blocks to allow reusing
@@ -30,16 +20,30 @@ typedef struct Simplex {
  */
 typedef struct SimplexGeometry {
   /**
-   * List of simplices in this geometry.
+   * Vertex indices of simplices.
+   *
+   * \note This is *not* stored in #CustomData because the int4 type is currently unsupported.
    */
-  Simplex *simplices;
+  int (*simplex_verts)[4];
 
   /**
-   * The total number of simplices.
+   * All attributes stored on control points (#ATTR_DOMAIN_POINT).
+   * This might not contain a layer for positions if there are no points.
+   */
+  CustomData point_data;
+  /**
+   * All attributes stored on simplices (#ATTR_DOMAIN_SIMPLEX).
+   */
+  CustomData simplex_data;
+
+  /**
+   * The number of points.
+   */
+  int point_num;
+  /**
+   * The number of simplices.
    */
   int simplex_num;
-
-  int _pad1;
 } SimplexGeometry;
 
 #ifdef __cplusplus
