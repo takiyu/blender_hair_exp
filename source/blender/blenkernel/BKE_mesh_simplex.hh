@@ -80,6 +80,8 @@ class SimplexGeometry : public ::SimplexGeometry {
   /** Change the number of elements. New values should be properly initialized afterwards. */
   void resize(int point_num, int simplex_num);
 
+  /** Call after any operation that changes the positions */
+  void tag_positions_changed();
   /** Call after any operation that changes the topology */
   void tag_topology_changed();
 

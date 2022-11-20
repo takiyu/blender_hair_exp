@@ -102,8 +102,12 @@ class GeometryDataSetTreeView : public ui::AbstractTreeView {
     this->add_tree_item<GeometryDataSetTreeViewItem>(
         GEO_COMPONENT_TYPE_INSTANCES, ATTR_DOMAIN_INSTANCE, IFACE_("Instances"), ICON_EMPTY_AXIS);
 
-    this->add_tree_item<GeometryDataSetTreeViewItem>(
-        GEO_COMPONENT_TYPE_SIMPLEX, ATTR_DOMAIN_SIMPLEX, IFACE_("Simplices"), ICON_MESH_DATA);
+    GeometryDataSetTreeViewItem &simplex = this->add_tree_item<GeometryDataSetTreeViewItem>(
+        GEO_COMPONENT_TYPE_SIMPLEX, IFACE_("Simplex"), ICON_MESH_DATA);
+    simplex.add_tree_item<GeometryDataSetTreeViewItem>(
+        GEO_COMPONENT_TYPE_SIMPLEX, ATTR_DOMAIN_POINT, IFACE_("Vertex"), ICON_VERTEXSEL);
+    simplex.add_tree_item<GeometryDataSetTreeViewItem>(
+        GEO_COMPONENT_TYPE_SIMPLEX, ATTR_DOMAIN_SIMPLEX, IFACE_("Simplex"), ICON_MESH_DATA);
   }
 };
 

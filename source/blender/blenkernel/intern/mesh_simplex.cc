@@ -241,6 +241,10 @@ void SimplexGeometry::resize(int point_num, int simplex_num)
   this->tag_topology_changed();
 }
 
+void SimplexGeometry::tag_positions_changed()
+{
+}
+
 void SimplexGeometry::tag_topology_changed()
 {
 }

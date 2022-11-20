@@ -147,14 +147,63 @@ class SimplexVertexAttributeProvider final : public BuiltinAttributeProvider {
   }
 };
 
+static void tag_component_positions_changed(void *owner)
+{
+  SimplexGeometry &geometry = *static_cast<blender::bke::SimplexGeometry *>(owner);
+  geometry.tag_positions_changed();
+}
+
 static ComponentAttributeProviders create_attribute_providers_for_simplices()
 {
+  static CustomDataAccessInfo point_access = {
+      [](void *owner) -> CustomData * {
+        SimplexGeometry &geometry = *static_cast<SimplexGeometry *>(owner);
+        return &geometry.point_data;
+      },
+      [](const void *owner) -> const CustomData * {
+        const SimplexGeometry &geometry = *static_cast<const SimplexGeometry *>(owner);
+        return &geometry.point_data;
+      },
+      [](const void *owner) -> int {
+        const SimplexGeometry &geometry = *static_cast<const SimplexGeometry *>(owner);
+        return geometry.point_num();
+      }};
+  static CustomDataAccessInfo simplex_access = {
+      [](void *owner) -> CustomData * {
+        SimplexGeometry &geometry = *static_cast<SimplexGeometry *>(owner);
+        return &geometry.simplex_data;
+      },
+      [](const void *owner) -> const CustomData * {
+        const SimplexGeometry &geometry = *static_cast<const SimplexGeometry *>(owner);
+        return &geometry.simplex_data;
+      },
+      [](const void *owner) -> int {
+        const SimplexGeometry &geometry = *static_cast<const SimplexGeometry *>(owner);
+        return geometry.simplex_num();
+      }};
+
   static SimplexVertexAttributeProvider<0> vertex0;
   static SimplexVertexAttributeProvider<1> vertex1;
   static SimplexVertexAttributeProvider<2> vertex2;
   static SimplexVertexAttributeProvider<3> vertex3;
 
-  return ComponentAttributeProviders({&vertex0, &vertex1, &vertex2, &vertex3}, {});
+  static BuiltinCustomDataLayerProvider position("position",
+                                                ATTR_DOMAIN_POINT,
+                                                CD_PROP_FLOAT3,
+                                                CD_PROP_FLOAT3,
+                                                BuiltinAttributeProvider::NonCreatable,
+                                                BuiltinAttributeProvider::Writable,
+                                                BuiltinAttributeProvider::NonDeletable,
+                                                point_access,
+                                                make_array_read_attribute<float3>,
+                                                make_array_write_attribute<float3>,
+                                                tag_component_positions_changed);
+
+  static CustomDataAttributeProvider point_custom_data(ATTR_DOMAIN_POINT, point_access);
+  static CustomDataAttributeProvider curve_custom_data(ATTR_DOMAIN_SIMPLEX, simplex_access);
+
+  return ComponentAttributeProviders({&position, &vertex0, &vertex1, &vertex2, &vertex3},
+                                     {&curve_custom_data, &point_custom_data});
 }
 
 static AttributeAccessorFunctions get_simplices_accessor_functions()
