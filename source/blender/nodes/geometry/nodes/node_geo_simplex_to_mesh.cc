@@ -65,14 +65,6 @@ static void node_geo_exec(GeoNodeExecParams params)
   GeometrySet geometry_set = params.extract_input<GeometrySet>("Geometry");
   const SimplexFaceMode face_mode = get_face_mode((GeometryNodeSimpleToMeshFaceMode)params.node().custom1);
 
-  if (!(geometry_set.has_mesh() || geometry_set.has_curves() || geometry_set.has_pointcloud())) {
-    params.error_message_add(
-        NodeWarningType::Warning,
-        TIP_("Could not find suitable position component, need mesh, curve, or point cloud"));
-    params.set_default_remaining_outputs();
-    return;
-  }
-
   const SimplexGeometry *geometry = geometry_set.get_simplex_for_read();
   if (geometry) {
     Mesh *mesh = geometry::simplex::simplex_to_mesh(

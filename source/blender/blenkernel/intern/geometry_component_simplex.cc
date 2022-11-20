@@ -104,11 +104,6 @@ class SimplexVertexAttributeProvider final : public BuiltinAttributeProvider {
     return tet[Corner];
   }
 
-  static void set_corner_vertex(int4 &tet, int vertex)
-  {
-    tet[Corner] = vertex;
-  }
-
  public:
   SimplexVertexAttributeProvider()
       : BuiltinAttributeProvider("vertex" + std::to_string(Corner),
@@ -132,14 +127,7 @@ class SimplexVertexAttributeProvider final : public BuiltinAttributeProvider {
 
   GAttributeWriter try_get_for_write(void *owner) const final
   {
-    SimplexGeometry *simplices = static_cast<SimplexGeometry *>(owner);
-    if (simplices == nullptr) {
-      return {};
-    }
-    MutableSpan<int4> simplex_span = simplices->simplex_vertices_for_write();
-    return {VMutableArray<int>::ForDerivedSpan<int4, get_corner_vertex, set_corner_vertex>(
-                simplex_span),
-            domain_};
+    return {};
   }
 
   bool try_delete(void * /*owner*/) const final
@@ -152,9 +140,10 @@ class SimplexVertexAttributeProvider final : public BuiltinAttributeProvider {
     return false;
   }
 
-  bool exists(const void * /*owner*/) const final
+  bool exists(const void *owner) const final
   {
-    return true;
+    const SimplexGeometry *geometry = static_cast<const SimplexGeometry *>(owner);
+    return geometry->simplex_num() != 0;
   }
 };
 
@@ -220,39 +209,6 @@ blender::bke::MutableAttributeAccessor SimplexGeometry::attributes_for_write()
   return blender::bke::MutableAttributeAccessor(
       this, blender::bke::get_simplices_accessor_functions_ref());
 }
-
-//void SimplexGeometry::remove(const IndexMask mask)
-//{
-//  using namespace blender;
-//  if (mask.is_range() && mask.as_range().start() == 0) {
-//    /* Deleting from the end of the array can be much faster since no data has to be shifted. */
-//    this->resize(mask.size());
-//    return;
-//  }
-//
-//  //const bke::CustomDataAttributes &src_attributes = attributes_;
-//
-//  //bke::CustomDataAttributes dst_attributes;
-//  //dst_attributes.reallocate(mask.size());
-//
-//  //src_attributes.foreach_attribute(
-//      //[&](const bke::AttributeIDRef &id, const bke::AttributeMetaData &meta_data) {
-//      //  if (!id.should_be_kept()) {
-//      //    return true;
-//      //  }
-//
-//      //  GSpan src = *src_attributes.get_for_read(id);
-//      //  dst_attributes.create(id, meta_data.data_type);
-//      //  GMutableSpan dst = *dst_attributes.get_for_write(id);
-//      //  array_utils::gather(src, mask.indices(), dst);
-//
-//      //  return true;
-//      //},
-//      //ATTR_DOMAIN_INSTANCE);
-//
-//  //attributes_ = std::move(dst_attributes);
-//  //this->remove_unused_references();
-//}
 
 }  // namespace blender::bke
 
