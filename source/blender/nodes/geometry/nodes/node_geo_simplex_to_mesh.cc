@@ -45,7 +45,6 @@ static void node_declare(NodeDeclarationBuilder &b)
                        GEO_COMPONENT_TYPE_CURVE,
                        GEO_COMPONENT_TYPE_POINT_CLOUD,
                        GEO_COMPONENT_TYPE_SIMPLEX});
-  b.add_input<decl::Vector>(N_("Position")).implicit_field(implicit_field_inputs::position);
   b.add_output<decl::Geometry>(N_("Mesh"));
 }
 
