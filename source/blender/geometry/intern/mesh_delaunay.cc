@@ -108,10 +108,6 @@ Mesh *simplex_to_mesh_all_faces(const Span<float3> positions, const Span<int4> t
   }
   BKE_mesh_calc_edges(mesh, false, false);
 
-  // if (uv_id) {
-  //   calculate_uvs(config, mesh, uv_id);
-  // }
-
   //BKE_mesh_validate(mesh, true, true);
 
   return mesh;
@@ -136,14 +132,26 @@ Mesh *simplex_to_mesh_shared_faces(const Span<float3> positions, const Span<int4
   MutableSpan<MPoly> polys = mesh->polys_for_write();
   MutableSpan<MLoop> loops = mesh->loops_for_write();
 
-  //calculate_verts(config, verts);
+  for (const int vert_i : verts.index_range()) {
+    copy_v3_v3(verts[vert_i].co, positions[vert_i]);
+  }
 
-  //calculate_polys(config, polys, loops);
-  //BKE_mesh_calc_edges(mesh, false, false);
+  int poly_i = 0;
+  int loop_i = 0;
+  for (const int3 &tri : tri_set) {
+    polys[poly_i].loopstart = loop_i;
+    polys[poly_i].totloop = 3;
 
-  //if (uv_id) {
-  //  calculate_uvs(config, mesh, uv_id);
-  //}
+    for (const int i : IndexRange(3)) {
+      loops[loop_i + i].v = tri[i];
+    }
+
+    poly_i += 1;
+    loop_i += 3;
+  }
+  BKE_mesh_calc_edges(mesh, false, false);
+
+  //BKE_mesh_validate(mesh, true, true);
 
   return mesh;
 }
