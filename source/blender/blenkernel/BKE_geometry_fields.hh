@@ -94,7 +94,8 @@ class SimplexFieldContext : public fn::FieldContext {
   const eAttrDomain domain_ = ATTR_DOMAIN_SIMPLEX;
 
  public:
-  SimplexFieldContext(const SimplexGeometry &geometry) : geometry_(geometry)
+  SimplexFieldContext(const SimplexGeometry &geometry, const eAttrDomain domain)
+      : geometry_(geometry), domain_(domain)
   {
   }
 
@@ -219,13 +220,6 @@ class SimplexFieldInput : public fn::FieldInput {
   GVArray get_varray_for_context(const fn::FieldContext &context,
                                  IndexMask mask,
                                  ResourceScope &scope) const override;
-  virtual GVArray get_varray_for_context(const SimplexGeometry &geometry,
-                                         const Mesh &mesh,
-                                         eAttrDomain domain,
-                                         IndexMask mask) const
-  {
-    return get_varray_for_context(geometry, domain, mask);
-  }
   virtual GVArray get_varray_for_context(const SimplexGeometry &geometry,
                                          eAttrDomain domain,
                                          IndexMask mask) const = 0;

@@ -49,36 +49,6 @@ static void node_declare(NodeDeclarationBuilder &b)
   b.add_output<decl::Geometry>(N_("Mesh"));
 }
 
-static Mesh *create_mesh(const GeometrySet &geometry_set,
-                         const SimplexGeometry &geometry,
-                         SimplexFaceMode face_mode)
-{
-  BLI_assert(geometry_set.has_mesh());
-
-  int total_num = 0;
-
-  Span<float3> positions_span;
-
-  const MeshComponent *component = geometry_set.get_component_for_read<MeshComponent>();
-  if (const VArray<float3> positions = component->attributes()->lookup<float3>(
-          "position", ATTR_DOMAIN_POINT)) {
-    if (positions.is_span()) {
-      positions_span = positions.get_internal_span();
-      return geometry::simplex::simplex_to_mesh(positions_span, geometry.simplices(), face_mode);
-    }
-    total_num += positions.size();
-  }
-
-  Array<float3> positions(total_num);
-
-  if (const VArray<float3> varray = component->attributes()->lookup<float3>("position",
-                                                                            ATTR_DOMAIN_POINT)) {
-    varray.materialize(positions.as_mutable_span());
-  }
-
-  return geometry::simplex::simplex_to_mesh(positions, geometry.simplices(), face_mode);
-}
-
 static SimplexFaceMode get_face_mode(
     GeometryNodeSimpleToMeshFaceMode face_mode_dna)
 {
@@ -105,7 +75,8 @@ static void node_geo_exec(GeoNodeExecParams params)
 
   const SimplexGeometry *geometry = geometry_set.get_simplex_for_read();
   if (geometry) {
-    Mesh *mesh = create_mesh(geometry_set, *geometry, face_mode);
+    Mesh *mesh = geometry::simplex::simplex_to_mesh(
+        geometry->positions(), geometry->simplex_vertices(), face_mode);
     BKE_id_material_eval_ensure_default_slot(&mesh->id);
     params.set_output("Mesh", GeometrySet::create_with_mesh(mesh));
   }

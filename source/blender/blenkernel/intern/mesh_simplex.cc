@@ -4,9 +4,11 @@
  * \ingroup bke
  */
 
-#include "BKE_mesh_simplex.hh"
-
 #include "BLI_math_vector.hh"
+#include "BLI_task.hh"
+
+#include "BKE_attribute_math.hh"
+#include "BKE_mesh_simplex.hh"
 
 namespace blender::bke {
 
@@ -109,6 +111,120 @@ SimplexGeometry::~SimplexGeometry()
   MEM_SAFE_FREE((c_this)->simplex_verts);
 }
 
+int SimplexGeometry::domain_num(const eAttrDomain domain) const
+{
+  switch (domain) {
+    case ATTR_DOMAIN_POINT:
+      return point_num();
+    case ATTR_DOMAIN_SIMPLEX:
+      return simplex_num();
+    default:
+      return 0;
+  }
+}
+
+CustomData &SimplexGeometry::domain_custom_data(const eAttrDomain domain)
+{
+  switch (domain) {
+    case ATTR_DOMAIN_POINT:
+      return point_data;
+    case ATTR_DOMAIN_SIMPLEX:
+      return simplex_data;
+    default:
+      BLI_assert_unreachable();
+      static CustomData dummy;
+      return dummy;
+  }
+}
+
+const CustomData &SimplexGeometry::domain_custom_data(const eAttrDomain domain) const
+{
+  switch (domain) {
+    case ATTR_DOMAIN_POINT:
+      return point_data;
+    case ATTR_DOMAIN_SIMPLEX:
+      return simplex_data;
+    default:
+      BLI_assert_unreachable();
+      static CustomData dummy;
+      return dummy;
+  }
+}
+
+template<typename T>
+VArray<T> SimplexGeometry::get_varray_attribute(const eAttrDomain domain,
+                                                const StringRefNull name,
+                                                const T default_value)
+{
+  const int num = domain_num(curves, domain);
+  const eCustomDataType type = cpp_type_to_custom_data_type(CPPType::get<T>());
+  const CustomData &custom_data = domain_custom_data(curves, domain);
+
+  const T *data = (const T *)CustomData_get_layer_named(&custom_data, type, name.c_str());
+  if (data != nullptr) {
+    return VArray<T>::ForSpan(Span<T>(data, num));
+  }
+  return VArray<T>::ForSingle(default_value, num);
+}
+
+template<typename T>
+Span<T> SimplexGeometry::get_span_attribute(const eAttrDomain domain,
+                                            const StringRefNull name) const
+{
+  const int num = domain_num(domain);
+  const CustomData &custom_data = domain_custom_data(domain);
+  const eCustomDataType type = cpp_type_to_custom_data_type(CPPType::get<T>());
+
+  T *data = (T *)CustomData_get_layer_named(&custom_data, type, name.c_str());
+  if (data == nullptr) {
+    return {};
+  }
+  return {data, num};
+}
+
+template<typename T>
+MutableSpan<T> SimplexGeometry::get_mutable_attribute(const eAttrDomain domain,
+                                                      const StringRefNull name,
+                                                      const T default_value)
+{
+  const int num = domain_num(domain);
+  const eCustomDataType type = cpp_type_to_custom_data_type(CPPType::get<T>());
+  CustomData &custom_data = domain_custom_data(domain);
+
+  T *data = (T *)CustomData_duplicate_referenced_layer_named(
+      &custom_data, type, name.c_str(), num);
+  if (data != nullptr) {
+    return {data, num};
+  }
+  data = (T *)CustomData_add_layer_named(
+      &custom_data, type, CD_SET_DEFAULT, nullptr, num, name.c_str());
+  MutableSpan<T> span = {data, num};
+  if (num > 0 && span.first() != default_value) {
+    span.fill(default_value);
+  }
+  return span;
+}
+
+Span<float3> SimplexGeometry::positions() const
+{
+  return get_span_attribute<float3>(ATTR_DOMAIN_POINT, ATTR_POSITION);
+}
+MutableSpan<float3> SimplexGeometry::positions_for_write()
+{
+  return get_mutable_attribute<float3>(ATTR_DOMAIN_POINT, ATTR_POSITION);
+}
+
+Span<int4> SimplexGeometry::simplex_vertices() const
+{
+  const ::SimplexGeometry *c_this = (const ::SimplexGeometry *)this;
+  return Span(reinterpret_cast<const int4 *>(c_this->simplex_verts), c_this->simplex_num);
+}
+MutableSpan<int4> SimplexGeometry::simplex_vertices_for_write()
+{
+  ::SimplexGeometry *c_this = (::SimplexGeometry *)this;
+  return MutableSpan(reinterpret_cast<int4 *>(c_this->simplex_verts), c_this->simplex_num);
+}
+
 void SimplexGeometry::resize(int point_num, int simplex_num)
 {
   ::SimplexGeometry *c_this = (::SimplexGeometry *)this;
@@ -128,6 +244,173 @@ void SimplexGeometry::resize(int point_num, int simplex_num)
 void SimplexGeometry::tag_topology_changed()
 {
 }
+
+/* -------------------------------------------------------------------- */
+/** \name Domain Interpolation
+ * \{ */
+
+/**
+ * Mix together all corners of a simplex.
+ *
+ * \note Theoretically this interpolation does not need to compute all values at once.
+ * However, doing that makes the implementation simpler, and this can be optimized in the future if
+ * only some values are required.
+ */
+template<typename T>
+static void adapt_simplex_domain_point_to_simplex_impl(const SimplexGeometry &geometry,
+                                                       const VArray<T> &old_values,
+                                                       MutableSpan<T> r_values)
+{
+  const Span<int4> tets = geometry.simplex_vertices();
+  attribute_math::DefaultMixer<T> mixer(r_values);
+
+  threading::parallel_for(geometry.simplex_range(), 128, [&](const IndexRange range) {
+    for (const int i_simplex : range) {
+      const int4 &tet = tets[i_simplex];
+      for (const int k : IndexRange(4)) {
+        mixer.mix_in(i_simplex, old_values[tet[k]]);
+      }
+    }
+    mixer.finalize(range);
+  });
+}
+
+/**
+ * A simplex is selected if all of its vertices were selected.
+ *
+ * \note Theoretically this interpolation does not need to compute all values at once.
+ * However, doing that makes the implementation simpler, and this can be optimized in the future if
+ * only some values are required.
+ */
+template<>
+void adapt_simplex_domain_point_to_simplex_impl(const SimplexGeometry &geometry,
+                                                const VArray<bool> &old_values,
+                                                MutableSpan<bool> r_values)
+{
+  const Span<int4> tets = geometry.simplex_vertices();
+
+  r_values.fill(true);
+  for (const int i_simplex : geometry.simplex_range()) {
+    const int4 &tet = tets[i_simplex];
+    for (const int k : IndexRange(4)) {
+      if (!old_values[tet[k]]) {
+        r_values[i_simplex] = false;
+        break;
+      }
+    }
+  }
+}
+
+static GVArray adapt_simplex_domain_point_to_simplex(const SimplexGeometry &geometry,
+                                                     const GVArray &varray)
+{
+  GVArray new_varray;
+  attribute_math::convert_to_static_type(varray.type(), [&](auto dummy) {
+    using T = decltype(dummy);
+    if constexpr (!std::is_void_v<attribute_math::DefaultMixer<T>>) {
+      Array<T> values(geometry.simplex_num());
+      adapt_simplex_domain_point_to_simplex_impl<T>(geometry, varray.typed<T>(), values);
+      new_varray = VArray<T>::ForContainer(std::move(values));
+    }
+  });
+  return new_varray;
+}
+
+/**
+ * Mix together all simplices of a vertex.
+ *
+ * \note Theoretically this interpolation does not need to compute all values at once.
+ * However, doing that makes the implementation simpler, and this can be optimized in the future if
+ * only some values are required.
+ */
+template<typename T>
+static void adapt_simplex_domain_simplex_to_point_impl(const SimplexGeometry &geometry,
+                                                       const VArray<T> &old_values,
+                                                       MutableSpan<T> r_values)
+{
+  const Span<int4> tets = geometry.simplex_vertices();
+  attribute_math::DefaultMixer<T> mixer(r_values);
+
+  threading::parallel_for(geometry.simplex_range(), 128, [&](const IndexRange range) {
+    for (const int i_simplex : range) {
+      const int4 &tet = tets[i_simplex];
+      for (const int k : IndexRange(4)) {
+        mixer.mix_in(tet[k], old_values[i_simplex]);
+      }
+    }
+    mixer.finalize(range);
+  });
+}
+
+/**
+ * A point is selected if any of its simplices were selected.
+ *
+ * \note Theoretically this interpolation does not need to compute all values at once.
+ * However, doing that makes the implementation simpler, and this can be optimized in the future if
+ * only some values are required.
+ */
+template<>
+void adapt_simplex_domain_simplex_to_point_impl(const SimplexGeometry &geometry,
+                                                const VArray<bool> &old_values,
+                                                MutableSpan<bool> r_values)
+{
+  const Span<int4> tets = geometry.simplex_vertices();
+
+  r_values.fill(false);
+  for (const int i_simplex : geometry.simplex_range()) {
+    if (old_values[i_simplex]) {
+      const int4 &tet = tets[i_simplex];
+      for (const int k : IndexRange(4)) {
+        r_values[tet[k]] = true;
+      }
+    }
+  }
+}
+
+static GVArray adapt_simplex_domain_simplex_to_point(const SimplexGeometry &geometry,
+                                                     const GVArray &varray)
+{
+  GVArray new_varray;
+  attribute_math::convert_to_static_type(varray.type(), [&](auto dummy) {
+    using T = decltype(dummy);
+    Array<T> values(geometry.point_num());
+    adapt_simplex_domain_simplex_to_point_impl<T>(geometry, varray.typed<T>(), values);
+    new_varray = VArray<T>::ForContainer(std::move(values));
+  });
+  return new_varray;
+}
+
+GVArray SimplexGeometry::adapt_domain(const GVArray &varray,
+                                      const eAttrDomain from,
+                                      const eAttrDomain to) const
+{
+  if (!varray) {
+    return {};
+  }
+  if (varray.is_empty()) {
+    return {};
+  }
+  if (from == to) {
+    return varray;
+  }
+  if (varray.is_single()) {
+    BUFFER_FOR_CPP_TYPE_VALUE(varray.type(), value);
+    varray.get_internal_single(value);
+    return GVArray::ForSingle(varray.type(), this->attributes().domain_size(to), value);
+  }
+
+  if (from == ATTR_DOMAIN_POINT && to == ATTR_DOMAIN_SIMPLEX) {
+    return adapt_simplex_domain_point_to_simplex(*this, varray);
+  }
+  if (from == ATTR_DOMAIN_SIMPLEX && to == ATTR_DOMAIN_POINT) {
+    return adapt_simplex_domain_simplex_to_point(*this, varray);
+  }
+
+  BLI_assert_unreachable();
+  return {};
+}
+
+/** \} */
 
 namespace topology {
 
@@ -169,8 +452,8 @@ bool simplex_contains_point(const Span<float3> positions, const int4 &verts, con
   const float dot1 = math::dot(point - v[1], n[1]);
   const float dot3 = math::dot(point - v[3], n[3]);
   /* Exploit normal redundancy to save one dot product: n2 == -(n0 + n1 + n3) */
-  const bool dot2 = -(dot0 + dot1 + dot3);
-  return dot0 <= 0.0f && dot1 <= 0.0f && dot2 <= 0.0f && dot3 <= 0.0f;
+  const float dot2 = -(dot0 + dot1 + dot3);
+  return (dot0 <= 0.0f) && (dot1 <= 0.0f) && (dot2 <= 0.0f) && (dot3 <= 0.0f);
 }
 
 //static float3 triangle_circum_center(const float3 &a, const float3 &b, const float3 &c)

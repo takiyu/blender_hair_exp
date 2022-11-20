@@ -10,7 +10,6 @@
  */
 
 struct Mesh;
-struct Simplex;
 namespace blender::bke {
 class SimplexGeometry;
 }
@@ -20,7 +19,7 @@ namespace blender::geometry {
 namespace simplex {
 
 enum SimplexFaceMode { All, Shared };
-Mesh *simplex_to_mesh(Span<float3> positions, Span<Simplex> tets, SimplexFaceMode face_mode);
+Mesh *simplex_to_mesh(Span<float3> positions, Span<int4> tets, SimplexFaceMode face_mode);
 
 }  // namespace simplex
 
@@ -33,16 +32,16 @@ namespace delaunay {
 void find_enclosing_simplex(Span<float3> positions, float3 simplex[4]);
 
 /* List of adjacent tets for each of the 4 sides. */
-Array<int4> tet_build_side_to_tet_map(Span<Simplex> tets);
+Array<int4> tet_build_side_to_tet_map(Span<int4> tets);
 
 /* Brute-force search for a tet containing a point. */
-int tet_find(Span<float3> positions, Span<Simplex> tets, const float3 &point);
+int tet_find(Span<float3> positions, Span<int4> tets, const float3 &point);
 
 /* Find all simplices whose Delaunay condition is violated by adding a point.
  * Returns true for each simplex where the point is inside the circum-sphere.
  */
 Array<bool> check_delaunay_condition(Span<float3> positions,
-                                     Span<Simplex> simplices,
+                                     Span<int4> tets,
                                      Span<int4> side_map,
                                      const float3 &new_point,
                                      int containing_simplex);
@@ -55,7 +54,7 @@ Array<bool> check_delaunay_condition(Span<float3> positions,
  * found.
  */
 int tet_find_from_known(Span<float3> positions,
-                        Span<Simplex> tets,
+                        Span<int4> tets,
                         Span<int4> side_map,
                         const int src_tet,
                         const float3 &dst_point);
@@ -66,7 +65,7 @@ int tet_find_from_known(Span<float3> positions,
  * /param replace Flag indicating which tets to replace.
  * /param point Index of the new point to add.
  */
-void tet_fan_construct(Array<Simplex> &tets,
+void tet_fan_construct(Array<int4> &tets,
                        Array<int4> &side_map,
                        Span<bool> replace,
                        int point,
@@ -76,7 +75,7 @@ void tet_fan_construct(Array<Simplex> &tets,
 /* Build a Delaunay tetrahedralization of the point set. */
 void tetrahedralize_points(Span<float3> positions,
                            Array<float3> &r_points,
-                           Array<Simplex> &r_simplices,
+                           Array<int4> &r_tets,
                            bool keep_hull = false);
 
 }  // namespace delaunay

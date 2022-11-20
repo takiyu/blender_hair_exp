@@ -71,7 +71,7 @@ static int3 get_unique_tri(int3 tri, bool &r_flipped)
 
 namespace simplex {
 
-Mesh *simplex_to_mesh_all_faces(const Span<float3> positions, const Span<Simplex> tets)
+Mesh *simplex_to_mesh_all_faces(const Span<float3> positions, const Span<int4> tets)
 {
   /* Unique triangle set */
   Mesh *mesh = BKE_mesh_new_nomain(tets.size() * 4, 0, 0, tets.size() * 12, tets.size() * 4);
@@ -82,16 +82,16 @@ Mesh *simplex_to_mesh_all_faces(const Span<float3> positions, const Span<Simplex
   int loopstart = 0;
   int polystart = 0;
   for (const int tet_i : tets.index_range()) {
-    const Simplex &tet = tets[tet_i];
+    const int4 &tet = tets[tet_i];
 
     IndexRange vert_range(tet_i * 4, 4);
     for (const int k : IndexRange(4)) {
-      copy_v3_v3(verts[vert_range[k]].co, positions[tet.v[k]]);
+      copy_v3_v3(verts[vert_range[k]].co, positions[tet[k]]);
     }
 
     /* Local indices, same for every tet */
     int3 tri[4];
-    topology::simplex_triangles(Simplex{0, 1, 2, 3}, tri[0], tri[1], tri[2], tri[3]);
+    topology::simplex_triangles(int4{0, 1, 2, 3}, tri[0], tri[1], tri[2], tri[3]);
 
     for (const int k : IndexRange(4)) {
       const int poly_i = polystart + k;
@@ -117,8 +117,7 @@ Mesh *simplex_to_mesh_all_faces(const Span<float3> positions, const Span<Simplex
   return mesh;
 }
 
-Mesh *simplex_to_mesh_shared_faces(const Span<float3> positions,
-                                   const Span<Simplex> tets)
+Mesh *simplex_to_mesh_shared_faces(const Span<float3> positions, const Span<int4> tets)
 {
   /* Unique triangle set */
   Set<int3> tri_set;
@@ -150,7 +149,7 @@ Mesh *simplex_to_mesh_shared_faces(const Span<float3> positions,
 }
 
 Mesh *simplex_to_mesh(const Span<float3> positions,
-                      const Span<Simplex> tets,
+                      const Span<int4> tets,
                       SimplexFaceMode face_mode)
 {
   switch (face_mode) {
@@ -201,7 +200,7 @@ void find_enclosing_simplex(const Span<float3> positions, float3 simplex[4])
   simplex[3] = A302.inverted() * float3{d3, d0, d2};
 }
 
-Array<int4> tet_build_side_to_tet_map(Span<Simplex> tets)
+Array<int4> tet_build_side_to_tet_map(Span<int4> tets)
 {
   /* Maps triangles to the two tet indices on either side */
   Map<int3, int2> tet_map;
@@ -247,7 +246,7 @@ Array<int4> tet_build_side_to_tet_map(Span<Simplex> tets)
   return result;
 }
 
-int tet_find(Span<float3> positions, Span<Simplex> tets, const float3 &point)
+int tet_find(Span<float3> positions, Span<int4> tets, const float3 &point)
 {
   for (const int tet_i : tets.index_range()) {
     if (topology::simplex_contains_point(positions, tets[tet_i], point)) {
@@ -272,7 +271,7 @@ static bool tet_isect_ray(const float3 &ray_src,
 }
 
 int tet_find_from_known(Span<float3> positions,
-                        Span<Simplex> tets,
+                        Span<int4> tets,
                         Span<int4> side_map,
                         const int src_tet,
                         const float3 &dst_point)
@@ -310,7 +309,7 @@ int tet_find_from_known(Span<float3> positions,
    */
   Array<bool> checked(tets.size(), false);
   while (tet_i >= 0) {
-    const Simplex &tet = tets[tet_i];
+    const int4 &tet = tets[tet_i];
 
     float3 v[4], n[4];
     topology::simplex_geometry(positions, tet, v[0], v[1], v[2], v[3], n[0], n[1], n[2], n[3]);
@@ -376,13 +375,13 @@ int tet_find_from_known(Span<float3> positions,
 }
 
 Array<bool> check_delaunay_condition(const Span<float3> positions,
-                                     const Span<Simplex> simplices,
+                                     const Span<int4> tets,
                                      const Span<int4> side_map,
                                      const float3 &new_point,
                                      const int containing_simplex)
 {
-  Array<bool> result(simplices.size(), false);
-  Array<bool> checked(simplices.size(), false);
+  Array<bool> result(tets.size(), false);
+  Array<bool> checked(tets.size(), false);
   Stack<int> stack;
 
   result[containing_simplex] = true;
@@ -399,9 +398,9 @@ Array<bool> check_delaunay_condition(const Span<float3> positions,
         continue;
       }
 
-      const int4 verts{simplices[simplex_k].v};
+      const int4 &tet = tets[simplex_k];
       const float3 pos[4] = {
-          positions[verts[0]], positions[verts[1]], positions[verts[2]], positions[verts[3]]};
+          positions[tet[0]], positions[tet[1]], positions[tet[2]], positions[tet[3]]};
       float3 center;
       if (topology::simplex_circumcenter(pos[0], pos[1], pos[2], pos[3], center) &&
           math::length_squared(new_point - center) <= math::length_squared(pos[0] - center)) {
@@ -418,7 +417,7 @@ Array<bool> check_delaunay_condition(const Span<float3> positions,
   return result;
 }
 
-void tet_fan_construct(Array<Simplex> &tets,
+void tet_fan_construct(Array<int4> &tets,
                        Array<int4> &side_map,
                        Span<bool> replace,
                        int point,
@@ -454,7 +453,7 @@ void tet_fan_construct(Array<Simplex> &tets,
   /* New arrays */
   const int new_tets_count = tets.size() - removed_tets + boundary_triangles;
   const int boundary_start = tets.size() - removed_tets;
-  Array<Simplex> new_tets(new_tets_count);
+  Array<int4> new_tets(new_tets_count);
   Array<int4> new_side_map(new_tets_count);
   /* Maps edges on the boundary to new tet indices.
    * Each edge forms a triangle with the new point, maps to different tets per side.
@@ -478,10 +477,7 @@ void tet_fan_construct(Array<Simplex> &tets,
           continue;
         }
 
-        new_tets[new_tet_cur] = Simplex{(unsigned int)tri[k][0],
-                                        (unsigned int)tri[k][1],
-                                        (unsigned int)tri[k][2],
-                                        (unsigned int)point};
+        new_tets[new_tet_cur] = int4{tri[k][0], tri[k][1], tri[k][2], point};
 
         /* Entries in the boundary edge map to find neighboring tets. */
         bool flipped0, flipped1, flipped2;
@@ -578,7 +574,7 @@ void tet_fan_construct(Array<Simplex> &tets,
 
 void tetrahedralize_points(Span<float3> positions,
                            Array<float3> &r_points,
-                           Array<Simplex> &r_simplices,
+                           Array<int4> &r_tets,
                            bool keep_hull)
 {
   const int num_pos = positions.size();
@@ -608,18 +604,15 @@ void tetrahedralize_points(Span<float3> positions,
     r_points = positions;
   }
 
-  r_simplices.reinitialize(1);
-  r_simplices[0] = Simplex{(unsigned int)num_pos + 0,
-                           (unsigned int)num_pos + 1,
-                           (unsigned int)num_pos + 2,
-                           (unsigned int)num_pos + 3};
+  r_tets.reinitialize(1);
+  r_tets[0] = int4{num_pos + 0, num_pos + 1, num_pos + 2, num_pos + 3};
   Array<int4> side_map{{-1, -1, -1, -1}};
 
   int containing_simplex = 0;
   for (const int point_i : orig_points) {
     if (point_i > 0) {
       containing_simplex = tet_find_from_known(
-          used_points, r_simplices, side_map, containing_simplex, used_points[point_i]);
+          used_points, r_tets, side_map, containing_simplex, used_points[point_i]);
       if (containing_simplex < 0) {
         /* TODO should not happen (point outside enclosing simplex), issue a warning */
         continue;
@@ -627,10 +620,10 @@ void tetrahedralize_points(Span<float3> positions,
     }
 
     Array<bool> replace = check_delaunay_condition(
-        used_points, r_simplices, side_map, used_points[point_i], containing_simplex);
+        used_points, r_tets, side_map, used_points[point_i], containing_simplex);
 
     IndexRange old_range, new_range;
-    tet_fan_construct(r_simplices, side_map, replace, point_i, old_range, new_range);
+    tet_fan_construct(r_tets, side_map, replace, point_i, old_range, new_range);
     if (!new_range.is_empty()) {
       containing_simplex = new_range.first();
     }
@@ -639,16 +632,16 @@ void tetrahedralize_points(Span<float3> positions,
   if (!keep_hull) {
     /* Remove any simplices of the enclosing hull. */
     int tets_num = 0;
-    Array<Simplex> clean_simplices(r_simplices.size());
-    for (const int tet_i : r_simplices.index_range()) {
-      const Simplex &tet = r_simplices[tet_i];
-      if (orig_points.contains(tet.v[0]) && orig_points.contains(tet.v[1]) &&
-          orig_points.contains(tet.v[2]) && orig_points.contains(tet.v[3])) {
+    Array<int4> clean_simplices(r_tets.size());
+    for (const int tet_i : r_tets.index_range()) {
+      const int4 &tet = r_tets[tet_i];
+      if (orig_points.contains(tet[0]) && orig_points.contains(tet[1]) &&
+          orig_points.contains(tet[2]) && orig_points.contains(tet[3])) {
         clean_simplices[tets_num] = tet;
         ++tets_num;
       }
     }
-    r_simplices = clean_simplices.as_span().slice(0, tets_num);
+    r_tets = clean_simplices.as_span().slice(0, tets_num);
   }
 }
 

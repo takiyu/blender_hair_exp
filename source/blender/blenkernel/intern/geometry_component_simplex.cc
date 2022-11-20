@@ -99,14 +99,14 @@ namespace blender::bke {
 template <int Corner>
 class SimplexVertexAttributeProvider final : public BuiltinAttributeProvider {
  private:
-  static int get_corner_vertex(const Simplex &simplex)
+  static int get_corner_vertex(const int4 &tet)
   {
-    return simplex.v[Corner];
+    return tet[Corner];
   }
 
-  static void set_corner_vertex(Simplex &simplex, int vertex)
+  static void set_corner_vertex(int4 &tet, int vertex)
   {
-    simplex.v[Corner] = vertex;
+    tet[Corner] = vertex;
   }
 
  public:
@@ -126,8 +126,8 @@ class SimplexVertexAttributeProvider final : public BuiltinAttributeProvider {
     if (simplices == nullptr) {
       return {};
     }
-    Span<Simplex> simplex_span = simplices->simplices();
-    return VArray<int>::ForDerivedSpan<Simplex, get_corner_vertex>(simplex_span);
+    Span<int4> simplex_span = simplices->simplex_vertices();
+    return VArray<int>::ForDerivedSpan<int4, get_corner_vertex>(simplex_span);
   }
 
   GAttributeWriter try_get_for_write(void *owner) const final
@@ -136,8 +136,8 @@ class SimplexVertexAttributeProvider final : public BuiltinAttributeProvider {
     if (simplices == nullptr) {
       return {};
     }
-    MutableSpan<Simplex> simplex_span = simplices->simplices_for_write();
-    return {VMutableArray<int>::ForDerivedSpan<Simplex, get_corner_vertex, set_corner_vertex>(
+    MutableSpan<int4> simplex_span = simplices->simplex_vertices_for_write();
+    return {VMutableArray<int>::ForDerivedSpan<int4, get_corner_vertex, set_corner_vertex>(
                 simplex_span),
             domain_};
   }
@@ -179,6 +179,8 @@ static AttributeAccessorFunctions get_simplices_accessor_functions()
     }
     const SimplexGeometry *simplices = static_cast<const SimplexGeometry *>(owner);
     switch (domain) {
+      case ATTR_DOMAIN_POINT:
+        return simplices->point_num();
       case ATTR_DOMAIN_SIMPLEX:
         return simplices->simplex_num();
       default:
@@ -186,16 +188,17 @@ static AttributeAccessorFunctions get_simplices_accessor_functions()
     }
   };
   fn.domain_supported = [](const void * /*owner*/, const eAttrDomain domain) {
-    return domain == ATTR_DOMAIN_SIMPLEX;
+    return ELEM(domain, ATTR_DOMAIN_POINT, ATTR_DOMAIN_SIMPLEX);
   };
-  fn.adapt_domain = [](const void * /*owner*/,
+  fn.adapt_domain = [](const void *owner,
                        const blender::GVArray &varray,
                        const eAttrDomain from_domain,
-                       const eAttrDomain to_domain) {
-    if (from_domain == to_domain && from_domain == ATTR_DOMAIN_SIMPLEX) {
-      return varray;
+                       const eAttrDomain to_domain) -> GVArray {
+    if (owner == nullptr) {
+      return {};
     }
-    return blender::GVArray{};
+    const SimplexGeometry &geometry = *static_cast<const SimplexGeometry *>(owner);
+    return geometry.adapt_domain(varray, from_domain, to_domain);
   };
   return fn;
 }
@@ -218,38 +221,38 @@ blender::bke::MutableAttributeAccessor SimplexGeometry::attributes_for_write()
       this, blender::bke::get_simplices_accessor_functions_ref());
 }
 
-void SimplexGeometry::remove(const IndexMask mask)
-{
-  using namespace blender;
-  if (mask.is_range() && mask.as_range().start() == 0) {
-    /* Deleting from the end of the array can be much faster since no data has to be shifted. */
-    this->resize(mask.size());
-    return;
-  }
-
-  //const bke::CustomDataAttributes &src_attributes = attributes_;
-
-  //bke::CustomDataAttributes dst_attributes;
-  //dst_attributes.reallocate(mask.size());
-
-  //src_attributes.foreach_attribute(
-      //[&](const bke::AttributeIDRef &id, const bke::AttributeMetaData &meta_data) {
-      //  if (!id.should_be_kept()) {
-      //    return true;
-      //  }
-
-      //  GSpan src = *src_attributes.get_for_read(id);
-      //  dst_attributes.create(id, meta_data.data_type);
-      //  GMutableSpan dst = *dst_attributes.get_for_write(id);
-      //  array_utils::gather(src, mask.indices(), dst);
-
-      //  return true;
-      //},
-      //ATTR_DOMAIN_INSTANCE);
-
-  //attributes_ = std::move(dst_attributes);
-  //this->remove_unused_references();
-}
+//void SimplexGeometry::remove(const IndexMask mask)
+//{
+//  using namespace blender;
+//  if (mask.is_range() && mask.as_range().start() == 0) {
+//    /* Deleting from the end of the array can be much faster since no data has to be shifted. */
+//    this->resize(mask.size());
+//    return;
+//  }
+//
+//  //const bke::CustomDataAttributes &src_attributes = attributes_;
+//
+//  //bke::CustomDataAttributes dst_attributes;
+//  //dst_attributes.reallocate(mask.size());
+//
+//  //src_attributes.foreach_attribute(
+//      //[&](const bke::AttributeIDRef &id, const bke::AttributeMetaData &meta_data) {
+//      //  if (!id.should_be_kept()) {
+//      //    return true;
+//      //  }
+//
+//      //  GSpan src = *src_attributes.get_for_read(id);
+//      //  dst_attributes.create(id, meta_data.data_type);
+//      //  GMutableSpan dst = *dst_attributes.get_for_write(id);
+//      //  array_utils::gather(src, mask.indices(), dst);
+//
+//      //  return true;
+//      //},
+//      //ATTR_DOMAIN_INSTANCE);
+//
+//  //attributes_ = std::move(dst_attributes);
+//  //this->remove_unused_references();
+//}
 
 }  // namespace blender::bke
 

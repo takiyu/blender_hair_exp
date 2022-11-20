@@ -24,7 +24,7 @@ static void node_declare(NodeDeclarationBuilder &b)
 
 static void tetrahedralize(const GeometrySet &geometry_set,
                            Array<float3> &r_points,
-                           Array<Simplex> &r_simplices)
+                           Array<int4> &r_tets)
 {
   int span_count = 0;
   int count = 0;
@@ -72,7 +72,7 @@ static void tetrahedralize(const GeometrySet &geometry_set,
   /* If there is only one positions virtual array and it is already contiguous, avoid copying
    * all of the positions and instead pass the span directly to the conversion function. */
   if (span_count == 1 && count == 1) {
-    return geometry::delaunay::tetrahedralize_points(positions_span, r_points, r_simplices);
+    return geometry::delaunay::tetrahedralize_points(positions_span, r_points, r_tets);
   }
 
   Array<float3> positions(total_num);
@@ -102,7 +102,7 @@ static void tetrahedralize(const GeometrySet &geometry_set,
     offset += array.size();
   }
 
-  return geometry::delaunay::tetrahedralize_points(positions, r_points, r_simplices);
+  return geometry::delaunay::tetrahedralize_points(positions, r_points, r_tets);
 }
 
 static void node_geo_exec(GeoNodeExecParams params)
@@ -110,22 +110,14 @@ static void node_geo_exec(GeoNodeExecParams params)
   GeometrySet geometry_set = params.extract_input<GeometrySet>("Points");
 
   Array<float3> points;
-  Array<Simplex> simplices;
-  tetrahedralize(geometry_set, points, simplices);
+  Array<int4> tets;
+  tetrahedralize(geometry_set, points, tets);
 
-  Mesh *mesh = BKE_mesh_new_nomain(points.size(), 0, 0, 0, 0);
-  MutableSpan<MVert> verts = mesh->verts_for_write();
-  for (const int i : verts.index_range()) {
-    copy_v3_v3(verts[i].co, points[i]);
-  }
-  GeometrySet result = GeometrySet::create_with_mesh(mesh);
+  SimplexGeometry *geometry = new SimplexGeometry(points.size(), tets.size());
+  geometry->positions_for_write().copy_from(points);
+  geometry->simplex_vertices_for_write().copy_from(tets);
 
-  SimplexGeometry *geometry = new SimplexGeometry(simplices.size());
-  MutableSpan<Simplex> smx = geometry->simplices_for_write();
-  smx.copy_from(simplices);
-  result.replace_simplex(geometry);
-
-  params.set_output("Geometry", result);
+  params.set_output("Geometry", GeometrySet::create_with_simplex(geometry));
 }
 
 }  // namespace blender::nodes::node_geo_simplex_tetrahedralize_cc

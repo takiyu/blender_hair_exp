@@ -73,21 +73,44 @@ class SimplexGeometry : public ::SimplexGeometry {
   blender::bke::AttributeAccessor attributes() const;
   blender::bke::MutableAttributeAccessor attributes_for_write();
 
-  /**
-   * Remove simplices contained in the index mask.
-   */
-  void remove(const blender::IndexMask mask);
-
   /* --------------------------------------------------------------------
    * Operations.
    */
 
- public:
   /** Change the number of elements. New values should be properly initialized afterwards. */
   void resize(int point_num, int simplex_num);
 
   /** Call after any operation that changes the topology */
   void tag_topology_changed();
+
+  /* --------------------------------------------------------------------
+   * Attributes.
+   */
+
+  GVArray adapt_domain(const GVArray &varray, eAttrDomain from, eAttrDomain to) const;
+  template<typename T>
+  VArray<T> adapt_domain(const VArray<T> &varray, eAttrDomain from, eAttrDomain to) const
+  {
+    return this->adapt_domain(GVArray(varray), from, to).typed<T>();
+  }
+
+ private:
+  int domain_num(const eAttrDomain domain) const;
+  CustomData &domain_custom_data(eAttrDomain domain);
+  const CustomData &domain_custom_data(const eAttrDomain domain) const;
+
+  template<typename T>
+  VArray<T> get_varray_attribute(const eAttrDomain domain,
+                                 const StringRefNull name,
+                                 const T default_value);
+
+  template<typename T>
+  Span<T> get_span_attribute(const eAttrDomain domain, const StringRefNull name) const;
+
+  template<typename T>
+  MutableSpan<T> get_mutable_attribute(const eAttrDomain domain,
+                                       const StringRefNull name,
+                                       const T default_value = T());
 };
 
 /* -------------------------------------------------------------------- */
@@ -150,26 +173,6 @@ inline IndexRange SimplexGeometry::points_range() const
 inline IndexRange SimplexGeometry::simplex_range() const
 {
   return IndexRange(this->simplex_num());
-}
-
-Span<int4> SimplexGeometry::simplex_vertices() const
-{
-  return get_varray_attribute<int8_t>(
-      *this, ATTR_DOMAIN_CURVE, ATTR_CURVE_TYPE, CURVE_TYPE_CATMULL_ROM);
-}
-
-MutableSpan<int4> SimplexGeometry::simplex_vertices_for_write()
-{
-  return get_mutable_attribute<int8_t>(*this, ATTR_DOMAIN_CURVE, ATTR_CURVE_TYPE);
-}
-
-inline Span<Simplex> SimplexGeometry::simplices() const
-{
-  return Span<Simplex>(((::SimplexGeometry *)this)->simplices, this->simplex_num());
-}
-inline MutableSpan<Simplex> SimplexGeometry::simplices_for_write()
-{
-  return MutableSpan<Simplex>(((::SimplexGeometry *)this)->simplices, this->simplex_num());
 }
 
 /** \} */

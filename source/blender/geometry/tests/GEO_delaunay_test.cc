@@ -12,16 +12,11 @@
 
 using namespace blender::bke;
 
-bool operator==(const Simplex &a, const Simplex &b)
-{
-  return a.v[0] == b.v[0] && a.v[1] == b.v[1] && a.v[2] == b.v[2] && a.v[3] == b.v[3];
-}
-
 namespace blender::geometry::tests {
 
 TEST(delaunay, TetTriangles)
 {
-  Simplex tet{0, 1, 2, 3};
+  int4 tet{0, 1, 2, 3};
   int3 tri0, tri1, tri2, tri3;
   topology::simplex_triangles(tet, tri0, tri1, tri2, tri3);
   EXPECT_EQ(int3(0, 1, 2), tri0);
@@ -32,7 +27,7 @@ TEST(delaunay, TetTriangles)
 
 TEST(delaunay, TetGeometry)
 {
-  Simplex tet{0, 1, 2, 3};
+  int4 tet{0, 1, 2, 3};
   Array<float3> positions{float3(0, 0, 0), float3(0, 1, 0), float3(1, 0, 0), float3(0, 0, 1)};
   float3 v0, v1, v2, v3;
   float3 n0, n1, n2, n3;
@@ -128,43 +123,43 @@ TEST(delaunay, TetCircumCenter)
 TEST(delaunay, TetSideMap)
 {
   { /* Empty list */
-    Array<Simplex> tets = {};
+    Array<int4> tets = {};
     Array<int4> side_map = delaunay::tet_build_side_to_tet_map(tets);
     EXPECT_TRUE(side_map.is_empty());
   }
   { /* One tet */
-    Array<Simplex> tets = {{0, 1, 2, 3}};
+    Array<int4> tets = {{0, 1, 2, 3}};
     Array<int4> side_map = delaunay::tet_build_side_to_tet_map(tets);
     EXPECT_EQ_ARRAY(Span<int4>{{-1, -1, -1, -1}}.data(), side_map.data(), 1);
   }
   { /* Disconnected tets */
-    Array<Simplex> tets = {{0, 1, 2, 3}, {4, 5, 6, 7}};
+    Array<int4> tets = {{0, 1, 2, 3}, {4, 5, 6, 7}};
     Array<int4> side_map = delaunay::tet_build_side_to_tet_map(tets);
     EXPECT_EQ_ARRAY(Span<int4>{{-1, -1, -1, -1}, {-1, -1, -1, -1}}.data(), side_map.data(), 2);
   }
   { /* One shared vertex */
-    Array<Simplex> tets = {{0, 1, 2, 3}, {1, 4, 5, 6}};
+    Array<int4> tets = {{0, 1, 2, 3}, {1, 4, 5, 6}};
     Array<int4> side_map = delaunay::tet_build_side_to_tet_map(tets);
     EXPECT_EQ_ARRAY(Span<int4>{{-1, -1, -1, -1}, {-1, -1, -1, -1}}.data(), side_map.data(), 2);
   }
   { /* One shared edge */
-    Array<Simplex> tets = {{0, 1, 2, 3}, {1, 2, 4, 5}};
+    Array<int4> tets = {{0, 1, 2, 3}, {1, 2, 4, 5}};
     Array<int4> side_map = delaunay::tet_build_side_to_tet_map(tets);
     EXPECT_EQ_ARRAY(Span<int4>{{-1, -1, -1, -1}, {-1, -1, -1, -1}}.data(), side_map.data(), 2);
   }
   { /* One shared side */
-    Array<Simplex> tets = {{0, 1, 2, 3}, {1, 4, 2, 3}};
+    Array<int4> tets = {{0, 1, 2, 3}, {1, 4, 2, 3}};
     Array<int4> side_map = delaunay::tet_build_side_to_tet_map(tets);
     EXPECT_EQ_ARRAY(Span<int4>{{-1, -1, 1, -1}, {-1, -1, -1, 0}}.data(), side_map.data(), 2);
   }
   { /* 3 tets, 2 faces shared */
-    Array<Simplex> tets = {{0, 1, 2, 3}, {1, 4, 2, 3}, {1, 5, 2, 4}};
+    Array<int4> tets = {{0, 1, 2, 3}, {1, 4, 2, 3}, {1, 5, 2, 4}};
     Array<int4> side_map = delaunay::tet_build_side_to_tet_map(tets);
     EXPECT_EQ_ARRAY(
         Span<int4>{{-1, -1, 1, -1}, {2, -1, -1, 0}, {-1, -1, -1, 1}}.data(), side_map.data(), 3);
   }
   {
-    Array<Simplex> tets{{0, 2, 1, 3}, {3, 2, 1, 4}, {4, 2, 1, 5}};
+    Array<int4> tets{{0, 2, 1, 3}, {3, 2, 1, 4}, {4, 2, 1, 5}};
     Array<int4> side_map = delaunay::tet_build_side_to_tet_map(tets);
     EXPECT_EQ_ARRAY(
         Span<int4>{{-1, -1, 1, -1}, {0, -1, 2, -1}, {1, -1, -1, -1}}.data(), side_map.data(), 3);
@@ -179,7 +174,7 @@ TEST(delaunay, TetFind)
                                 float3(0, 0, 1),
                                 float3(1, 1, 1),
                                 float3(1, 2, 0)};
-  const Array<Simplex> tets{{0, 2, 1, 3}, {3, 2, 1, 4}, {4, 2, 1, 5}};
+  const Array<int4> tets{{0, 2, 1, 3}, {3, 2, 1, 4}, {4, 2, 1, 5}};
 
   const Array<int4> side_map = delaunay::tet_build_side_to_tet_map(tets);
   EXPECT_EQ_ARRAY(
@@ -200,7 +195,7 @@ TEST(delaunay, TetFindCoplanar)
                                 float3(0, 0, 1),
                                 float3(1, 1, 1),
                                 float3(1, 2, 0)};
-  const Array<Simplex> tets{{0, 2, 1, 3}, {3, 2, 1, 4}, {4, 2, 1, 5}};
+  const Array<int4> tets{{0, 2, 1, 3}, {3, 2, 1, 4}, {4, 2, 1, 5}};
 
   const Array<int4> side_map = delaunay::tet_build_side_to_tet_map(tets);
   EXPECT_EQ_ARRAY(
@@ -231,25 +226,25 @@ TEST(delaunay, TetFindGrid)
     }
   }
 
-  Array<Simplex> tets((size - 1) * (size - 1) * (size - 1) * 6);
+  Array<int4> tets((size - 1) * (size - 1) * (size - 1) * 6);
   for (const int k : IndexRange(size - 1)) {
     for (const int j : IndexRange(size - 1)) {
       for (const int i : IndexRange(size - 1)) {
-        const unsigned int v000 = i + (j + k * size) * size;
-        const unsigned int v100 = v000 + 1;
-        const unsigned int v010 = v000 + size;
-        const unsigned int v110 = v100 + size;
-        const unsigned int v001 = v000 + size * size;
-        const unsigned int v101 = v100 + size * size;
-        const unsigned int v011 = v010 + size * size;
-        const unsigned int v111 = v110 + size * size;
+        const int v000 = i + (j + k * size) * size;
+        const int v100 = v000 + 1;
+        const int v010 = v000 + size;
+        const int v110 = v100 + size;
+        const int v001 = v000 + size * size;
+        const int v101 = v100 + size * size;
+        const int v011 = v010 + size * size;
+        const int v111 = v110 + size * size;
         IndexRange tet_range((i + (j + k * (size - 1)) * (size - 1)) * 6, 6);
-        tets[tet_range[0]] = Simplex{{v000, v010, v100, v001}};
-        tets[tet_range[1]] = Simplex{{v100, v101, v001, v010}};
-        tets[tet_range[2]] = Simplex{{v100, v010, v110, v101}};
-        tets[tet_range[3]] = Simplex{{v111, v110, v011, v101}};
-        tets[tet_range[4]] = Simplex{{v011, v110, v010, v101}};
-        tets[tet_range[5]] = Simplex{{v011, v010, v001, v101}};
+        tets[tet_range[0]] = int4{v000, v010, v100, v001};
+        tets[tet_range[1]] = int4{v100, v101, v001, v010};
+        tets[tet_range[2]] = int4{v100, v010, v110, v101};
+        tets[tet_range[3]] = int4{v111, v110, v011, v101};
+        tets[tet_range[4]] = int4{v011, v110, v010, v101};
+        tets[tet_range[5]] = int4{v011, v010, v001, v101};
       }
     }
   }
@@ -342,7 +337,7 @@ TEST(delaunay, EnclosingSimplex)
 TEST(delaunay, TetFanConstruct)
 {
   { /* Empty list */
-    Array<Simplex> tets = {};
+    Array<int4> tets = {};
     Array<int4> side_map = delaunay::tet_build_side_to_tet_map(tets);
     Array<bool> replace = {};
     IndexRange old_tets, new_tets;
@@ -351,21 +346,22 @@ TEST(delaunay, TetFanConstruct)
     EXPECT_EQ(0, side_map.size());
   }
   { /* One tet, no replace */
-    Array<Simplex> tets = {{0, 1, 2, 3}};
+    Array<int4> tets = {{0, 1, 2, 3}};
     Array<int4> side_map = delaunay::tet_build_side_to_tet_map(tets);
     Array<bool> replace = {false};
     IndexRange old_tets, new_tets;
     delaunay::tet_fan_construct(tets, side_map, replace, 4, old_tets, new_tets);
-    EXPECT_EQ_ARRAY(Span<Simplex>{{0, 1, 2, 3}}.data(), tets.data(), 1);
+    EXPECT_EQ_ARRAY(Span<int4>{{0, 1, 2, 3}}.data(), tets.data(), 1);
     EXPECT_EQ_ARRAY(Span<int4>{{-1, -1, -1, -1}}.data(), side_map.data(), 1);
   }
   { /* One tet */
-    Array<Simplex> tets = {{0, 1, 2, 3}};
+    Array<int4> tets = {{0, 1, 2, 3}};
     Array<int4> side_map = delaunay::tet_build_side_to_tet_map(tets);
     Array<bool> replace = {true};
     IndexRange old_tets, new_tets;
     delaunay::tet_fan_construct(tets, side_map, replace, 4, old_tets, new_tets);
-    EXPECT_EQ_ARRAY(Span<Simplex>{{0, 1, 2, 4}, {1, 0, 3, 4}, {2, 1, 3, 4}, {3, 0, 2, 4}}.data(),
+    EXPECT_EQ_ARRAY(
+        Span<int4>{{0, 1, 2, 4}, {1, 0, 3, 4}, {2, 1, 3, 4}, {3, 0, 2, 4}}.data(),
                     tets.data(),
                     4);
     EXPECT_EQ_ARRAY(Span<int4>{{-1, 1, 2, 3}, {-1, 0, 3, 2}, {-1, 0, 1, 3}, {-1, 1, 0, 2}}.data(),
@@ -373,13 +369,13 @@ TEST(delaunay, TetFanConstruct)
                     4);
   }
   { /* Disconnected tets */
-    Array<Simplex> tets = {{0, 1, 2, 3}, {4, 5, 6, 7}};
+    Array<int4> tets = {{0, 1, 2, 3}, {4, 5, 6, 7}};
     Array<int4> side_map = delaunay::tet_build_side_to_tet_map(tets);
     Array<bool> replace = {false, true};
     IndexRange old_tets, new_tets;
     delaunay::tet_fan_construct(tets, side_map, replace, 8, old_tets, new_tets);
     EXPECT_EQ_ARRAY(
-        Span<Simplex>{{0, 1, 2, 3}, {4, 5, 6, 8}, {5, 4, 7, 8}, {6, 5, 7, 8}, {7, 4, 6, 8}}.data(),
+        Span<int4>{{0, 1, 2, 3}, {4, 5, 6, 8}, {5, 4, 7, 8}, {6, 5, 7, 8}, {7, 4, 6, 8}}.data(),
         tets.data(),
         5);
     EXPECT_EQ_ARRAY(
@@ -389,13 +385,13 @@ TEST(delaunay, TetFanConstruct)
         5);
   }
   { /* One shared vertex */
-    Array<Simplex> tets = {{0, 1, 2, 3}, {1, 4, 5, 6}};
+    Array<int4> tets = {{0, 1, 2, 3}, {1, 4, 5, 6}};
     Array<int4> side_map = delaunay::tet_build_side_to_tet_map(tets);
     Array<bool> replace = {false, true};
     IndexRange old_tets, new_tets;
     delaunay::tet_fan_construct(tets, side_map, replace, 7, old_tets, new_tets);
     EXPECT_EQ_ARRAY(
-        Span<Simplex>{{0, 1, 2, 3}, {1, 4, 5, 7}, {4, 1, 6, 7}, {5, 4, 6, 7}, {6, 1, 5, 7}}.data(),
+        Span<int4>{{0, 1, 2, 3}, {1, 4, 5, 7}, {4, 1, 6, 7}, {5, 4, 6, 7}, {6, 1, 5, 7}}.data(),
         tets.data(),
         5);
     EXPECT_EQ_ARRAY(
@@ -405,13 +401,13 @@ TEST(delaunay, TetFanConstruct)
         5);
   }
   { /* One shared edge */
-    Array<Simplex> tets = {{0, 1, 2, 3}, {1, 2, 4, 5}};
+    Array<int4> tets = {{0, 1, 2, 3}, {1, 2, 4, 5}};
     Array<int4> side_map = delaunay::tet_build_side_to_tet_map(tets);
     Array<bool> replace = {false, true};
     IndexRange old_tets, new_tets;
     delaunay::tet_fan_construct(tets, side_map, replace, 6, old_tets, new_tets);
     EXPECT_EQ_ARRAY(
-        Span<Simplex>{{0, 1, 2, 3}, {1, 2, 4, 6}, {2, 1, 5, 6}, {4, 2, 5, 6}, {5, 1, 4, 6}}.data(),
+        Span<int4>{{0, 1, 2, 3}, {1, 2, 4, 6}, {2, 1, 5, 6}, {4, 2, 5, 6}, {5, 1, 4, 6}}.data(),
         tets.data(),
         5);
     EXPECT_EQ_ARRAY(
@@ -421,13 +417,13 @@ TEST(delaunay, TetFanConstruct)
         5);
   }
   { /* One shared side */
-    Array<Simplex> tets = {{0, 1, 2, 3}, {1, 4, 2, 3}};
+    Array<int4> tets = {{0, 1, 2, 3}, {1, 4, 2, 3}};
     Array<int4> side_map = delaunay::tet_build_side_to_tet_map(tets);
     Array<bool> replace = {false, true};
     IndexRange old_tets, new_tets;
     delaunay::tet_fan_construct(tets, side_map, replace, 5, old_tets, new_tets);
     EXPECT_EQ_ARRAY(
-        Span<Simplex>{{0, 1, 2, 3}, {1, 4, 2, 5}, {4, 1, 3, 5}, {2, 4, 3, 5}, {3, 1, 2, 5}}.data(),
+        Span<int4>{{0, 1, 2, 3}, {1, 4, 2, 5}, {4, 1, 3, 5}, {2, 4, 3, 5}, {3, 1, 2, 5}}.data(),
         tets.data(),
         5);
     EXPECT_EQ_ARRAY(
@@ -437,13 +433,13 @@ TEST(delaunay, TetFanConstruct)
         5);
   }
   { /* One shared side, remove 0 (shift tet 1 to position 0) */
-    Array<Simplex> tets = {{0, 1, 2, 3}, {1, 4, 2, 3}};
+    Array<int4> tets = {{0, 1, 2, 3}, {1, 4, 2, 3}};
     Array<int4> side_map = delaunay::tet_build_side_to_tet_map(tets);
     Array<bool> replace = {true, false};
     IndexRange old_tets, new_tets;
     delaunay::tet_fan_construct(tets, side_map, replace, 5, old_tets, new_tets);
     EXPECT_EQ_ARRAY(
-        Span<Simplex>{{1, 4, 2, 3}, {0, 1, 2, 5}, {1, 0, 3, 5}, {2, 1, 3, 5}, {3, 0, 2, 5}}.data(),
+        Span<int4>{{1, 4, 2, 3}, {0, 1, 2, 5}, {1, 0, 3, 5}, {2, 1, 3, 5}, {3, 0, 2, 5}}.data(),
         tets.data(),
         5);
     EXPECT_EQ_ARRAY(
@@ -453,13 +449,13 @@ TEST(delaunay, TetFanConstruct)
         5);
   }
   { /* 3 tets, 2 faces shared */
-    Array<Simplex> tets = {{0, 1, 2, 3}, {1, 4, 2, 3}, {1, 5, 2, 4}};
+    Array<int4> tets = {{0, 1, 2, 3}, {1, 4, 2, 3}, {1, 5, 2, 4}};
     Array<int4> side_map = delaunay::tet_build_side_to_tet_map(tets);
     Array<bool> replace = {true, false, false};
     IndexRange old_tets, new_tets;
     delaunay::tet_fan_construct(tets, side_map, replace, 6, old_tets, new_tets);
     EXPECT_EQ_ARRAY(
-        Span<Simplex>{
+        Span<int4>{
             {1, 4, 2, 3}, {1, 5, 2, 4}, {0, 1, 2, 6}, {1, 0, 3, 6}, {2, 1, 3, 6}, {3, 0, 2, 6}}
             .data(),
         tets.data(),
@@ -475,12 +471,12 @@ TEST(delaunay, TetFanConstruct)
                     6);
   }
   { /* 5 tets, center tet fully surrounded */
-    Array<Simplex> tets{{0, 1, 2, 3}, {0, 2, 1, 4}, {0, 1, 3, 5}, {1, 2, 3, 6}, {2, 0, 3, 7}};
+    Array<int4> tets{{0, 1, 2, 3}, {0, 2, 1, 4}, {0, 1, 3, 5}, {1, 2, 3, 6}, {2, 0, 3, 7}};
     Array<int4> side_map = delaunay::tet_build_side_to_tet_map(tets);
     Array<bool> replace = {true, false, false, false, false};
     IndexRange old_tets, new_tets;
     delaunay::tet_fan_construct(tets, side_map, replace, 8, old_tets, new_tets);
-    EXPECT_EQ_ARRAY(Span<Simplex>{{0, 2, 1, 4},
+    EXPECT_EQ_ARRAY(Span<int4>{{0, 2, 1, 4},
                                   {0, 1, 3, 5},
                                   {1, 2, 3, 6},
                                   {2, 0, 3, 7},

@@ -45,16 +45,14 @@ enum class VertNumber { V1, V2, V3, V4 };
 template<int V>
 static VArray<int> construct_simplex_verts_gvarray(const SimplexGeometry &geometry)
 {
-  const Span<Simplex> simplices = geometry.simplices();
-  return VArray<int>::ForFunc(simplices.size(),
-                              [simplices](const int i) -> int { return simplices[i].v[V]; });
+  const Span<int4> verts = geometry.simplex_vertices();
+  return VArray<int>::ForFunc(verts.size(), [verts](const int i) -> int { return verts[i][V]; });
 }
 
 static VArray<int> construct_simplex_verts_gvarray(const SimplexGeometry &geometry,
                                                    const VertNumber vertex,
                                                    const eAttrDomain domain)
 {
-  const Span<Simplex> simplices = geometry.simplices();
   if (domain == ATTR_DOMAIN_SIMPLEX) {
     switch (vertex) {
       case VertNumber::V1:
@@ -118,49 +116,35 @@ class SimplexVertsInput final : public bke::SimplexFieldInput {
 };
 
 template <int V>
-static VArray<float3> construct_simplex_positions_gvarray(const SimplexGeometry &geometry,
-                                                          const Mesh &mesh)
+static VArray<float3> construct_simplex_positions_gvarray(const SimplexGeometry &geometry)
 {
-  const Span<Simplex> simplices = geometry.simplices();
-  const Span<MVert> verts = mesh.verts();
+  const Span<float3> positions = geometry.positions();
+  const Span<int4> verts = geometry.simplex_vertices();
 
-  return VArray<float3>::ForFunc(simplices.size(), [verts, simplices](const int i) {
-    const int index = simplices[i].v[V];
-    return verts.index_range().contains(index) ? float3(verts[index].co) : float3(0.0f);
+  return VArray<float3>::ForFunc(verts.size(), [positions, verts](const int i) {
+    const int index = verts[i][V];
+    return positions.index_range().contains(index) ? positions[index] : float3(0.0f);
   });
 }
 
 static VArray<float3> construct_simplex_positions_gvarray(const SimplexGeometry &geometry,
-                                                          const Mesh &mesh,
                                                           const VertNumber vertex,
                                                           const eAttrDomain domain)
 {
-  const Span<Simplex> simplices = geometry.simplices();
-  const Span<MVert> verts = mesh.verts();
-
   switch (vertex) {
     case VertNumber::V1:
       return geometry.attributes().adapt_domain<float3>(
-          construct_simplex_positions_gvarray<0>(geometry, mesh), ATTR_DOMAIN_SIMPLEX, domain);
+          construct_simplex_positions_gvarray<0>(geometry), ATTR_DOMAIN_SIMPLEX, domain);
     case VertNumber::V2:
       return geometry.attributes().adapt_domain<float3>(
-          construct_simplex_positions_gvarray<1>(geometry, mesh), ATTR_DOMAIN_SIMPLEX, domain);
+          construct_simplex_positions_gvarray<1>(geometry), ATTR_DOMAIN_SIMPLEX, domain);
     case VertNumber::V3:
       return geometry.attributes().adapt_domain<float3>(
-          construct_simplex_positions_gvarray<2>(geometry, mesh), ATTR_DOMAIN_SIMPLEX, domain);
+          construct_simplex_positions_gvarray<2>(geometry), ATTR_DOMAIN_SIMPLEX, domain);
     case VertNumber::V4:
       return geometry.attributes().adapt_domain<float3>(
-          construct_simplex_positions_gvarray<3>(geometry, mesh), ATTR_DOMAIN_SIMPLEX, domain);
+          construct_simplex_positions_gvarray<3>(geometry), ATTR_DOMAIN_SIMPLEX, domain);
   }
-}
-
-static VArray<float3> construct_simplex_positions_gvarray_fallback(const SimplexGeometry &geometry,
-                                                                   const eAttrDomain domain)
-{
-  const Span<Simplex> simplices = geometry.simplices();
-
-  return geometry.attributes().adapt_domain<float3>(
-      VArray<float3>::ForSingle(float3(0.0f), simplices.size()), ATTR_DOMAIN_SIMPLEX, domain);
 }
 
 class SimplexPositionFieldInput final : public bke::SimplexFieldInput {
@@ -175,18 +159,10 @@ class SimplexPositionFieldInput final : public bke::SimplexFieldInput {
   }
 
   GVArray get_varray_for_context(const SimplexGeometry &geometry,
-                                 const Mesh &mesh,
                                  const eAttrDomain domain,
                                  IndexMask /*mask*/) const final
   {
-    return construct_simplex_positions_gvarray(geometry, mesh, vertex_, domain);
-  }
-
-  GVArray get_varray_for_context(const SimplexGeometry &geometry,
-                                 const eAttrDomain domain,
-                                 IndexMask /*mask*/) const final
-  {
-    return construct_simplex_positions_gvarray_fallback(geometry, domain);
+    return construct_simplex_positions_gvarray(geometry, vertex_, domain);
   }
 
   uint64_t hash() const override

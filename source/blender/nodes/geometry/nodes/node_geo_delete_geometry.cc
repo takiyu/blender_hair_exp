@@ -23,6 +23,7 @@
 namespace blender::nodes::node_geo_delete_geometry_cc {
 
 using blender::bke::CustomDataAttributes;
+using blender::bke::SimplexGeometry;
 
 template<typename T>
 static void copy_data_based_on_map(const Span<T> src,
@@ -305,6 +306,44 @@ static void copy_masked_polys_to_new_mesh(const Mesh &src_mesh,
   }
 }
 
+static void copy_masked_simplices_to_new_simplex_geometry(const SimplexGeometry &src_geometry,
+                                                          SimplexGeometry &dst_geometry,
+                                                          Span<int> vertex_map,
+                                                          Span<int> masked_simplex_indices)
+{
+  const Span<int4> src_tets = src_geometry.simplex_vertices();
+  MutableSpan<int4> dst_tets = dst_geometry.simplex_vertices_for_write();
+
+  for (const int i_dst : masked_simplex_indices.index_range()) {
+    const int i_src = masked_simplex_indices[i_dst];
+
+    const int4 &tet_src = src_tets[i_src];
+    int4 &tet_dst = dst_tets[i_dst];
+
+    for (int k : IndexRange(4)) {
+      tet_dst[k] = vertex_map[tet_src[k]];
+    }
+  }
+}
+
+/* Only simplices changed. */
+static void copy_masked_simplices_to_new_simplex_geometry(const SimplexGeometry &src_geometry,
+                                                          SimplexGeometry &dst_geometry,
+                                                          Span<int> masked_simplex_indices)
+{
+  const Span<int4> src_tets = src_geometry.simplex_vertices();
+  MutableSpan<int4> dst_tets = dst_geometry.simplex_vertices_for_write();
+
+  for (const int i_dst : masked_simplex_indices.index_range()) {
+    const int i_src = masked_simplex_indices[i_dst];
+
+    const int4 &tet_src = src_tets[i_src];
+    int4 &tet_dst = dst_tets[i_dst];
+
+    tet_dst = tet_src;
+  }
+}
+
 static void delete_curves_selection(GeometrySet &geometry_set,
                                     const Field<bool> &selection_field,
                                     const eAttrDomain selection_domain)
@@ -383,24 +422,6 @@ static void delete_selected_instances(GeometrySet &geometry_set,
   }
 
   instances.remove(selection);
-}
-
-static void delete_selected_simplices(GeometrySet &geometry_set,
-                                      const Field<bool> &selection_field)
-{
-  bke::SimplexGeometry &geometry = *geometry_set.get_simplex_for_write();
-  bke::SimplexFieldContext field_context{geometry};
-
-  fn::FieldEvaluator evaluator{field_context, geometry.simplex_num()};
-  evaluator.set_selection(selection_field);
-  evaluator.evaluate();
-  const IndexMask selection = evaluator.get_evaluated_selection_as_mask();
-  if (selection.is_empty()) {
-    geometry_set.remove<SimplexComponent>();
-    return;
-  }
-
-  geometry.remove(selection);
 }
 
 static void compute_selected_verts_from_vertex_selection(const Span<bool> vertex_selection,
@@ -1097,6 +1118,238 @@ static void separate_mesh_selection(GeometrySet &geometry_set,
   do_mesh_separation(geometry_set, src_mesh, selection_span, selection_domain, mode);
 }
 
+static void compute_selected_simplex_from_vertex_selection(const SimplexGeometry &geometry,
+                                                           const Span<bool> vertex_selection,
+                                                           Vector<int> &r_selected_simplex_indices,
+                                                           int *r_selected_simplex_num)
+{
+  BLI_assert(geometry.point_num() == vertex_selection.size());
+  const Span<int4> tets = geometry.simplex_vertices();
+
+  r_selected_simplex_indices.reserve(geometry.simplex_num());
+
+  for (const int i : tets.index_range()) {
+    const int4 &tet = tets[i];
+
+    bool all_verts_in_selection = true;
+    for (const int k : IndexRange(4)) {
+      all_verts_in_selection &= vertex_selection[tet[k]];
+    }
+    if (all_verts_in_selection) {
+      r_selected_simplex_indices.append_unchecked(i);
+    }
+  }
+
+  *r_selected_simplex_num = r_selected_simplex_indices.size();
+}
+
+/**
+ * Checks for every simplex if it is in `simplex_selection`.
+ */
+static void compute_selected_simplex_from_simplex_selection(
+    const SimplexGeometry &geometry,
+    const Span<bool> simplex_selection,
+    Vector<int> &r_selected_simplex_indices,
+    int *r_selected_simplex_num)
+{
+  BLI_assert(geometry.simplex_num() == simplex_selection.size());
+  const Span<int4> tets = geometry.simplex_vertices();
+
+  r_selected_simplex_indices.reserve(geometry.simplex_num());
+
+  for (const int i : tets.index_range()) {
+    /* We keep this one. */
+    if (simplex_selection[i]) {
+      r_selected_simplex_indices.append_unchecked(i);
+    }
+  }
+  *r_selected_simplex_num = r_selected_simplex_indices.size();
+}
+
+/**
+ * Checks for every vertex if it is in `vertex_selection`. The simplices are kept if all
+ * vertices of that simple are in the selection.
+ */
+static void compute_selected_simplex_data_from_vertex_selection(
+    const SimplexGeometry &geometry,
+    const Span<bool> vertex_selection,
+    MutableSpan<int> r_vertex_map,
+    Vector<int> &r_selected_simplex_indices,
+    int *r_selected_verts_num,
+    int *r_selected_simplex_num)
+{
+  compute_selected_verts_from_vertex_selection(
+      vertex_selection, r_vertex_map, r_selected_verts_num);
+
+  compute_selected_simplex_from_vertex_selection(
+      geometry, vertex_selection, r_selected_simplex_indices, r_selected_simplex_num);
+}
+
+/**
+ * Checks for every tet if it is in `simplex_selection`. If it is, the vertices
+ * belonging to that simplex are kept as well.
+ */
+static void compute_selected_simplex_data_from_simplex_selection(const SimplexGeometry &geometry,
+                                                           const Span<bool> simplex_selection,
+                                                           MutableSpan<int> r_vertex_map,
+                                                           Vector<int> &r_selected_simplex_indices,
+                                                           int *r_selected_verts_num,
+                                                           int *r_selected_simplex_num)
+{
+  BLI_assert(geometry.simplex_num() == simplex_selection.size());
+  const Span<int4> tets = geometry.simplex_vertices();
+
+  r_vertex_map.fill(-1);
+
+  r_selected_simplex_indices.reserve(geometry.simplex_num());
+
+  int selected_verts_num = 0;
+  for (const int i : tets.index_range()) {
+    const int4 &tet = tets[i];
+    /* We keep this one. */
+    if (simplex_selection[i]) {
+      r_selected_simplex_indices.append_unchecked(i);
+
+      /* Add the vertices. */
+      for (const int k : IndexRange(4)) {
+        if (r_vertex_map[tet[k]] == -1) {
+          r_vertex_map[tet[k]] = selected_verts_num;
+          selected_verts_num++;
+        }
+      }
+    }
+  }
+  *r_selected_verts_num = selected_verts_num;
+  *r_selected_simplex_num = r_selected_simplex_indices.size();
+}
+
+/**
+ * Keep the parts of the simplex geometry that are in the selection.
+ */
+static void do_simplex_separation(GeometrySet &geometry_set,
+                                  const SimplexGeometry &geometry_in,
+                                  const Span<bool> selection,
+                                  const eAttrDomain domain,
+                                  const GeometryNodeDeleteGeometryMode mode)
+{
+  /* Needed in all cases. */
+  Vector<int> selected_simplex_indices;
+  int selected_simplex_num = 0;
+
+  SimplexGeometry *geometry_out;
+
+  Map<AttributeIDRef, AttributeKind> attributes;
+  geometry_set.gather_attributes_for_propagation(
+      {GEO_COMPONENT_TYPE_SIMPLEX}, GEO_COMPONENT_TYPE_SIMPLEX, false, attributes);
+
+  switch (mode) {
+    case GEO_NODE_DELETE_GEOMETRY_MODE_ALL: {
+      Array<int> vertex_map(geometry_in.point_num());
+      int selected_verts_num = 0;
+
+      /* Fill all the maps based on the selection. */
+      switch (domain) {
+        case ATTR_DOMAIN_POINT:
+          compute_selected_simplex_data_from_vertex_selection(geometry_in,
+                                                              selection,
+                                                              vertex_map,
+                                                              selected_simplex_indices,
+                                                              &selected_verts_num,
+                                                              &selected_simplex_num);
+          break;
+        case ATTR_DOMAIN_SIMPLEX:
+          compute_selected_simplex_data_from_simplex_selection(geometry_in,
+                                                              selection,
+                                                              vertex_map,
+                                                              selected_simplex_indices,
+                                                              &selected_verts_num,
+                                                              &selected_simplex_num);
+          break;
+        default:
+          BLI_assert_unreachable();
+          break;
+      }
+      geometry_out = new SimplexGeometry(selected_verts_num, selected_simplex_num);
+
+      /* Copy the selected parts of the geometry over to the new geometry. */
+      copy_masked_simplices_to_new_simplex_geometry(
+          geometry_in, *geometry_out, vertex_map, selected_simplex_indices);
+
+      /* Copy attributes. */
+      copy_attributes_based_on_map(attributes,
+                                   geometry_in.attributes(),
+                                   geometry_out->attributes_for_write(),
+                                   ATTR_DOMAIN_POINT,
+                                   vertex_map);
+      copy_attributes_based_on_mask(
+          attributes,
+          geometry_in.attributes(),
+          geometry_out->attributes_for_write(),
+          ATTR_DOMAIN_SIMPLEX,
+          IndexMask(Vector<int64_t>(selected_simplex_indices.as_span())));
+      break;
+    }
+    case GEO_NODE_DELETE_GEOMETRY_MODE_EDGE_FACE:
+    case GEO_NODE_DELETE_GEOMETRY_MODE_ONLY_FACE: {
+      /* Fill all the maps based on the selection. */
+      switch (domain) {
+        case ATTR_DOMAIN_POINT:
+          compute_selected_simplex_from_vertex_selection(
+              geometry_in, selection, selected_simplex_indices, &selected_simplex_num);
+          break;
+        case ATTR_DOMAIN_SIMPLEX:
+          compute_selected_simplex_from_simplex_selection(
+              geometry_in, selection, selected_simplex_indices, &selected_simplex_num);
+          break;
+        default:
+          BLI_assert_unreachable();
+          break;
+      }
+      geometry_out = new SimplexGeometry(geometry_in.point_num(), selected_simplex_num);
+
+      /* Copy the selected parts of the mesh over to the new mesh. */
+      copy_masked_simplices_to_new_simplex_geometry(
+          geometry_in, *geometry_out, selected_simplex_indices);
+
+      /* Copy attributes. */
+      copy_attributes(attributes,
+                      geometry_in.attributes(),
+                      geometry_out->attributes_for_write(),
+                      {ATTR_DOMAIN_POINT});
+      copy_attributes_based_on_mask(
+          attributes,
+          geometry_in.attributes(),
+          geometry_out->attributes_for_write(),
+          ATTR_DOMAIN_SIMPLEX,
+          IndexMask(Vector<int64_t>(selected_simplex_indices.as_span())));
+      break;
+    }
+  }
+
+  geometry_set.replace_simplex(geometry_out);
+}
+
+static void separate_simplex_selection(GeometrySet &geometry_set,
+                                       const Field<bool> &selection_field,
+                                       const eAttrDomain selection_domain,
+                                       const GeometryNodeDeleteGeometryMode mode)
+{
+  const blender::bke::SimplexGeometry &src_geometry = *geometry_set.get_simplex_for_read();
+  bke::SimplexFieldContext field_context{src_geometry, selection_domain};
+  fn::FieldEvaluator evaluator{field_context, src_geometry.attributes().domain_size(selection_domain)};
+  evaluator.add(selection_field);
+  evaluator.evaluate();
+  const VArray<bool> selection = evaluator.get_evaluated<bool>(0);
+  /* Check if there is anything to delete. */
+  if (selection.is_empty() || (selection.is_single() && selection.get_internal_single())) {
+    return;
+  }
+
+  const VArraySpan<bool> selection_span{selection};
+
+  do_simplex_separation(geometry_set, src_geometry, selection_span, selection_domain, mode);
+}
+
 }  // namespace blender::nodes::node_geo_delete_geometry_cc
 
 namespace blender::nodes {
@@ -1136,8 +1389,8 @@ void separate_geometry(GeometrySet &geometry_set,
     }
   }
   if (geometry_set.has_simplex()) {
-    if (domain == ATTR_DOMAIN_SIMPLEX) {
-      file_ns::delete_selected_simplices(geometry_set, selection_field);
+    if (ELEM(domain, ATTR_DOMAIN_POINT, ATTR_DOMAIN_SIMPLEX)) {
+      file_ns::separate_simplex_selection(geometry_set, selection_field, domain, mode);
       some_valid_domain = true;
     }
   }

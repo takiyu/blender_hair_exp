@@ -264,12 +264,7 @@ GVArray SimplexFieldInput::get_varray_for_context(const fn::FieldContext &contex
   if (const GeometryFieldContext *geometry_context = dynamic_cast<const GeometryFieldContext *>(
           &context)) {
     if (const SimplexGeometry *geometry = geometry_context->simplices()) {
-      if (const Mesh *mesh = geometry_context->mesh()) {
-        return this->get_varray_for_context(*geometry, *mesh, geometry_context->domain(), mask);
-      }
-      else {
-        return this->get_varray_for_context(*geometry, geometry_context->domain(), mask);
-      }
+      return this->get_varray_for_context(*geometry, geometry_context->domain(), mask);
     }
   }
   if (const SimplexFieldContext *simplex_context = dynamic_cast<const SimplexFieldContext *>(&context)) {
