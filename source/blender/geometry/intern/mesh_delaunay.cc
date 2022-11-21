@@ -240,12 +240,12 @@ Mesh *simplex_to_dual_mesh(const Span<float3> positions,
     }
   }
 
-  Vector<MPoly> polys;
-  const int num_poly = double_faces ? 2 * edge_start_tet.size() : edge_start_tet.size();
-  polys.reserve(num_poly);
-  /* List of loops for both directions of faces.
-   * The 2nd list is only used when double faces are generated.
+  /* List of loops and polys for both directions of faces.
+   * The b lists are only used when double faces are generated.
    */
+  Vector<MPoly> polys_a, polys_b;
+  polys_a.reserve(edge_start_tet.size());
+  polys_b.reserve(edge_start_tet.size());
   Vector<MLoop> loops_a;
   Vector<MLoop> loops_b;
 
@@ -292,12 +292,14 @@ Mesh *simplex_to_dual_mesh(const Span<float3> positions,
             tet_vert_b = tet_verts.size();
             tet_verts.append(tet_centers[tet_i]);
           }
+          /* Loop order for b is inverted below */
           loops_b.append({(unsigned int)tet_vert_b});
         }
       }
       else {
         loops_a.append({(unsigned int)tet_i});
         if (double_faces) {
+          /* Loop order for b is inverted below */
           loops_b.append({(unsigned int)tet_i});
         }
       }
@@ -315,20 +317,39 @@ Mesh *simplex_to_dual_mesh(const Span<float3> positions,
     }
 
     poly_a.totloop = loops_a.size() - poly_a.loopstart;
-    polys.append(poly_a);
+    polys_a.append(poly_a);
     if (double_faces) {
       poly_b.totloop = (loops_b.size() - poly_b.loopstart) ;
-      polys.append(poly_b);
+      polys_b.append(poly_b);
     }
   }
 
   const Span<MVert> vert_span = separate_verts ? tet_verts.as_span() : tet_centers.as_span();
   Mesh *mesh = BKE_mesh_new_nomain(
-      vert_span.size(), 0, 0, loops_a.size() + loops_b.size(), polys.size());
+      vert_span.size(), 0, 0, loops_a.size() + loops_b.size(), polys_a.size() + polys_b.size());
   mesh->verts_for_write().copy_from(vert_span);
-  mesh->polys_for_write().copy_from(polys);
-  mesh->loops_for_write().slice(0, loops_a.size()).copy_from(loops_a);
-  mesh->loops_for_write().slice(loops_a.size(), loops_b.size()).copy_from(loops_b);
+
+  MutableSpan<MPoly> mesh_polys_a = mesh->polys_for_write().slice(0, polys_a.size());
+  MutableSpan<MPoly> mesh_polys_b = mesh->polys_for_write().slice(polys_a.size(), polys_b.size());
+  mesh_polys_a.copy_from(polys_a);
+  for (const int i : mesh_polys_b.index_range()) {
+    MPoly &poly = mesh_polys_b[i];
+    /* Fix loopstart offset for the inverse faces */
+    poly.loopstart = polys_b[i].loopstart + loops_a.size();
+    poly.totloop = polys_b[i].totloop;
+  }
+
+  MutableSpan<MLoop> mesh_loops_a = mesh->loops_for_write().slice(0, loops_a.size());
+  MutableSpan<MLoop> mesh_loops_b = mesh->loops_for_write().slice(loops_a.size(), loops_b.size());
+  mesh_loops_a.copy_from(loops_a);
+  for (const int poly_i : mesh_polys_b.index_range()) {
+    const MPoly &poly = mesh_polys_b[poly_i];
+    IndexRange loop_range(poly.loopstart, poly.totloop);
+    for (const int loop_i : loop_range) {
+      /* Invert the loop for b for correct winding */
+      mesh_loops_b[loop_i] = loops_b[loop_range[loop_range.last() - loop_i]];
+    }
+  }
   BKE_mesh_calc_edges(mesh, false, false);
 
   BKE_mesh_validate(mesh, true, true);
