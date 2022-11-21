@@ -18,16 +18,18 @@
 namespace blender::nodes::node_geo_simplex_to_mesh_cc {
 
 using blender::bke::SimplexGeometry;
-using blender::geometry::simplex::SimplexFaceMode;
+using blender::geometry::simplex::SimplexToMeshMode;
 
 static void node_layout(uiLayout *layout, bContext * /*C*/, PointerRNA *ptr)
 {
-  uiItemR(layout, ptr, "face_mode", 0, "", ICON_NONE);
+  uiItemR(layout, ptr, "mode", 0, "", ICON_NONE);
+  uiItemR(layout, ptr, "output", 0, "", ICON_NONE);
 }
 
 static void node_init(bNodeTree * /*tree*/, bNode *node)
 {
-  node->custom1 = GEO_NODE_SIMPLEX_TO_MESH_FACES_ALL;
+  node->custom1 = GEO_NODE_SIMPLEX_TO_MESH_SEPARATE;
+  node->custom2 = GEO_NODE_SIMPLEX_TO_MESH_TETRAHEDRA;
 }
 
 static void node_declare(NodeDeclarationBuilder &b)
@@ -48,26 +50,43 @@ static void node_declare(NodeDeclarationBuilder &b)
   b.add_output<decl::Geometry>(N_("Mesh"));
 }
 
-static SimplexFaceMode get_face_mode(
-    GeometryNodeSimpleToMeshFaceMode face_mode_dna)
+static SimplexToMeshMode get_face_mode(GeometryNodeSimplexToMeshMode mode_dna)
 {
-  switch (face_mode_dna) {
-    case GEO_NODE_SIMPLEX_TO_MESH_FACES_ALL:
-      return SimplexFaceMode::All;
-    case GEO_NODE_SIMPLEX_TO_MESH_FACES_SHARED:
-      return SimplexFaceMode::Shared;
+  switch (mode_dna) {
+    case GEO_NODE_SIMPLEX_TO_MESH_SEPARATE:
+      return SimplexToMeshMode::Separate;
+    case GEO_NODE_SIMPLEX_TO_MESH_SHARED_VERTS:
+      return SimplexToMeshMode::SharedVerts;
+    case GEO_NODE_SIMPLEX_TO_MESH_SHARED_FACES:
+      return SimplexToMeshMode::SharedFaces;
   }
 }
 
 static void node_geo_exec(GeoNodeExecParams params)
 {
   GeometrySet geometry_set = params.extract_input<GeometrySet>("Geometry");
-  const SimplexFaceMode face_mode = get_face_mode((GeometryNodeSimpleToMeshFaceMode)params.node().custom1);
+  const SimplexToMeshMode mode = get_face_mode(
+      (GeometryNodeSimplexToMeshMode)params.node().custom1);
+  const GeometryNodeSimplexToMeshOutput output_type =
+      (GeometryNodeSimplexToMeshOutput)params.node().custom2;
 
   const SimplexGeometry *geometry = geometry_set.get_simplex_for_read();
+  Mesh *mesh;
   if (geometry) {
-    Mesh *mesh = geometry::simplex::simplex_to_mesh(
-        geometry->positions(), geometry->simplex_vertices(), face_mode);
+    switch (output_type) {
+      case GEO_NODE_SIMPLEX_TO_MESH_TETRAHEDRA:
+        mesh = geometry::simplex::simplex_to_mesh(
+            geometry->positions(), geometry->simplex_vertices(), mode);
+        break;
+      case GEO_NODE_SIMPLEX_TO_MESH_DUAL:
+        mesh = geometry::simplex::simplex_to_dual_mesh(
+            geometry->positions(), geometry->simplex_vertices(), mode);
+        break;
+      default:
+        BLI_assert_unreachable();
+        mesh = nullptr; 
+        break;
+    }
     BKE_id_material_eval_ensure_default_slot(&mesh->id);
     params.set_output("Mesh", GeometrySet::create_with_mesh(mesh));
   }

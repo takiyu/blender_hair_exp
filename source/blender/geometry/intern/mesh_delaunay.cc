@@ -71,7 +71,7 @@ static int3 get_unique_tri(int3 tri, bool &r_flipped)
 
 namespace simplex {
 
-Mesh *simplex_to_mesh_all_faces(const Span<float3> positions, const Span<int4> tets)
+Mesh *simplex_to_mesh_separate(const Span<float3> positions, const Span<int4> tets)
 {
   /* Unique triangle set */
   Mesh *mesh = BKE_mesh_new_nomain(tets.size() * 4, 0, 0, tets.size() * 12, tets.size() * 4);
@@ -113,7 +113,7 @@ Mesh *simplex_to_mesh_all_faces(const Span<float3> positions, const Span<int4> t
   return mesh;
 }
 
-Mesh *simplex_to_mesh_shared_faces(const Span<float3> positions, const Span<int4> tets)
+Mesh *simplex_to_mesh_shared(const Span<float3> positions, const Span<int4> tets, bool both_sides)
 {
   /* Unique triangle set */
   Set<int3> tri_set;
@@ -127,7 +127,8 @@ Mesh *simplex_to_mesh_shared_faces(const Span<float3> positions, const Span<int4
     }
   }
 
-  Mesh *mesh = BKE_mesh_new_nomain(positions.size(), 0, 0, tri_set.size() * 3, tri_set.size());
+  const int num_tris = both_sides ? 2 * tri_set.size() : tri_set.size();
+  Mesh *mesh = BKE_mesh_new_nomain(positions.size(), 0, 0, num_tris * 3, num_tris);
   MutableSpan<MVert> verts = mesh->verts_for_write();
   MutableSpan<MPoly> polys = mesh->polys_for_write();
   MutableSpan<MLoop> loops = mesh->loops_for_write();
@@ -141,13 +142,21 @@ Mesh *simplex_to_mesh_shared_faces(const Span<float3> positions, const Span<int4
   for (const int3 &tri : tri_set) {
     polys[poly_i].loopstart = loop_i;
     polys[poly_i].totloop = 3;
-
     for (const int i : IndexRange(3)) {
       loops[loop_i + i].v = tri[i];
     }
-
     poly_i += 1;
     loop_i += 3;
+
+    if (both_sides) {
+      polys[poly_i].loopstart = loop_i;
+      polys[poly_i].totloop = 3;
+      for (const int i : IndexRange(3)) {
+        loops[loop_i + i].v = tri[2 - i];
+      }
+      poly_i += 1;
+      loop_i += 3;
+    }
   }
   BKE_mesh_calc_edges(mesh, false, false);
 
@@ -156,16 +165,97 @@ Mesh *simplex_to_mesh_shared_faces(const Span<float3> positions, const Span<int4
   return mesh;
 }
 
-Mesh *simplex_to_mesh(const Span<float3> positions,
-                      const Span<int4> tets,
-                      SimplexFaceMode face_mode)
+Mesh *simplex_to_mesh(const Span<float3> positions, const Span<int4> tets, SimplexToMeshMode mode)
 {
-  switch (face_mode) {
-    case All:
-      return simplex_to_mesh_all_faces(positions, tets);
-    case Shared:
-      return simplex_to_mesh_shared_faces(positions, tets);
+  switch (mode) {
+    case Separate:
+      return simplex_to_mesh_separate(positions, tets);
+    case SharedVerts:
+      return simplex_to_mesh_shared(positions, tets, true);
+    case SharedFaces:
+      return simplex_to_mesh_shared(positions, tets, false);
   }
+  return nullptr;
+}
+
+Mesh *simplex_to_dual_mesh_separate(const Span<float3> positions, const Span<int4> tets)
+{
+}
+
+Mesh *simplex_to_dual_mesh_shared(const Span<float3> positions,
+                                  const Span<int4> tets,
+                                  bool both_sides)
+{
+  /* Index triplets forming the triangles of a simplex */
+  const int3 tris[4] = {{0, 1, 2}, {1, 0, 3}, {2, 1, 3}, {3, 0, 2}};
+  /* Vertex indices used in the edges of a simplex */
+  const int2 edges[6] = {{0, 1}, {0, 2}, {0, 3}, {1, 2}, {1, 3}, {2, 3}};
+  /* Simplex sides adjacent to each edge, in radial forward/back direction */
+  const int2 edge_sides[6] = {{0, 1}, {3, 0}, {1, 3}, {0, 2}, {2, 1}, {3, 2}};
+
+  Array<int4> side_map = delaunay::tet_build_side_to_tet_map(tets);
+
+  Vector<MLoop> loops;
+  Vector<MPoly> polys;
+  int num_loops = 0;
+  int num_polys = 0;
+
+  /* Boundary vertex marker: true if any of the triangles using a verts is a boundary */
+  Array<bool> is_boundary_vert;
+  /* Maps edges to an adjacent tet, which is the start of the vertex loop */
+  Map<int2, int> edge_start_tet;
+
+  //for (const int4 &tet : tets) {
+  //  for (const int edge_i : IndexRange(6)) {
+  //    bool flipped;
+  //    const int2 key = get_unique_edge(edges[edge_i], flipped);
+  //    if (edge_to_poly.contains(key)) {
+  //      continue;
+  //    }
+
+  //    int loopsize = 0;
+
+  //    polys[num_polys].loopstart = num_loops;
+  //    polys[num_polys].totloop = loopsize;
+  //    edge_to_poly.add_new(key, num_polys);
+  //    ++num_polys;
+  //    num_loops += loopsize;
+  //  }
+  //}
+
+  for (const Map<int2, int>::Item &edge_item : edge_start_tet.items()) {
+    const bool boundary_a = is_boundary_vert[edge_item.key[0]];
+    const bool boundary_b = is_boundary_vert[edge_item.key[1]];
+    if (boundary_a && boundary_b) {
+      /* Full boundary edge, ignore */
+      continue;
+    }
+
+    const int tet_start = edge_item.value;
+    int tet_i = tet_start;
+    while (true) {
+      int3 tri[4];
+      topology::simplex_triangles(tets[tet_i], tri[0], tri[1], tri[2], tri[3]);
+      /* Side containing the edge in forward direction */
+      const int forward_side = 
+      //tet_i = 
+    }
+  }
+}
+
+Mesh *simplex_to_dual_mesh(const Span<float3> positions,
+                           const Span<int4> tets,
+                           SimplexToMeshMode mode)
+{
+  switch (mode) {
+    case Separate:
+      return simplex_to_dual_mesh_separate(positions, tets);
+    case SharedVerts:
+      return simplex_to_dual_mesh_shared(positions, tets, true);
+    case SharedFaces:
+      return simplex_to_dual_mesh_shared(positions, tets, false);
+  }
+  return nullptr;
 }
 
 }  // namespace simplex

@@ -10967,25 +10967,51 @@ static void def_geo_simplex_to_mesh(StructRNA *srna)
 {
   PropertyRNA *prop;
 
-  static const EnumPropertyItem face_mode_items[] = {
-      {GEO_NODE_SIMPLEX_TO_MESH_FACES_ALL,
-       "ALL",
+  static const EnumPropertyItem mode_items[] = {
+      {GEO_NODE_SIMPLEX_TO_MESH_SEPARATE,
+       "SEPARATE",
        ICON_NONE,
-       "All",
-       "Generate faces for all tetrahedra"},
-      {GEO_NODE_SIMPLEX_TO_MESH_FACES_SHARED,
-       "SHARED",
+       "Separate",
+       "Generate own vertices and faces for each simplex"},
+      {GEO_NODE_SIMPLEX_TO_MESH_SHARED_FACES,
+       "SHARED_FACES",
        ICON_NONE,
-       "Shared",
-       "Share face between adjacent tetrahedra (double-sided)"},
+       "Shared Faces",
+       "Generate own vertices for each simplex but share vertices between adjacent tetrahedra"},
+      {GEO_NODE_SIMPLEX_TO_MESH_SHARED_VERTS,
+       "SHARED_VERTS",
+       ICON_NONE,
+       "Shared Vertices",
+       "Share vertices and faces between adjacent tetrahedra"},
       {0, NULL, 0, NULL, NULL},
   };
 
-  prop = RNA_def_property(srna, "face_mode", PROP_ENUM, PROP_NONE);
+  static const EnumPropertyItem output_items[] = {
+      {GEO_NODE_SIMPLEX_TO_MESH_TETRAHEDRA,
+       "TETRAHEDRA",
+       ICON_NONE,
+       "Tetrahedra",
+       "Output tetrahedral mesh"},
+      {GEO_NODE_SIMPLEX_TO_MESH_DUAL,
+       "DUAL",
+       ICON_NONE,
+       "Dual",
+       "Generate the dual mesh, using tetrahedra centers as vertex positions"},
+      {0, NULL, 0, NULL, NULL},
+  };
+
+  prop = RNA_def_property(srna, "mode", PROP_ENUM, PROP_NONE);
   RNA_def_property_enum_sdna(prop, NULL, "custom1");
-  RNA_def_property_enum_items(prop, face_mode_items);
-  RNA_def_property_enum_default(prop, GEO_NODE_SIMPLEX_TO_MESH_FACES_ALL);
-  RNA_def_property_ui_text(prop, "Face Mode", "Method of generating faces for tetrahedra");
+  RNA_def_property_enum_items(prop, mode_items);
+  RNA_def_property_enum_default(prop, GEO_NODE_SIMPLEX_TO_MESH_SEPARATE);
+  RNA_def_property_ui_text(prop, "Mode", "Method of generating faces for tetrahedra");
+  RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_GeometryNode_socket_update");
+
+  prop = RNA_def_property(srna, "output", PROP_ENUM, PROP_NONE);
+  RNA_def_property_enum_sdna(prop, NULL, "custom2");
+  RNA_def_property_enum_items(prop, output_items);
+  RNA_def_property_enum_default(prop, GEO_NODE_SIMPLEX_TO_MESH_TETRAHEDRA);
+  RNA_def_property_ui_text(prop, "Output", "Type of mesh to generate");
   RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_GeometryNode_socket_update");
 }
 

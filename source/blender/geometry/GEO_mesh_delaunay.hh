@@ -18,8 +18,20 @@ namespace blender::geometry {
 
 namespace simplex {
 
-enum SimplexFaceMode { All, Shared };
-Mesh *simplex_to_mesh(Span<float3> positions, Span<int4> tets, SimplexFaceMode face_mode);
+/* Method of generating faces from tetrahedrons. */
+enum SimplexToMeshMode {
+  /* Generate own vertices and faces for each simplex. All face normals pointing outward. */
+  Separate,
+  /* Generate own vertices for each simplex but share vertices between adjacent tetrahedra. All
+   * face normals pointing outward.
+   */
+  SharedVerts,
+  /* Share vertices and faces between adjacent tetrahedra. Face normals can be inverted.
+   */
+  SharedFaces,
+};
+Mesh *simplex_to_mesh(Span<float3> positions, Span<int4> tets, SimplexToMeshMode mode);
+Mesh *simplex_to_dual_mesh(Span<float3> positions, Span<int4> tets, SimplexToMeshMode mode);
 
 }  // namespace simplex
 

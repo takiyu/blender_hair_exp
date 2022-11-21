@@ -2400,7 +2400,13 @@ typedef enum NodeCombSepColorMode {
   NODE_COMBSEP_COLOR_HSL = 2,
 } NodeCombSepColorMode;
 
-typedef enum GeometryNodeSimpleToMeshFaceMode {
-  GEO_NODE_SIMPLEX_TO_MESH_FACES_ALL = 0,
-  GEO_NODE_SIMPLEX_TO_MESH_FACES_SHARED = 1,
-} GeometryNodeSimpleToMeshFaceMode;
+typedef enum GeometryNodeSimplexToMeshMode {
+  GEO_NODE_SIMPLEX_TO_MESH_SEPARATE = 0,
+  GEO_NODE_SIMPLEX_TO_MESH_SHARED_FACES = 1,
+  GEO_NODE_SIMPLEX_TO_MESH_SHARED_VERTS = 2,
+} GeometryNodeSimplxeToMeshMode;
+
+typedef enum GeometryNodeSimplexToMeshOutput {
+  GEO_NODE_SIMPLEX_TO_MESH_TETRAHEDRA = 0,
+  GEO_NODE_SIMPLEX_TO_MESH_DUAL = 1,
+} GeometryNodeSimplxeToMeshOutput;
