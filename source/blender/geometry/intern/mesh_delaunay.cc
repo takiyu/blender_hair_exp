@@ -178,84 +178,162 @@ Mesh *simplex_to_mesh(const Span<float3> positions, const Span<int4> tets, Simpl
   return nullptr;
 }
 
-Mesh *simplex_to_dual_mesh_separate(const Span<float3> positions, const Span<int4> tets)
-{
-}
-
-Mesh *simplex_to_dual_mesh_shared(const Span<float3> positions,
-                                  const Span<int4> tets,
-                                  bool both_sides)
-{
-  /* Index triplets forming the triangles of a simplex */
-  const int3 tris[4] = {{0, 1, 2}, {1, 0, 3}, {2, 1, 3}, {3, 0, 2}};
-  /* Vertex indices used in the edges of a simplex */
-  const int2 edges[6] = {{0, 1}, {0, 2}, {0, 3}, {1, 2}, {1, 3}, {2, 3}};
-  /* Simplex sides adjacent to each edge, in radial forward/back direction */
-  const int2 edge_sides[6] = {{0, 1}, {3, 0}, {1, 3}, {0, 2}, {2, 1}, {3, 2}};
-
-  Array<int4> side_map = delaunay::tet_build_side_to_tet_map(tets);
-
-  Vector<MLoop> loops;
-  Vector<MPoly> polys;
-  int num_loops = 0;
-  int num_polys = 0;
-
-  /* Boundary vertex marker: true if any of the triangles using a verts is a boundary */
-  Array<bool> is_boundary_vert;
-  /* Maps edges to an adjacent tet, which is the start of the vertex loop */
-  Map<int2, int> edge_start_tet;
-
-  //for (const int4 &tet : tets) {
-  //  for (const int edge_i : IndexRange(6)) {
-  //    bool flipped;
-  //    const int2 key = get_unique_edge(edges[edge_i], flipped);
-  //    if (edge_to_poly.contains(key)) {
-  //      continue;
-  //    }
-
-  //    int loopsize = 0;
-
-  //    polys[num_polys].loopstart = num_loops;
-  //    polys[num_polys].totloop = loopsize;
-  //    edge_to_poly.add_new(key, num_polys);
-  //    ++num_polys;
-  //    num_loops += loopsize;
-  //  }
-  //}
-
-  for (const Map<int2, int>::Item &edge_item : edge_start_tet.items()) {
-    const bool boundary_a = is_boundary_vert[edge_item.key[0]];
-    const bool boundary_b = is_boundary_vert[edge_item.key[1]];
-    if (boundary_a && boundary_b) {
-      /* Full boundary edge, ignore */
-      continue;
-    }
-
-    const int tet_start = edge_item.value;
-    int tet_i = tet_start;
-    while (true) {
-      int3 tri[4];
-      topology::simplex_triangles(tets[tet_i], tri[0], tri[1], tri[2], tri[3]);
-      /* Side containing the edge in forward direction */
-      const int forward_side = 
-      //tet_i = 
-    }
-  }
-}
-
 Mesh *simplex_to_dual_mesh(const Span<float3> positions,
                            const Span<int4> tets,
                            SimplexToMeshMode mode)
 {
-  switch (mode) {
-    case Separate:
-      return simplex_to_dual_mesh_separate(positions, tets);
-    case SharedVerts:
-      return simplex_to_dual_mesh_shared(positions, tets, true);
-    case SharedFaces:
-      return simplex_to_dual_mesh_shared(positions, tets, false);
+  const bool separate_verts = (mode == Separate);
+  const bool double_faces = ELEM(mode, Separate, SharedVerts);
+  const Array<int4> side_map = delaunay::tet_build_side_to_tet_map(tets);
+
+  /* Circumsphere centers that form the new vertices */
+  Array<MVert> tet_centers(tets.size());
+  /* Up to 4 vertex copies when separating vertices per corner */
+  Vector<MVert> tet_verts;
+  if (separate_verts) {
+    tet_verts.reserve(4 * tets.size());
   }
-  return nullptr;
+  /* Map of vertex indices for each of the 4 tet corners, used if separating vertices */
+  Array<int4> tet_vert_map(tets.size(), int4(-1));
+  /* Boundary vertex marker: true if any of the triangles using a verts is a boundary */
+  Array<bool> is_boundary_vert(positions.size(), false);
+  /* Maps edges to an adjacent tet, which is the start of the vertex loop */
+  Map<int2, int> edge_start_tet;
+
+  for (const int tet_i: tets.index_range()) {
+    const int4 &tet = tets[tet_i];
+    const int4 neighbor = side_map[tet_i];
+
+    float3 center;
+    topology::simplex_circumcenter(
+        positions[tet[0]], positions[tet[1]], positions[tet[2]], positions[tet[3]], center);
+    copy_v3_v3(tet_centers[tet_i].co, center);
+
+    int3 tri[4];
+    topology::simplex_triangles(tet, tri[0], tri[1], tri[2], tri[3]);
+
+    for (const int k : IndexRange(4)) {
+      if (neighbor[k] < 0) {
+        /* No polygon for this triangle's edges, mark boundary verts and continue */
+        is_boundary_vert[tri[k][0]] = true;
+        is_boundary_vert[tri[k][1]] = true;
+        is_boundary_vert[tri[k][2]] = true;
+        continue;
+      }
+
+      const int2 edge0 = int2(tri[k][0], tri[k][1]);
+      const int2 edge1 = int2(tri[k][1], tri[k][2]);
+      const int2 edge2 = int2(tri[k][2], tri[k][0]);
+      bool flipped0, flipped1, flipped2;
+      const int2 key0 = get_unique_edge(edge0, flipped0);
+      const int2 key1 = get_unique_edge(edge1, flipped1);
+      const int2 key2 = get_unique_edge(edge2, flipped2);
+      if (!flipped0) {
+        edge_start_tet.add(key0, tet_i);
+      }
+      if (!flipped1) {
+        edge_start_tet.add(key1, tet_i);
+      }
+      if (!flipped2) {
+        edge_start_tet.add(key2, tet_i);
+      }
+    }
+  }
+
+  Vector<MPoly> polys;
+  const int num_poly = double_faces ? 2 * edge_start_tet.size() : edge_start_tet.size();
+  polys.reserve(num_poly);
+  /* List of loops for both directions of faces.
+   * The 2nd list is only used when double faces are generated.
+   */
+  Vector<MLoop> loops_a;
+  Vector<MLoop> loops_b;
+
+  for (const Map<int2, int>::Item &edge_item : edge_start_tet.items()) {
+    const int vert_a = edge_item.key[0];
+    const int vert_b = edge_item.key[1];
+    const bool is_boundary_a = is_boundary_vert[vert_a];
+    const bool is_boundary_b = is_boundary_vert[vert_b];
+    if (is_boundary_a && is_boundary_b) {
+      /* Full boundary edge, ignore */
+      continue;
+    }
+
+    MPoly poly_a, poly_b;
+    poly_a.loopstart = loops_a.size();
+    poly_b.loopstart = loops_b.size();
+
+    const int tet_start = edge_item.value;
+    int tet_i = tet_start;
+    while (true) {
+      const int4 &tet = tets[tet_i];
+      int3 tri[4];
+      topology::simplex_triangles(tet, tri[0], tri[1], tri[2], tri[3]);
+
+      const int corner_a = (vert_a == tet[0] ?
+                                0 :
+                                (vert_a == tet[1] ? 1 : (vert_a == tet[2] ? 2 : 3)));
+      const int corner_b = (vert_b == tet[0] ?
+                                0 :
+                                (vert_b == tet[1] ? 1 : (vert_b == tet[2] ? 2 : 3)));
+      BLI_assert(corner_a != corner_b);
+
+      if (separate_verts) {
+        int &tet_vert_a = tet_vert_map[tet_i][corner_a];
+        if (tet_vert_a < 0) {
+          tet_vert_a = tet_verts.size();
+          tet_verts.append(tet_centers[tet_i]);
+        }
+        loops_a.append({(unsigned int)tet_vert_a});
+
+        if (double_faces) {
+          int &tet_vert_b = tet_vert_map[tet_i][corner_b];
+          if (tet_vert_b < 0) {
+            tet_vert_b = tet_verts.size();
+            tet_verts.append(tet_centers[tet_i]);
+          }
+          loops_b.append({(unsigned int)tet_vert_b});
+        }
+      }
+      else {
+        loops_a.append({(unsigned int)tet_i});
+        if (double_faces) {
+          loops_b.append({(unsigned int)tet_i});
+        }
+      }
+
+      /* Side containing the edge in forward direction */
+      const int edge_to_side[4][4] = {{-1, 0, 3, 1}, {1, -1, 0, 2}, {0, 2, -1, 3}, {3, 1, 2, -1}};
+      const int forward_side = edge_to_side[corner_a][corner_b];
+      /* Move to next tet in the loop */
+      tet_i = side_map[tet_i][forward_side];
+      BLI_assert_msg(tet_i >= 0, "Internal edge must have close tet loop");
+
+      if (tet_i == tet_start) {
+        break;
+      }
+    }
+
+    poly_a.totloop = loops_a.size() - poly_a.loopstart;
+    polys.append(poly_a);
+    if (double_faces) {
+      poly_b.totloop = (loops_b.size() - poly_b.loopstart) ;
+      polys.append(poly_b);
+    }
+  }
+
+  const Span<MVert> vert_span = separate_verts ? tet_verts.as_span() : tet_centers.as_span();
+  Mesh *mesh = BKE_mesh_new_nomain(
+      vert_span.size(), 0, 0, loops_a.size() + loops_b.size(), polys.size());
+  mesh->verts_for_write().copy_from(vert_span);
+  mesh->polys_for_write().copy_from(polys);
+  mesh->loops_for_write().slice(0, loops_a.size()).copy_from(loops_a);
+  mesh->loops_for_write().slice(loops_a.size(), loops_b.size()).copy_from(loops_b);
+  BKE_mesh_calc_edges(mesh, false, false);
+
+  BKE_mesh_validate(mesh, true, true);
+
+  return mesh;
 }
 
 }  // namespace simplex
