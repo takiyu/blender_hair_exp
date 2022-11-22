@@ -306,8 +306,8 @@ TEST(delaunay, EnclosingSimplex)
     Array<float3> points = {{0.0f, -1.0f, 1.0f}, {1.0f, 1.5f, 2.0f}};
     float3 simplex[4];
     delaunay::find_enclosing_simplex(points, simplex);
-    EXPECT_V3_NEAR(float3(0.146f,-1.146f, 0.793f), simplex[0], eps);
-    EXPECT_V3_NEAR(float3(0.146f, 2.354f, 0.793f), simplex[1], eps);
+    EXPECT_V3_NEAR(float3(0.146f, 2.354f, 0.793f), simplex[0], eps);
+    EXPECT_V3_NEAR(float3(0.146f,-1.146f, 0.793f), simplex[1], eps);
     EXPECT_V3_NEAR(float3(-1.604f, 0.604f, 3.267f), simplex[2], eps);
     EXPECT_V3_NEAR(float3(1.896f, 0.604f, 3.268f), simplex[3], eps);
   }
@@ -315,8 +315,8 @@ TEST(delaunay, EnclosingSimplex)
     Array<float3> points = {{0.0f, -1.0f, 1.0f}, {1.0f, 1.5f, 2.0f}, {-2.0f, 0.5f, 0.5f}};
     float3 simplex[4];
     delaunay::find_enclosing_simplex(points, simplex);
-    EXPECT_V3_NEAR(float3(-1.030f, -2.323f, -0.871f), simplex[0], eps);
-    EXPECT_V3_NEAR(float3(-1.030f, 3.530f, -0.871f), simplex[1], eps);
+    EXPECT_V3_NEAR(float3(-1.030f, 3.530f, -0.871f), simplex[0], eps);
+    EXPECT_V3_NEAR(float3(-1.030f, -2.323f, -0.871f), simplex[1], eps);
     EXPECT_V3_NEAR(float3(-3.957f, 0.604f, 3.268f), simplex[2], eps);
     EXPECT_V3_NEAR(float3(1.896f, 0.604f, 3.268f), simplex[3], eps);
   }
@@ -328,8 +328,8 @@ TEST(delaunay, EnclosingSimplex)
     }
     float3 simplex[4];
     delaunay::find_enclosing_simplex(points, simplex);
-    EXPECT_V3_NEAR(float3(0.025f, -2.018f, -1.421f), simplex[0], eps);
-    EXPECT_V3_NEAR(float3(0.025f, 1.992f, -1.421f), simplex[1], eps);
+    EXPECT_V3_NEAR(float3(0.025f, 1.992f, -1.421f), simplex[0], eps);
+    EXPECT_V3_NEAR(float3(0.025f, -2.018f, -1.421f), simplex[1], eps);
     EXPECT_V3_NEAR(float3(-1.980f, -0.013f, 1.414f), simplex[2], eps);
     EXPECT_V3_NEAR(float3(2.03f, -0.013f, 1.414f), simplex[3], eps);
   }
