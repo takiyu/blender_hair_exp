@@ -58,7 +58,8 @@ static void node_update(bNodeTree *ntree, bNode *node)
                             ELEM(node->custom1,
                                  GEO_COMPONENT_TYPE_MESH,
                                  GEO_COMPONENT_TYPE_CURVE,
-                                 GEO_COMPONENT_TYPE_POINT_CLOUD));
+                                 GEO_COMPONENT_TYPE_POINT_CLOUD,
+                                 GEO_COMPONENT_TYPE_SIMPLEX));
   nodeSetSocketAvailability(ntree, edge_socket, node->custom1 == GEO_COMPONENT_TYPE_MESH);
   nodeSetSocketAvailability(ntree, face_socket, node->custom1 == GEO_COMPONENT_TYPE_MESH);
   nodeSetSocketAvailability(ntree, face_corner_socket, node->custom1 == GEO_COMPONENT_TYPE_MESH);
@@ -125,6 +126,7 @@ static void node_geo_exec(GeoNodeExecParams params)
       if (const SimplexComponent *component =
               geometry_set.get_component_for_read<SimplexComponent>()) {
         const AttributeAccessor attributes = *component->attributes();
+        params.set_output("Point Count", attributes.domain_size(ATTR_DOMAIN_POINT));
         params.set_output("Simplices Count", attributes.domain_size(ATTR_DOMAIN_SIMPLEX));
       }
       else {
