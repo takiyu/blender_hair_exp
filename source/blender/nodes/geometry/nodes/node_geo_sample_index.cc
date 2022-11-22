@@ -21,7 +21,8 @@ static void node_declare(NodeDeclarationBuilder &b)
       .supported_type({GEO_COMPONENT_TYPE_MESH,
                        GEO_COMPONENT_TYPE_POINT_CLOUD,
                        GEO_COMPONENT_TYPE_CURVE,
-                       GEO_COMPONENT_TYPE_INSTANCES});
+                       GEO_COMPONENT_TYPE_INSTANCES,
+                       GEO_COMPONENT_TYPE_SIMPLEX});
 
   b.add_input<decl::Float>(N_("Value"), "Value_Float").hide_value().supports_field();
   b.add_input<decl::Int>(N_("Value"), "Value_Int").hide_value().supports_field();
@@ -125,7 +126,8 @@ static const GeometryComponent *find_source_component(const GeometrySet &geometr
   static const Array<GeometryComponentType> supported_types = {GEO_COMPONENT_TYPE_MESH,
                                                                GEO_COMPONENT_TYPE_POINT_CLOUD,
                                                                GEO_COMPONENT_TYPE_CURVE,
-                                                               GEO_COMPONENT_TYPE_INSTANCES};
+                                                               GEO_COMPONENT_TYPE_INSTANCES,
+                                                               GEO_COMPONENT_TYPE_SIMPLEX};
   for (const GeometryComponentType src_type : supported_types) {
     if (component_is_available(geometry, src_type, domain)) {
       return geometry.get_component_for_read(src_type);

@@ -38,7 +38,8 @@ GeometryFieldContext::GeometryFieldContext(const void *geometry,
                   GEO_COMPONENT_TYPE_MESH,
                   GEO_COMPONENT_TYPE_CURVE,
                   GEO_COMPONENT_TYPE_POINT_CLOUD,
-                  GEO_COMPONENT_TYPE_INSTANCES));
+                  GEO_COMPONENT_TYPE_INSTANCES,
+                  GEO_COMPONENT_TYPE_SIMPLEX));
 }
 
 GeometryFieldContext::GeometryFieldContext(const GeometryComponent &component,
@@ -69,9 +70,14 @@ GeometryFieldContext::GeometryFieldContext(const GeometryComponent &component,
       geometry_ = instances_component.get_for_read();
       break;
     }
+    case GEO_COMPONENT_TYPE_SIMPLEX: {
+      const SimplexComponent &simplex_component = static_cast<const SimplexComponent &>(
+          component);
+      geometry_ = simplex_component.get_for_read();
+      break;
+    }
     case GEO_COMPONENT_TYPE_VOLUME:
     case GEO_COMPONENT_TYPE_EDIT:
-    case GEO_COMPONENT_TYPE_SIMPLEX:
       BLI_assert_unreachable();
       break;
   }
@@ -111,6 +117,9 @@ std::optional<AttributeAccessor> GeometryFieldContext::attributes() const
   }
   if (const Instances *instances = this->instances()) {
     return instances->attributes();
+  }
+  if (const SimplexGeometry *geometry = this->simplices()) {
+    return geometry->attributes();
   }
   return {};
 }
