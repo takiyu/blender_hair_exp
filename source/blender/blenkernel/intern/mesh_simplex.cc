@@ -342,8 +342,8 @@ static void adapt_simplex_domain_simplex_to_point_impl(const SimplexGeometry &ge
         mixer.mix_in(tet[k], old_values[i_simplex]);
       }
     }
-    mixer.finalize(range);
   });
+  mixer.finalize(geometry.points_range());
 }
 
 /**
