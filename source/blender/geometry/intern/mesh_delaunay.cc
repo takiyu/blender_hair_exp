@@ -254,7 +254,9 @@ Mesh *simplex_to_dual_mesh(const Span<float3> positions,
     const int vert_b = edge_item.key[1];
     const bool is_boundary_a = is_boundary_vert[vert_a];
     const bool is_boundary_b = is_boundary_vert[vert_b];
-    if (is_boundary_a && is_boundary_b) {
+    const bool create_poly_a = !is_boundary_a;
+    const bool create_poly_b = !is_boundary_b && (double_faces || is_boundary_a);
+    if (!create_poly_a && !create_poly_b) {
       /* Full boundary edge, ignore */
       continue;
     }
@@ -279,14 +281,15 @@ Mesh *simplex_to_dual_mesh(const Span<float3> positions,
       BLI_assert(corner_a != corner_b);
 
       if (separate_verts) {
-        int &tet_vert_a = tet_vert_map[tet_i][corner_a];
-        if (tet_vert_a < 0) {
-          tet_vert_a = tet_verts.size();
-          tet_verts.append(tet_centers[tet_i]);
+        if (create_poly_a) {
+          int &tet_vert_a = tet_vert_map[tet_i][corner_a];
+          if (tet_vert_a < 0) {
+            tet_vert_a = tet_verts.size();
+            tet_verts.append(tet_centers[tet_i]);
+          }
+          loops_a.append({(unsigned int)tet_vert_a});
         }
-        loops_a.append({(unsigned int)tet_vert_a});
-
-        if (double_faces) {
+        if (create_poly_b) {
           int &tet_vert_b = tet_vert_map[tet_i][corner_b];
           if (tet_vert_b < 0) {
             tet_vert_b = tet_verts.size();
@@ -297,8 +300,10 @@ Mesh *simplex_to_dual_mesh(const Span<float3> positions,
         }
       }
       else {
-        loops_a.append({(unsigned int)tet_i});
-        if (double_faces) {
+        if (create_poly_a) {
+          loops_a.append({(unsigned int)tet_i});
+        }
+        if (create_poly_b) {
           /* Loop order for b is inverted below */
           loops_b.append({(unsigned int)tet_i});
         }
@@ -316,9 +321,11 @@ Mesh *simplex_to_dual_mesh(const Span<float3> positions,
       }
     }
 
-    poly_a.totloop = loops_a.size() - poly_a.loopstart;
-    polys_a.append(poly_a);
-    if (double_faces) {
+    if (create_poly_a) {
+      poly_a.totloop = loops_a.size() - poly_a.loopstart;
+      polys_a.append(poly_a);
+    }
+    if (create_poly_b) {
       poly_b.totloop = (loops_b.size() - poly_b.loopstart) ;
       polys_b.append(poly_b);
     }
@@ -342,12 +349,12 @@ Mesh *simplex_to_dual_mesh(const Span<float3> positions,
   MutableSpan<MLoop> mesh_loops_a = mesh->loops_for_write().slice(0, loops_a.size());
   MutableSpan<MLoop> mesh_loops_b = mesh->loops_for_write().slice(loops_a.size(), loops_b.size());
   mesh_loops_a.copy_from(loops_a);
-  for (const int poly_i : mesh_polys_b.index_range()) {
-    const MPoly &poly = mesh_polys_b[poly_i];
+  for (const int poly_i : polys_b.index_range()) {
+    const MPoly &poly = polys_b[poly_i];
     IndexRange loop_range(poly.loopstart, poly.totloop);
     for (const int loop_i : loop_range) {
       /* Invert the loop for b for correct winding */
-      mesh_loops_b[loop_i] = loops_b[loop_range[loop_range.last() - loop_i]];
+      mesh_loops_b[loop_i] = loops_b[loop_range.start() + loop_range.last() - loop_i];
     }
   }
   BKE_mesh_calc_edges(mesh, false, false);

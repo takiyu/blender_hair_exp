@@ -85,6 +85,9 @@ if(WITH_GTESTS)
   set(TEST_SRC
     tests/GEO_delaunay_test.cc
   )
+  set(TEST_INC
+    ../../../intern/clog
+  )
   set(TEST_LIB
     bf_geometry
   )

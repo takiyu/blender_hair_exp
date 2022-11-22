@@ -4,8 +4,15 @@
 
 #include "BLI_rand.hh"
 
+#include "BKE_callbacks.h"
+#include "BKE_idtype.h"
+#include "BKE_lib_id.h"
+#include "BKE_mesh.h"
 #include "BKE_mesh_simplex.hh"
 
+#include "CLG_log.h"
+
+#include "DNA_mesh_types.h"
 #include "DNA_meshdata_types.h"
 
 #include "GEO_mesh_delaunay.hh"
@@ -500,6 +507,85 @@ TEST(delaunay, TetFanConstruct)
                     side_map.data(),
                     8);
   }
+}
+
+/* Utility function to extract MPoly loopstart for easy comparison */
+static Span<int> get_mpoly_loopstarts(const Span<MPoly> polys)
+{
+  static Array<int> loopstarts(64);
+  BLI_assert(polys.size() <= loopstarts.size());
+  for (const int i : polys.index_range()) {
+    loopstarts[i] = polys[i].loopstart;
+  }
+  return loopstarts.as_span();
+}
+
+TEST(delaunay, TetDualMesh)
+{
+  BKE_idtype_init();
+  CLG_init();
+  BKE_callback_global_init();
+
+  { /* Empty */
+    Array<float3> positions{};
+    Array<int4> tets{};
+    Array<int4> side_map = delaunay::tet_build_side_to_tet_map(tets);
+    Mesh *mesh = simplex::simplex_to_dual_mesh(positions, tets, simplex::SimplexToMeshMode::Separate);
+
+    EXPECT_EQ(0, mesh->totpoly);
+
+    BKE_id_free(nullptr, mesh);
+  }
+  { /* Single tet */
+    Array<float3> positions(4, float3(0.0f));
+    Array<int4> tets{{0, 1, 2, 3}};
+    Array<int4> side_map = delaunay::tet_build_side_to_tet_map(tets);
+    Mesh *mesh = simplex::simplex_to_dual_mesh(positions, tets, simplex::SimplexToMeshMode::Separate);
+
+    EXPECT_EQ(0, mesh->totpoly);
+
+    BKE_id_free(nullptr, mesh);
+  }
+  { /* Two connected tets */
+    Array<float3> positions(5, float3(0.0f));
+    Array<int4> tets{{0, 1, 2, 3}, {1, 0, 2, 4}};
+    Array<int4> side_map = delaunay::tet_build_side_to_tet_map(tets);
+    Mesh *mesh = simplex::simplex_to_dual_mesh(
+        positions, tets, simplex::SimplexToMeshMode::Separate);
+
+    EXPECT_EQ(0, mesh->totpoly);
+
+    BKE_id_free(nullptr, mesh);
+  }
+  { /* One tet ring */
+    Array<float3> positions(5, float3(0.0f));
+    Array<int4> tets{{0, 1, 3, 4}, {1, 2, 3, 4}, {2, 0, 3, 4}};
+    Array<int4> side_map = delaunay::tet_build_side_to_tet_map(tets);
+    Mesh *mesh = simplex::simplex_to_dual_mesh(
+        positions, tets, simplex::SimplexToMeshMode::Separate);
+
+    EXPECT_EQ(0, mesh->totpoly);
+
+    BKE_id_free(nullptr, mesh);
+  }
+  { /* One internal vertex */
+    Array<float3> positions(5, float3(0.0f));
+    Array<int4> tets{{0, 1, 4, 3}, {1, 2, 4, 3}, {2, 0, 4, 3}, {0, 1, 2, 4}};
+    Array<int4> side_map = delaunay::tet_build_side_to_tet_map(tets);
+    Mesh *mesh = simplex::simplex_to_dual_mesh(
+        positions, tets, simplex::SimplexToMeshMode::Separate);
+    const Span<MPoly> polys = mesh->polys();
+    const Span<MLoop> loops = mesh->loops();
+
+    EXPECT_EQ(4, mesh->totpoly);
+    EXPECT_EQ(12, mesh->totloop);
+    EXPECT_EQ_ARRAY(Span<int>{}.data(), get_mpoly_loopstarts(polys).data(), 4);
+
+    BKE_id_free(nullptr, mesh);
+  }
+
+  BKE_callback_global_finalize();
+  CLG_exit();
 }
 
 }  // namespace blender::geometry::tests
