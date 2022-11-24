@@ -761,11 +761,11 @@ static bool uv_rip_object(Scene *scene, Object *obedit, const float co[2], const
     if (BM_elem_flag_test(efa, BM_ELEM_TAG)) {
       bool is_all = true;
       BM_ITER_ELEM (l, &liter, efa, BM_LOOPS_OF_FACE) {
-        if (BM_ELEM_CD_GET_OPT_BOOL(l, offsets.select_vert)) {
-          if (BM_ELEM_CD_GET_OPT_BOOL(l, offsets.select_edge)) {
+        if (BM_ELEM_CD_GET_BOOL(l, offsets.select_vert)) {
+          if (BM_ELEM_CD_GET_BOOL(l, offsets.select_edge)) {
             UL(l)->is_select_edge = true;
           }
-          else if (!BM_ELEM_CD_GET_OPT_BOOL(l->prev, offsets.select_edge)) {
+          else if (!BM_ELEM_CD_GET_BOOL(l->prev, offsets.select_edge)) {
             /* #bm_loop_uv_select_single_vert_validate validates below. */
             UL(l)->is_select_vert_single = true;
             is_all = false;
@@ -809,11 +809,11 @@ static bool uv_rip_object(Scene *scene, Object *obedit, const float co[2], const
     BM_ITER_MESH (efa, &iter, em->bm, BM_FACES_OF_MESH) {
       BM_ITER_ELEM (l, &liter, efa, BM_LOOPS_OF_FACE) {
         if (!UL(l)->is_select_all) {
-          if (BM_ELEM_CD_GET_OPT_BOOL(l, offsets.select_vert)) {
+          if (BM_ELEM_CD_GET_BOOL(l, offsets.select_vert)) {
             BM_ELEM_CD_SET_BOOL(l, offsets.select_vert, false);
             changed = true;
           }
-          if (BM_ELEM_CD_GET_OPT_BOOL(l, offsets.select_edge)) {
+          if (BM_ELEM_CD_GET_BOOL(l, offsets.select_edge)) {
             BM_ELEM_CD_SET_BOOL(l, offsets.select_edge, false);
             changed = true;
           }

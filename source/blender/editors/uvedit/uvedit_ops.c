@@ -1415,10 +1415,10 @@ static void UV_OT_pin(wmOperatorType *ot)
 /* check if we are selected or unselected based on 'bool_test' arg,
  * needed for select swap support */
 #define UV_VERT_SEL_TEST(l, bool_test) \
-  (BM_ELEM_CD_GET_OPT_BOOL(l, offsets.select_vert) == bool_test)
+  (BM_ELEM_CD_GET_BOOL(l, offsets.select_vert) == bool_test)
 
 #define UV_EDGE_SEL_TEST(l, bool_test) \
-  (BM_ELEM_CD_GET_OPT_BOOL(l, offsets.select_edge) == bool_test)
+  (BM_ELEM_CD_GET_BOOL(l, offsets.select_edge) == bool_test)
 
 /* is every UV vert selected or unselected depending on bool_test */
 static bool bm_face_is_all_uv_sel(BMFace *f, bool select_test, const BMUVOffsets offsets)

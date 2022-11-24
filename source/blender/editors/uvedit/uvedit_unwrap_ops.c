@@ -341,7 +341,7 @@ static void uvedit_prepare_pinned_indices(ParamHandle *handle,
   BMIter liter;
   BMLoop *l;
   BM_ITER_ELEM (l, &liter, efa, BM_LOOPS_OF_FACE) {
-    bool pin = BM_ELEM_CD_GET_OPT_BOOL(l, offsets.pin);
+    bool pin = BM_ELEM_CD_GET_BOOL(l, offsets.pin);
     if (options->pin_unselected && !pin) {
       pin = !uvedit_uv_select_test(scene, l, offsets);
     }
@@ -378,7 +378,7 @@ static void construct_param_handle_face_add(ParamHandle *handle,
     vkeys[i] = GEO_uv_find_pin_index(handle, BM_elem_index_get(l->v), luv);
     co[i] = l->v->co;
     uv[i] = luv;
-    pin[i] = BM_ELEM_CD_GET_OPT_BOOL(l, offsets.pin);
+    pin[i] = BM_ELEM_CD_GET_BOOL(l, offsets.pin);
     select[i] = uvedit_uv_select_test(scene, l, offsets);
     if (options->pin_unselected && !select[i]) {
       pin[i] = true;
@@ -563,7 +563,7 @@ static void texface_from_original_index(const Scene *scene,
     if (BM_elem_index_get(l->v) == index) {
       float *luv = BM_ELEM_CD_GET_FLOAT_P(l, offsets.uv);
       *r_uv = luv;
-      *r_pin = BM_ELEM_CD_GET_OPT_BOOL(l, offsets.pin);
+      *r_pin = BM_ELEM_CD_GET_BOOL(l, offsets.pin);
       *r_select = uvedit_uv_select_test(scene, l, offsets);
       break;
     }

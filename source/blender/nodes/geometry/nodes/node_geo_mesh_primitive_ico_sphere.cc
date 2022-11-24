@@ -7,6 +7,7 @@
 #include "BKE_mesh.h"
 
 #include "bmesh.h"
+#include "intern/bmesh_interp.h"
 
 #include "node_geometry_util.hh"
 
@@ -36,6 +37,8 @@ static Mesh *create_ico_sphere_mesh(const int subdivisions, const float radius)
   const BMAllocTemplate allocsize = {0, 0, 0, 0};
   BMesh *bm = BM_mesh_create(&allocsize, &bmesh_create_params);
   BM_data_layer_add_named(bm, &bm->ldata, CD_PROP_FLOAT2, nullptr);
+
+  BM_uv_map_ensure_selection_pin_attributes(bm, CustomData_get_layer_name(&bm->ldata, CD_PROP_FLOAT2, 0));
 
   BMO_op_callf(bm,
                BMO_FLAG_DEFAULTS,

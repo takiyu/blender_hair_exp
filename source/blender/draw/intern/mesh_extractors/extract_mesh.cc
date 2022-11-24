@@ -127,7 +127,7 @@ void mesh_render_data_loop_flag(const MeshRenderData *mr,
   if (offsets.uv == -1) {
     return;
   }
-  if (BM_ELEM_CD_GET_OPT_BOOL(l, offsets.pin)) {
+  if (BM_ELEM_CD_GET_BOOL(l, offsets.pin)) {
     eattr->v_flag |= VFLAG_VERT_UV_PINNED;
   }
   if (uvedit_uv_select_test_ex(mr->toolsettings, l, offsets)) {

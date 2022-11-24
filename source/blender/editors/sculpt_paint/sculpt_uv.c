@@ -757,7 +757,7 @@ static UvSculptData *uv_sculpt_stroke_init(bContext *C, wmOperator *op, const wm
           data->uv[counter].element = element;
           data->uv[counter].uv = *luv;
           if (data->tool != UV_SCULPT_TOOL_GRAB) {
-            if (BM_ELEM_CD_GET_OPT_BOOL(element->l, offsets.pin)) {
+            if (BM_ELEM_CD_GET_BOOL(element->l, offsets.pin)) {
               data->uv[counter].is_locked = true;
             }
           }
