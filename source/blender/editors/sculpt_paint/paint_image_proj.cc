@@ -4087,7 +4087,8 @@ static bool proj_paint_state_mesh_eval_init(const bContext *C, ProjPaintState *p
   ps->mlooptri_eval = BKE_mesh_runtime_looptri_ensure(ps->me_eval);
   ps->totlooptri_eval = BKE_mesh_runtime_looptri_len(ps->me_eval);
 
-  ps->poly_to_loop_uv = static_cast<const float (**)[2]>(MEM_mallocN(ps->totpoly_eval * sizeof(float(*)[2]), "proj_paint_mtfaces"));
+  ps->poly_to_loop_uv = static_cast<const float(**)[2]>(
+      MEM_mallocN(ps->totpoly_eval * sizeof(float(*)[2]), "proj_paint_mtfaces"));
 
   return true;
 }
@@ -4108,16 +4109,16 @@ static void proj_paint_layer_clone_init(ProjPaintState *ps, ProjPaintLayerClone 
                                                      CD_PROP_FLOAT2);
 
     ps->poly_to_loop_uv_clone = static_cast<const float(**)[2]>(
-        MEM_mallocN(ps->totpoly_eval * sizeof(float (*)[2]), "proj_paint_mtfaces"));
+        MEM_mallocN(ps->totpoly_eval * sizeof(float(*)[2]), "proj_paint_mtfaces"));
 
     if (layer_num != -1) {
-      mloopuv_clone_base = static_cast<const float (*)[2](
-          CustomData_get_layer_n(&ps->me_eval->ldata, CD_PROP_FLOAT2, layer_num));
+      mloopuv_clone_base = static_cast < const float(*)[2](CustomData_get_layer_n(
+                                             &ps->me_eval->ldata, CD_PROP_FLOAT2, layer_num));
     }
 
     if (mloopuv_clone_base == nullptr) {
       /* get active instead */
-      mloopuv_clone_base = static_cast<const float (*)[2]>(
+      mloopuv_clone_base = static_cast<const float(*)[2]>(
           CustomData_get_layer(&ps->me_eval->ldata, CD_PROP_FLOAT2));
     }
   }
@@ -4147,7 +4148,7 @@ static bool project_paint_clone_face_skip(ProjPaintState *ps,
     if (ps->do_material_slots) {
       if (lc->slot_clone != lc->slot_last_clone) {
         if (!lc->slot_clone->uvname ||
-            !(lc->mloopuv_clone_base = static_cast<const float (*)[2]>(CustomData_get_layer_named(
+            !(lc->mloopuv_clone_base = static_cast<const float(*)[2]>(CustomData_get_layer_named(
                   &ps->me_eval->ldata, CD_PROP_FLOAT2, lc->slot_clone->uvname)))) {
           lc->mloopuv_clone_base = static_cast<const float(*)[2]>(
               CustomData_get_layer(&ps->me_eval->ldata, CD_PROP_FLOAT2));
@@ -4318,14 +4319,17 @@ static void project_paint_prepare_all_faces(ProjPaintState *ps,
       slot = project_paint_face_paint_slot(ps, tri_index);
       /* all faces should have a valid slot, reassert here */
       if (slot == nullptr) {
-        mloopuv_base = static_cast<const float (*)[2]>(CustomData_get_layer(&ps->me_eval->ldata, CD_PROP_FLOAT2));
+        mloopuv_base = static_cast<const float(*)[2]>(
+            CustomData_get_layer(&ps->me_eval->ldata, CD_PROP_FLOAT2));
         tpage = ps->canvas_ima;
       }
       else {
         if (slot != slot_last) {
-          if (!slot->uvname || !(mloopuv_base = static_cast<const float (*)[2]>(CustomData_get_layer_named(
-                                     &ps->me_eval->ldata, CD_PROP_FLOAT2, slot->uvname)))) {
-            mloopuv_base = static_cast<const float (*)[2]>(CustomData_get_layer(&ps->me_eval->ldata, CD_PROP_FLOAT2));
+          if (!slot->uvname ||
+              !(mloopuv_base = static_cast<const float(*)[2]>(CustomData_get_layer_named(
+                    &ps->me_eval->ldata, CD_PROP_FLOAT2, slot->uvname)))) {
+            mloopuv_base = static_cast<const float(*)[2]>(
+                CustomData_get_layer(&ps->me_eval->ldata, CD_PROP_FLOAT2));
           }
           slot_last = slot;
         }
@@ -4501,13 +4505,14 @@ static void project_paint_begin(const bContext *C,
     // int layer_num = CustomData_get_stencil_layer(&ps->me_eval->ldata, CD_PROP_FLOAT2);
     int layer_num = CustomData_get_stencil_layer(&((Mesh *)ps->ob->data)->ldata, CD_PROP_FLOAT2);
     if (layer_num != -1) {
-      ps->mloopuv_stencil_eval = static_cast<const float(*)[2]>(CustomData_get_layer_n(
-          &ps->me_eval->ldata, CD_PROP_FLOAT2, layer_num));
+      ps->mloopuv_stencil_eval = static_cast<const float(*)[2]>(
+          CustomData_get_layer_n(&ps->me_eval->ldata, CD_PROP_FLOAT2, layer_num));
     }
 
     if (ps->mloopuv_stencil_eval == nullptr) {
       /* get active instead */
-      ps->mloopuv_stencil_eval = static_cast<const float (*)[2]>(CustomData_get_layer(&ps->me_eval->ldata, CD_PROP_FLOAT2));
+      ps->mloopuv_stencil_eval = static_cast<const float(*)[2]>(
+          CustomData_get_layer(&ps->me_eval->ldata, CD_PROP_FLOAT2));
     }
 
     if (ps->do_stencil_brush) {
