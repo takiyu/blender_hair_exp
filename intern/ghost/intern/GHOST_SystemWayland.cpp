@@ -20,6 +20,10 @@
 
 #include "GHOST_ContextEGL.h"
 
+#ifdef WITH_VULKAN_BACKEND
+#  include "GHOST_ContextVK.h"
+#endif
+
 #ifdef WITH_INPUT_NDOF
 #  include "GHOST_NDOFManagerUnix.h"
 #endif
@@ -2595,7 +2599,7 @@ static void pointer_handle_enter(void *data,
 
   seat->system->seat_active_set(seat);
 
-  win->setCursorShape(win->getCursorShape());
+  seat->system->cursor_shape_set(win->getCursorShape());
 
   const wl_fixed_t scale = win->scale();
   seat->system->pushEvent_maybe_pending(
@@ -3257,7 +3261,7 @@ static void tablet_tool_handle_proximity_in(void *data,
 
   win->activate();
 
-  win->setCursorShape(win->getCursorShape());
+  seat->system->cursor_shape_set(win->getCursorShape());
 }
 static void tablet_tool_handle_proximity_out(void *data,
                                              struct zwp_tablet_tool_v2 * /*zwp_tablet_tool_v2*/)
@@ -3456,7 +3460,7 @@ static void tablet_tool_handle_frame(void *data,
                               wl_fixed_to_int(scale * seat->tablet.xy[1]),
                               tablet_tool->data));
     if (tablet_tool->proximity == false) {
-      win->setCursorShape(win->getCursorShape());
+      seat->system->cursor_shape_set(win->getCursorShape());
     }
   }
 
@@ -6014,7 +6018,7 @@ static GHOST_Context *createOffscreenContext_impl(GHOST_SystemWayland *system,
   return nullptr;
 }
 
-GHOST_IContext *GHOST_SystemWayland::createOffscreenContext(GHOST_GLSettings /*glSettings*/)
+GHOST_IContext *GHOST_SystemWayland::createOffscreenContext(GHOST_GLSettings glSettings)
 {
 #ifdef USE_EVENT_BACKGROUND_THREAD
   std::lock_guard lock_server_guard{*server_mutex};
@@ -6022,6 +6026,31 @@ GHOST_IContext *GHOST_SystemWayland::createOffscreenContext(GHOST_GLSettings /*g
 
   /* Create new off-screen window. */
   wl_surface *wl_surface = wl_compositor_create_surface(wl_compositor());
+
+#ifdef WITH_VULKAN_BACKEND
+  const bool debug_context = (glSettings.flags & GHOST_glDebugContext) != 0;
+
+  if (glSettings.context_type == GHOST_kDrawingContextTypeVulkan) {
+    GHOST_Context *context = new GHOST_ContextVK(false,
+                                                 GHOST_kVulkanPlatformWayland,
+                                                 0,
+                                                 NULL,
+                                                 wl_surface,
+                                                 display_->wl_display,
+                                                 1,
+                                                 0,
+                                                 debug_context);
+
+    if (!context->initializeDrawingContext()) {
+      delete context;
+      return nullptr;
+    }
+    return context;
+  }
+#else
+  (void)glSettings;
+#endif
+
   wl_egl_window *egl_window = wl_surface ? wl_egl_window_create(wl_surface, 1, 1) : nullptr;
 
   GHOST_Context *context = createOffscreenContext_impl(this, display_->wl_display, egl_window);

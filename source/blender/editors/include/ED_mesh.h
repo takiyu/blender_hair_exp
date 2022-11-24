@@ -559,6 +559,8 @@ const bool *ED_mesh_uv_map_get_vert_selection(const struct Mesh *mesh, int uv_in
 const bool *ED_mesh_uv_map_get_edge_selection(const struct Mesh *mesh, int uv_index);
 const bool *ED_mesh_uv_map_get_pin(const struct Mesh *mesh, int uv_index);
 
+bool ED_mesh_edge_is_loose(const struct Mesh *mesh, int index);
+
 void ED_mesh_uv_ensure(struct Mesh *me, const char *name);
 int ED_mesh_uv_add(
     struct Mesh *me, const char *name, bool active_set, bool do_init, struct ReportList *reports);
