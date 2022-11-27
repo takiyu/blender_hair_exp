@@ -47,7 +47,7 @@ struct BKEMeshToTangent {
   mikk::float3 GetPosition(const uint face_num, const uint vert_num)
   {
     const uint loop_idx = uint(mpolys[face_num].loopstart) + vert_num;
-    return mikk::float3(positions[mloops[loop_idx].v]);
+    return mikk::float3(positions[corner_verts[loop_idx]]);
   }
 
   mikk::float3 GetTexCoord(const uint face_num, const uint vert_num)
@@ -68,7 +68,7 @@ struct BKEMeshToTangent {
   }
 
   const MPoly *mpolys;         /* faces */
-  const MLoop *mloops;         /* faces vertices */
+  const int *corner_verts;         /* faces vertices */
   const float (*positions)[3]; /* vertices */
   const MLoopUV *luvs;         /* texture coordinates */
   const float (*lnors)[3];     /* loops' normals */
@@ -78,7 +78,7 @@ struct BKEMeshToTangent {
 
 void BKE_mesh_calc_loop_tangent_single_ex(const float (*positions)[3],
                                           const int /*numVerts*/,
-                                          const MLoop *mloops,
+                                          const int *corner_verts,
                                           float (*r_looptangent)[4],
                                           const float (*loopnors)[3],
                                           const MLoopUV *loopuvs,
@@ -90,7 +90,7 @@ void BKE_mesh_calc_loop_tangent_single_ex(const float (*positions)[3],
   /* Compute Mikktspace's tangent normals. */
   BKEMeshToTangent mesh_to_tangent;
   mesh_to_tangent.mpolys = mpolys;
-  mesh_to_tangent.mloops = mloops;
+  mesh_to_tangent.corner_verts = corner_verts;
   mesh_to_tangent.positions = positions;
   mesh_to_tangent.luvs = loopuvs;
   mesh_to_tangent.lnors = loopnors;
@@ -143,7 +143,7 @@ void BKE_mesh_calc_loop_tangent_single(Mesh *mesh,
 
   BKE_mesh_calc_loop_tangent_single_ex(BKE_mesh_positions(mesh),
                                        mesh->totvert,
-                                       BKE_mesh_loops(mesh),
+                                       mesh->corner_verts().data(),
                                        r_looptangents,
                                        loopnors,
                                        loopuvs,
@@ -213,7 +213,7 @@ struct SGLSLMeshToTangent {
   {
     const MLoopTri *lt;
     uint loop_index = GetLoop(face_num, vert_num, lt);
-    return mikk::float3(positions[mloop[loop_index].v]);
+    return mikk::float3(positions[corner_verts[loop_index]]);
   }
 
   mikk::float3 GetTexCoord(const uint face_num, const uint vert_num)
@@ -224,7 +224,7 @@ struct SGLSLMeshToTangent {
       const float *uv = mloopuv[loop_index].uv;
       return mikk::float3(uv[0], uv[1], 1.0f);
     }
-    const float *l_orco = orco[mloop[loop_index].v];
+    const float *l_orco = orco[corner_verts[loop_index]];
     float u, v;
     map_to_sphere(&u, &v, l_orco[0], l_orco[1], l_orco[2]);
     return mikk::float3(u, v, 1.0f);
@@ -246,22 +246,22 @@ struct SGLSLMeshToTangent {
       float normal[3];
       if (mp->totloop == 4) {
         normal_quad_v3(normal,
-                       positions[mloop[mp->loopstart + 0].v],
-                       positions[mloop[mp->loopstart + 1].v],
-                       positions[mloop[mp->loopstart + 2].v],
-                       positions[mloop[mp->loopstart + 3].v]);
+                       positions[corner_verts[mp->loopstart + 0]],
+                       positions[corner_verts[mp->loopstart + 1]],
+                       positions[corner_verts[mp->loopstart + 2]],
+                       positions[corner_verts[mp->loopstart + 3]]);
       }
       else
 #endif
       {
         normal_tri_v3(normal,
-                      positions[mloop[lt->tri[0]].v],
-                      positions[mloop[lt->tri[1]].v],
-                      positions[mloop[lt->tri[2]].v]);
+                      positions[corner_verts[lt->tri[0]]],
+                      positions[corner_verts[lt->tri[1]]],
+                      positions[corner_verts[lt->tri[2]]]);
       }
       return mikk::float3(normal);
     }
-    return mikk::float3(vert_normals[mloop[loop_index].v]);
+    return mikk::float3(vert_normals[corner_verts[loop_index]]);
   }
 
   void SetTangentSpace(const uint face_num, const uint vert_num, mikk::float3 T, bool orientation)
@@ -277,7 +277,7 @@ struct SGLSLMeshToTangent {
   const MLoopTri *looptri;
   const MLoopUV *mloopuv;      /* texture coordinates */
   const MPoly *mpoly;          /* indices */
-  const MLoop *mloop;          /* indices */
+  const int *corner_verts;     /* indices */
   const float (*positions)[3]; /* vertex coordinates */
   const float (*vert_normals)[3];
   const float (*orco)[3];
@@ -388,7 +388,7 @@ void BKE_mesh_calc_loop_tangent_step_0(const CustomData *loopData,
 void BKE_mesh_calc_loop_tangent_ex(const float (*positions)[3],
                                    const MPoly *mpoly,
                                    const uint mpoly_len,
-                                   const MLoop *mloop,
+                                   const int *corner_verts,
                                    const MLoopTri *looptri,
                                    const uint looptri_len,
 
@@ -493,7 +493,7 @@ void BKE_mesh_calc_loop_tangent_ex(const float (*positions)[3],
         mesh2tangent->positions = positions;
         mesh2tangent->vert_normals = vert_normals;
         mesh2tangent->mpoly = mpoly;
-        mesh2tangent->mloop = mloop;
+        mesh2tangent->corner_verts = corner_verts;
         mesh2tangent->looptri = looptri;
         /* NOTE: we assume we do have tessellated loop normals at this point
          * (in case it is object-enabled), have to check this is valid. */
@@ -576,7 +576,7 @@ void BKE_mesh_calc_loop_tangents(Mesh *me_eval,
       BKE_mesh_positions(me_eval),
       BKE_mesh_polys(me_eval),
       uint(me_eval->totpoly),
-      BKE_mesh_loops(me_eval),
+      me_eval->corner_verts().data(),
       BKE_mesh_runtime_looptri_ensure(me_eval),
       uint(BKE_mesh_runtime_looptri_len(me_eval)),
       &me_eval->ldata,

@@ -802,14 +802,14 @@ static int mesh_customdata_custom_splitnormals_add_exec(bContext *C, wmOperator 
         const Span<float3> verts = me->positions();
         MutableSpan<MEdge> edges = me->edges_for_write();
         const Span<MPoly> polys = me->polys();
-        const Span<MLoop> loops = me->loops();
 
         BKE_edges_sharp_from_angle_set(reinterpret_cast<const float(*)[3]>(verts.data()),
                                        verts.size(),
                                        edges.data(),
                                        edges.size(),
-                                       loops.data(),
-                                       loops.size(),
+                                       me->corner_verts().data(),
+                                       me->corner_edges().data(),
+                                       me->totloop,
                                        polys.data(),
                                        BKE_mesh_poly_normals_ensure(me),
                                        polys.size(),

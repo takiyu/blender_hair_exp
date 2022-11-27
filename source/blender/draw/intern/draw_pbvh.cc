@@ -305,7 +305,8 @@ struct PBVHBatches {
 
         if (!(mp->flag & ME_SMOOTH)) {
           smooth = true;
-          BKE_mesh_calc_poly_normal(mp, args->mloop + mp->loopstart, args->mesh_positions, fno);
+          BKE_mesh_calc_poly_normal(
+              mp, &args->corner_verts[mp->loopstart], args->mesh_positions, fno);
           normal_float_to_short_v3(no, fno);
         }
         else {
@@ -506,7 +507,7 @@ struct PBVHBatches {
     auto foreach_faces =
         [&](std::function<void(int buffer_i, int tri_i, int vertex_i, const MLoopTri *tri)> func) {
           int buffer_i = 0;
-          const MLoop *mloop = args->mloop;
+          const int *corner_verts = args->corner_verts;
 
           for (int i : IndexRange(args->totprim)) {
             int face_index = args->mlooptri[args->prim_indices[i]].poly;
@@ -518,7 +519,7 @@ struct PBVHBatches {
             const MLoopTri *tri = args->mlooptri + args->prim_indices[i];
 
             for (int j : IndexRange(3)) {
-              func(buffer_i, j, mloop[tri->tri[j]].v, tri);
+              func(buffer_i, j, corner_verts[tri->tri[j]], tri);
               buffer_i++;
             }
           }

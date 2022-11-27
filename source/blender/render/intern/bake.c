@@ -461,7 +461,7 @@ static TriTessFace *mesh_calc_tri_tessface(Mesh *me, bool tangent, Mesh *me_eval
 
   const float(*positions)[3] = BKE_mesh_positions(me);
   const MPoly *polys = BKE_mesh_polys(me);
-  const MLoop *loops = BKE_mesh_loops(me);
+  const int *corner_verts = BKE_mesh_corner_verts(me);
 
   looptri = MEM_mallocN(sizeof(*looptri) * tottri, __func__);
   triangles = MEM_callocN(sizeof(TriTessFace) * tottri, __func__);
@@ -473,10 +473,10 @@ static TriTessFace *mesh_calc_tri_tessface(Mesh *me, bool tangent, Mesh *me_eval
 
   if (precomputed_normals != NULL) {
     BKE_mesh_recalc_looptri_with_normals(
-        loops, polys, positions, me->totloop, me->totpoly, looptri, precomputed_normals);
+        corner_verts, polys, positions, me->totloop, me->totpoly, looptri, precomputed_normals);
   }
   else {
-    BKE_mesh_recalc_looptri(loops, polys, positions, me->totloop, me->totpoly, looptri);
+    BKE_mesh_recalc_looptri(corner_verts, polys, positions, me->totloop, me->totpoly, looptri);
   }
 
   const TSpace *tspace = NULL;
@@ -497,12 +497,12 @@ static TriTessFace *mesh_calc_tri_tessface(Mesh *me, bool tangent, Mesh *me_eval
     const MLoopTri *lt = &looptri[i];
     const MPoly *mp = &polys[lt->poly];
 
-    triangles[i].positions[0] = positions[loops[lt->tri[0]].v];
-    triangles[i].positions[1] = positions[loops[lt->tri[1]].v];
-    triangles[i].positions[2] = positions[loops[lt->tri[2]].v];
-    triangles[i].vert_normals[0] = vert_normals[loops[lt->tri[0]].v];
-    triangles[i].vert_normals[1] = vert_normals[loops[lt->tri[1]].v];
-    triangles[i].vert_normals[2] = vert_normals[loops[lt->tri[2]].v];
+    triangles[i].positions[0] = positions[corner_verts[lt->tri[0]]];
+    triangles[i].positions[1] = positions[corner_verts[lt->tri[1]]];
+    triangles[i].positions[2] = positions[corner_verts[lt->tri[2]]];
+    triangles[i].vert_normals[0] = vert_normals[corner_verts[lt->tri[0]]];
+    triangles[i].vert_normals[1] = vert_normals[corner_verts[lt->tri[1]]];
+    triangles[i].vert_normals[2] = vert_normals[corner_verts[lt->tri[2]]];
     triangles[i].is_smooth = (mp->flag & ME_SMOOTH) != 0;
 
     if (tangent) {
@@ -519,7 +519,7 @@ static TriTessFace *mesh_calc_tri_tessface(Mesh *me, bool tangent, Mesh *me_eval
 
     if (calculate_normal) {
       if (lt->poly != mpoly_prev) {
-        BKE_mesh_calc_poly_normal(mp, &loops[mp->loopstart], positions, no);
+        BKE_mesh_calc_poly_normal(mp, &corner_verts[mp->loopstart], positions, no);
         mpoly_prev = lt->poly;
       }
       copy_v3_v3(triangles[i].normal, no);
@@ -743,8 +743,8 @@ void RE_bake_pixels_populate(Mesh *me,
 
   const float(*positions)[3] = BKE_mesh_positions(me);
   const MPoly *polys = BKE_mesh_polys(me);
-  const MLoop *loops = BKE_mesh_loops(me);
-  BKE_mesh_recalc_looptri(loops, polys, positions, me->totloop, me->totpoly, looptri);
+  const int *corner_verts = BKE_mesh_corner_verts(me);
+  BKE_mesh_recalc_looptri(corner_verts, polys, positions, me->totloop, me->totpoly, looptri);
 
   const int *material_indices = BKE_mesh_material_indices(me);
   const int materials_num = targets->materials_num;

@@ -866,10 +866,10 @@ static void attr_create_random_per_island(Scene *scene,
   else {
     if (polys_num != 0) {
       const MPoly *polys = static_cast<const MPoly *>(b_mesh.polygons[0].ptr.data);
-      const MLoop *loops = static_cast<const MLoop *>(b_mesh.loops[0].ptr.data);
+      const int *corner_verts = b_mesh.corner_verts[0].ptr.data;
       for (int i = 0; i < polys_num; i++) {
         const MPoly &b_poly = polys[i];
-        const MLoop &b_loop = loops[b_poly.loopstart];
+        const int vert = corner_verts[b_poly.loopstart];
         data[i] = hash_uint_to_float(vertices_sets.find(b_loop.v));
       }
     }
@@ -1014,7 +1014,7 @@ static void create_mesh(Scene *scene,
   else {
     vector<int> vi;
 
-    const MLoop *loops = static_cast<const MLoop *>(b_mesh.loops[0].ptr.data);
+    const int *corner_verts = b_mesh.corner_verts[0].ptr.data;
 
     for (int i = 0; i < numfaces; i++) {
       const MPoly &b_poly = polys[i];
@@ -1025,8 +1025,7 @@ static void create_mesh(Scene *scene,
       vi.resize(n);
       for (int i = 0; i < n; i++) {
         /* NOTE: Autosmooth is already taken care about. */
-
-        vi[i] = loops[b_poly.loopstart + i].v;
+        vi[i] = corner_verts[b_poly.loopstart + i];
       }
 
       /* create subd faces */

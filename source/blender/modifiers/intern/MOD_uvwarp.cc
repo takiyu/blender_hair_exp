@@ -81,7 +81,7 @@ static void matrix_from_obj_pchan(float mat[4][4], Object *ob, const char *bonen
 
 struct UVWarpData {
   const MPoly *mpoly;
-  const MLoop *mloop;
+  const int *corner_verts;
   MLoopUV *mloopuv;
 
   const MDeformVert *dvert;
@@ -110,6 +110,7 @@ static void uv_warp_compute(void *__restrict userdata,
 
   if (dvert) {
     for (l = 0; l < mp->totloop; l++, ml++, mluv++) {
+      const int corner_i = mp->loopstart + l;
       float uv[2];
       const float weight = data->invert_vgroup ?
                                1.0f - BKE_defvert_find_weight(&dvert[ml->v], defgrp_index) :

@@ -641,7 +641,7 @@ static void store_grid_data(MultiresUnsubdivideContext *context,
 {
   Mesh *original_mesh = context->original_mesh;
   const MPoly *polys = BKE_mesh_polys(original_mesh);
-  const MLoop *loops = BKE_mesh_loops(original_mesh);
+  const int *corner_verts = BKE_mesh_corner_verts(original_mesh);
   const MPoly *poly = &polys[BM_elem_index_get(f)];
 
   const int corner_vertex_index = BM_elem_index_get(v);
@@ -651,8 +651,7 @@ static void store_grid_data(MultiresUnsubdivideContext *context,
   int loop_offset = 0;
   for (int i = 0; i < poly->totloop; i++) {
     const int loop_index = poly->loopstart + i;
-    const MLoop *l = &loops[loop_index];
-    if (l->v == corner_vertex_index) {
+    if (corner_verts[loop_index] == corner_vertex_index) {
       loop_offset = i;
       break;
     }
@@ -966,7 +965,7 @@ static void multires_unsubdivide_prepare_original_bmesh_for_extract(
 static bool multires_unsubdivide_flip_grid_x_axis(Mesh *mesh, int poly, int loop, int v_x)
 {
   const MPoly *polys = BKE_mesh_polys(mesh);
-  const MLoop *loops = BKE_mesh_loops(mesh);
+  const int *corner_verts = BKE_mesh_corner_verts(mesh);
 
   const MPoly *p = &polys[poly];
 

@@ -55,7 +55,7 @@ class TextureMarginMap {
   char *mask_;
 
   MPoly const *mpoly_;
-  MLoop const *mloop_;
+  int const *corner_edges_;
   MLoopUV const *mloopuv_;
   int totpoly_;
   int totloop_;
@@ -66,7 +66,7 @@ class TextureMarginMap {
                    size_t h,
                    const float uv_offset[2],
                    MPoly const *mpoly,
-                   MLoop const *mloop,
+                   int const *corner_edges,
                    MLoopUV const *mloopuv,
                    int totpoly,
                    int totloop,
@@ -74,7 +74,7 @@ class TextureMarginMap {
       : w_(w),
         h_(h),
         mpoly_(mpoly),
-        mloop_(mloop),
+        corner_edges_(corner_edges),
         mloopuv_(mloopuv),
         totpoly_(totpoly),
         totloop_(totloop),
@@ -299,7 +299,7 @@ class TextureMarginMap {
     tmpmap.resize(totedge_, -1);
 
     for (size_t i = 0; i < totloop_; i++) {
-      int edge = mloop_[i].e;
+      int edge = corner_edges_[i];
       if (tmpmap[edge] == -1) {
         loop_adjacency_map_[i] = -1;
         tmpmap[edge] = i;
@@ -488,7 +488,7 @@ static void generate_margin(ImBuf *ibuf,
 {
 
   const MPoly *mpoly;
-  const MLoop *mloop;
+  const int *corner_edges;
   const MLoopUV *mloopuv;
   int totpoly, totloop, totedge;
 
@@ -502,7 +502,7 @@ static void generate_margin(ImBuf *ibuf,
     totloop = me->totloop;
     totedge = me->totedge;
     mpoly = me->polys().data();
-    mloop = me->loops().data();
+    corner_edges = me->corner_edges().data();
 
     if ((uv_layer == nullptr) || (uv_layer[0] == '\0')) {
       mloopuv = static_cast<const MLoopUV *>(CustomData_get_layer(&me->ldata, CD_MLOOPUV));
@@ -515,7 +515,7 @@ static void generate_margin(ImBuf *ibuf,
 
     tottri = poly_to_tri_count(me->totpoly, me->totloop);
     looptri_mem = static_cast<MLoopTri *>(MEM_mallocN(sizeof(*looptri) * tottri, __func__));
-    BKE_mesh_recalc_looptri(mloop,
+    BKE_mesh_recalc_looptri(me->corner_verts().data(),
                             mpoly,
                             reinterpret_cast<const float(*)[3]>(me->positions().data()),
                             me->totloop,
@@ -530,7 +530,7 @@ static void generate_margin(ImBuf *ibuf,
     totedge = dm->getNumEdges(dm);
     totloop = dm->getNumLoops(dm);
     mpoly = dm->getPolyArray(dm);
-    mloop = dm->getLoopArray(dm);
+    corner_edges = dm->getLoopArray(dm);
     mloopuv = (MLoopUV const *)dm->getLoopDataArray(dm, CD_MLOOPUV);
 
     looptri = dm->getLoopTriArray(dm);
@@ -538,7 +538,7 @@ static void generate_margin(ImBuf *ibuf,
   }
 
   TextureMarginMap map(
-      ibuf->x, ibuf->y, uv_offset, mpoly, mloop, mloopuv, totpoly, totloop, totedge);
+      ibuf->x, ibuf->y, uv_offset, mpoly, corner_edges, mloopuv, totpoly, totloop, totedge);
 
   bool draw_new_mask = false;
   /* Now the map contains 3 sorts of values: 0xFFFFFFFF for empty pixels, `0x80000000 + polyindex`

@@ -19,7 +19,7 @@ struct ReportList;
  */
 void BKE_mesh_calc_loop_tangent_single_ex(const float (*positions)[3],
                                           int numVerts,
-                                          const struct MLoop *mloops,
+                                          const int *corner_verts,
                                           float (*r_looptangent)[4],
                                           const float (*loopnors)[3],
                                           const struct MLoopUV *loopuv,
@@ -44,7 +44,7 @@ void BKE_mesh_calc_loop_tangent_single(struct Mesh *mesh,
 void BKE_mesh_calc_loop_tangent_ex(const float (*positions)[3],
                                    const struct MPoly *mpoly,
                                    uint mpoly_len,
-                                   const struct MLoop *mloop,
+                                   const int *corner_verts,
                                    const struct MLoopTri *looptri,
                                    uint looptri_len,
 

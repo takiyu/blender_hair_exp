@@ -64,14 +64,14 @@ static Mesh *remesh_quadriflow(const Mesh *input_mesh,
                                void *update_cb_data)
 {
   const Span<float3> input_positions = input_mesh->positions();
-  const Span<MLoop> input_loops = input_mesh->loops();
+  const Span<int> src_corner_verts = input_mesh->corner_verts();
   const MLoopTri *looptri = BKE_mesh_runtime_looptri_ensure(input_mesh);
 
   /* Gather the required data for export to the internal quadriflow mesh format. */
   MVertTri *verttri = (MVertTri *)MEM_callocN(
       sizeof(*verttri) * BKE_mesh_runtime_looptri_len(input_mesh), "remesh_looptri");
   BKE_mesh_runtime_verttri_from_looptri(
-      verttri, input_loops.data(), looptri, BKE_mesh_runtime_looptri_len(input_mesh));
+      verttri, src_corner_verts.data(), looptri, BKE_mesh_runtime_looptri_len(input_mesh));
 
   const int totfaces = BKE_mesh_runtime_looptri_len(input_mesh);
   const int totverts = input_mesh->totvert;
@@ -123,7 +123,7 @@ static Mesh *remesh_quadriflow(const Mesh *input_mesh,
   Mesh *mesh = BKE_mesh_new_nomain(qrd.out_totverts, 0, 0, qrd.out_totfaces * 4, qrd.out_totfaces);
   BKE_mesh_copy_parameters(mesh, input_mesh);
   MutableSpan<MPoly> polys = mesh->polys_for_write();
-  MutableSpan<MLoop> loops = mesh->loops_for_write();
+  MutableSpan<int> corner_verts = mesh->corner_verts_for_write();
 
   mesh->positions_for_write().copy_from(
       Span(reinterpret_cast<float3 *>(qrd.out_verts), qrd.out_totverts));
@@ -133,10 +133,10 @@ static Mesh *remesh_quadriflow(const Mesh *input_mesh,
     const int loopstart = i * 4;
     poly.loopstart = loopstart;
     poly.totloop = 4;
-    loops[loopstart].v = qrd.out_faces[loopstart];
-    loops[loopstart + 1].v = qrd.out_faces[loopstart + 1];
-    loops[loopstart + 2].v = qrd.out_faces[loopstart + 2];
-    loops[loopstart + 3].v = qrd.out_faces[loopstart + 3];
+    corner_verts[loopstart] = = qrd.out_faces[loopstart];
+    corner_verts[loopstart + 1] = = qrd.out_faces[loopstart + 1];
+    corner_verts[loopstart + 2] = = qrd.out_faces[loopstart + 2];
+    corner_verts[loopstart + 3] = = qrd.out_faces[loopstart + 3];
   }
 
   BKE_mesh_calc_edges(mesh, false, false);
@@ -187,7 +187,7 @@ static openvdb::FloatGrid::Ptr remesh_voxel_level_set_create(const Mesh *mesh,
                                                              const float voxel_size)
 {
   const Span<float3> positions = mesh->positions();
-  const Span<MLoop> loops = mesh->loops();
+  const Span<int> corner_verts = mesh->corner_verts();
   const Span<MLoopTri> looptris = mesh->looptris();
 
   std::vector<openvdb::Vec3s> points(mesh->totvert);
@@ -200,8 +200,9 @@ static openvdb::FloatGrid::Ptr remesh_voxel_level_set_create(const Mesh *mesh,
 
   for (const int i : IndexRange(looptris.size())) {
     const MLoopTri &loop_tri = looptris[i];
-    triangles[i] = openvdb::Vec3I(
-        loops[loop_tri.tri[0]].v, loops[loop_tri.tri[1]].v, loops[loop_tri.tri[2]].v);
+    triangles[i] = openvdb::Vec3I(corner_verts[loop_tri.tri[0]],
+                                  corner_verts[loop_tri.tri[1]],
+                                  corner_verts[loop_tri.tri[2]]);
   }
 
   openvdb::math::Transform::Ptr transform = openvdb::math::Transform::createLinearTransform(
@@ -227,7 +228,7 @@ static Mesh *remesh_voxel_volume_to_mesh(const openvdb::FloatGrid::Ptr level_set
       vertices.size(), 0, 0, quads.size() * 4 + tris.size() * 3, quads.size() + tris.size());
   MutableSpan<float3> mesh_positions = mesh->positions_for_write();
   MutableSpan<MPoly> mesh_polys = mesh->polys_for_write();
-  MutableSpan<MLoop> mesh_loops = mesh->loops_for_write();
+  MutableSpan<int> mesh_corner_verts = mesh->corner_verts_for_write();
 
   for (const int i : mesh_positions.index_range()) {
     mesh_positions[i] = float3(vertices[i].x(), vertices[i].y(), vertices[i].z());
@@ -238,10 +239,10 @@ static Mesh *remesh_voxel_volume_to_mesh(const openvdb::FloatGrid::Ptr level_set
     const int loopstart = i * 4;
     poly.loopstart = loopstart;
     poly.totloop = 4;
-    mesh_loops[loopstart].v = quads[i][0];
-    mesh_loops[loopstart + 1].v = quads[i][3];
-    mesh_loops[loopstart + 2].v = quads[i][2];
-    mesh_loops[loopstart + 3].v = quads[i][1];
+    mesh_corner_verts[loopstart] = quads[i][0];
+    mesh_corner_verts[loopstart + 1] = quads[i][3];
+    mesh_corner_verts[loopstart + 2] = quads[i][2];
+    mesh_corner_verts[loopstart + 3] = quads[i][1];
   }
 
   const int triangle_loop_start = quads.size() * 4;
@@ -250,9 +251,9 @@ static Mesh *remesh_voxel_volume_to_mesh(const openvdb::FloatGrid::Ptr level_set
     const int loopstart = triangle_loop_start + i * 3;
     poly.loopstart = loopstart;
     poly.totloop = 3;
-    mesh_loops[loopstart].v = tris[i][2];
-    mesh_loops[loopstart + 1].v = tris[i][1];
-    mesh_loops[loopstart + 2].v = tris[i][0];
+    mesh_corner_verts[loopstart] = tris[i][2];
+    mesh_corner_verts[loopstart + 1] = tris[i][1];
+    mesh_corner_verts[loopstart + 2] = tris[i][0];
   }
 
   BKE_mesh_calc_edges(mesh, false, false);

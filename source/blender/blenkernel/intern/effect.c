@@ -660,12 +660,12 @@ bool closest_point_on_surface(SurfaceModifierData *surmd,
     }
 
     if (surface_vel) {
-      const MLoop *mloop = surmd->bvhtree->loop;
+      const int *corner_verts = surmd->bvhtree->corner_verts;
       const MLoopTri *lt = &surmd->bvhtree->looptri[nearest.index];
 
-      copy_v3_v3(surface_vel, surmd->v[mloop[lt->tri[0]].v]);
-      add_v3_v3(surface_vel, surmd->v[mloop[lt->tri[1]].v]);
-      add_v3_v3(surface_vel, surmd->v[mloop[lt->tri[2]].v]);
+      copy_v3_v3(surface_vel, surmd->v[corner_verts[lt->tri[0]]]);
+      add_v3_v3(surface_vel, surmd->v[corner_verts[lt->tri[1]]]);
+      add_v3_v3(surface_vel, surmd->v[corner_verts[lt->tri[2]]]);
 
       mul_v3_fl(surface_vel, (1.0f / 3.0f));
     }

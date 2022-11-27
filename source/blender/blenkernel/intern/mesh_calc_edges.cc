@@ -98,22 +98,24 @@ static void add_polygon_edges_to_hash_maps(Mesh *mesh,
                                            uint32_t parallel_mask)
 {
   const Span<MPoly> polys = mesh->polys();
-  const Span<MLoop> loops = mesh->loops();
+  const Span<int> corner_verts = mesh->corner_verts();
   threading::parallel_for_each(edge_maps, [&](EdgeMap &edge_map) {
     const int task_index = &edge_map - edge_maps.data();
     for (const MPoly &poly : polys) {
-      Span<MLoop> poly_loops = loops.slice(poly.loopstart, poly.totloop);
-      const MLoop *prev_loop = &poly_loops.last();
-      for (const MLoop &next_loop : poly_loops) {
+      const IndexRange corners(poly.loopstart, poly.totloop);
+      int corner_prev = corners.last();
+      for (const int corner : corners) {
         /* Can only be the same when the mesh data is invalid. */
-        if (prev_loop->v != next_loop.v) {
-          OrderedEdge ordered_edge{prev_loop->v, next_loop.v};
+        const int vert = corner_verts[corner];
+        const int vert_prev = corner_verts[corner_prev];
+        if (vert_prev != vert) {
+          OrderedEdge ordered_edge{vert_prev, vert};
           /* Only add the edge when it belongs into this map. */
           if (task_index == (parallel_mask & ordered_edge.hash2())) {
             edge_map.lookup_or_add(ordered_edge, {nullptr});
           }
         }
-        prev_loop = &next_loop;
+        corner_prev = corner;
       }
     }
   });
@@ -159,17 +161,21 @@ static void update_edge_indices_in_poly_loops(Mesh *mesh,
                                               uint32_t parallel_mask)
 {
   const Span<MPoly> polys = mesh->polys();
-  MutableSpan<MLoop> loops = mesh->loops_for_write();
+  MutableSpan<int> corner_verts = mesh->corner_verts_for_write();
+  MutableSpan<int> corner_edges = mesh->corner_edges_for_write();
   threading::parallel_for(IndexRange(mesh->totpoly), 100, [&](IndexRange range) {
     for (const int poly_index : range) {
       const MPoly &poly = polys[poly_index];
-      MutableSpan<MLoop> poly_loops = loops.slice(poly.loopstart, poly.totloop);
+      const IndexRange corners(poly.loopstart, poly.totloop);
 
-      MLoop *prev_loop = &poly_loops.last();
-      for (MLoop &next_loop : poly_loops) {
+      int corner_prev = corners.last();
+      for (const int corner : corners) {
+        const int vert = corner_verts[corner];
+        const int vert_prev = corner_verts[corner_prev];
+
         int edge_index;
-        if (prev_loop->v != next_loop.v) {
-          OrderedEdge ordered_edge{prev_loop->v, next_loop.v};
+        if (vert_prev != vert) {
+          OrderedEdge ordered_edge{vert_prev, vert};
           /* Double lookup: First find the map that contains the edge, then lookup the edge. */
           const EdgeMap &edge_map = edge_maps[parallel_mask & ordered_edge.hash2()];
           edge_index = edge_map.lookup(ordered_edge).index;
@@ -180,8 +186,8 @@ static void update_edge_indices_in_poly_loops(Mesh *mesh,
            * T76514. */
           edge_index = 0;
         }
-        prev_loop->e = edge_index;
-        prev_loop = &next_loop;
+        corner_edges[corner_prev] = edge_index;
+        corner_prev = corner;
       }
     }
   });

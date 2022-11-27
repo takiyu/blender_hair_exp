@@ -263,7 +263,6 @@ static void data_transfer_dtdata_type_preprocess(Mesh *me_src,
     const int num_edges_dst = me_dst->totedge;
     const MPoly *polys_dst = BKE_mesh_polys(me_dst);
     const int num_polys_dst = me_dst->totpoly;
-    const MLoop *loops_dst = BKE_mesh_loops(me_dst);
     const int num_loops_dst = me_dst->totloop;
     CustomData *ldata_dst = &me_dst->ldata;
 
@@ -291,7 +290,8 @@ static void data_transfer_dtdata_type_preprocess(Mesh *me_src,
                                   num_verts_dst,
                                   edges_dst,
                                   num_edges_dst,
-                                  loops_dst,
+                                  BKE_mesh_corner_verts(me_dst),
+                                  BKE_mesh_corner_edges(me_dst),
                                   loop_nors_dst,
                                   num_loops_dst,
                                   polys_dst,
@@ -325,7 +325,6 @@ static void data_transfer_dtdata_type_postprocess(Object *UNUSED(ob_src),
     const int num_edges_dst = me_dst->totedge;
     MPoly *polys_dst = BKE_mesh_polys_for_write(me_dst);
     const int num_polys_dst = me_dst->totpoly;
-    MLoop *loops_dst = BKE_mesh_loops_for_write(me_dst);
     const int num_loops_dst = me_dst->totloop;
     CustomData *ldata_dst = &me_dst->ldata;
 
@@ -344,7 +343,8 @@ static void data_transfer_dtdata_type_postprocess(Object *UNUSED(ob_src),
                                      num_verts_dst,
                                      edges_dst,
                                      num_edges_dst,
-                                     loops_dst,
+                                     BKE_mesh_corner_verts(me_dst),
+                                     BKE_mesh_corner_edges(me_dst),
                                      loop_nors_dst,
                                      num_loops_dst,
                                      polys_dst,

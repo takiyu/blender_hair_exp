@@ -119,9 +119,9 @@ const blender::bke::LooseEdgeCache &Mesh::loose_edges() const
     loose_edges.resize(this->totedge, true);
 
     int count = this->totedge;
-    for (const MLoop &loop : this->loops()) {
-      if (loose_edges[loop.e]) {
-        loose_edges[loop.e].reset();
+    for (const int edge : this->corner_edges()) {
+      if (loose_edges[edge]) {
+        loose_edges[edge].reset();
         count--;
       }
     }
@@ -146,23 +146,23 @@ blender::Span<MLoopTri> Mesh::looptris() const
   this->runtime->looptris_cache.ensure([&](blender::Array<MLoopTri> &r_data) {
     const Span<float3> positions = this->positions();
     const Span<MPoly> polys = this->polys();
-    const Span<MLoop> loops = this->loops();
+    const Span<int> corner_verts = this->corner_verts();
 
-    r_data.reinitialize(poly_to_tri_count(polys.size(), loops.size()));
+    r_data.reinitialize(poly_to_tri_count(polys.size(), corner_verts.size()));
 
     if (BKE_mesh_poly_normals_are_dirty(this)) {
-      BKE_mesh_recalc_looptri(loops.data(),
+      BKE_mesh_recalc_looptri(corner_verts.data(),
                               polys.data(),
                               reinterpret_cast<const float(*)[3]>(positions.data()),
-                              loops.size(),
+                              corner_verts.size(),
                               polys.size(),
                               r_data.data());
     }
     else {
-      BKE_mesh_recalc_looptri_with_normals(loops.data(),
+      BKE_mesh_recalc_looptri_with_normals(corner_verts.data(),
                                            polys.data(),
                                            reinterpret_cast<const float(*)[3]>(positions.data()),
-                                           loops.size(),
+                                           corner_verts.size(),
                                            polys.size(),
                                            r_data.data(),
                                            BKE_mesh_poly_normals_ensure(this));
@@ -184,14 +184,14 @@ const MLoopTri *BKE_mesh_runtime_looptri_ensure(const Mesh *mesh)
 }
 
 void BKE_mesh_runtime_verttri_from_looptri(MVertTri *r_verttri,
-                                           const MLoop *mloop,
+                                           const int *corner_verts,
                                            const MLoopTri *looptri,
                                            int looptri_num)
 {
   for (int i = 0; i < looptri_num; i++) {
-    r_verttri[i].tri[0] = mloop[looptri[i].tri[0]].v;
-    r_verttri[i].tri[1] = mloop[looptri[i].tri[1]].v;
-    r_verttri[i].tri[2] = mloop[looptri[i].tri[2]].v;
+    r_verttri[i].tri[0] = corner_verts[looptri[i].tri[0]];
+    r_verttri[i].tri[1] = corner_verts[looptri[i].tri[1]];
+    r_verttri[i].tri[2] = corner_verts[looptri[i].tri[2]];
   }
 }
 

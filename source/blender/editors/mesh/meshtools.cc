@@ -1222,16 +1222,14 @@ static void ed_mesh_pick_face_vert__mpoly_find(
     /* mesh data (evaluated) */
     const MPoly *mp,
     const Span<float3> positions,
-    const MLoop *mloop,
+    const int *corner_verts,
     /* return values */
     float *r_len_best,
     int *r_v_idx_best)
 {
-  const MLoop *ml;
-  int j = mp->totloop;
-  for (ml = &mloop[mp->loopstart]; j--; ml++) {
+  for (int j = mp->totloop; j--;) {
     float sco[2];
-    const int v_idx = ml->v;
+    const int v_idx = corner_verts[mp->loopstart + j];
     if (ED_view3d_project_float_object(region, positions[v_idx], sco, V3D_PROJ_TEST_NOP) ==
         V3D_PROJ_RET_OK) {
       const float len_test = len_manhattan_v2v2(mval, sco);
@@ -1268,7 +1266,7 @@ bool ED_mesh_pick_face_vert(
 
     const Span<float3> positions = me_eval->positions();
     const Span<MPoly> polys = me_eval->polys();
-    const Span<MLoop> loops = me_eval->loops();
+    const Span<int> corner_verts = me_eval->corner_verts();
 
     const int *index_mp_to_orig = (const int *)CustomData_get_layer(&me_eval->pdata, CD_ORIGINDEX);
 
@@ -1277,14 +1275,19 @@ bool ED_mesh_pick_face_vert(
       for (const int i : polys.index_range()) {
         if (index_mp_to_orig[i] == poly_index) {
           ed_mesh_pick_face_vert__mpoly_find(
-              region, mval_f, &polys[i], positions, loops.data(), &len_best, &v_idx_best);
+              region, mval_f, &polys[i], positions, corner_verts.data(), &len_best, &v_idx_best);
         }
       }
     }
     else {
       if (poly_index < polys.size()) {
-        ed_mesh_pick_face_vert__mpoly_find(
-            region, mval_f, &polys[poly_index], positions, loops.data(), &len_best, &v_idx_best);
+        ed_mesh_pick_face_vert__mpoly_find(region,
+                                           mval_f,
+                                           &polys[poly_index],
+                                           positions,
+                                           corner_verts.data(),
+                                           &len_best,
+                                           &v_idx_best);
       }
     }
 

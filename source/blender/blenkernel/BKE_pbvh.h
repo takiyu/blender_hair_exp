@@ -29,7 +29,6 @@ struct CCGKey;
 struct CustomData;
 struct DMFlagMat;
 struct IsectRayPrecalc;
-struct MLoop;
 struct MLoopTri;
 struct MPoly;
 struct Mesh;
@@ -256,7 +255,7 @@ PBVH *BKE_pbvh_new(PBVHType type);
 void BKE_pbvh_build_mesh(PBVH *pbvh,
                          struct Mesh *mesh,
                          const struct MPoly *mpoly,
-                         const struct MLoop *mloop,
+                         const int *corner_verts,
                          float (*positions)[3],
                          int totvert,
                          struct CustomData *vdata,
@@ -471,7 +470,7 @@ const int *BKE_pbvh_node_get_vert_indices(PBVHNode *node);
 void BKE_pbvh_node_get_loops(PBVH *pbvh,
                              PBVHNode *node,
                              const int **r_loop_indices,
-                             const struct MLoop **r_loops);
+                             const int **r_corner_verts);
 
 /* Get number of faces in the mesh; for PBVH_GRIDS the
  * number of base mesh faces is returned.
@@ -698,7 +697,7 @@ typedef struct PBVHFaceIter {
   int *face_sets_;
   const struct MPoly *mpoly_;
   const struct MLoopTri *looptri_;
-  const struct MLoop *mloop_;
+  const int *corner_verts_;
   int prim_index_;
   const struct SubdivCCG *subdiv_ccg_;
   const struct BMesh *bm;

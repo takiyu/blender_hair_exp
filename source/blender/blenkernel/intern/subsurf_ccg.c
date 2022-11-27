@@ -55,7 +55,7 @@
 
 #include "CCGSubSurf.h"
 
-/* assumes MLoop's are laid out 4 for each poly, in order */
+/* assumes corners are laid out 4 for each poly, in order */
 #define USE_LOOP_LAYOUT_FAST
 
 static CCGDerivedMesh *getCCGDerivedMesh(CCGSubSurf *ss,
@@ -240,13 +240,13 @@ static int getFaceIndex(
 }
 
 static void get_face_uv_map_vert(
-    UvVertMap *vmap, struct MPoly *mpoly, struct MLoop *ml, int fi, CCGVertHDL *fverts)
+    UvVertMap *vmap, struct MPoly *mpoly, int *poly_verts, int fi, CCGVertHDL *fverts)
 {
   UvMapVert *v, *nv;
   int j, nverts = mpoly[fi].totloop;
 
   for (j = 0; j < nverts; j++) {
-    for (nv = v = BKE_mesh_uv_vert_map_get_vert(vmap, ml[j].v); v; v = v->next) {
+    for (nv = v = BKE_mesh_uv_vert_map_get_vert(vmap, poly_verts[j]); v; v = v->next) {
       if (v->separate) {
         nv = v;
       }
@@ -265,7 +265,7 @@ static int ss_sync_from_uv(CCGSubSurf *ss,
                            const MLoopUV *mloopuv)
 {
   MPoly *mpoly = dm->getPolyArray(dm);
-  MLoop *mloop = dm->getLoopArray(dm);
+  int *corner_verts = dm->getCornerVertArray(dm);
   int totvert = dm->getNumVerts(dm);
   int totface = dm->getNumPolys(dm);
   int i, seam;
@@ -285,7 +285,7 @@ static int ss_sync_from_uv(CCGSubSurf *ss,
    * Also, initially intention is to treat merged vertices from mirror modifier as seams.
    * This fixes a very old regression (2.49 was correct here) */
   vmap = BKE_mesh_uv_vert_map_create(
-      mpoly, NULL, NULL, mloop, mloopuv, totface, totvert, limit, false, true);
+      mpoly, NULL, NULL, corner_verts, mloopuv, totface, totvert, limit, false, true);
   if (!vmap) {
     return 0;
   }
@@ -328,7 +328,6 @@ static int ss_sync_from_uv(CCGSubSurf *ss,
     int j, j_next;
     CCGFace *origf = ccgSubSurf_getFace(origss, POINTER_FROM_INT(i));
     /* uint *fv = &mp->v1; */
-    MLoop *ml = mloop + mp->loopstart;
 
 #ifdef USE_DYNSIZE
     CCGVertHDL fverts[nverts];
@@ -337,7 +336,7 @@ static int ss_sync_from_uv(CCGSubSurf *ss,
     BLI_array_grow_items(fverts, nverts);
 #endif
 
-    get_face_uv_map_vert(vmap, mpoly, ml, i, fverts);
+    get_face_uv_map_vert(vmap, mpoly, &corner_verts[mp->loopstart], i, fverts);
 
     for (j = 0, j_next = nverts - 1; j < nverts; j_next = j++) {
       uint v0 = POINTER_AS_UINT(fverts[j_next]);
@@ -358,7 +357,6 @@ static int ss_sync_from_uv(CCGSubSurf *ss,
   /* create faces */
   for (i = 0; i < totface; i++) {
     MPoly *mp = &mpoly[i];
-    MLoop *ml = &mloop[mp->loopstart];
     int nverts = mp->totloop;
     CCGFace *f;
 
@@ -369,7 +367,7 @@ static int ss_sync_from_uv(CCGSubSurf *ss,
     BLI_array_grow_items(fverts, nverts);
 #endif
 
-    get_face_uv_map_vert(vmap, mpoly, ml, i, fverts);
+    get_face_uv_map_vert(vmap, mpoly, &corner_verts[mp->loopstart], i, fverts);
     ccgSubSurf_syncFace(ss, POINTER_FROM_INT(i), nverts, fverts, &f);
   }
 
@@ -565,7 +563,7 @@ static void ss_sync_ccg_from_derivedmesh(CCGSubSurf *ss,
   float(*positions)[3] = (float(*)[3])dm->getVertArray(dm);
   MEdge *medge = dm->getEdgeArray(dm);
   MEdge *me;
-  MLoop *mloop = dm->getLoopArray(dm), *ml;
+  int *corner_verts = dm->getCornerVertArray(dm);
   MPoly *mpoly = dm->getPolyArray(dm), *mp;
   int totvert = dm->getNumVerts(dm);
   int totedge = dm->getNumEdges(dm);
@@ -615,9 +613,9 @@ static void ss_sync_ccg_from_derivedmesh(CCGSubSurf *ss,
     BLI_array_grow_items(fVerts, mp->totloop);
 #endif
 
-    ml = mloop + mp->loopstart;
-    for (j = 0; j < mp->totloop; j++, ml++) {
-      fVerts[j] = POINTER_FROM_UINT(ml->v);
+    int corner = mp->loopstart;
+    for (j = 0; j < mp->totloop; j++, corner++) {
+      fVerts[j] = POINTER_FROM_UINT(corner_verts[corner]);
     }
 
     /* This is very bad, means mesh is internally inconsistent.
@@ -1017,7 +1015,8 @@ static void ccgDM_copyFinalEdgeArray(DerivedMesh *dm, MEdge *medge)
 
 typedef struct CopyFinalLoopArrayData {
   CCGDerivedMesh *ccgdm;
-  MLoop *mloop;
+  int *corner_verts;
+  int *corner_edges;
   int grid_size;
   int *grid_offset;
   int edge_size;
@@ -1036,32 +1035,31 @@ static void copyFinalLoopArray_task_cb(void *__restrict userdata,
   CCGFace *f = ccgdm->faceMap[iter].face;
   const int num_verts = ccgSubSurf_getFaceNumVerts(f);
   const int grid_index = data->grid_offset[iter];
-  const size_t loop_index = 4 * (size_t)grid_index * (grid_size - 1) * (grid_size - 1);
-  MLoop *ml = &data->mloop[loop_index];
+  int *corner_verts = data->corner_verts;
+  int *corner_edges = data->corner_edges;
+
+  size_t loop_index = 4 * (size_t)grid_index * (grid_size - 1) * (grid_size - 1);
   for (int S = 0; S < num_verts; S++) {
     for (int y = 0; y < grid_size - 1; y++) {
       for (int x = 0; x < grid_size - 1; x++) {
 
-        uint v1 = getFaceIndex(ss, f, S, x + 0, y + 0, edge_size, grid_size);
-        uint v2 = getFaceIndex(ss, f, S, x + 0, y + 1, edge_size, grid_size);
-        uint v3 = getFaceIndex(ss, f, S, x + 1, y + 1, edge_size, grid_size);
-        uint v4 = getFaceIndex(ss, f, S, x + 1, y + 0, edge_size, grid_size);
+        const int v1 = getFaceIndex(ss, f, S, x + 0, y + 0, edge_size, grid_size);
+        const int v2 = getFaceIndex(ss, f, S, x + 0, y + 1, edge_size, grid_size);
+        const int v3 = getFaceIndex(ss, f, S, x + 1, y + 1, edge_size, grid_size);
+        const int v4 = getFaceIndex(ss, f, S, x + 1, y + 0, edge_size, grid_size);
 
-        ml->v = v1;
-        ml->e = POINTER_AS_UINT(BLI_edgehash_lookup(ccgdm->ehash, v1, v2));
-        ml++;
-
-        ml->v = v2;
-        ml->e = POINTER_AS_UINT(BLI_edgehash_lookup(ccgdm->ehash, v2, v3));
-        ml++;
-
-        ml->v = v3;
-        ml->e = POINTER_AS_UINT(BLI_edgehash_lookup(ccgdm->ehash, v3, v4));
-        ml++;
-
-        ml->v = v4;
-        ml->e = POINTER_AS_UINT(BLI_edgehash_lookup(ccgdm->ehash, v4, v1));
-        ml++;
+        corner_verts[loop_index] = v1;
+        corner_edges[loop_index] = POINTER_AS_UINT(BLI_edgehash_lookup(ccgdm->ehash, v1, v2));
+        loop_index++;
+        corner_verts[loop_index] = v2;
+        corner_edges[loop_index] = POINTER_AS_UINT(BLI_edgehash_lookup(ccgdm->ehash, v2, v3));
+        loop_index++;
+        corner_verts[loop_index] = v3;
+        corner_edges[loop_index] = POINTER_AS_UINT(BLI_edgehash_lookup(ccgdm->ehash, v3, v4));
+        loop_index++;
+        corner_verts[loop_index] = v4;
+        corner_edges[loop_index] = POINTER_AS_UINT(BLI_edgehash_lookup(ccgdm->ehash, v4, v1));
+        loop_index++;
       }
     }
   }

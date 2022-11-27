@@ -20,12 +20,12 @@ static VArray<float> construct_face_area_varray(const Mesh &mesh, const eAttrDom
 {
   const Span<float3> positions = mesh.positions();
   const Span<MPoly> polys = mesh.polys();
-  const Span<MLoop> loops = mesh.loops();
+  const Span<int> corner_verts = mesh.corner_verts();
 
-  auto area_fn = [positions, polys, loops](const int i) -> float {
+  auto area_fn = [positions, polys, corner_verts](const int i) -> float {
     const MPoly &poly = polys[i];
     return BKE_mesh_calc_poly_area(
-        &poly, &loops[poly.loopstart], reinterpret_cast<const float(*)[3]>(positions.data()));
+        &poly, &corner_verts[poly.loopstart], reinterpret_cast<const float(*)[3]>(positions.data()));
   };
 
   return mesh.attributes().adapt_domain<float>(

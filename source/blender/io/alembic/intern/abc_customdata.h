@@ -14,7 +14,6 @@
 #include <map>
 
 struct CustomData;
-struct MLoop;
 struct MLoopUV;
 struct MPoly;
 struct Mesh;
@@ -29,7 +28,7 @@ struct UVSample {
 };
 
 struct CDStreamConfig {
-  MLoop *mloop;
+  int *corner_verts;
   int totloop;
 
   MPoly *mpoly;

@@ -40,7 +40,7 @@
 /**
  * \param face_normal: This will be optimized out as a constant.
  */
-BLI_INLINE void mesh_calc_tessellation_for_face_impl(const MLoop *mloop,
+BLI_INLINE void mesh_calc_tessellation_for_face_impl(const int *corner_verts,
                                                      const MPoly *mpoly,
                                                      const float (*positions)[3],
                                                      uint poly_index,
@@ -72,17 +72,17 @@ BLI_INLINE void mesh_calc_tessellation_for_face_impl(const MLoop *mloop,
 
       if (UNLIKELY(face_normal ? is_quad_flip_v3_first_third_fast_with_normal(
                                      /* Simpler calculation (using the normal). */
-                                     positions[mloop[mlt_a->tri[0]].v],
-                                     positions[mloop[mlt_a->tri[1]].v],
-                                     positions[mloop[mlt_a->tri[2]].v],
-                                     positions[mloop[mlt_b->tri[2]].v],
+                                     positions[corner_verts[mlt_a->tri[0]]],
+                                     positions[corner_verts[mlt_a->tri[1]]],
+                                     positions[corner_verts[mlt_a->tri[2]]],
+                                     positions[corner_verts[mlt_b->tri[2]]],
                                      normal_precalc) :
                                  is_quad_flip_v3_first_third_fast(
                                      /* Expensive calculation (no normal). */
-                                     positions[mloop[mlt_a->tri[0]].v],
-                                     positions[mloop[mlt_a->tri[1]].v],
-                                     positions[mloop[mlt_a->tri[2]].v],
-                                     positions[mloop[mlt_b->tri[2]].v]))) {
+                                     positions[corner_verts[mlt_a->tri[0]]],
+                                     positions[corner_verts[mlt_a->tri[1]]],
+                                     positions[corner_verts[mlt_a->tri[2]]],
+                                     positions[corner_verts[mlt_b->tri[2]]]))) {
         /* Flip out of degenerate 0-2 state. */
         mlt_a->tri[2] = mlt_b->tri[2];
         mlt_b->tri[0] = mlt_a->tri[1];
@@ -90,7 +90,6 @@ BLI_INLINE void mesh_calc_tessellation_for_face_impl(const MLoop *mloop,
       break;
     }
     default: {
-      const MLoop *ml;
       float axis_mat[3][3];
 
       /* Calculate `axis_mat` to project verts to 2D. */
@@ -101,10 +100,10 @@ BLI_INLINE void mesh_calc_tessellation_for_face_impl(const MLoop *mloop,
         zero_v3(normal);
 
         /* Calc normal, flipped: to get a positive 2D cross product. */
-        ml = mloop + mp_loopstart;
-        co_prev = positions[ml[mp_totloop - 1].v];
-        for (uint j = 0; j < mp_totloop; j++, ml++) {
-          co_curr = positions[ml->v];
+        int corner_i = mp_loopstart;
+        co_prev = positions[corner_verts[mp_totloop - 1]];
+        for (uint j = 0; j < mp_totloop; j++, corner_i++) {
+          co_curr = positions[corner_verts[corner_i]];
           add_newell_cross_v3_v3v3(normal, co_prev, co_curr);
           co_prev = co_curr;
         }
@@ -129,9 +128,9 @@ BLI_INLINE void mesh_calc_tessellation_for_face_impl(const MLoop *mloop,
       float(*projverts)[2] = static_cast<float(*)[2]>(
           BLI_memarena_alloc(pf_arena, sizeof(*projverts) * size_t(mp_totloop)));
 
-      ml = mloop + mp_loopstart;
-      for (uint j = 0; j < mp_totloop; j++, ml++) {
-        mul_v2_m3v3(projverts[j], axis_mat, positions[ml->v]);
+      int corner_i = mp_loopstart;
+      for (uint j = 0; j < mp_totloop; j++, corner_i++) {
+        mul_v2_m3v3(projverts[j], axis_mat, positions[corner_verts[corner_i]]);
       }
 
       BLI_polyfill_calc_arena(projverts, mp_totloop, 1, tris, pf_arena);
@@ -150,7 +149,7 @@ BLI_INLINE void mesh_calc_tessellation_for_face_impl(const MLoop *mloop,
 #undef ML_TO_MLT
 }
 
-static void mesh_calc_tessellation_for_face(const MLoop *mloop,
+static void mesh_calc_tessellation_for_face(const int *corner_verts,
                                             const MPoly *mpoly,
                                             const float (*positions)[3],
                                             uint poly_index,
@@ -158,10 +157,10 @@ static void mesh_calc_tessellation_for_face(const MLoop *mloop,
                                             MemArena **pf_arena_p)
 {
   mesh_calc_tessellation_for_face_impl(
-      mloop, mpoly, positions, poly_index, mlt, pf_arena_p, false, nullptr);
+      corner_verts, mpoly, positions, poly_index, mlt, pf_arena_p, false, nullptr);
 }
 
-static void mesh_calc_tessellation_for_face_with_normal(const MLoop *mloop,
+static void mesh_calc_tessellation_for_face_with_normal(const int *corner_verts,
                                                         const MPoly *mpoly,
                                                         const float (*positions)[3],
                                                         uint poly_index,
@@ -170,10 +169,10 @@ static void mesh_calc_tessellation_for_face_with_normal(const MLoop *mloop,
                                                         const float normal_precalc[3])
 {
   mesh_calc_tessellation_for_face_impl(
-      mloop, mpoly, positions, poly_index, mlt, pf_arena_p, true, normal_precalc);
+      corner_verts, mpoly, positions, poly_index, mlt, pf_arena_p, true, normal_precalc);
 }
 
-static void mesh_recalc_looptri__single_threaded(const MLoop *mloop,
+static void mesh_recalc_looptri__single_threaded(const int *corner_verts,
                                                  const MPoly *mpoly,
                                                  const float (*positions)[3],
                                                  int totloop,
@@ -187,7 +186,7 @@ static void mesh_recalc_looptri__single_threaded(const MLoop *mloop,
 
   if (poly_normals != nullptr) {
     for (uint poly_index = 0; poly_index < uint(totpoly); poly_index++, mp++) {
-      mesh_calc_tessellation_for_face_with_normal(mloop,
+      mesh_calc_tessellation_for_face_with_normal(corner_verts,
                                                   mpoly,
                                                   positions,
                                                   poly_index,
@@ -200,7 +199,7 @@ static void mesh_recalc_looptri__single_threaded(const MLoop *mloop,
   else {
     for (uint poly_index = 0; poly_index < uint(totpoly); poly_index++, mp++) {
       mesh_calc_tessellation_for_face(
-          mloop, mpoly, positions, poly_index, &mlooptri[tri_index], &pf_arena);
+          corner_verts, mpoly, positions, poly_index, &mlooptri[tri_index], &pf_arena);
       tri_index += uint(mp->totloop - 2);
     }
   }
@@ -214,7 +213,7 @@ static void mesh_recalc_looptri__single_threaded(const MLoop *mloop,
 }
 
 struct TessellationUserData {
-  const MLoop *mloop;
+  const int *corner_verts;
   const MPoly *mpoly;
   const float (*positions)[3];
 
@@ -236,7 +235,7 @@ static void mesh_calc_tessellation_for_face_fn(void *__restrict userdata,
   const TessellationUserData *data = static_cast<const TessellationUserData *>(userdata);
   TessellationUserTLS *tls_data = static_cast<TessellationUserTLS *>(tls->userdata_chunk);
   const int tri_index = poly_to_tri_count(index, data->mpoly[index].loopstart);
-  mesh_calc_tessellation_for_face_impl(data->mloop,
+  mesh_calc_tessellation_for_face_impl(data->corner_verts,
                                        data->mpoly,
                                        data->positions,
                                        uint(index),
@@ -253,7 +252,7 @@ static void mesh_calc_tessellation_for_face_with_normal_fn(void *__restrict user
   const TessellationUserData *data = static_cast<const TessellationUserData *>(userdata);
   TessellationUserTLS *tls_data = static_cast<TessellationUserTLS *>(tls->userdata_chunk);
   const int tri_index = poly_to_tri_count(index, data->mpoly[index].loopstart);
-  mesh_calc_tessellation_for_face_impl(data->mloop,
+  mesh_calc_tessellation_for_face_impl(data->corner_verts,
                                        data->mpoly,
                                        data->positions,
                                        uint(index),
@@ -272,7 +271,7 @@ static void mesh_calc_tessellation_for_face_free_fn(const void *__restrict /*use
   }
 }
 
-static void mesh_recalc_looptri__multi_threaded(const MLoop *mloop,
+static void mesh_recalc_looptri__multi_threaded(const int *corner_verts,
                                                 const MPoly *mpoly,
                                                 const float (*positions)[3],
                                                 int /*totloop*/,
@@ -284,7 +283,7 @@ static void mesh_recalc_looptri__multi_threaded(const MLoop *mloop,
 
   struct TessellationUserData data {
   };
-  data.mloop = mloop;
+  data.corner_verts = corner_verts;
   data.mpoly = mpoly;
   data.positions = positions;
   data.mlooptri = mlooptri;
@@ -306,7 +305,7 @@ static void mesh_recalc_looptri__multi_threaded(const MLoop *mloop,
                           &settings);
 }
 
-void BKE_mesh_recalc_looptri(const MLoop *mloop,
+void BKE_mesh_recalc_looptri(const int *corner_verts,
                              const MPoly *mpoly,
                              const float (*positions)[3],
                              int totloop,
@@ -315,15 +314,15 @@ void BKE_mesh_recalc_looptri(const MLoop *mloop,
 {
   if (totloop < MESH_FACE_TESSELLATE_THREADED_LIMIT) {
     mesh_recalc_looptri__single_threaded(
-        mloop, mpoly, positions, totloop, totpoly, mlooptri, nullptr);
+        corner_verts, mpoly, positions, totloop, totpoly, mlooptri, nullptr);
   }
   else {
     mesh_recalc_looptri__multi_threaded(
-        mloop, mpoly, positions, totloop, totpoly, mlooptri, nullptr);
+        corner_verts, mpoly, positions, totloop, totpoly, mlooptri, nullptr);
   }
 }
 
-void BKE_mesh_recalc_looptri_with_normals(const MLoop *mloop,
+void BKE_mesh_recalc_looptri_with_normals(const int *corner_verts,
                                           const MPoly *mpoly,
                                           const float (*positions)[3],
                                           int totloop,
@@ -334,11 +333,11 @@ void BKE_mesh_recalc_looptri_with_normals(const MLoop *mloop,
   BLI_assert(poly_normals != nullptr);
   if (totloop < MESH_FACE_TESSELLATE_THREADED_LIMIT) {
     mesh_recalc_looptri__single_threaded(
-        mloop, mpoly, positions, totloop, totpoly, mlooptri, poly_normals);
+        corner_verts, mpoly, positions, totloop, totpoly, mlooptri, poly_normals);
   }
   else {
     mesh_recalc_looptri__multi_threaded(
-        mloop, mpoly, positions, totloop, totpoly, mlooptri, poly_normals);
+        corner_verts, mpoly, positions, totloop, totpoly, mlooptri, poly_normals);
   }
 }
 

@@ -209,7 +209,7 @@ MeshImporter::MeshImporter(UnitConverter *unitconv,
 }
 
 bool MeshImporter::set_poly_indices(
-    MPoly *mpoly, MLoop *mloop, int loop_index, const uint *indices, int loop_count)
+    MPoly *mpoly, int *poly_verts, int loop_index, const uint *indices, int loop_count)
 {
   mpoly->loopstart = loop_index;
   mpoly->totloop = loop_count;
@@ -226,8 +226,8 @@ bool MeshImporter::set_poly_indices(
       }
     }
 
-    mloop->v = indices[index];
-    mloop++;
+    *poly_verts = indices[index];
+    poly_verts++;
   }
   return broken_loop;
 }
@@ -1164,7 +1164,7 @@ bool MeshImporter::write_geometry(const COLLADAFW::Geometry *geom)
    * BKE_mesh_set_custom_normals()'s internals expect me->medge to be populated
    * and for the MLoops to have correct edge indices. */
   if (use_custom_normals && !loop_normals.is_empty()) {
-    /* BKE_mesh_set_custom_normals()'s internals also expect that each MLoop
+    /* BKE_mesh_set_custom_normals()'s internals also expect that each corner
      * has a valid vertex index, which may not be the case due to the existing
      * logic in read_polys(). This check isn't necessary in the no-custom-normals
      * case because the invalid MLoops get stripped in a later step. */

@@ -478,8 +478,6 @@ static int customdata_compare(
   const uint64_t cd_mask_non_generic = CD_MASK_MEDGE | CD_MASK_MPOLY | CD_MASK_MLOOPUV |
                                        CD_MASK_PROP_BYTE_COLOR | CD_MASK_MDEFORMVERT;
   const uint64_t cd_mask_all_attr = CD_MASK_PROP_ALL | cd_mask_non_generic;
-  const Span<MLoop> loops_1 = m1->loops();
-  const Span<MLoop> loops_2 = m2->loops();
 
   for (int i = 0; i < c1->totlayer; i++) {
     l1 = &c1->layers[i];
@@ -544,28 +542,10 @@ static int customdata_compare(
             if (p1->totloop != p2->totloop) {
               return MESHCMP_POLYMISMATCH;
             }
-
-            const MLoop *lp1 = &loops_1[p1->loopstart];
-            const MLoop *lp2 = &loops_2[p2->loopstart];
-
-            for (k = 0; k < p1->totloop; k++, lp1++, lp2++) {
-              if (lp1->v != lp2->v) {
-                return MESHCMP_POLYVERTMISMATCH;
-              }
-            }
           }
           break;
         }
         case CD_MLOOP: {
-          MLoop *lp1 = (MLoop *)l1->data;
-          MLoop *lp2 = (MLoop *)l2->data;
-          int ltot = m1->totloop;
-
-          for (j = 0; j < ltot; j++, lp1++, lp2++) {
-            if (lp1->v != lp2->v) {
-              return MESHCMP_LOOPMISMATCH;
-            }
-          }
           break;
         }
         case CD_MLOOPUV: {
@@ -1449,10 +1429,10 @@ void BKE_mesh_auto_smooth_flag_set(Mesh *me,
   }
 }
 
-int poly_find_loop_from_vert(const MPoly *poly, const MLoop *loopstart, int vert)
+int poly_find_loop_from_vert(const MPoly *poly, const int *poly_corner_verts, int vert)
 {
-  for (int j = 0; j < poly->totloop; j++, loopstart++) {
-    if (loopstart->v == vert) {
+  for (int j = 0; j < poly->totloop; j++) {
+    if (poly_corner_verts[j] == vert) {
       return j;
     }
   }
@@ -1460,14 +1440,17 @@ int poly_find_loop_from_vert(const MPoly *poly, const MLoop *loopstart, int vert
   return -1;
 }
 
-int poly_get_adj_loops_from_vert(const MPoly *poly, const MLoop *mloop, int vert, int r_adj[2])
+int poly_get_adj_loops_from_vert(const MPoly *poly,
+                                 const int *corner_verts,
+                                 int vert,
+                                 int r_adj[2])
 {
-  int corner = poly_find_loop_from_vert(poly, &mloop[poly->loopstart], vert);
+  int corner = poly_find_loop_from_vert(poly, &corner_verts[poly->loopstart], vert);
 
   if (corner != -1) {
     /* vertex was found */
-    r_adj[0] = ME_POLY_LOOP_PREV(mloop, poly, corner)->v;
-    r_adj[1] = ME_POLY_LOOP_NEXT(mloop, poly, corner)->v;
+    r_adj[0] = corner_verts[ME_POLY_LOOP_PREV(poly, corner)];
+    r_adj[1] = corner_verts[ME_POLY_LOOP_NEXT(poly, corner)];
   }
 
   return corner;
@@ -1488,15 +1471,21 @@ int BKE_mesh_edge_other_vert(const MEdge *e, int v)
 void BKE_mesh_looptri_get_real_edges(const Mesh *mesh, const MLoopTri *looptri, int r_edges[3])
 {
   const Span<MEdge> edges = mesh->edges();
-  const Span<MLoop> loops = mesh->loops();
+  const Span<int> corner_edges = mesh->corner_edges();
+  const Span<int> corner_verts = mesh->corner_edges();
 
   for (int i = 2, i_next = 0; i_next < 3; i = i_next++) {
-    const MLoop *l1 = &loops[looptri->tri[i]], *l2 = &loops[looptri->tri[i_next]];
-    const MEdge *e = &edges[l1->e];
+    const int corner_1 = looptri->tri[i];
+    const int corner_2 = looptri->tri[i_next];
+    const int vert_1 = corner_verts[corner_1];
+    const int vert_2 = corner_verts[corner_1];
+    const int edge_1 = corner_edges[corner_1];
+    const int edge_2 = corner_edges[corner_1];
+    const MEdge *e = &edges[edge_1];
 
-    bool is_real = (l1->v == e->v1 && l2->v == e->v2) || (l1->v == e->v2 && l2->v == e->v1);
+    bool is_real = (vert_1 == e->v1 && vert_2 == e->v2) || (vert_1 == e->v2 && vert_2 == e->v1);
 
-    r_edges[i] = is_real ? l1->e : -1;
+    r_edges[i] = is_real ? edge_1 : -1;
   }
 }
 
@@ -1781,16 +1770,16 @@ void BKE_mesh_calc_normals_split_ex(Mesh *mesh,
   const Span<float3> positions = mesh->positions();
   const Span<MEdge> edges = mesh->edges();
   const Span<MPoly> polys = mesh->polys();
-  const Span<MLoop> loops = mesh->loops();
 
   BKE_mesh_normals_loop_split(reinterpret_cast<const float(*)[3]>(positions.data()),
                               BKE_mesh_vertex_normals_ensure(mesh),
                               positions.size(),
                               edges.data(),
                               edges.size(),
-                              loops.data(),
+                              mesh->corner_verts().data(),
+                              mesh->corner_edges().data(),
                               r_corner_normals,
-                              loops.size(),
+                              mesh->totloop,
                               polys.data(),
                               BKE_mesh_poly_normals_ensure(mesh),
                               polys.size(),
@@ -1837,21 +1826,20 @@ static int split_faces_prepare_new_verts(Mesh *mesh,
 
   const int loops_len = mesh->totloop;
   int verts_len = mesh->totvert;
-  MutableSpan<MLoop> loops = mesh->loops_for_write();
+  MutableSpan<int> corner_verts = mesh->corner_verts_for_write();
   BKE_mesh_vertex_normals_ensure(mesh);
   float(*vert_normals)[3] = BKE_mesh_vertex_normals_for_write(mesh);
 
   BitVector<> verts_used(verts_len, false);
   BitVector<> done_loops(loops_len, false);
 
-  MLoop *ml = loops.data();
   MLoopNorSpace **lnor_space = lnors_spacearr->lspacearr;
 
   BLI_assert(lnors_spacearr->data_type == MLNOR_SPACEARR_LOOP_INDEX);
 
-  for (int loop_idx = 0; loop_idx < loops_len; loop_idx++, ml++, lnor_space++) {
+  for (int loop_idx = 0; loop_idx < loops_len; loop_idx++, lnor_space++) {
     if (!done_loops[loop_idx]) {
-      const int vert_idx = ml->v;
+      const int vert_idx = corner_verts[loop_idx];
       const bool vert_used = verts_used[vert_idx];
       /* If vert is already used by another smooth fan, we need a new vert for this one. */
       const int new_vert_idx = vert_used ? verts_len++ : vert_idx;
@@ -1863,7 +1851,7 @@ static int split_faces_prepare_new_verts(Mesh *mesh,
         BLI_assert(POINTER_AS_INT((*lnor_space)->loops) == loop_idx);
         done_loops[loop_idx].set();
         if (vert_used) {
-          ml->v = new_vert_idx;
+          corner_verts[loop_idx] = new_vert_idx;
         }
       }
       else {
@@ -1871,7 +1859,7 @@ static int split_faces_prepare_new_verts(Mesh *mesh,
           const int ml_fan_idx = POINTER_AS_INT(lnode->link);
           done_loops[ml_fan_idx].set();
           if (vert_used) {
-            loops[ml_fan_idx].v = new_vert_idx;
+            corner_verts[ml_fan_idx] = new_vert_idx;
           }
         }
       }
@@ -1910,7 +1898,8 @@ static int split_faces_prepare_new_edges(Mesh *mesh,
   const int num_polys = mesh->totpoly;
   int num_edges = mesh->totedge;
   MutableSpan<MEdge> edges = mesh->edges_for_write();
-  MutableSpan<MLoop> loops = mesh->loops_for_write();
+  MutableSpan<int> corner_verts = mesh->corner_verts_for_write();
+  MutableSpan<int> corner_edges = mesh->corner_edges_for_write();
   const Span<MPoly> polys = mesh->polys();
 
   BitVector<> edges_used(num_edges, false);
@@ -1918,43 +1907,43 @@ static int split_faces_prepare_new_edges(Mesh *mesh,
 
   const MPoly *mp = polys.data();
   for (int poly_idx = 0; poly_idx < num_polys; poly_idx++, mp++) {
-    MLoop *ml_prev = &loops[mp->loopstart + mp->totloop - 1];
-    MLoop *ml = &loops[mp->loopstart];
-    for (int loop_idx = 0; loop_idx < mp->totloop; loop_idx++, ml++) {
+    int corner_i_prev = mp->loopstart + mp->totloop - 1;
+    for (int loop_idx = 0; loop_idx < mp->totloop; loop_idx++) {
       void **eval;
-      if (!BLI_edgehash_ensure_p(edges_hash, ml_prev->v, ml->v, &eval)) {
-        const int edge_idx = ml_prev->e;
+      if (!BLI_edgehash_ensure_p(
+              edges_hash, corner_verts[corner_i_prev], corner_verts[loop_idx], &eval)) {
+        const int edge_idx = corner_edges[corner_i_prev];
 
         /* That edge has not been encountered yet, define it. */
         if (edges_used[edge_idx]) {
           /* Original edge has already been used, we need to define a new one. */
           const int new_edge_idx = num_edges++;
           *eval = POINTER_FROM_INT(new_edge_idx);
-          ml_prev->e = new_edge_idx;
+          corner_edges[corner_i_prev] = new_edge_idx;
 
           SplitFaceNewEdge *new_edge = (SplitFaceNewEdge *)BLI_memarena_alloc(memarena,
                                                                               sizeof(*new_edge));
           new_edge->orig_index = edge_idx;
           new_edge->new_index = new_edge_idx;
-          new_edge->v1 = ml_prev->v;
-          new_edge->v2 = ml->v;
+          new_edge->v1 = corner_verts[corner_i_prev];
+          new_edge->v2 = corner_verts[loop_idx];
           new_edge->next = *new_edges;
           *new_edges = new_edge;
         }
         else {
           /* We can re-use original edge. */
-          edges[edge_idx].v1 = ml_prev->v;
-          edges[edge_idx].v2 = ml->v;
+          edges[edge_idx].v1 = corner_verts[corner_i_prev];
+          edges[edge_idx].v2 = corner_verts[loop_idx];
           *eval = POINTER_FROM_INT(edge_idx);
           edges_used[edge_idx].set();
         }
       }
       else {
         /* Edge already known, just update loop's edge index. */
-        ml_prev->e = POINTER_AS_INT(*eval);
+        corner_edges[corner_i_prev] = POINTER_AS_INT(*eval);
       }
 
-      ml_prev = ml;
+      corner_i_prev = loop_idx;
     }
   }
 

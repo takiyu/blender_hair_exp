@@ -150,7 +150,7 @@ void BKE_mesh_foreach_mapped_loop(Mesh *mesh,
                                   void *userData,
                                   MeshForeachFlag flag)
 {
-
+  using namespace blender;
   /* We can't use `dm->getLoopDataLayout(dm)` here,
    * we want to always access `dm->loopData`, `EditDerivedBMesh` would
    * return loop data from BMesh itself. */
@@ -191,7 +191,7 @@ void BKE_mesh_foreach_mapped_loop(Mesh *mesh,
                                  nullptr;
 
     const float(*positions)[3] = BKE_mesh_positions(mesh);
-    const MLoop *ml = BKE_mesh_loops(mesh);
+    const Span<int> corner_verts = mesh->corner_verts();
     const MPoly *mp = BKE_mesh_polys(mesh);
     const int *v_index = static_cast<const int *>(
         CustomData_get_layer(&mesh->vdata, CD_ORIGINDEX));
@@ -201,24 +201,25 @@ void BKE_mesh_foreach_mapped_loop(Mesh *mesh,
 
     if (v_index || f_index) {
       for (p_idx = 0; p_idx < mesh->totpoly; p_idx++, mp++) {
-        for (i = 0; i < mp->totloop; i++, ml++) {
-          const int v_idx = v_index ? v_index[ml->v] : ml->v;
+        for (i = 0; i < mp->totloop; i++) {
+          const int vert_i = corner_verts[i];
+          const int v_idx = v_index ? v_index[vert_i] : vert_i;
           const int f_idx = f_index ? f_index[p_idx] : p_idx;
           const float *no = lnors ? *lnors++ : nullptr;
           if (ELEM(ORIGINDEX_NONE, v_idx, f_idx)) {
             continue;
           }
-          func(userData, v_idx, f_idx, positions[ml->v], no);
+          func(userData, v_idx, f_idx, positions[vert_i], no);
         }
       }
     }
     else {
       for (p_idx = 0; p_idx < mesh->totpoly; p_idx++, mp++) {
-        for (i = 0; i < mp->totloop; i++, ml++) {
-          const int v_idx = ml->v;
+        for (i = 0; i < mp->totloop; i++) {
+          const int vert_i = corner_verts[i];
           const int f_idx = p_idx;
           const float *no = lnors ? *lnors++ : nullptr;
-          func(userData, v_idx, f_idx, positions[ml->v], no);
+          func(userData, vert_i, f_idx, positions[vert_i], no);
         }
       }
     }
@@ -231,6 +232,7 @@ void BKE_mesh_foreach_mapped_face_center(
     void *userData,
     MeshForeachFlag flag)
 {
+  using namespace blender;
   if (mesh->edit_mesh != nullptr && mesh->runtime->edit_data != nullptr) {
     BMEditMesh *em = mesh->edit_mesh;
     BMesh *bm = em->bm;
@@ -267,7 +269,7 @@ void BKE_mesh_foreach_mapped_face_center(
   else {
     const float(*positions)[3] = BKE_mesh_positions(mesh);
     const MPoly *mp = BKE_mesh_polys(mesh);
-    const MLoop *loops = BKE_mesh_loops(mesh);
+    const Span<int> corner_verts = mesh->corner_verts();
     const MLoop *ml;
     float _no_buf[3];
     float *no = (flag & MESH_FOREACH_USE_NORMAL) ? _no_buf : nullptr;
@@ -281,7 +283,7 @@ void BKE_mesh_foreach_mapped_face_center(
         }
         float cent[3];
         ml = &loops[mp->loopstart];
-        BKE_mesh_calc_poly_center(mp, ml, positions, cent);
+        BKE_mesh_calc_poly_center(mp, &corner_verts[mp->loopstart], positions, cent);
         if (flag & MESH_FOREACH_USE_NORMAL) {
           BKE_mesh_calc_poly_normal(mp, ml, positions, no);
         }

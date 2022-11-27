@@ -291,13 +291,13 @@ static void extrude_mesh_vertices(Mesh &mesh,
 static Array<Vector<int, 2>> mesh_calculate_polys_of_edge(const Mesh &mesh)
 {
   Span<MPoly> polys = mesh.polys();
-  Span<MLoop> loops = mesh.loops();
+  Span<int> corner_edges = mesh.corner_edges();
   Array<Vector<int, 2>> polys_of_edge(mesh.totedge);
 
   for (const int i_poly : polys.index_range()) {
     const MPoly &poly = polys[i_poly];
-    for (const MLoop &loop : loops.slice(poly.loopstart, poly.totloop)) {
-      polys_of_edge[loop.e].append(i_poly);
+    for (const int edge_i : corner_edges.slice(poly.loopstart, poly.totloop)) {
+      polys_of_edge[edge_i].append(i_poly);
     }
   }
 

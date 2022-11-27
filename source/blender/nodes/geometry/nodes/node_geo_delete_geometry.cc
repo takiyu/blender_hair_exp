@@ -200,26 +200,29 @@ static void copy_masked_polys_to_new_mesh(const Mesh &src_mesh,
                                           Span<int> new_loop_starts)
 {
   const Span<MPoly> src_polys = src_mesh.polys();
-  const Span<MLoop> src_loops = src_mesh.loops();
+  const Span<int> src_corner_verts = src_mesh.corner_verts();
+  const Span<int> src_corner_edges = src_mesh.corner_edges();
   MutableSpan<MPoly> dst_polys = dst_mesh.polys_for_write();
-  MutableSpan<MLoop> dst_loops = dst_mesh.loops_for_write();
+  MutableSpan<int> dst_corner_verts = dst_mesh.corner_verts_for_write();
+  MutableSpan<int> dst_corner_edges = dst_mesh.corner_edges_for_write();
 
   for (const int i_dst : masked_poly_indices.index_range()) {
     const int i_src = masked_poly_indices[i_dst];
-
     const MPoly &mp_src = src_polys[i_src];
+    const int size = mp_src.totloop;
+    const Span<int> src_poly_verts = src_corner_verts.slice(mp_src.loopstart, size);
+    const Span<int> src_poly_edges = src_corner_edges.slice(mp_src.loopstart, size);
+
     MPoly &mp_dst = dst_polys[i_dst];
-    const int i_ml_src = mp_src.loopstart;
-    const int i_ml_dst = new_loop_starts[i_dst];
-
-    const MLoop *ml_src = &src_loops[i_ml_src];
-    MLoop *ml_dst = &dst_loops[i_ml_dst];
-
     mp_dst = mp_src;
-    mp_dst.loopstart = i_ml_dst;
-    for (int i : IndexRange(mp_src.totloop)) {
-      ml_dst[i].v = ml_src[i].v;
-      ml_dst[i].e = edge_map[ml_src[i].e];
+    mp_dst.totloop = new_loop_starts[i_dst];
+    MutableSpan<int> dst_poly_verts = dst_corner_verts.slice(mp_dst.loopstart, size);
+    MutableSpan<int> dst_poly_edges = dst_corner_edges.slice(mp_dst.loopstart, size);
+
+    dst_poly_verts.copy_from(src_poly_verts);
+
+    for (const int i : IndexRange(size)) {
+      dst_poly_edges[i] = edge_map[dst_poly_edges[i]];
     }
   }
 }
@@ -231,27 +234,27 @@ static void copy_masked_polys_to_new_mesh(const Mesh &src_mesh,
                                           Span<int> new_loop_starts)
 {
   const Span<MPoly> src_polys = src_mesh.polys();
-  const Span<MLoop> src_loops = src_mesh.loops();
+  const Span<int> src_corner_verts = src_mesh.corner_verts();
+  const Span<int> src_corner_edges = src_mesh.corner_edges();
   MutableSpan<MPoly> dst_polys = dst_mesh.polys_for_write();
-  MutableSpan<MLoop> dst_loops = dst_mesh.loops_for_write();
+  MutableSpan<int> dst_corner_verts = dst_mesh.corner_verts_for_write();
+  MutableSpan<int> dst_corner_edges = dst_mesh.corner_edges_for_write();
 
   for (const int i_dst : masked_poly_indices.index_range()) {
     const int i_src = masked_poly_indices[i_dst];
-
     const MPoly &mp_src = src_polys[i_src];
+    const int size = mp_src.totloop;
+    const Span<int> src_poly_verts = src_corner_verts.slice(mp_src.loopstart, size);
+    const Span<int> src_poly_edges = src_corner_edges.slice(mp_src.loopstart, size);
+
     MPoly &mp_dst = dst_polys[i_dst];
-    const int i_ml_src = mp_src.loopstart;
-    const int i_ml_dst = new_loop_starts[i_dst];
-
-    const MLoop *ml_src = &src_loops[i_ml_src];
-    MLoop *ml_dst = &dst_loops[i_ml_dst];
-
     mp_dst = mp_src;
-    mp_dst.loopstart = i_ml_dst;
-    for (int i : IndexRange(mp_src.totloop)) {
-      ml_dst[i].v = ml_src[i].v;
-      ml_dst[i].e = ml_src[i].e;
-    }
+    mp_dst.totloop = new_loop_starts[i_dst];
+    MutableSpan<int> dst_poly_verts = dst_corner_verts.slice(mp_dst.loopstart, size);
+    MutableSpan<int> dst_poly_edges = dst_corner_edges.slice(mp_dst.loopstart, size);
+
+    dst_poly_verts.copy_from(src_poly_verts);
+    dst_poly_edges.copy_from(src_poly_edges);
   }
 }
 
@@ -263,26 +266,30 @@ static void copy_masked_polys_to_new_mesh(const Mesh &src_mesh,
                                           Span<int> new_loop_starts)
 {
   const Span<MPoly> src_polys = src_mesh.polys();
-  const Span<MLoop> src_loops = src_mesh.loops();
+  const Span<int> src_corner_verts = src_mesh.corner_verts();
+  const Span<int> src_corner_edges = src_mesh.corner_edges();
   MutableSpan<MPoly> dst_polys = dst_mesh.polys_for_write();
-  MutableSpan<MLoop> dst_loops = dst_mesh.loops_for_write();
+  MutableSpan<int> dst_corner_verts = dst_mesh.corner_verts_for_write();
+  MutableSpan<int> dst_corner_edges = dst_mesh.corner_edges_for_write();
 
   for (const int i_dst : masked_poly_indices.index_range()) {
     const int i_src = masked_poly_indices[i_dst];
-
     const MPoly &mp_src = src_polys[i_src];
+    const int size = mp_src.totloop;
+    const Span<int> src_poly_verts = src_corner_verts.slice(mp_src.loopstart, size);
+    const Span<int> src_poly_edges = src_corner_edges.slice(mp_src.loopstart, size);
+
     MPoly &mp_dst = dst_polys[i_dst];
-    const int i_ml_src = mp_src.loopstart;
-    const int i_ml_dst = new_loop_starts[i_dst];
-
-    const MLoop *ml_src = &src_loops[i_ml_src];
-    MLoop *ml_dst = &dst_loops[i_ml_dst];
-
     mp_dst = mp_src;
-    mp_dst.loopstart = i_ml_dst;
-    for (int i : IndexRange(mp_src.totloop)) {
-      ml_dst[i].v = vertex_map[ml_src[i].v];
-      ml_dst[i].e = edge_map[ml_src[i].e];
+    mp_dst.totloop = new_loop_starts[i_dst];
+    MutableSpan<int> dst_poly_verts = dst_corner_verts.slice(mp_dst.loopstart, size);
+    MutableSpan<int> dst_poly_edges = dst_corner_edges.slice(mp_dst.loopstart, size);
+
+    for (const int i : IndexRange(size)) {
+      dst_poly_verts[i] = vertex_map[dst_poly_verts[i]];
+    }
+    for (const int i : IndexRange(size)) {
+      dst_poly_edges[i] = edge_map[dst_poly_edges[i]];
     }
   }
 }
@@ -421,7 +428,7 @@ static void compute_selected_polys_from_vertex_selection(const Mesh &mesh,
 {
   BLI_assert(mesh.totvert == vertex_selection.size());
   const Span<MPoly> polys = mesh.polys();
-  const Span<MLoop> loops = mesh.loops();
+  const Span<int> corner_verts = mesh.corner_verts();
 
   r_selected_poly_indices.reserve(mesh.totpoly);
   r_loop_starts.reserve(mesh.totloop);
@@ -431,9 +438,8 @@ static void compute_selected_polys_from_vertex_selection(const Mesh &mesh,
     const MPoly &poly_src = polys[i];
 
     bool all_verts_in_selection = true;
-    const Span<MLoop> poly_loops = loops.slice(poly_src.loopstart, poly_src.totloop);
-    for (const MLoop &loop : poly_loops) {
-      if (!vertex_selection[loop.v]) {
+    for (const int vert_i : corner_verts.slice(poly_src.loopstart, poly_src.totloop)) {
+      if (!vertex_selection[vert_i]) {
         all_verts_in_selection = false;
         break;
       }
@@ -525,7 +531,7 @@ static void compute_selected_polys_from_edge_selection(const Mesh &mesh,
                                                        int *r_selected_loops_num)
 {
   const Span<MPoly> polys = mesh.polys();
-  const Span<MLoop> loops = mesh.loops();
+  const Span<int> corner_edges = mesh.corner_edges();
 
   r_selected_poly_indices.reserve(mesh.totpoly);
   r_loop_starts.reserve(mesh.totloop);
@@ -535,9 +541,8 @@ static void compute_selected_polys_from_edge_selection(const Mesh &mesh,
     const MPoly &poly_src = polys[i];
 
     bool all_edges_in_selection = true;
-    const Span<MLoop> poly_loops = loops.slice(poly_src.loopstart, poly_src.totloop);
-    for (const MLoop &loop : poly_loops) {
-      if (!edge_selection[loop.e]) {
+    for (const int edge_i : corner_edges.slice(poly_src.loopstart, poly_src.totloop)) {
+      if (!edge_selection[edge_i]) {
         all_edges_in_selection = false;
         break;
       }
@@ -704,7 +709,7 @@ static void compute_selected_mesh_data_from_poly_selection_edge_face(
   BLI_assert(mesh.totpoly == poly_selection.size());
   BLI_assert(mesh.totedge == r_edge_map.size());
   const Span<MPoly> polys = mesh.polys();
-  const Span<MLoop> loops = mesh.loops();
+  const Span<int> corner_edges = mesh.corner_edges();
 
   r_edge_map.fill(-1);
 
@@ -722,11 +727,10 @@ static void compute_selected_mesh_data_from_poly_selection_edge_face(
       selected_loops_num += poly_src.totloop;
 
       /* Add the vertices and the edges. */
-      const Span<MLoop> poly_loops = loops.slice(poly_src.loopstart, poly_src.totloop);
-      for (const MLoop &loop : poly_loops) {
+      for (const int edge_i : corner_edges.slice(poly_src.loopstart, poly_src.totloop)) {
         /* Check first if it has not yet been added. */
-        if (r_edge_map[loop.e] == -1) {
-          r_edge_map[loop.e] = selected_edges_num;
+        if (r_edge_map[edge_i] == -1) {
+          r_edge_map[edge_i] = selected_edges_num;
           selected_edges_num++;
         }
       }
@@ -755,7 +759,8 @@ static void compute_selected_mesh_data_from_poly_selection(const Mesh &mesh,
   BLI_assert(mesh.totpoly == poly_selection.size());
   BLI_assert(mesh.totedge == r_edge_map.size());
   const Span<MPoly> polys = mesh.polys();
-  const Span<MLoop> loops = mesh.loops();
+  const Span<int> corner_verts = mesh.corner_verts();
+  const Span<int> corner_edges = mesh.corner_edges();
 
   r_vertex_map.fill(-1);
   r_edge_map.fill(-1);
@@ -775,15 +780,16 @@ static void compute_selected_mesh_data_from_poly_selection(const Mesh &mesh,
       selected_loops_num += poly_src.totloop;
 
       /* Add the vertices and the edges. */
-      const Span<MLoop> poly_loops = loops.slice(poly_src.loopstart, poly_src.totloop);
-      for (const MLoop &loop : poly_loops) {
+      for (const int corner : IndexRange(poly_src.loopstart, poly_src.totloop)) {
+        const int vert_i= corner_verts[corner];
+        const int edge_i= corner_edges[corner];
         /* Check first if it has not yet been added. */
-        if (r_vertex_map[loop.v] == -1) {
-          r_vertex_map[loop.v] = selected_verts_num;
+        if (r_vertex_map[vert_i] == -1) {
+          r_vertex_map[vert_i] = selected_verts_num;
           selected_verts_num++;
         }
-        if (r_edge_map[loop.e] == -1) {
-          r_edge_map[loop.e] = selected_edges_num;
+        if (r_edge_map[edge_i] == -1) {
+          r_edge_map[edge_i] = selected_edges_num;
           selected_edges_num++;
         }
       }

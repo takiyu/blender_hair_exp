@@ -686,8 +686,7 @@ static bool sculpt_check_unique_face_set_for_edge_in_base_mesh(SculptSession *ss
   for (int i = 0; i < vert_map->count; i++) {
     const MPoly *p = &ss->mpoly[vert_map->indices[i]];
     for (int l = 0; l < p->totloop; l++) {
-      const MLoop *loop = &ss->mloop[p->loopstart + l];
-      if (loop->v == v2) {
+      if (ss->corner_verts[p->loopstart + l] == v2) {
         if (p1 == -1) {
           p1 = vert_map->indices[i];
           break;
@@ -6058,6 +6057,7 @@ void SCULPT_connected_components_ensure(Object *ob)
 
 void SCULPT_boundary_info_ensure(Object *object)
 {
+using namespace blender;
   SculptSession *ss = object->sculpt;
   if (ss->vertex_info.boundary) {
     return;
@@ -6066,7 +6066,7 @@ void SCULPT_boundary_info_ensure(Object *object)
   Mesh *base_mesh = BKE_mesh_from_object(object);
   const MEdge *edges = BKE_mesh_edges(base_mesh);
   const MPoly *polys = BKE_mesh_polys(base_mesh);
-  const MLoop *loops = BKE_mesh_loops(base_mesh);
+  const Span<int> corner_edges = base_mesh->corner_edges();
 
   ss->vertex_info.boundary = BLI_BITMAP_NEW(base_mesh->totvert, "Boundary info");
   int *adjacent_faces_edge_count = static_cast<int *>(
@@ -6075,8 +6075,8 @@ void SCULPT_boundary_info_ensure(Object *object)
   for (int p = 0; p < base_mesh->totpoly; p++) {
     const MPoly *poly = &polys[p];
     for (int l = 0; l < poly->totloop; l++) {
-      const MLoop *loop = &loops[l + poly->loopstart];
-      adjacent_faces_edge_count[loop->e]++;
+      const int edge_i = corner_edges[poly->loopstart + l];
+      adjacent_faces_edge_count[edge_i]++;
     }
   }
 

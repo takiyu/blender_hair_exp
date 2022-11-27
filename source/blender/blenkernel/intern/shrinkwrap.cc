@@ -188,16 +188,17 @@ static void merge_vert_dir(ShrinkwrapBoundaryVertData *vdata,
 
 static ShrinkwrapBoundaryData *shrinkwrap_build_boundary_data(Mesh *mesh)
 {
+  using namespace blender;
   const float(*positions)[3] = BKE_mesh_positions(mesh);
   const MEdge *medge = BKE_mesh_edges(mesh);
-  const MLoop *mloop = BKE_mesh_loops(mesh);
+  const Span<int> corner_edges = mesh->corner_edges();
 
   /* Count faces per edge (up to 2). */
   char *edge_mode = static_cast<char *>(
       MEM_calloc_arrayN(size_t(mesh->totedge), sizeof(char), __func__));
 
   for (int i = 0; i < mesh->totloop; i++) {
-    uint eidx = mloop[i].e;
+    const int eidx = corner_edges[i];
 
     if (edge_mode[eidx] < 2) {
       edge_mode[eidx]++;
@@ -1010,10 +1011,11 @@ static void mesh_looptri_target_project(void *userdata,
   const ShrinkwrapTreeData *tree = (ShrinkwrapTreeData *)userdata;
   const BVHTreeFromMesh *data = &tree->treeData;
   const MLoopTri *lt = &data->looptri[index];
-  const MLoop *loop[3] = {
-      &data->loop[lt->tri[0]], &data->loop[lt->tri[1]], &data->loop[lt->tri[2]]};
+  const int tri_verts[3] = {data->corner_verts[lt->tri[0]],
+                            data->corner_verts[lt->tri[1]],
+                            data->corner_verts[lt->tri[2]]};
   const float *vtri_co[3] = {
-      data->positions[loop[0]->v], data->positions[loop[1]->v], data->positions[loop[2]->v]};
+      data->positions[tri_verts[0]], data->positions[tri_verts[1]], data->positions[tri_verts[2]]};
   float raw_hit_co[3], hit_co[3], hit_no[3], dist_sq, vtri_no[3][3];
 
   /* First find the closest point and bail out if it's worse than the current solution. */
@@ -1035,9 +1037,9 @@ static void mesh_looptri_target_project(void *userdata,
   }
 
   /* Decode normals */
-  copy_v3_v3(vtri_no[0], tree->vert_normals[loop[0]->v]);
-  copy_v3_v3(vtri_no[1], tree->vert_normals[loop[1]->v]);
-  copy_v3_v3(vtri_no[2], tree->vert_normals[loop[2]->v]);
+  copy_v3_v3(vtri_no[0], tree->vert_normals[tri_verts[0]]);
+  copy_v3_v3(vtri_no[1], tree->vert_normals[tri_verts[1]]);
+  copy_v3_v3(vtri_no[2], tree->vert_normals[tri_verts[2]]);
 
   /* Solve the equations for the triangle */
   if (target_project_solve_point_tri(vtri_co, vtri_no, co, raw_hit_co, dist_sq, hit_co, hit_no)) {
@@ -1175,9 +1177,9 @@ void BKE_shrinkwrap_compute_smooth_normal(const ShrinkwrapTreeData *tree,
 
   /* Interpolate smooth normals if enabled. */
   if ((tree->polys[tri->poly].flag & ME_SMOOTH) != 0) {
-    const uint32_t vert_indices[3] = {treeData->loop[tri->tri[0]].v,
-                                      treeData->loop[tri->tri[1]].v,
-                                      treeData->loop[tri->tri[2]].v};
+    const int vert_indices[3] = {treeData->corner_verts[tri->tri[0]],
+                                 treeData->corner_verts[tri->tri[1]],
+                                 treeData->corner_verts[tri->tri[2]]};
     float w[3], no[3][3], tmp_co[3];
 
     /* Custom and auto smooth split normals. */

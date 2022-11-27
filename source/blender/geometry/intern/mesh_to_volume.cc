@@ -17,7 +17,7 @@ namespace blender::geometry {
 class OpenVDBMeshAdapter {
  private:
   Span<float3> positions_;
-  Span<MLoop> loops_;
+  Span<int> corner_verts_;
   Span<MLoopTri> looptris_;
   float4x4 transform_;
 
@@ -58,7 +58,7 @@ void OpenVDBMeshAdapter::getIndexSpacePoint(size_t polygon_index,
                                             openvdb::Vec3d &pos) const
 {
   const MLoopTri &looptri = looptris_[polygon_index];
-  const float3 transformed_co = transform_ * positions_[loops_[looptri.tri[vertex_index]].v];
+  const float3 transformed_co = transform_ * positions_[corner_verts_[looptri.tri[vertex_index]]];
   pos = &transformed_co.x;
 }
 

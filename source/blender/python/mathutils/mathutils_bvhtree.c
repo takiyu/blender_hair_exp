@@ -1108,7 +1108,7 @@ static PyObject *C_BVHTree_FromObject(PyObject *UNUSED(cls), PyObject *args, PyO
   bool free_mesh = false;
 
   const MLoopTri *lt;
-  const MLoop *mloop;
+  const int *corner_verts;
 
   float(*coords)[3] = NULL;
   uint(*tris)[3] = NULL;
@@ -1153,7 +1153,7 @@ static PyObject *C_BVHTree_FromObject(PyObject *UNUSED(cls), PyObject *args, PyO
       copy_v3_v3(coords[i], positions[i]);
     }
 
-    mloop = BKE_mesh_loops(mesh);
+    corner_verts = BKE_mesh_corner_verts(mesh);
   }
 
   {
@@ -1173,9 +1173,9 @@ static PyObject *C_BVHTree_FromObject(PyObject *UNUSED(cls), PyObject *args, PyO
       for (i = 0; i < tris_len; i++, lt++) {
         float co[3][3];
 
-        tris[i][0] = mloop[lt->tri[0]].v;
-        tris[i][1] = mloop[lt->tri[1]].v;
-        tris[i][2] = mloop[lt->tri[2]].v;
+        tris[i][0] = corner_verts[lt->tri[0]];
+        tris[i][1] = corner_verts[lt->tri[1]];
+        tris[i][2] = corner_verts[lt->tri[2]];
 
         copy_v3_v3(co[0], coords[tris[i][0]]);
         copy_v3_v3(co[1], coords[tris[i][1]]);

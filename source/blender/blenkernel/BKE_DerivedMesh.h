@@ -129,7 +129,8 @@ struct DerivedMesh {
    */
   float *(*getVertArray)(DerivedMesh *dm);
   struct MEdge *(*getEdgeArray)(DerivedMesh *dm);
-  struct MLoop *(*getLoopArray)(DerivedMesh *dm);
+  int *(*getCornerVertArray)(DerivedMesh *dm);
+  int *(*getCornerEdgeArray)(DerivedMesh *dm);
   struct MPoly *(*getPolyArray)(DerivedMesh *dm);
 
   /** Copy all verts/edges/faces from the derived mesh into

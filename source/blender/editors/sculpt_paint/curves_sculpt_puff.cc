@@ -71,7 +71,7 @@ struct PuffOperationExecutor {
   Object *surface_ob_ = nullptr;
   Mesh *surface_ = nullptr;
   Span<float3> surface_positions_;
-  Span<MLoop> surface_loops_;
+  Span<int> surface_loops_;
   Span<MLoopTri> surface_looptris_;
   Span<float3> corner_normals_su_;
   BVHTreeFromMesh surface_bvh_;

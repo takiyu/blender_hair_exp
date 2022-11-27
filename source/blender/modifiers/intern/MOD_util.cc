@@ -63,6 +63,7 @@ void MOD_get_texture_coords(MappingInfoModifierData *dmd,
                             float (*cos)[3],
                             float (*r_texco)[3])
 {
+  using namespace blender;
   const int verts_num = mesh->totvert;
   int i;
   int texmapping = dmd->texmapping;
@@ -96,7 +97,7 @@ void MOD_get_texture_coords(MappingInfoModifierData *dmd,
     if (CustomData_has_layer(&mesh->ldata, CD_MLOOPUV)) {
       const MPoly *mpoly = BKE_mesh_polys(mesh);
       const MPoly *mp;
-      const MLoop *mloop = BKE_mesh_loops(mesh);
+      const Span<int> corner_verts = mesh->corner_verts();
       BLI_bitmap *done = BLI_BITMAP_NEW(verts_num, __func__);
       const int polys_num = mesh->totpoly;
       char uvname[MAX_CUSTOMDATA_LAYER_NAME];
@@ -111,7 +112,7 @@ void MOD_get_texture_coords(MappingInfoModifierData *dmd,
 
         do {
           uint lidx = mp->loopstart + fidx;
-          uint vidx = mloop[lidx].v;
+          const int vidx = corner_verts[lidx];
 
           if (!BLI_BITMAP_TEST(done, vidx)) {
             /* remap UVs from [0, 1] to [-1, 1] */

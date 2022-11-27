@@ -158,7 +158,7 @@ static void subdiv_foreach_ctx_count(SubdivForeachTaskContext *ctx)
   const int num_inner_vertices_per_noquad_patch = (no_quad_patch_resolution - 2) *
                                                   (no_quad_patch_resolution - 2);
   const Mesh *coarse_mesh = ctx->coarse_mesh;
-  const MLoop *coarse_mloop = BKE_mesh_loops(coarse_mesh);
+  const int *coarse_corner_edges = BKE_mesh_corner_edges(coarse_mesh);
   const MPoly *coarse_mpoly = BKE_mesh_polys(coarse_mesh);
   ctx->num_subdiv_vertices = coarse_mesh->totvert;
   ctx->num_subdiv_edges = coarse_mesh->totedge * (num_subdiv_vertices_per_coarse_edge + 1);
@@ -167,11 +167,11 @@ static void subdiv_foreach_ctx_count(SubdivForeachTaskContext *ctx)
     const MPoly *coarse_poly = &coarse_mpoly[poly_index];
     const int num_ptex_faces_per_poly = num_ptex_faces_per_poly_get(coarse_poly);
     for (int corner = 0; corner < coarse_poly->totloop; corner++) {
-      const MLoop *loop = &coarse_mloop[coarse_poly->loopstart + corner];
-      const bool is_edge_used = BLI_BITMAP_TEST_BOOL(ctx->coarse_edges_used_map, loop->e);
+      const int coarse_edge_i = coarse_corner_edges[coarse_poly->loopstart + corner];
+      const bool is_edge_used = BLI_BITMAP_TEST_BOOL(ctx->coarse_edges_used_map, coarse_edge_i);
       /* Edges which aren't counted yet. */
       if (!is_edge_used) {
-        BLI_BITMAP_ENABLE(ctx->coarse_edges_used_map, loop->e);
+        BLI_BITMAP_ENABLE(ctx->coarse_edges_used_map, coarse_edge_i);
         ctx->num_subdiv_vertices += num_subdiv_vertices_per_coarse_edge;
       }
     }

@@ -85,15 +85,15 @@ Mesh *STLMeshHelper::to_mesh(Main *bmain, char *mesh_name)
   CustomData_add_layer(&mesh->pdata, CD_MPOLY, CD_SET_DEFAULT, nullptr, mesh->totpoly);
   CustomData_add_layer(&mesh->ldata, CD_MLOOP, CD_SET_DEFAULT, nullptr, mesh->totloop);
   MutableSpan<MPoly> polys = mesh->polys_for_write();
-  MutableSpan<MLoop> loops = mesh->loops_for_write();
+  MutableSpan<int> corner_verts = mesh->corner_verts_for_write();
   threading::parallel_for(tris_.index_range(), 2048, [&](IndexRange tris_range) {
     for (const int i : tris_range) {
       polys[i].loopstart = 3 * i;
       polys[i].totloop = 3;
 
-      loops[3 * i].v = tris_[i].v1;
-      loops[3 * i + 1].v = tris_[i].v2;
-      loops[3 * i + 2].v = tris_[i].v3;
+      corner_verts[3 * i] = tris_[i].v1;
+      corner_verts[3 * i + 1] = tris_[i].v2;
+      corner_verts[3 * i + 2] = tris_[i].v3;
     }
   });
 

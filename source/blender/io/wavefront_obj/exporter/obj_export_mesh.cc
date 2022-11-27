@@ -185,13 +185,13 @@ void OBJMesh::calc_smooth_groups(const bool use_bitflags)
 {
   const Span<MEdge> edges = export_mesh_eval_->edges();
   const Span<MPoly> polys = export_mesh_eval_->polys();
-  const Span<MLoop> loops = export_mesh_eval_->loops();
+  const Span<int> corner_edges = export_mesh_eval_->corner_edges();
   poly_smooth_groups_ = BKE_mesh_calc_smoothgroups(edges.data(),
                                                    edges.size(),
                                                    polys.data(),
                                                    polys.size(),
-                                                   loops.data(),
-                                                   loops.size(),
+                                                   corner_edges.data(),
+                                                   corner_edges.size(),
                                                    &tot_smooth_groups_,
                                                    use_bitflags);
 }

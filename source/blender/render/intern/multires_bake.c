@@ -493,9 +493,12 @@ static void do_multires_bake(MultiresBakeRender *bkr,
   memcpy(BKE_mesh_polys_for_write(temp_mesh),
          dm->getPolyArray(dm),
          temp_mesh->totpoly * sizeof(MPoly));
-  memcpy(BKE_mesh_loops_for_write(temp_mesh),
-         dm->getLoopArray(dm),
-         temp_mesh->totloop * sizeof(MLoop));
+  memcpy(BKE_mesh_corner_verts_for_write(temp_mesh),
+         dm->getCornerVertArray(dm),
+         temp_mesh->totloop * sizeof(int));
+  memcpy(BKE_mesh_corner_edges_for_write(temp_mesh),
+         dm->getCornerEdgeArray(dm),
+         temp_mesh->totloop * sizeof(int));
   const float(*vert_normals)[3] = BKE_mesh_vertex_normals_ensure(temp_mesh);
   const float(*poly_normals)[3] = BKE_mesh_poly_normals_ensure(temp_mesh);
 
@@ -505,7 +508,7 @@ static void do_multires_bake(MultiresBakeRender *bkr,
           positions,
           dm->getPolyArray(dm),
           dm->getNumPolys(dm),
-          dm->getLoopArray(dm),
+          dm->getCornerVertArray(dm),
           dm->getLoopTriArray(dm),
           dm->getNumLoopTri(dm),
           &dm->loopData,

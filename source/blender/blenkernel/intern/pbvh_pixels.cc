@@ -95,12 +95,15 @@ static void extract_barycentric_pixels(UDIMTilePixels &tile_data,
   }
 }
 
-static void init_triangles(PBVH *pbvh, PBVHNode *node, NodeData *node_data, const MLoop *mloop)
+static void init_triangles(PBVH *pbvh,
+                           PBVHNode *node,
+                           NodeData *node_data,
+                           const int *corner_verts)
 {
   for (int i = 0; i < node->totprim; i++) {
     const MLoopTri *lt = &pbvh->looptri[node->prim_indices[i]];
     node_data->triangles.append(
-        int3(mloop[lt->tri[0]].v, mloop[lt->tri[1]].v, mloop[lt->tri[2]].v));
+        int3(corner_verts[lt->tri[0]], corner_verts[lt->tri[1]], corner_verts[lt->tri[2]]));
   }
 }
 
@@ -292,8 +295,8 @@ static void update_pixels(PBVH *pbvh, Mesh *mesh, Image *image, ImageUser *image
 
   for (PBVHNode *node : nodes_to_update) {
     NodeData *node_data = static_cast<NodeData *>(node->pixels.node_data);
-    const Span<MLoop> loops = mesh->loops();
-    init_triangles(pbvh, node, node_data, loops.data());
+    const Span<int> corner_verts = mesh->corner_verts();
+    init_triangles(pbvh, node, node_data, corner_verts.data());
   }
 
   EncodePixelsUserData user_data;

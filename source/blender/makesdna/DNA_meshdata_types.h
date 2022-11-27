@@ -79,7 +79,8 @@ enum {
 
 /**
  * Mesh Faces.
- * This only stores the polygon size & flags, the vertex & edge indices are stored in the #MLoop.
+ * This only stores the polygon size & flags, the vertex & edge indices are stored in the "corner
+ * edges" array.
  *
  * Typically accessed with #Mesh.polys().
  */
@@ -110,12 +111,14 @@ enum {
  *
  * Typically accessed with #Mesh.loops().
  */
+#ifdef DNA_DEPRECATED_ALLOW
 typedef struct MLoop {
   /** Vertex index. */
   unsigned int v;
   /** Edge index into an #MEdge array. */
   unsigned int e;
 } MLoop;
+#endif
 
 /** \} */
 
@@ -152,7 +155,7 @@ enum {
 /**
  * #MLoopTri's are lightweight triangulation data,
  * for functionality that doesn't support ngons (#MPoly).
- * This is cache data created from (#MPoly, #MLoop & position arrays).
+ * This is cache data created from (#MPoly, corner vert & position arrays).
  * There is no attempt to maintain this data's validity over time,
  * any changes to the underlying mesh invalidate the #MLoopTri array,
  * which will need to be re-calculated.
@@ -451,9 +454,8 @@ enum {
 /** \name Utility Macros
  * \{ */
 
-#define ME_POLY_LOOP_PREV(mloop, mp, i) \
-  (&(mloop)[(mp)->loopstart + (((i) + (mp)->totloop - 1) % (mp)->totloop)])
-#define ME_POLY_LOOP_NEXT(mloop, mp, i) (&(mloop)[(mp)->loopstart + (((i) + 1) % (mp)->totloop)])
+#define ME_POLY_LOOP_PREV(mp, i) ((mp)->loopstart + (((i) + (mp)->totloop - 1) % (mp)->totloop))
+#define ME_POLY_LOOP_NEXT(mp, i) ((mp)->loopstart + (((i) + 1) % (mp)->totloop))
 
 /** Number of tri's that make up this polygon once tessellated. */
 #define ME_POLY_TRI_TOT(mp) ((mp)->totloop - 2)

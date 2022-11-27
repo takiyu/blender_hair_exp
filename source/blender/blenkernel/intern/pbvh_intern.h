@@ -12,7 +12,6 @@ struct PBVHGPUFormat;
 extern "C" {
 #endif
 
-struct MLoop;
 struct MLoopTri;
 struct MPoly;
 
@@ -77,7 +76,7 @@ struct PBVHNode {
   const int *vert_indices;
   unsigned int uniq_verts, face_verts;
 
-  /* Array of indices into the Mesh's MLoop array.
+  /* Array of indices into the Mesh's corner array.
    * PBVH_FACES only.
    */
   int *loop_indices;
@@ -162,7 +161,7 @@ struct PBVH {
   bool *hide_poly;
   /** Material indices. Only valid for polygon meshes. */
   const int *material_indices;
-  const struct MLoop *mloop;
+  const int *corner_verts;
   const struct MLoopTri *looptri;
   CustomData *vdata;
   CustomData *ldata;

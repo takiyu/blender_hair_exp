@@ -418,7 +418,7 @@ typedef struct ProjPaintState {
   const MPoly *mpoly_eval;
   const bool *select_poly_eval;
   const int *material_indices;
-  const MLoop *mloop_eval;
+  const int *corner_verts_eval;
   const MLoopTri *mlooptri_eval;
 
   const MLoopUV *mloopuv_stencil_eval;
@@ -514,8 +514,8 @@ BLI_INLINE const MPoly *ps_tri_index_to_mpoly(const ProjPaintState *ps, int tri_
 }
 
 #define PS_LOOPTRI_AS_VERT_INDEX_3(ps, lt) \
-  int(ps->mloop_eval[lt->tri[0]].v), int(ps->mloop_eval[lt->tri[1]].v), \
-      int(ps->mloop_eval[lt->tri[2]].v),
+  ps->corner_verts_eval[lt->tri[0]], ps->corner_verts_eval[lt->tri[1]], \
+      ps->corner_verts_eval[lt->tri[2]],
 
 #define PS_LOOPTRI_AS_UV_3(uvlayer, lt) \
   uvlayer[lt->poly][lt->tri[0]].uv, uvlayer[lt->poly][lt->tri[1]].uv, \
@@ -671,9 +671,9 @@ static int project_paint_PickFace(const ProjPaintState *ps, const float pt[2], f
     const int tri_index = POINTER_AS_INT(node->link);
     const MLoopTri *lt = &ps->mlooptri_eval[tri_index];
     const float *vtri_ss[3] = {
-        ps->screenCoords[ps->mloop_eval[lt->tri[0]].v],
-        ps->screenCoords[ps->mloop_eval[lt->tri[1]].v],
-        ps->screenCoords[ps->mloop_eval[lt->tri[2]].v],
+        ps->screenCoords[ps->corner_verts_eval[lt->tri[0]]],
+        ps->screenCoords[ps->corner_verts_eval[lt->tri[1]]],
+        ps->screenCoords[ps->corner_verts_eval[lt->tri[2]]],
     };
 
     if (isect_point_tri_v2(pt, UNPACK3(vtri_ss))) {
@@ -913,17 +913,17 @@ static bool project_bucket_point_occluded(const ProjPaintState *ps,
     if (orig_face != tri_index) {
       const MLoopTri *lt = &ps->mlooptri_eval[tri_index];
       const float *vtri_ss[3] = {
-          ps->screenCoords[ps->mloop_eval[lt->tri[0]].v],
-          ps->screenCoords[ps->mloop_eval[lt->tri[1]].v],
-          ps->screenCoords[ps->mloop_eval[lt->tri[2]].v],
+          ps->screenCoords[ps->corner_verts_eval[lt->tri[0]]],
+          ps->screenCoords[ps->corner_verts_eval[lt->tri[1]]],
+          ps->screenCoords[ps->corner_verts_eval[lt->tri[2]]],
       };
       float w[3];
 
       if (do_clip) {
         const float *vtri_co[3] = {
-            ps->positions_eval[ps->mloop_eval[lt->tri[0]].v],
-            ps->positions_eval[ps->mloop_eval[lt->tri[1]].v],
-            ps->positions_eval[ps->mloop_eval[lt->tri[2]].v],
+            ps->positions_eval[ps->corner_verts_eval[lt->tri[0]]],
+            ps->positions_eval[ps->corner_verts_eval[lt->tri[1]]],
+            ps->positions_eval[ps->corner_verts_eval[lt->tri[2]]],
         };
         isect_ret = project_paint_occlude_ptv_clip(
             pixelScreenCo, UNPACK3(vtri_ss), UNPACK3(vtri_co), w, ps->is_ortho, ps->rv3d);
@@ -1140,8 +1140,8 @@ static bool check_seam(const ProjPaintState *ps,
   const MLoopTri *orig_lt = &ps->mlooptri_eval[orig_face];
   const float *orig_lt_tri_uv[3] = {PS_LOOPTRI_AS_UV_3(ps->poly_to_loop_uv, orig_lt)};
   /* vert indices from face vert order indices */
-  const uint i1 = ps->mloop_eval[orig_lt->tri[orig_i1_fidx]].v;
-  const uint i2 = ps->mloop_eval[orig_lt->tri[orig_i2_fidx]].v;
+  const uint i1 = ps->corner_verts_eval[orig_lt->tri[orig_i1_fidx]];
+  const uint i2 = ps->corner_verts_eval[orig_lt->tri[orig_i2_fidx]];
   LinkNode *node;
   /* index in face */
   int i1_fidx = -1, i2_fidx = -1;
@@ -1326,8 +1326,8 @@ static void uv_image_outset(const ProjPaintState *ps,
 
     fidx[1] = (fidx[0] == 2) ? 0 : fidx[0] + 1;
 
-    vert[0] = ps->mloop_eval[loop_index].v;
-    vert[1] = ps->mloop_eval[ltri->tri[fidx[1]]].v;
+    vert[0] = ps->corner_verts_eval[loop_index];
+    vert[1] = ps->corner_verts_eval[ltri->tri[fidx[1]]];
 
     for (uint i = 0; i < 2; i++) {
       VertSeam *seam;
@@ -1412,7 +1412,7 @@ static void insert_seam_vert_array(const ProjPaintState *ps,
   copy_v2_v2(vseam[1].uv, lt_tri_uv[fidx[1]]);
 
   for (uint i = 0; i < 2; i++) {
-    uint vert = ps->mloop_eval[lt->tri[fidx[i]]].v;
+    const int vert = ps->corner_verts_eval[lt->tri[fidx[i]]];
     ListBase *list = &ps->vertSeams[vert];
     VertSeam *item = static_cast<VertSeam *>(list->first);
 
@@ -1451,8 +1451,8 @@ static void project_face_seams_init(const ProjPaintState *ps,
   }
 
   do {
-    if (init_all || (ps->mloop_eval[lt->tri[fidx[0]]].v == vert_index) ||
-        (ps->mloop_eval[lt->tri[fidx[1]]].v == vert_index)) {
+    if (init_all || (ps->corner_verts_eval[lt->tri[fidx[0]]] == vert_index) ||
+        (ps->corner_verts_eval[lt->tri[fidx[1]]] == vert_index)) {
       if ((ps->faceSeamFlags[tri_index] &
            (PROJ_FACE_SEAM0 << fidx[0] | PROJ_FACE_NOSEAM0 << fidx[0])) == 0) {
         if (check_seam(ps, tri_index, fidx[0], fidx[1], &other_face, &other_fidx)) {
@@ -1499,7 +1499,7 @@ static void project_face_seams_init(const ProjPaintState *ps,
             continue;
           }
 
-          vert = ps->mloop_eval[lt->tri[fidx[i]]].v;
+          vert = ps->corner_verts_eval[lt->tri[fidx[i]]];
 
           for (node = ps->vertFaces[vert]; node; node = node->next) {
             const int tri = POINTER_AS_INT(node->link);
@@ -4071,7 +4071,7 @@ static bool proj_paint_state_mesh_eval_init(const bContext *C, ProjPaintState *p
   if (ps->do_mask_cavity) {
     ps->medge_eval = BKE_mesh_edges(ps->me_eval);
   }
-  ps->mloop_eval = BKE_mesh_loops(ps->me_eval);
+  ps->corner_verts_eval = ps->me_eval->corner_verts().data();
   ps->mpoly_eval = BKE_mesh_polys(ps->me_eval);
   ps->select_poly_eval = (const bool *)CustomData_get_layer_named(
       &ps->me_eval->pdata, CD_PROP_BOOL, ".select_poly");
@@ -4390,7 +4390,8 @@ static void project_paint_prepare_all_faces(ProjPaintState *ps,
               int poly_loops = poly->totloop;
               prev_poly = lt->poly;
               for (iloop = 0; iloop < poly_loops; iloop++) {
-                if (!(ps->vertFlags[ps->mloop_eval[poly->loopstart + iloop].v] & PROJ_VERT_CULL)) {
+                if (!(ps->vertFlags[ps->corner_verts_eval[poly->loopstart + iloop]] &
+                      PROJ_VERT_CULL)) {
                   culled = false;
                   break;
                 }

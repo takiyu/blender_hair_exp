@@ -40,7 +40,7 @@ using blender::VArray;
  * \{ */
 
 static void mesh_calc_ngon_center(const MPoly *mpoly,
-                                  const MLoop *loopstart,
+                                  const int *poly_verts,
                                   const float (*positions)[3],
                                   float cent[3])
 {
@@ -49,46 +49,45 @@ static void mesh_calc_ngon_center(const MPoly *mpoly,
   zero_v3(cent);
 
   for (int i = 0; i < mpoly->totloop; i++) {
-    madd_v3_v3fl(cent, positions[(loopstart++)->v], w);
+    madd_v3_v3fl(cent, positions[*(poly_verts++)], w);
   }
 }
 
 void BKE_mesh_calc_poly_center(const MPoly *mpoly,
-                               const MLoop *loopstart,
+                               const int *poly_verts,
                                const float (*positions)[3],
                                float r_cent[3])
 {
   if (mpoly->totloop == 3) {
     mid_v3_v3v3v3(
-        r_cent, positions[loopstart[0].v], positions[loopstart[1].v], positions[loopstart[2].v]);
+        r_cent, positions[poly_verts[0]], positions[poly_verts[1]], positions[poly_verts[2]]);
   }
   else if (mpoly->totloop == 4) {
     mid_v3_v3v3v3v3(r_cent,
-                    positions[loopstart[0].v],
-                    positions[loopstart[1].v],
-                    positions[loopstart[2].v],
-                    positions[loopstart[3].v]);
+                    positions[poly_verts[0]],
+                    positions[poly_verts[1]],
+                    positions[poly_verts[2]],
+                    positions[poly_verts[3]]);
   }
   else {
-    mesh_calc_ngon_center(mpoly, loopstart, positions, r_cent);
+    mesh_calc_ngon_center(mpoly, poly_verts, positions, r_cent);
   }
 }
 
 float BKE_mesh_calc_poly_area(const MPoly *mpoly,
-                              const MLoop *loopstart,
+                              const int *poly_verts,
                               const float (*positions)[3])
 {
   if (mpoly->totloop == 3) {
     return area_tri_v3(
-        positions[loopstart[0].v], positions[loopstart[1].v], positions[loopstart[2].v]);
+        positions[poly_verts[0]], positions[poly_verts[1]], positions[poly_verts[2]]);
   }
 
-  const MLoop *l_iter = loopstart;
   float(*vertexcos)[3] = (float(*)[3])BLI_array_alloca(vertexcos, size_t(mpoly->totloop));
 
   /* pack vertex cos into an array for area_poly_v3 */
-  for (int i = 0; i < mpoly->totloop; i++, l_iter++) {
-    copy_v3_v3(vertexcos[i], positions[l_iter->v]);
+  for (int i = 0; i < mpoly->totloop; i++) {
+    copy_v3_v3(vertexcos[i], positions[poly_verts[i]]);
   }
 
   /* finally calculate the area */
@@ -101,12 +100,13 @@ float BKE_mesh_calc_area(const Mesh *me)
 {
   const Span<float3> positions = me->positions();
   const Span<MPoly> polys = me->polys();
-  const Span<MLoop> loops = me->loops();
+  const Span<int> corner_verts = me->corner_verts();
 
   float total_area = 0.0f;
   for (const MPoly &poly : polys) {
-    total_area += BKE_mesh_calc_poly_area(
-        &poly, &loops[poly.loopstart], reinterpret_cast<const float(*)[3]>(positions.data()));
+    total_area += BKE_mesh_calc_poly_area(&poly,
+                                          &corner_verts[poly.loopstart],
+                                          reinterpret_cast<const float(*)[3]>(positions.data()));
   }
   return total_area;
 }
@@ -130,7 +130,7 @@ float BKE_mesh_calc_poly_uv_area(const MPoly *mpoly, const MLoopUV *uv_array)
 }
 
 static float UNUSED_FUNCTION(mesh_calc_poly_volume_centroid)(const MPoly *mpoly,
-                                                             const MLoop *loopstart,
+                                                             const int *corner_verts,
                                                              const float (*positions)[3],
                                                              float r_cent[3])
 {
@@ -139,11 +139,11 @@ static float UNUSED_FUNCTION(mesh_calc_poly_volume_centroid)(const MPoly *mpoly,
 
   zero_v3(r_cent);
 
-  v_pivot = positions[loopstart[0].v];
-  v_step1 = positions[loopstart[1].v];
+  v_pivot = positions[corner_verts[0]];
+  v_step1 = positions[corner_verts[1]];
 
   for (int i = 2; i < mpoly->totloop; i++) {
-    const float *v_step2 = positions[loopstart[i].v];
+    const float *v_step2 = positions[corner_verts[i]];
 
     /* Calculate the 6x volume of the tetrahedron formed by the 3 vertices
      * of the triangle and the origin as the fourth vertex */
@@ -172,7 +172,7 @@ static float UNUSED_FUNCTION(mesh_calc_poly_volume_centroid)(const MPoly *mpoly,
  * very low quality as the value moves away from 0.0, see: T65986.
  */
 static float mesh_calc_poly_volume_centroid_with_reference_center(const MPoly *mpoly,
-                                                                  const MLoop *loopstart,
+                                                                  const int *corner_verts,
                                                                   const Span<float3> positions,
                                                                   const float reference_center[3],
                                                                   float r_cent[3])
@@ -181,11 +181,11 @@ static float mesh_calc_poly_volume_centroid_with_reference_center(const MPoly *m
   float v_pivot[3], v_step1[3];
   float total_volume = 0.0f;
   zero_v3(r_cent);
-  sub_v3_v3v3(v_pivot, positions[loopstart[0].v], reference_center);
-  sub_v3_v3v3(v_step1, positions[loopstart[1].v], reference_center);
+  sub_v3_v3v3(v_pivot, positions[corner_verts[0]], reference_center);
+  sub_v3_v3v3(v_step1, positions[corner_verts[1]], reference_center);
   for (int i = 2; i < mpoly->totloop; i++) {
     float v_step2[3];
-    sub_v3_v3v3(v_step2, positions[loopstart[i].v], reference_center);
+    sub_v3_v3v3(v_step2, positions[corner_verts[i]], reference_center);
     const float tetra_volume = volume_tri_tetrahedron_signed_v3_6x(v_pivot, v_step1, v_step2);
     total_volume += tetra_volume;
     for (uint j = 0; j < 3; j++) {
@@ -203,20 +203,20 @@ static float mesh_calc_poly_volume_centroid_with_reference_center(const MPoly *m
  *   that it doesn't depend on solid geometry, instead it weights the surface by volume.
  */
 static float mesh_calc_poly_area_centroid(const MPoly *mpoly,
-                                          const MLoop *loopstart,
+                                          const int *poly_verts,
                                           const float (*positions)[3],
                                           float r_cent[3])
 {
   float total_area = 0.0f;
   float v1[3], v2[3], v3[3], normal[3], tri_cent[3];
 
-  BKE_mesh_calc_poly_normal(mpoly, loopstart, positions, normal);
-  copy_v3_v3(v1, positions[loopstart[0].v]);
-  copy_v3_v3(v2, positions[loopstart[1].v]);
+  BKE_mesh_calc_poly_normal(mpoly, poly_verts, positions, normal);
+  copy_v3_v3(v1, positions[poly_verts[0]]);
+  copy_v3_v3(v2, positions[poly_verts[1]]);
   zero_v3(r_cent);
 
   for (int i = 2; i < mpoly->totloop; i++) {
-    copy_v3_v3(v3, positions[loopstart[i].v]);
+    copy_v3_v3(v3, positions[poly_verts[i]]);
 
     float tri_area = area_tri_signed_v3(v1, v2, v3, normal);
     total_area += tri_area;
@@ -233,7 +233,7 @@ static float mesh_calc_poly_area_centroid(const MPoly *mpoly,
 }
 
 void BKE_mesh_calc_poly_angles(const MPoly *mpoly,
-                               const MLoop *loopstart,
+                               const int *poly_verts,
                                const float (*positions)[3],
                                float angles[])
 {
@@ -243,11 +243,11 @@ void BKE_mesh_calc_poly_angles(const MPoly *mpoly,
   int i_this = mpoly->totloop - 1;
   int i_next = 0;
 
-  sub_v3_v3v3(nor_prev, positions[loopstart[i_this - 1].v], positions[loopstart[i_this].v]);
+  sub_v3_v3v3(nor_prev, positions[poly_verts[i_this - 1]], positions[poly_verts[i_this]]);
   normalize_v3(nor_prev);
 
   while (i_next < mpoly->totloop) {
-    sub_v3_v3v3(nor_next, positions[loopstart[i_this].v], positions[loopstart[i_next].v]);
+    sub_v3_v3v3(nor_next, positions[poly_verts[i_this]], positions[poly_verts[i_next]]);
     normalize_v3(nor_next);
     angles[i_this] = angle_normalized_v3v3(nor_prev, nor_next);
 
@@ -258,32 +258,20 @@ void BKE_mesh_calc_poly_angles(const MPoly *mpoly,
   }
 }
 
-void BKE_mesh_poly_edgehash_insert(EdgeHash *ehash, const MPoly *mp, const MLoop *mloop)
+void BKE_mesh_poly_edgehash_insert(EdgeHash *ehash, const MPoly *mp, const int *poly_verts)
 {
-  const MLoop *ml, *ml_next;
-  int i = mp->totloop;
-
-  ml_next = mloop;      /* first loop */
-  ml = &ml_next[i - 1]; /* last loop */
-
-  while (i-- != 0) {
-    BLI_edgehash_reinsert(ehash, ml->v, ml_next->v, nullptr);
-
-    ml = ml_next;
-    ml_next++;
+  using namespace blender;
+  for (const int i : IndexRange(mp->totloop).drop_back(1)) {
+    BLI_edgehash_reinsert(ehash, poly_verts[i], poly_verts[i + 1], nullptr);
   }
+  BLI_edgehash_reinsert(ehash, poly_verts[0], poly_verts[mp->totloop - 1], nullptr);
 }
 
-void BKE_mesh_poly_edgebitmap_insert(uint *edge_bitmap, const MPoly *mp, const MLoop *mloop)
+void BKE_mesh_poly_edgebitmap_insert(uint *edge_bitmap, const MPoly *mp, const int *poly_edges)
 {
-  const MLoop *ml;
-  int i = mp->totloop;
-
-  ml = mloop;
-
-  while (i-- != 0) {
-    BLI_BITMAP_ENABLE(edge_bitmap, ml->e);
-    ml++;
+  using namespace blender;
+  for (const int i : IndexRange(mp->totloop)) {
+    BLI_BITMAP_ENABLE(edge_bitmap, poly_edges[i]);
   }
 }
 
@@ -312,12 +300,12 @@ bool BKE_mesh_center_median_from_polys(const Mesh *me, float r_cent[3])
   int tot = 0;
   const Span<float3> positions = me->positions();
   const Span<MPoly> polys = me->polys();
-  const Span<MLoop> loops = me->loops();
+  const Span<int> corner_verts = me->corner_verts();
   zero_v3(r_cent);
   for (const MPoly &poly : polys) {
     int loopend = poly.loopstart + poly.totloop;
     for (int j = poly.loopstart; j < loopend; j++) {
-      add_v3_v3(r_cent, positions[loops[j].v]);
+      add_v3_v3(r_cent, positions[corner_verts[j]]);
     }
     tot += poly.totloop;
   }
@@ -349,14 +337,14 @@ bool BKE_mesh_center_of_surface(const Mesh *me, float r_cent[3])
   float poly_cent[3];
   const float(*positions)[3] = BKE_mesh_positions(me);
   const MPoly *polys = BKE_mesh_polys(me);
-  const MLoop *loops = BKE_mesh_loops(me);
+  const Span<int> corner_verts = me->corner_verts();
 
   zero_v3(r_cent);
 
   /* calculate a weighted average of polygon centroids */
   for (mpoly = polys; i--; mpoly++) {
     poly_area = mesh_calc_poly_area_centroid(
-        mpoly, loops + mpoly->loopstart, positions, poly_cent);
+        mpoly, &corner_verts[mpoly->loopstart], positions, poly_cent);
 
     madd_v3_v3fl(r_cent, poly_cent, poly_area);
     total_area += poly_area;
@@ -383,7 +371,7 @@ bool BKE_mesh_center_of_volume(const Mesh *me, float r_cent[3])
   float poly_cent[3];
   const Span<float3> positions = me->positions();
   const MPoly *polys = BKE_mesh_polys(me);
-  const MLoop *loops = BKE_mesh_loops(me);
+  const Span<int> corner_verts = me->corner_verts();
 
   /* Use an initial center to avoid numeric instability of geometry far away from the center. */
   float init_cent[3];
@@ -394,7 +382,7 @@ bool BKE_mesh_center_of_volume(const Mesh *me, float r_cent[3])
   /* calculate a weighted average of polyhedron centroids */
   for (mpoly = polys; i--; mpoly++) {
     poly_volume = mesh_calc_poly_volume_centroid_with_reference_center(
-        mpoly, loops + mpoly->loopstart, positions, init_cent, poly_cent);
+        mpoly, &corner_verts[mpoly->loopstart], positions, init_cent, poly_cent);
 
     /* poly_cent is already volume-weighted, so no need to multiply by the volume */
     add_v3_v3(r_cent, poly_cent);
@@ -427,7 +415,7 @@ static bool mesh_calc_center_centroid_ex(const float (*positions)[3],
                                          int /*mverts_num*/,
                                          const MLoopTri *looptri,
                                          int looptri_num,
-                                         const MLoop *mloop,
+                                         const int *corner_verts,
                                          float r_center[3])
 {
 
@@ -441,9 +429,9 @@ static bool mesh_calc_center_centroid_ex(const float (*positions)[3],
   const MLoopTri *lt;
   int i;
   for (i = 0, lt = looptri; i < looptri_num; i++, lt++) {
-    const float *v1 = positions[mloop[lt->tri[0]].v];
-    const float *v2 = positions[mloop[lt->tri[1]].v];
-    const float *v3 = positions[mloop[lt->tri[2]].v];
+    const float *v1 = positions[corner_verts[lt->tri[0]]];
+    const float *v2 = positions[corner_verts[lt->tri[1]]];
+    const float *v3 = positions[corner_verts[lt->tri[2]]];
     float area;
 
     area = area_tri_v3(v1, v2, v3);
@@ -465,7 +453,7 @@ void BKE_mesh_calc_volume(const float (*positions)[3],
                           const int mverts_num,
                           const MLoopTri *looptri,
                           const int looptri_num,
-                          const MLoop *mloop,
+                          const int *corner_verts,
                           float *r_volume,
                           float r_center[3])
 {
@@ -485,16 +473,17 @@ void BKE_mesh_calc_volume(const float (*positions)[3],
     return;
   }
 
-  if (!mesh_calc_center_centroid_ex(positions, mverts_num, looptri, looptri_num, mloop, center)) {
+  if (!mesh_calc_center_centroid_ex(
+          positions, mverts_num, looptri, looptri_num, corner_verts, center)) {
     return;
   }
 
   totvol = 0.0f;
 
   for (i = 0, lt = looptri; i < looptri_num; i++, lt++) {
-    const float *v1 = positions[mloop[lt->tri[0]].v];
-    const float *v2 = positions[mloop[lt->tri[1]].v];
-    const float *v3 = positions[mloop[lt->tri[2]].v];
+    const float *v1 = positions[corner_verts[lt->tri[0]]];
+    const float *v2 = positions[corner_verts[lt->tri[1]]];
+    const float *v3 = positions[corner_verts[lt->tri[2]]];
     float vol;
 
     vol = volume_tetrahedron_signed_v3(center, v1, v2, v3);
@@ -565,7 +554,8 @@ void BKE_mesh_mdisp_flip(MDisps *md, const bool use_loop_mdisp_flip)
 }
 
 void BKE_mesh_polygon_flip_ex(const MPoly *mpoly,
-                              MLoop *mloop,
+                              int *corner_verts,
+                              int *corner_edges,
                               CustomData *ldata,
                               float (*lnors)[3],
                               MDisps *mdisp,
@@ -573,7 +563,8 @@ void BKE_mesh_polygon_flip_ex(const MPoly *mpoly,
 {
   int loopstart = mpoly->loopstart;
   int loopend = loopstart + mpoly->totloop - 1;
-  const bool loops_in_ldata = (CustomData_get_layer(ldata, CD_MLOOP) == mloop);
+  const bool corner_verts_in_data = (CustomData_get_layer(ldata, CD_MLOOP) == corner_verts);
+  const bool corner_edges_in_data = (CustomData_get_layer(ldata, CD_MLOOP) == corner_edges);
 
   if (mdisp) {
     for (int i = loopstart; i <= loopend; i++) {
@@ -586,15 +577,18 @@ void BKE_mesh_polygon_flip_ex(const MPoly *mpoly,
   /* We also have to update loops edge
    * (they will get their original 'other edge', that is,
    * the original edge of their original previous loop)... */
-  uint prev_edge_index = mloop[loopstart].e;
-  mloop[loopstart].e = mloop[loopend].e;
+  int prev_edge_index = corner_edges[loopstart];
+  corner_edges[loopstart] = corner_edges[loopend];
 
   for (loopstart++; loopend > loopstart; loopstart++, loopend--) {
-    mloop[loopend].e = mloop[loopend - 1].e;
-    SWAP(uint, mloop[loopstart].e, prev_edge_index);
+    corner_edges[loopend] = corner_edges[loopend - 1];
+    std::swap(corner_edges[loopstart], prev_edge_index);
 
-    if (!loops_in_ldata) {
-      SWAP(MLoop, mloop[loopstart], mloop[loopend]);
+    if (!corner_verts_in_data) {
+      std::swap(corner_verts[loopstart], corner_verts[loopend]);
+    }
+    if (!corner_edges_in_data) {
+      std::swap(corner_edges[loopstart], corner_edges[loopend]);
     }
     if (lnors) {
       swap_v3_v3(lnors[loopstart], lnors[loopend]);
@@ -603,24 +597,28 @@ void BKE_mesh_polygon_flip_ex(const MPoly *mpoly,
   }
   /* Even if we did not swap the other 'pivot' loop, we need to set its swapped edge. */
   if (loopstart == loopend) {
-    mloop[loopstart].e = prev_edge_index;
+    corner_edges[loopstart] = prev_edge_index;
   }
 }
 
-void BKE_mesh_polygon_flip(const MPoly *mpoly, MLoop *mloop, CustomData *ldata)
+void BKE_mesh_polygon_flip(const MPoly *mpoly,
+                           int *corner_verts,
+                           int *corner_edges,
+                           CustomData *ldata)
 {
   MDisps *mdisp = (MDisps *)CustomData_get_layer(ldata, CD_MDISPS);
-  BKE_mesh_polygon_flip_ex(mpoly, mloop, ldata, nullptr, mdisp, true);
+  BKE_mesh_polygon_flip_ex(mpoly, corner_verts, corner_edges, ldata, nullptr, mdisp, true);
 }
 
-void BKE_mesh_polys_flip(const MPoly *mpoly, MLoop *mloop, CustomData *ldata, int totpoly)
+void BKE_mesh_polys_flip(
+    const MPoly *mpoly, int *corner_verts, int *corner_edges, CustomData *ldata, int totpoly)
 {
   MDisps *mdisp = (MDisps *)CustomData_get_layer(ldata, CD_MDISPS);
   const MPoly *mp;
   int i;
 
   for (mp = mpoly, i = 0; i < totpoly; mp++, i++) {
-    BKE_mesh_polygon_flip_ex(mp, mloop, ldata, nullptr, mdisp, true);
+    BKE_mesh_polygon_flip_ex(mp, corner_verts, corner_edges, ldata, nullptr, mdisp, true);
   }
 }
 
@@ -644,7 +642,7 @@ void BKE_mesh_flush_hidden_from_verts(Mesh *me)
   const VArraySpan<bool> hide_vert_span{hide_vert};
   const Span<MEdge> edges = me->edges();
   const Span<MPoly> polys = me->polys();
-  const Span<MLoop> loops = me->loops();
+  const Span<int> corner_verts = me->corner_verts();
 
   /* Hide edges when either of their vertices are hidden. */
   SpanAttributeWriter<bool> hide_edge = attributes.lookup_or_add_for_write_only_span<bool>(
@@ -660,9 +658,9 @@ void BKE_mesh_flush_hidden_from_verts(Mesh *me)
       ".hide_poly", ATTR_DOMAIN_FACE);
   for (const int i : polys.index_range()) {
     const MPoly &poly = polys[i];
-    const Span<MLoop> poly_loops = loops.slice(poly.loopstart, poly.totloop);
-    hide_poly.span[i] = std::any_of(poly_loops.begin(), poly_loops.end(), [&](const MLoop &loop) {
-      return hide_vert_span[loop.v];
+    const Span<int> poly_verts = corner_verts.slice(poly.loopstart, poly.totloop);
+    hide_poly.span[i] = std::any_of(poly_verts.begin(), poly_verts.end(), [&](const int vert_i) {
+      return hide_vert_span[vert_i];
     });
   }
   hide_poly.finish();
@@ -683,7 +681,8 @@ void BKE_mesh_flush_hidden_from_polys(Mesh *me)
   }
   const VArraySpan<bool> hide_poly_span{hide_poly};
   const Span<MPoly> polys = me->polys();
-  const Span<MLoop> loops = me->loops();
+  const Span<int> corner_verts = me->corner_verts();
+  const Span<int> corner_edges = me->corner_edges();
   SpanAttributeWriter<bool> hide_vert = attributes.lookup_or_add_for_write_only_span<bool>(
       ".hide_vert", ATTR_DOMAIN_POINT);
   SpanAttributeWriter<bool> hide_edge = attributes.lookup_or_add_for_write_only_span<bool>(
@@ -693,9 +692,9 @@ void BKE_mesh_flush_hidden_from_polys(Mesh *me)
   for (const int i : polys.index_range()) {
     if (hide_poly_span[i]) {
       const MPoly &poly = polys[i];
-      for (const MLoop &loop : loops.slice(poly.loopstart, poly.totloop)) {
-        hide_vert.span[loop.v] = true;
-        hide_edge.span[loop.e] = true;
+      for (const int corner : IndexRange(poly.loopstart, poly.totloop)) {
+        hide_vert.span[corner_verts[corner]] = true;
+        hide_edge.span[corner_edges[corner]] = true;
       }
     }
   }
@@ -703,9 +702,9 @@ void BKE_mesh_flush_hidden_from_polys(Mesh *me)
   for (const int i : polys.index_range()) {
     if (!hide_poly_span[i]) {
       const MPoly &poly = polys[i];
-      for (const MLoop &loop : loops.slice(poly.loopstart, poly.totloop)) {
-        hide_vert.span[loop.v] = false;
-        hide_edge.span[loop.e] = false;
+      for (const int corner : IndexRange(poly.loopstart, poly.totloop)) {
+        hide_vert.span[corner_verts[corner]] = false;
+        hide_edge.span[corner_edges[corner]] = false;
       }
     }
   }
@@ -743,7 +742,7 @@ void BKE_mesh_flush_select_from_polys(Mesh *me)
 
 static void mesh_flush_select_from_verts(const Span<MEdge> edges,
                                          const Span<MPoly> polys,
-                                         const Span<MLoop> loops,
+                                         const Span<int> corner_verts,
                                          const VArray<bool> &hide_edge,
                                          const VArray<bool> &hide_poly,
                                          const VArray<bool> &select_vert,
@@ -762,9 +761,9 @@ static void mesh_flush_select_from_verts(const Span<MEdge> edges,
   for (const int i : polys.index_range()) {
     if (!hide_poly[i]) {
       const MPoly &poly = polys[i];
-      const Span<MLoop> poly_loops = loops.slice(poly.loopstart, poly.totloop);
-      select_poly[i] = std::all_of(poly_loops.begin(), poly_loops.end(), [&](const MLoop &loop) {
-        return select_vert[loop.v];
+      const Span<int> poly_verts = corner_verts.slice(poly.loopstart, poly.totloop);
+      select_poly[i] = std::all_of(poly_verts.begin(), poly_verts.end(), [&](const int vert_i) {
+        return select_vert[vert_i];
       });
     }
   }
@@ -788,7 +787,7 @@ void BKE_mesh_flush_select_from_verts(Mesh *me)
   mesh_flush_select_from_verts(
       me->edges(),
       me->polys(),
-      me->loops(),
+      me->corner_verts(),
       attributes.lookup_or_default<bool>(".hide_edge", ATTR_DOMAIN_EDGE, false),
       attributes.lookup_or_default<bool>(".hide_poly", ATTR_DOMAIN_FACE, false),
       select_vert,
@@ -806,7 +805,7 @@ void BKE_mesh_flush_select_from_verts(Mesh *me)
 
 void BKE_mesh_calc_relative_deform(const MPoly *mpoly,
                                    const int totpoly,
-                                   const MLoop *mloop,
+                                   const int *corner_verts,
                                    const int totvert,
 
                                    const float (*vert_cos_src)[3],
@@ -823,12 +822,12 @@ void BKE_mesh_calc_relative_deform(const MPoly *mpoly,
   memset(vert_cos_new, '\0', sizeof(*vert_cos_new) * size_t(totvert));
 
   for (i = 0, mp = mpoly; i < totpoly; i++, mp++) {
-    const MLoop *loopstart = mloop + mp->loopstart;
+    const int *poly_verts = &corner_verts[mp->loopstart];
 
     for (int j = 0; j < mp->totloop; j++) {
-      uint v_prev = loopstart[(mp->totloop + (j - 1)) % mp->totloop].v;
-      uint v_curr = loopstart[j].v;
-      uint v_next = loopstart[(j + 1) % mp->totloop].v;
+      const int v_prev = poly_verts[(mp->totloop + (j - 1)) % mp->totloop];
+      const int v_curr = poly_verts[j];
+      const int v_next = poly_verts[(j + 1) % mp->totloop];
 
       float tvec[3];
 
