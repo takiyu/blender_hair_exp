@@ -153,6 +153,62 @@ bool BKE_mesh_poly_normals_are_dirty(const Mesh *mesh)
 /** \name Mesh Normal Calculation (Polygons)
  * \{ */
 
+/*
+ * COMPUTE POLY NORMAL
+ *
+ * Computes the normal of a planar
+ * polygon See Graphics Gems for
+ * computing newell normal.
+ */
+static void mesh_calc_ngon_normal(const MPoly *mpoly,
+                                  const MLoop *loopstart,
+                                  const float (*positions)[3],
+                                  float r_normal[3])
+{
+  const int nverts = mpoly->totloop;
+  const float *v_prev = positions[loopstart[nverts - 1].v];
+  const float *v_curr;
+
+  zero_v3(r_normal);
+
+  /* Newell's Method */
+  for (int i = 0; i < nverts; i++) {
+    v_curr = positions[loopstart[i].v];
+    add_newell_cross_v3_v3v3(r_normal, v_prev, v_curr);
+    v_prev = v_curr;
+  }
+
+  if (UNLIKELY(normalize_v3(r_normal) == 0.0f)) {
+    r_normal[2] = 1.0f; /* other axis set to 0.0 */
+  }
+}
+
+void BKE_mesh_calc_poly_normal(const MPoly *mpoly,
+                               const MLoop *loopstart,
+                               const float (*positions)[3],
+                               float r_no[3])
+{
+  if (mpoly->totloop > 4) {
+    mesh_calc_ngon_normal(mpoly, loopstart, positions, r_no);
+  }
+  else if (mpoly->totloop == 3) {
+    normal_tri_v3(
+        r_no, positions[loopstart[0].v], positions[loopstart[1].v], positions[loopstart[2].v]);
+  }
+  else if (mpoly->totloop == 4) {
+    normal_quad_v3(r_no,
+                   positions[loopstart[0].v],
+                   positions[loopstart[1].v],
+                   positions[loopstart[2].v],
+                   positions[loopstart[3].v]);
+  }
+  else { /* horrible, two sided face! */
+    r_no[0] = 0.0;
+    r_no[1] = 0.0;
+    r_no[2] = 1.0;
+  }
+}
+
 struct MeshCalcNormalsData_Poly {
   const float (*positions)[3];
   const MLoop *mloop;
@@ -619,7 +675,7 @@ MINLINE short unit_float_to_short(const float val)
   return short(floorf(val * float(SHRT_MAX) + 0.5f));
 }
 
-void BKE_lnor_space_custom_data_to_normal(MLoopNorSpace *lnor_space,
+void BKE_lnor_space_custom_data_to_normal(const MLoopNorSpace *lnor_space,
                                           const short clnor_data[2],
                                           float r_custom_lnor[3])
 {
@@ -653,7 +709,7 @@ void BKE_lnor_space_custom_data_to_normal(MLoopNorSpace *lnor_space,
   }
 }
 
-void BKE_lnor_space_custom_normal_to_data(MLoopNorSpace *lnor_space,
+void BKE_lnor_space_custom_normal_to_data(const MLoopNorSpace *lnor_space,
                                           const float custom_lnor[3],
                                           short r_clnor_data[2])
 {

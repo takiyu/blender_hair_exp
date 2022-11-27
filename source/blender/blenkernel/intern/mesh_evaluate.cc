@@ -39,62 +39,6 @@ using blender::VArray;
 /** \name Polygon Calculations
  * \{ */
 
-/*
- * COMPUTE POLY NORMAL
- *
- * Computes the normal of a planar
- * polygon See Graphics Gems for
- * computing newell normal.
- */
-static void mesh_calc_ngon_normal(const MPoly *mpoly,
-                                  const MLoop *loopstart,
-                                  const float (*positions)[3],
-                                  float normal[3])
-{
-  const int nverts = mpoly->totloop;
-  const float *v_prev = positions[loopstart[nverts - 1].v];
-  const float *v_curr;
-
-  zero_v3(normal);
-
-  /* Newell's Method */
-  for (int i = 0; i < nverts; i++) {
-    v_curr = positions[loopstart[i].v];
-    add_newell_cross_v3_v3v3(normal, v_prev, v_curr);
-    v_prev = v_curr;
-  }
-
-  if (UNLIKELY(normalize_v3(normal) == 0.0f)) {
-    normal[2] = 1.0f; /* other axis set to 0.0 */
-  }
-}
-
-void BKE_mesh_calc_poly_normal(const MPoly *mpoly,
-                               const MLoop *loopstart,
-                               const float (*positions)[3],
-                               float r_no[3])
-{
-  if (mpoly->totloop > 4) {
-    mesh_calc_ngon_normal(mpoly, loopstart, positions, r_no);
-  }
-  else if (mpoly->totloop == 3) {
-    normal_tri_v3(
-        r_no, positions[loopstart[0].v], positions[loopstart[1].v], positions[loopstart[2].v]);
-  }
-  else if (mpoly->totloop == 4) {
-    normal_quad_v3(r_no,
-                   positions[loopstart[0].v],
-                   positions[loopstart[1].v],
-                   positions[loopstart[2].v],
-                   positions[loopstart[3].v]);
-  }
-  else { /* horrible, two sided face! */
-    r_no[0] = 0.0;
-    r_no[1] = 0.0;
-    r_no[2] = 1.0;
-  }
-}
-
 static void mesh_calc_ngon_center(const MPoly *mpoly,
                                   const MLoop *loopstart,
                                   const float (*positions)[3],
@@ -229,7 +173,7 @@ static float UNUSED_FUNCTION(mesh_calc_poly_volume_centroid)(const MPoly *mpoly,
  */
 static float mesh_calc_poly_volume_centroid_with_reference_center(const MPoly *mpoly,
                                                                   const MLoop *loopstart,
-                                                                  const float (*positions)[3],
+                                                                  const Span<float3> positions,
                                                                   const float reference_center[3],
                                                                   float r_cent[3])
 {
@@ -353,8 +297,8 @@ bool BKE_mesh_center_median(const Mesh *me, float r_cent[3])
 {
   const Span<float3> positions = me->positions();
   zero_v3(r_cent);
-  for (const float3 &position : positions) {
-    add_v3_v3(r_cent, position);
+  for (const int i : positions.index_range()) {
+    add_v3_v3(r_cent, positions[i]);
   }
   /* otherwise we get NAN for 0 verts */
   if (me->totvert) {
@@ -437,7 +381,7 @@ bool BKE_mesh_center_of_volume(const Mesh *me, float r_cent[3])
   float poly_volume;
   float total_volume = 0.0f;
   float poly_cent[3];
-  const float(*positions)[3] = BKE_mesh_positions(me);
+  const Span<float3> positions = me->positions();
   const MPoly *polys = BKE_mesh_polys(me);
   const MLoop *loops = BKE_mesh_loops(me);
 

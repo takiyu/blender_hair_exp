@@ -426,19 +426,13 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
 
   /* Set the locations of the first set of verts */
 
-  BLI_bitmap *vert_tag = BLI_BITMAP_NEW(totvert, __func__);
-
   /* Copy the first set of edges */
   const MEdge *med_orig = medge_orig;
   med_new = medge_new;
   for (i = 0; i < totedge; i++, med_orig++, med_new++) {
     med_new->v1 = med_orig->v1;
     med_new->v2 = med_orig->v2;
-    med_new->flag = med_orig->flag & ~ME_LOOSEEDGE;
-
-    /* Tag vertex as not loose. */
-    BLI_BITMAP_ENABLE(vert_tag, med_orig->v1);
-    BLI_BITMAP_ENABLE(vert_tag, med_orig->v2);
+    med_new->flag = med_orig->flag;
   }
 
   /* build polygon -> edge map */
@@ -805,9 +799,6 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
       med_new->v1 = varray_stride + j;
       med_new->v2 = med_new->v1 - totvert;
       med_new->flag = ME_EDGEDRAW;
-      if (!BLI_BITMAP_TEST(vert_tag, j)) {
-        med_new->flag |= ME_LOOSEEDGE;
-      }
       med_new++;
     }
   }
@@ -826,9 +817,6 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
       med_new->v1 = i;
       med_new->v2 = varray_stride + i;
       med_new->flag = ME_EDGEDRAW;
-      if (!BLI_BITMAP_TEST(vert_tag, i)) {
-        med_new->flag |= ME_LOOSEEDGE;
-      }
       med_new++;
     }
   }
@@ -984,7 +972,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
     /* new vertical edge */
     med_new->v1 = i1;
     med_new->v2 = i2;
-    med_new->flag = med_new_firstloop->flag & ~ME_LOOSEEDGE;
+    med_new->flag = med_new_firstloop->flag;
     med_new++;
   }
 
@@ -1014,8 +1002,6 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
     }
   }
 #endif
-
-  MEM_freeN(vert_tag);
 
   if (edge_poly_map) {
     MEM_freeN(edge_poly_map);

@@ -1035,7 +1035,6 @@ static void do_mesh_separation(GeometrySet &geometry_set,
     }
   }
 
-  BKE_mesh_calc_edges_loose(mesh_out);
   geometry_set.replace_mesh(mesh_out);
 }
 
