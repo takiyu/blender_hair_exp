@@ -517,7 +517,29 @@ static Span<int> get_mpoly_loopstarts(const Span<MPoly> polys)
   for (const int i : polys.index_range()) {
     loopstarts[i] = polys[i].loopstart;
   }
-  return loopstarts.as_span();
+  return loopstarts.as_span().slice(0, polys.size());
+}
+
+/* Utility function to extract MPoly totloop for easy comparison */
+static Span<int> get_mpoly_totloops(const Span<MPoly> polys)
+{
+  static Array<int> totloops(64);
+  BLI_assert(polys.size() <= totloops.size());
+  for (const int i : polys.index_range()) {
+    totloops[i] = polys[i].totloop;
+  }
+  return totloops.as_span().slice(0, polys.size());
+}
+
+/* Utility function to extract MLoop verts for easy comparison */
+static Span<int> get_mloop_verts(const Span<MLoop> loops)
+{
+  static Array<int> verts(64);
+  BLI_assert(loops.size() <= verts.size());
+  for (const int i : loops.index_range()) {
+    verts[i] = loops[i].v;
+  }
+  return verts.as_span().slice(0, loops.size());
 }
 
 TEST(delaunay, TetDualMesh)
@@ -579,7 +601,9 @@ TEST(delaunay, TetDualMesh)
 
     EXPECT_EQ(4, mesh->totpoly);
     EXPECT_EQ(12, mesh->totloop);
-    EXPECT_EQ_ARRAY(Span<int>{}.data(), get_mpoly_loopstarts(polys).data(), 4);
+    EXPECT_EQ_ARRAY(Span<int>{0, 3, 6, 9}.data(), get_mpoly_loopstarts(polys).data(), 4);
+    EXPECT_EQ_ARRAY(Span<int>{3, 3, 3, 3}.data(), get_mpoly_totloops(polys).data(), 4);
+    EXPECT_EQ_ARRAY(Span<int>{2, 1, 0, 0, 1, 3, 1, 2, 3, 2, 0, 3}.data(), get_mloop_verts(loops).data(), 12);
 
     BKE_id_free(nullptr, mesh);
   }
