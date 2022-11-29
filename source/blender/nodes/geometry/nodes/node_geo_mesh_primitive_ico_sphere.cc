@@ -7,7 +7,6 @@
 #include "BKE_mesh.h"
 
 #include "bmesh.h"
-#include "intern/bmesh_interp.h"
 
 #include "node_geometry_util.hh"
 
