@@ -173,16 +173,16 @@ bool BKE_id_attribute_rename(ID *id,
     char buffer_src[MAX_CUSTOMDATA_LAYER_NAME];
     char buffer_dst[MAX_CUSTOMDATA_LAYER_NAME];
     BKE_id_attribute_rename(id,
-                            get_uv_map_vert_selection_name(layer->name, buffer_src),
-                            get_uv_map_vert_selection_name(result_name, buffer_dst),
+                            BKE_get_uv_map_vert_selection_name(layer->name, buffer_src),
+                            BKE_get_uv_map_vert_selection_name(result_name, buffer_dst),
                             reports);
     BKE_id_attribute_rename(id,
-                            get_uv_map_edge_selection_name(layer->name, buffer_src),
-                            get_uv_map_edge_selection_name(result_name, buffer_dst),
+                            BKE_get_uv_map_edge_selection_name(layer->name, buffer_src),
+                            BKE_get_uv_map_edge_selection_name(result_name, buffer_dst),
                             reports);
     BKE_id_attribute_rename(id,
-                            get_uv_map_pin_name(layer->name, buffer_src),
-                            get_uv_map_pin_name(result_name, buffer_dst),
+                            BKE_get_uv_map_pin_name(layer->name, buffer_src),
+                            BKE_get_uv_map_pin_name(result_name, buffer_dst),
                             reports);
   }
 
@@ -814,3 +814,28 @@ void BKE_id_attribute_copy_domains_temp(short id_type,
 
   *((short *)r_id->name) = id_type;
 }
+
+char const *BKE_get_uv_map_vert_selection_name(char const *uv_map_name, char *buffer)
+{
+  BLI_assert(strlen(UV_VERTSEL_NAME) == 2);
+  BLI_assert(strlen(uv_map_name) < MAX_CUSTOMDATA_LAYER_NAME - 5);
+  BLI_snprintf(buffer, MAX_CUSTOMDATA_LAYER_NAME, ".%s.%s", UV_VERTSEL_NAME, uv_map_name);
+  return buffer;
+}
+
+char const *BKE_get_uv_map_edge_selection_name(char const *uv_map_name, char *buffer)
+{
+  BLI_assert(strlen(UV_VERTSEL_NAME) == 2);
+  BLI_assert(strlen(uv_map_name) < MAX_CUSTOMDATA_LAYER_NAME - 5);
+  BLI_snprintf(buffer, MAX_CUSTOMDATA_LAYER_NAME, ".%s.%s", UV_EDGESEL_NAME, uv_map_name);
+  return buffer;
+}
+
+char const *BKE_get_uv_map_pin_name(char const *uv_map_name, char *buffer)
+{
+  BLI_assert(strlen(UV_VERTSEL_NAME) == 2);
+  BLI_assert(strlen(uv_map_name) < MAX_CUSTOMDATA_LAYER_NAME - 5);
+  BLI_snprintf(buffer, MAX_CUSTOMDATA_LAYER_NAME, ".%s.%s", UV_PINNED_NAME, uv_map_name);
+  return buffer;
+}
+
