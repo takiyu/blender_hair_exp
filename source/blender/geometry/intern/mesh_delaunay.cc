@@ -450,11 +450,27 @@ Array<int4> tet_build_side_to_tet_map(Span<int4> tets)
   return result;
 }
 
-int tet_find(Span<float3> positions, Span<int4> tets, const float3 &point)
+int tet_find_containing(Span<float3> positions, Span<int4> tets, const float3 &point)
 {
   for (const int tet_i : tets.index_range()) {
     if (topology::simplex_contains_point(positions, tets[tet_i], point)) {
       return tet_i;
+    }
+  }
+  return -1;
+}
+
+int tet_find_circumscribed(Span<float3> positions, Span<int4> tets, const float3 &point)
+{
+  for (const int tet_i : tets.index_range()) {
+    const int4 &tet = tets[tet_i];
+    float3 center;
+    if (topology::simplex_circumcenter(
+            positions[tet[0]], positions[tet[1]], positions[tet[2]], positions[tet[3]], center)) {
+      if (math::distance_squared(point, center) <=
+          math::distance_squared(positions[tet[0]], center)) {
+        return tet_i;
+      }
     }
   }
   return -1;
@@ -474,7 +490,7 @@ static bool tet_isect_ray(const float3 &ray_src,
   return true;
 }
 
-int tet_find_from_known(Span<float3> positions,
+int tet_find_circumscribed_from_known(Span<float3> positions,
                         Span<int4> tets,
                         Span<int4> side_map,
                         const int src_tet,
@@ -606,11 +622,17 @@ Array<bool> check_delaunay_condition(const Span<float3> positions,
       const float3 pos[4] = {
           positions[tet[0]], positions[tet[1]], positions[tet[2]], positions[tet[3]]};
       float3 center;
-      if (topology::simplex_circumcenter(pos[0], pos[1], pos[2], pos[3], center) &&
-          math::length_squared(new_point - center) <= math::length_squared(pos[0] - center)) {
-        /* Simplex circum-sphere contains the point,
-         * mark it and add to the stack for checking neighbors.
-         */
+      if (topology::simplex_circumcenter(pos[0], pos[1], pos[2], pos[3], center)) {
+        if (math::length_squared(new_point - center) <= math::length_squared(pos[0] - center)) {
+          /* Simplex circum-sphere contains the point,
+           * mark it and add to the stack for checking neighbors.
+           */
+          result[simplex_k] = true;
+          stack.push(simplex_k);
+        }
+      }
+      else {
+        /* Degenerate triangle, circumradius is infinite, contains all points */
         result[simplex_k] = true;
         stack.push(simplex_k);
       }
@@ -691,6 +713,9 @@ void tet_fan_construct(Array<int4> &tets,
         int2 &edge0 = boundary_edge_map.lookup_or_add(key0, int2(-1, -1));
         int2 &edge1 = boundary_edge_map.lookup_or_add(key1, int2(-1, -1));
         int2 &edge2 = boundary_edge_map.lookup_or_add(key2, int2(-1, -1));
+        BLI_assert(flipped0 ? edge0.y < 0 : edge0.x < 0);
+        BLI_assert(flipped1 ? edge1.y < 0 : edge1.x < 0);
+        BLI_assert(flipped2 ? edge2.y < 0 : edge2.x < 0);
         int &tet0 = flipped0 ? edge0.y : edge0.x;
         int &tet1 = flipped1 ? edge1.y : edge1.x;
         int &tet2 = flipped2 ? edge2.y : edge2.x;
@@ -815,7 +840,7 @@ void tetrahedralize_points(Span<float3> positions,
   int containing_simplex = 0;
   for (const int point_i : orig_points) {
     if (point_i > 0) {
-      containing_simplex = tet_find_from_known(
+      containing_simplex = tet_find_circumscribed_from_known(
           used_points, r_tets, side_map, containing_simplex, used_points[point_i]);
       if (containing_simplex < 0) {
         /* TODO should not happen (point outside enclosing simplex), issue a warning */

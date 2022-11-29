@@ -189,7 +189,7 @@ TEST(delaunay, TetFind)
 
   int src_tet = 1;
   float3 dst_point(0.7f, 1.3f, 0.2f);
-  const int dst_tet = delaunay::tet_find_from_known(
+  const int dst_tet = delaunay::tet_find_circumscribed_from_known(
       positions, tets, side_map, src_tet, dst_point);
   EXPECT_EQ(2, dst_tet);
 }
@@ -209,7 +209,7 @@ TEST(delaunay, TetFindCoplanar)
 
   int src_tet = 1;
   float3 dst_point(0.3f, 0.2f, 0.0f);
-  const int dst_tet = delaunay::tet_find_from_known(
+  const int dst_tet = delaunay::tet_find_circumscribed_from_known(
       positions, tets, side_map, src_tet, dst_point);
   EXPECT_EQ(0, dst_tet);
 }
@@ -283,7 +283,8 @@ TEST(delaunay, TetFindGrid)
 
     EXPECT_EQ(
         dst_tet,
-        delaunay::tet_find_from_known(positions, tets, side_map, src_tet, dst_point));
+              delaunay::tet_find_circumscribed_from_known(
+                  positions, tets, side_map, src_tet, dst_point));
   }
 }
 
@@ -610,6 +611,62 @@ TEST(delaunay, TetDualMesh)
 
   BKE_callback_global_finalize();
   CLG_exit();
+}
+
+/* Test for a situation where a coplanar, degenerate tet
+ * is sandwiched between normal tets. If the outer tets'
+ * circumspheres overlap then looking for Delaunay violations
+ * may result in both outer tets being removed.
+ * A previous version of the circumsphere test was considering
+ * degenerate tets as always valid. In this "sandwich" situation
+ * that causes a duplicate entry in the boundary edge map,
+ * which should not happen.
+ * A degenerate tet should always be replaced to avoid this.
+ */
+TEST(delaunay, DegenerateTetReplace)
+{
+  /* Points on a unit sphere for simplicity */
+  const Array<float3> points = {
+      {1, 0, 0}, {-1, 0, 0}, {0, 1, 0}, {0, -1, 0}, {0, 0, 1}, {0, 0, -1}, {0.3f, 0.3f, 0.3f}};
+  /* Point that lies inside the circumsphere of all the tets */
+  const float3 testpoint = points[6];
+  /* Tet 0 is a degenerate tet in the XY plane.
+   * Tet 1 and 2 are above the plane, tet 3 and 4 are below.
+   * Tet 5 connects the upper and lower tets, so that the search method flags all tets. */
+  Array<int4> tets = {
+      {0, 1, 2, 3}, {1, 2, 3, 4}, {3, 2, 0, 4}, {0, 2, 1, 5}, {0, 1, 3, 5}, {2, 4, 5, 0}};
+
+  Array<int4> side_map = delaunay::tet_build_side_to_tet_map(tets);
+  EXPECT_EQ_ARRAY(
+      Span<int4>{{3, 4, 1, 2}, {0, -1, 2, -1}, {0, 1, 5, -1}, {0, 5, -1, 4}, {0, 3, -1, -1}, {-1, 2, -1, 3}}
+          .data(),
+      side_map.data(),
+      6);
+
+  float3 center[5];
+  for (const int i : IndexRange(5)) {
+    const int4 &tet = tets[i];
+    /* Tet 0 is degenerate and has no valid center */
+    const bool expect_valid_center = (i != 0);
+    EXPECT_EQ(expect_valid_center,
+              topology::simplex_circumcenter(
+                  points[tet[0]], points[tet[1]], points[tet[2]], points[tet[3]], center[i]));
+    if (expect_valid_center) {
+      EXPECT_V3_NEAR(center[i], float3(0.0f, 0.0f, 0.0f), FLT_EPSILON);
+    }
+  }
+
+  EXPECT_EQ(1, delaunay::tet_find_circumscribed(points, tets, testpoint));
+
+  /* Degenerate tets should "contain" all points, so tet 0 also gets flagged. */
+  Array<bool> contains_point = delaunay::check_delaunay_condition(points, tets, side_map, testpoint, 1);
+  EXPECT_EQ_ARRAY(Span<bool>{true, true, true, true, true, true}.data(), contains_point.data(), 6);
+
+  IndexRange old_simplex_range, new_simplex_range;
+  delaunay::tet_fan_construct(
+      tets, side_map, contains_point, 6, old_simplex_range, new_simplex_range);
+  EXPECT_TRUE(old_simplex_range.is_empty());
+  EXPECT_EQ(8, new_simplex_range.size());
 }
 
 }  // namespace blender::geometry::tests
