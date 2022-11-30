@@ -311,8 +311,8 @@ static void copy_masked_simplices_to_new_simplex_geometry(const SimplexGeometry 
                                                           Span<int> vertex_map,
                                                           Span<int> masked_simplex_indices)
 {
-  const Span<int4> src_tets = src_geometry.simplex_vertices();
-  MutableSpan<int4> dst_tets = dst_geometry.simplex_vertices_for_write();
+  const Span<int4> src_tets = src_geometry.tetrahedrons();
+  MutableSpan<int4> dst_tets = dst_geometry.tetrahedrons_for_write();
 
   for (const int i_dst : masked_simplex_indices.index_range()) {
     const int i_src = masked_simplex_indices[i_dst];
@@ -331,8 +331,8 @@ static void copy_masked_simplices_to_new_simplex_geometry(const SimplexGeometry 
                                                           SimplexGeometry &dst_geometry,
                                                           Span<int> masked_simplex_indices)
 {
-  const Span<int4> src_tets = src_geometry.simplex_vertices();
-  MutableSpan<int4> dst_tets = dst_geometry.simplex_vertices_for_write();
+  const Span<int4> src_tets = src_geometry.tetrahedrons();
+  MutableSpan<int4> dst_tets = dst_geometry.tetrahedrons_for_write();
 
   for (const int i_dst : masked_simplex_indices.index_range()) {
     const int i_src = masked_simplex_indices[i_dst];
@@ -1124,9 +1124,9 @@ static void compute_selected_simplex_from_vertex_selection(const SimplexGeometry
                                                            int *r_selected_simplex_num)
 {
   BLI_assert(geometry.point_num() == vertex_selection.size());
-  const Span<int4> tets = geometry.simplex_vertices();
+  const Span<int4> tets = geometry.tetrahedrons();
 
-  r_selected_simplex_indices.reserve(geometry.simplex_num());
+  r_selected_simplex_indices.reserve(geometry.tetrahedron_num());
 
   for (const int i : tets.index_range()) {
     const int4 &tet = tets[i];
@@ -1152,10 +1152,10 @@ static void compute_selected_simplex_from_simplex_selection(
     Vector<int> &r_selected_simplex_indices,
     int *r_selected_simplex_num)
 {
-  BLI_assert(geometry.simplex_num() == simplex_selection.size());
-  const Span<int4> tets = geometry.simplex_vertices();
+  BLI_assert(geometry.tetrahedron_num() == simplex_selection.size());
+  const Span<int4> tets = geometry.tetrahedrons();
 
-  r_selected_simplex_indices.reserve(geometry.simplex_num());
+  r_selected_simplex_indices.reserve(geometry.tetrahedron_num());
 
   for (const int i : tets.index_range()) {
     /* We keep this one. */
@@ -1196,12 +1196,12 @@ static void compute_selected_simplex_data_from_simplex_selection(const SimplexGe
                                                            int *r_selected_verts_num,
                                                            int *r_selected_simplex_num)
 {
-  BLI_assert(geometry.simplex_num() == simplex_selection.size());
-  const Span<int4> tets = geometry.simplex_vertices();
+  BLI_assert(geometry.tetrahedron_num() == simplex_selection.size());
+  const Span<int4> tets = geometry.tetrahedrons();
 
   r_vertex_map.fill(-1);
 
-  r_selected_simplex_indices.reserve(geometry.simplex_num());
+  r_selected_simplex_indices.reserve(geometry.tetrahedron_num());
 
   int selected_verts_num = 0;
   for (const int i : tets.index_range()) {

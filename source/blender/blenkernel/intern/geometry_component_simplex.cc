@@ -42,7 +42,7 @@ void SimplexComponent::clear()
 bool SimplexComponent::is_empty() const
 {
   if (geometry_ != nullptr) {
-    if (geometry_->simplex_num() > 0) {
+    if (geometry_->tetrahedron_num() > 0) {
       return false;
     }
   }
@@ -121,7 +121,7 @@ class SimplexVertexAttributeProvider final : public BuiltinAttributeProvider {
     if (simplices == nullptr) {
       return {};
     }
-    Span<int4> simplex_span = simplices->simplex_vertices();
+    Span<int4> simplex_span = simplices->tetrahedrons();
     return VArray<int>::ForDerivedSpan<int4, get_corner_vertex>(simplex_span);
   }
 
@@ -143,7 +143,7 @@ class SimplexVertexAttributeProvider final : public BuiltinAttributeProvider {
   bool exists(const void *owner) const final
   {
     const SimplexGeometry *geometry = static_cast<const SimplexGeometry *>(owner);
-    return geometry->simplex_num() != 0;
+    return geometry->tetrahedron_num() != 0;
   }
 };
 
@@ -171,15 +171,15 @@ static ComponentAttributeProviders create_attribute_providers_for_simplices()
   static CustomDataAccessInfo simplex_access = {
       [](void *owner) -> CustomData * {
         SimplexGeometry &geometry = *static_cast<SimplexGeometry *>(owner);
-        return &geometry.simplex_data;
+        return &geometry.tetrahedron_data;
       },
       [](const void *owner) -> const CustomData * {
         const SimplexGeometry &geometry = *static_cast<const SimplexGeometry *>(owner);
-        return &geometry.simplex_data;
+        return &geometry.tetrahedron_data;
       },
       [](const void *owner) -> int {
         const SimplexGeometry &geometry = *static_cast<const SimplexGeometry *>(owner);
-        return geometry.simplex_num();
+        return geometry.tetrahedron_num();
       }};
 
   static SimplexVertexAttributeProvider<0> vertex0;
@@ -220,7 +220,7 @@ static AttributeAccessorFunctions get_simplices_accessor_functions()
       case ATTR_DOMAIN_POINT:
         return simplices->point_num();
       case ATTR_DOMAIN_SIMPLEX:
-        return simplices->simplex_num();
+        return simplices->tetrahedron_num();
       default:
         return 0;
     }

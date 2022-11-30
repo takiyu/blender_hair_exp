@@ -24,9 +24,9 @@ SimplexGeometry::SimplexGeometry(int point_num, int simplex_num)
   ::SimplexGeometry *c_this = (::SimplexGeometry *)this;
 
   c_this->point_num = point_num;
-  c_this->simplex_num = simplex_num;
+  c_this->tetrahedron_num = simplex_num;
   CustomData_reset(&this->point_data);
-  CustomData_reset(&this->simplex_data);
+  CustomData_reset(&this->tetrahedron_data);
 
   CustomData_add_layer_named(&this->point_data,
                              CD_PROP_FLOAT3,
@@ -34,30 +34,35 @@ SimplexGeometry::SimplexGeometry(int point_num, int simplex_num)
                              nullptr,
                              c_this->point_num,
                              ATTR_POSITION.c_str());
-  c_this->simplex_verts = (int(*)[4])MEM_malloc_arrayN(
-      c_this->simplex_num, sizeof(int[4]), __func__);
+  c_this->tetrahedrons = (int(*)[4])MEM_malloc_arrayN(
+      c_this->tetrahedron_num, sizeof(int[4]), __func__);
 }
 
-static void copy_simplex_geometry(SimplexGeometry &dst, const SimplexGeometry &src)
+static void copy_tetrahedron_geometry(SimplexGeometry &dst, const SimplexGeometry &src)
 {
   ::SimplexGeometry &c_dst = (::SimplexGeometry &)dst;
   const ::SimplexGeometry &c_src = (const ::SimplexGeometry &)src;
 
   CustomData_free(&c_dst.point_data, c_dst.point_num);
-  CustomData_free(&c_dst.simplex_data, c_dst.simplex_num);
+  CustomData_free(&c_dst.tetrahedron_data, c_dst.tetrahedron_num);
   c_dst.point_num = c_src.point_num;
-  c_dst.simplex_num = c_src.simplex_num;
+  c_dst.tetrahedron_num = c_src.tetrahedron_num;
   CustomData_copy(&c_src.point_data, &c_dst.point_data, CD_MASK_ALL, CD_DUPLICATE, c_dst.point_num);
-  CustomData_copy(&c_src.simplex_data, &c_dst.simplex_data, CD_MASK_ALL, CD_DUPLICATE, c_dst.simplex_num);
+  CustomData_copy(&c_src.tetrahedron_data,
+                  &c_dst.tetrahedron_data,
+                  CD_MASK_ALL,
+                  CD_DUPLICATE,
+                  c_dst.tetrahedron_num);
 
-  c_dst.simplex_verts = (int(*)[4])MEM_malloc_arrayN(c_dst.simplex_num, sizeof(int[4]), __func__);
-  dst.simplex_vertices_for_write().copy_from(src.simplex_vertices());
+  c_dst.tetrahedrons = (int(*)[4])MEM_malloc_arrayN(
+      c_dst.tetrahedron_num, sizeof(int[4]), __func__);
+  dst.tetrahedrons_for_write().copy_from(src.tetrahedrons());
 
   dst.tag_topology_changed();
 }
 
 /* The source should be empty, but in a valid state so that using it further will work. */
-static void move_simplex_geometry(SimplexGeometry &dst, SimplexGeometry &src)
+static void move_tetrahedron_geometry(SimplexGeometry &dst, SimplexGeometry &src)
 {
   ::SimplexGeometry &c_dst = (::SimplexGeometry &)dst;
   ::SimplexGeometry &c_src = (::SimplexGeometry &)src;
@@ -67,29 +72,29 @@ static void move_simplex_geometry(SimplexGeometry &dst, SimplexGeometry &src)
   CustomData_free(&c_src.point_data, c_src.point_num);
   c_src.point_num = 0;
 
-  c_dst.simplex_num = c_src.simplex_num;
-  std::swap(c_dst.simplex_data, c_src.simplex_data);
-  CustomData_free(&c_src.simplex_data, c_src.simplex_num);
-  c_src.simplex_num = 0;
+  c_dst.tetrahedron_num = c_src.tetrahedron_num;
+  std::swap(c_dst.tetrahedron_data, c_src.tetrahedron_data);
+  CustomData_free(&c_src.tetrahedron_data, c_src.tetrahedron_num);
+  c_src.tetrahedron_num = 0;
 
-  std::swap(c_dst.simplex_verts, c_src.simplex_verts);
-  MEM_SAFE_FREE(c_src.simplex_verts);
+  std::swap(c_dst.tetrahedrons, c_src.tetrahedrons);
+  MEM_SAFE_FREE(c_src.tetrahedrons);
 }
 
 SimplexGeometry::SimplexGeometry(const SimplexGeometry &other)
 {
-  copy_simplex_geometry(*this, other);
+  copy_tetrahedron_geometry(*this, other);
 }
 
 SimplexGeometry::SimplexGeometry(SimplexGeometry &&other)
 {
-  move_simplex_geometry(*this, other);
+  move_tetrahedron_geometry(*this, other);
 }
 
 SimplexGeometry &SimplexGeometry::operator=(const SimplexGeometry &other)
 {
   if (this != &other) {
-    copy_simplex_geometry(*this, other);
+    copy_tetrahedron_geometry(*this, other);
   }
   return *this;
 }
@@ -97,7 +102,7 @@ SimplexGeometry &SimplexGeometry::operator=(const SimplexGeometry &other)
 SimplexGeometry &SimplexGeometry::operator=(SimplexGeometry &&other)
 {
   if (this != &other) {
-    move_simplex_geometry(*this, other);
+    move_tetrahedron_geometry(*this, other);
   }
   return *this;
 }
@@ -107,8 +112,8 @@ SimplexGeometry::~SimplexGeometry()
   ::SimplexGeometry *c_this = (::SimplexGeometry *)this;
 
   CustomData_free(&c_this->point_data, c_this->point_num);
-  CustomData_free(&c_this->simplex_data, c_this->simplex_num);
-  MEM_SAFE_FREE((c_this)->simplex_verts);
+  CustomData_free(&c_this->tetrahedron_data, c_this->tetrahedron_num);
+  MEM_SAFE_FREE((c_this)->tetrahedrons);
 }
 
 int SimplexGeometry::domain_num(const eAttrDomain domain) const
@@ -117,7 +122,7 @@ int SimplexGeometry::domain_num(const eAttrDomain domain) const
     case ATTR_DOMAIN_POINT:
       return point_num();
     case ATTR_DOMAIN_SIMPLEX:
-      return simplex_num();
+      return tetrahedron_num();
     default:
       return 0;
   }
@@ -129,7 +134,7 @@ CustomData &SimplexGeometry::domain_custom_data(const eAttrDomain domain)
     case ATTR_DOMAIN_POINT:
       return point_data;
     case ATTR_DOMAIN_SIMPLEX:
-      return simplex_data;
+      return tetrahedron_data;
     default:
       BLI_assert_unreachable();
       static CustomData dummy;
@@ -143,7 +148,7 @@ const CustomData &SimplexGeometry::domain_custom_data(const eAttrDomain domain) 
     case ATTR_DOMAIN_POINT:
       return point_data;
     case ATTR_DOMAIN_SIMPLEX:
-      return simplex_data;
+      return tetrahedron_data;
     default:
       BLI_assert_unreachable();
       static CustomData dummy;
@@ -214,18 +219,18 @@ MutableSpan<float3> SimplexGeometry::positions_for_write()
   return get_mutable_attribute<float3>(ATTR_DOMAIN_POINT, ATTR_POSITION);
 }
 
-Span<int4> SimplexGeometry::simplex_vertices() const
+Span<int4> SimplexGeometry::tetrahedrons() const
 {
   const ::SimplexGeometry *c_this = (const ::SimplexGeometry *)this;
-  return Span(reinterpret_cast<const int4 *>(c_this->simplex_verts), c_this->simplex_num);
+  return Span(reinterpret_cast<const int4 *>(c_this->tetrahedrons), c_this->tetrahedron_num);
 }
-MutableSpan<int4> SimplexGeometry::simplex_vertices_for_write()
+MutableSpan<int4> SimplexGeometry::tetrahedrons_for_write()
 {
   ::SimplexGeometry *c_this = (::SimplexGeometry *)this;
-  return MutableSpan(reinterpret_cast<int4 *>(c_this->simplex_verts), c_this->simplex_num);
+  return MutableSpan(reinterpret_cast<int4 *>(c_this->tetrahedrons), c_this->tetrahedron_num);
 }
 
-void SimplexGeometry::resize(int point_num, int simplex_num)
+void SimplexGeometry::resize(int point_num, int tetrahedron_num)
 {
   ::SimplexGeometry *c_this = (::SimplexGeometry *)this;
 
@@ -233,10 +238,10 @@ void SimplexGeometry::resize(int point_num, int simplex_num)
     CustomData_realloc(&c_this->point_data, c_this->point_num, point_num);
     c_this->point_num = point_num;
   }
-  if (simplex_num != c_this->simplex_num) {
-    CustomData_realloc(&c_this->simplex_data, c_this->simplex_num, simplex_num);
-    MEM_reallocN(c_this->simplex_verts, sizeof(int[4]) * simplex_num);
-    c_this->simplex_num = simplex_num;
+  if (tetrahedron_num != c_this->tetrahedron_num) {
+    CustomData_realloc(&c_this->tetrahedron_data, c_this->tetrahedron_num, tetrahedron_num);
+    MEM_reallocN(c_this->tetrahedrons, sizeof(int[4]) * tetrahedron_num);
+    c_this->tetrahedron_num = tetrahedron_num;
   }
   this->tag_topology_changed();
 }
@@ -265,10 +270,10 @@ static void adapt_simplex_domain_point_to_simplex_impl(const SimplexGeometry &ge
                                                        const VArray<T> &old_values,
                                                        MutableSpan<T> r_values)
 {
-  const Span<int4> tets = geometry.simplex_vertices();
+  const Span<int4> tets = geometry.tetrahedrons();
   attribute_math::DefaultMixer<T> mixer(r_values);
 
-  threading::parallel_for(geometry.simplex_range(), 128, [&](const IndexRange range) {
+  threading::parallel_for(geometry.tetrahedrons_range(), 128, [&](const IndexRange range) {
     for (const int i_simplex : range) {
       const int4 &tet = tets[i_simplex];
       for (const int k : IndexRange(4)) {
@@ -291,10 +296,10 @@ void adapt_simplex_domain_point_to_simplex_impl(const SimplexGeometry &geometry,
                                                 const VArray<bool> &old_values,
                                                 MutableSpan<bool> r_values)
 {
-  const Span<int4> tets = geometry.simplex_vertices();
+  const Span<int4> tets = geometry.tetrahedrons();
 
   r_values.fill(true);
-  for (const int i_simplex : geometry.simplex_range()) {
+  for (const int i_simplex : geometry.tetrahedrons_range()) {
     const int4 &tet = tets[i_simplex];
     for (const int k : IndexRange(4)) {
       if (!old_values[tet[k]]) {
@@ -312,7 +317,7 @@ static GVArray adapt_simplex_domain_point_to_simplex(const SimplexGeometry &geom
   attribute_math::convert_to_static_type(varray.type(), [&](auto dummy) {
     using T = decltype(dummy);
     if constexpr (!std::is_void_v<attribute_math::DefaultMixer<T>>) {
-      Array<T> values(geometry.simplex_num());
+      Array<T> values(geometry.tetrahedron_num());
       adapt_simplex_domain_point_to_simplex_impl<T>(geometry, varray.typed<T>(), values);
       new_varray = VArray<T>::ForContainer(std::move(values));
     }
@@ -332,10 +337,10 @@ static void adapt_simplex_domain_simplex_to_point_impl(const SimplexGeometry &ge
                                                        const VArray<T> &old_values,
                                                        MutableSpan<T> r_values)
 {
-  const Span<int4> tets = geometry.simplex_vertices();
+  const Span<int4> tets = geometry.tetrahedrons();
   attribute_math::DefaultMixer<T> mixer(r_values);
 
-  threading::parallel_for(geometry.simplex_range(), 128, [&](const IndexRange range) {
+  threading::parallel_for(geometry.tetrahedrons_range(), 128, [&](const IndexRange range) {
     for (const int i_simplex : range) {
       const int4 &tet = tets[i_simplex];
       for (const int k : IndexRange(4)) {
@@ -358,10 +363,10 @@ void adapt_simplex_domain_simplex_to_point_impl(const SimplexGeometry &geometry,
                                                 const VArray<bool> &old_values,
                                                 MutableSpan<bool> r_values)
 {
-  const Span<int4> tets = geometry.simplex_vertices();
+  const Span<int4> tets = geometry.tetrahedrons();
 
   r_values.fill(false);
-  for (const int i_simplex : geometry.simplex_range()) {
+  for (const int i_simplex : geometry.tetrahedrons_range()) {
     if (old_values[i_simplex]) {
       const int4 &tet = tets[i_simplex];
       for (const int k : IndexRange(4)) {
@@ -421,16 +426,16 @@ namespace topology {
 /* Evaluate geometry of a tet from vertex positions.
  * The n-th point is part of the n-th side.
  */
-void simplex_geometry(Span<float3> positions,
-                      const int4 &verts,
-                      float3 &v0,
-                      float3 &v1,
-                      float3 &v2,
-                      float3 &v3,
-                      float3 &n0,
-                      float3 &n1,
-                      float3 &n2,
-                      float3 &n3)
+void tetrahedron_geometry(Span<float3> positions,
+                          const int4 &verts,
+                          float3 &v0,
+                          float3 &v1,
+                          float3 &v2,
+                          float3 &v3,
+                          float3 &n0,
+                          float3 &n1,
+                          float3 &n2,
+                          float3 &n3)
 {
   v0 = positions[verts[0]];
   v1 = positions[verts[1]];
@@ -447,10 +452,12 @@ void simplex_geometry(Span<float3> positions,
   n2 = -(n0 + n1 + n3);
 }
 
-bool simplex_contains_point(const Span<float3> positions, const int4 &verts, const float3 &point)
+bool tetrahedron_contains_point(const Span<float3> positions,
+                                const int4 &verts,
+                                const float3 &point)
 {
   float3 v[4], n[4];
-  simplex_geometry(positions, verts, v[0], v[1], v[2], v[3], n[0], n[1], n[2], n[3]);
+  tetrahedron_geometry(positions, verts, v[0], v[1], v[2], v[3], n[0], n[1], n[2], n[3]);
 
   const float dot0 = math::dot(point - v[0], n[0]);
   const float dot1 = math::dot(point - v[1], n[1]);
@@ -460,7 +467,7 @@ bool simplex_contains_point(const Span<float3> positions, const int4 &verts, con
   return (dot0 <= 0.0f) && (dot1 <= 0.0f) && (dot2 <= 0.0f) && (dot3 <= 0.0f);
 }
 
-//static float3 triangle_circum_center(const float3 &a, const float3 &b, const float3 &c)
+//static float3 triangle_circumcenter(const float3 &a, const float3 &b, const float3 &c)
 //{
 //  const float3 ab = b - a;
 //  const float3 ac = c - a;
@@ -476,7 +483,7 @@ bool simplex_contains_point(const Span<float3> positions, const int4 &verts, con
 //  return a;
 //}
 
-bool simplex_circumcenter(
+bool tetrahedron_circumcenter(
     const float3 &p0, const float3 &p1, const float3 &p2, const float3 &p3, float3 &r_center)
 {
   float eps = 1e-6f;

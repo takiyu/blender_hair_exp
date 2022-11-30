@@ -26,7 +26,7 @@ typedef struct SimplexGeometry {
    *
    * \note This is *not* stored in #CustomData because the int4 type is currently unsupported.
    */
-  int (*simplex_verts)[4];
+  int (*tetrahedrons)[4];
 
   /**
    * All attributes stored on control points (#ATTR_DOMAIN_POINT).
@@ -36,7 +36,7 @@ typedef struct SimplexGeometry {
   /**
    * All attributes stored on simplices (#ATTR_DOMAIN_SIMPLEX).
    */
-  CustomData simplex_data;
+  CustomData tetrahedron_data;
 
   /**
    * The number of points.
@@ -45,7 +45,7 @@ typedef struct SimplexGeometry {
   /**
    * The number of simplices.
    */
-  int simplex_num;
+  int tetrahedron_num;
 } SimplexGeometry;
 
 #ifdef __cplusplus

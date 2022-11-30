@@ -25,7 +25,7 @@ TEST(delaunay, TetTriangles)
 {
   int4 tet{0, 1, 2, 3};
   int3 tri0, tri1, tri2, tri3;
-  topology::simplex_triangles(tet, tri0, tri1, tri2, tri3);
+  topology::tetrahedron_triangles(tet, tri0, tri1, tri2, tri3);
   EXPECT_EQ(int3(0, 1, 2), tri0);
   EXPECT_EQ(int3(1, 0, 3), tri1);
   EXPECT_EQ(int3(2, 1, 3), tri2);
@@ -38,7 +38,7 @@ TEST(delaunay, TetGeometry)
   Array<float3> positions{float3(0, 0, 0), float3(0, 1, 0), float3(1, 0, 0), float3(0, 0, 1)};
   float3 v0, v1, v2, v3;
   float3 n0, n1, n2, n3;
-  topology::simplex_geometry(positions, tet, v0, v1, v2, v3, n0, n1, n2, n3);
+  topology::tetrahedron_geometry(positions, tet, v0, v1, v2, v3, n0, n1, n2, n3);
   EXPECT_EQ(float3(0, 0, 0), v0);
   EXPECT_EQ(float3(0, 1, 0), v1);
   EXPECT_EQ(float3(1, 0, 0), v2);
@@ -55,7 +55,7 @@ TEST(delaunay, TetCircumCenter)
 
   { /* Regular tetrahedron */
     float3 center;
-    bool ok = topology::simplex_circumcenter(float3(1, 0, sqrt(2.0)),
+    bool ok = topology::tetrahedron_circumcenter(float3(1, 0, sqrt(2.0)),
                                              float3(-1, 0, sqrt(2.0)),
                                              float3(0, 1, -sqrt(2.0)),
                                              float3(0, -1, -sqrt(2.0)),
@@ -65,21 +65,21 @@ TEST(delaunay, TetCircumCenter)
   }
   { /* Irregular tetrahedron */
     float3 center;
-    bool ok = topology::simplex_circumcenter(
+    bool ok = topology::tetrahedron_circumcenter(
         float3(-1, 0, -1), float3(2, 1, 0), float3(0, -1, -0.5f), float3(1, -1, 1), center);
     EXPECT_TRUE(ok);
     EXPECT_V3_NEAR(float3(0.083f, 0.722f, 0.528f), center, eps);
   }
   { /* Inverted tetrahedron */
     float3 center;
-    bool ok = topology::simplex_circumcenter(
+    bool ok = topology::tetrahedron_circumcenter(
         float3(2, 1, 0), float3(-1, 0, -1), float3(0, -1, -0.5f), float3(1, -1, 1), center);
     EXPECT_TRUE(ok);
     EXPECT_V3_NEAR(float3(0.083f, 0.722f, 0.528f), center, eps);
   }
   { /* Coplanar point */
     float3 center;
-    bool ok = topology::simplex_circumcenter(
+    bool ok = topology::tetrahedron_circumcenter(
         float3(-1, 0, -1),
         float3(2, 1, 0),
         float3(0, -1, -0.5f),
@@ -89,7 +89,7 @@ TEST(delaunay, TetCircumCenter)
   }
   { /* Single colinear point */
     float3 center;
-    bool ok = topology::simplex_circumcenter(
+    bool ok = topology::tetrahedron_circumcenter(
         float3(-1, 0, -1),
         float3(2, 1, 0),
         float3(0, -1, -0.5f),
@@ -99,7 +99,7 @@ TEST(delaunay, TetCircumCenter)
   }
   { /* All points colinear */
     float3 center;
-    bool ok = topology::simplex_circumcenter(
+    bool ok = topology::tetrahedron_circumcenter(
         float3(0.20784108340740204, -0.7921589612960815, -0.4480397701263428),
         float3(2, 1, 0),
         float3(0, -1, -0.5f),
@@ -109,19 +109,19 @@ TEST(delaunay, TetCircumCenter)
   }
   { /* Two points collapsed */
     float3 center;
-    bool ok = topology::simplex_circumcenter(
+    bool ok = topology::tetrahedron_circumcenter(
         float3(-1, 0, -1), float3(2, 1, 0), float3(0, -1, -0.5f), float3(2, 1, 0), center);
     EXPECT_FALSE(ok);
   }
   { /* Three points collapsed */
     float3 center;
-    bool ok = topology::simplex_circumcenter(
+    bool ok = topology::tetrahedron_circumcenter(
         float3(-1, 0, -1), float3(2, 1, 0), float3(2, 1, 0), float3(2, 1, 0), center);
     EXPECT_FALSE(ok);
   }
   { /* All points collapsed */
     float3 center;
-    bool ok = topology::simplex_circumcenter(
+    bool ok = topology::tetrahedron_circumcenter(
         float3(2, 1, 0), float3(2, 1, 0), float3(2, 1, 0), float3(2, 1, 0), center);
     EXPECT_FALSE(ok);
   }
@@ -649,7 +649,7 @@ TEST(delaunay, DegenerateTetReplace)
     /* Tet 0 is degenerate and has no valid center */
     const bool expect_valid_center = (i != 0);
     EXPECT_EQ(expect_valid_center,
-              topology::simplex_circumcenter(
+              topology::tetrahedron_circumcenter(
                   points[tet[0]], points[tet[1]], points[tet[2]], points[tet[3]], center[i]));
     if (expect_valid_center) {
       EXPECT_V3_NEAR(center[i], float3(0.0f, 0.0f, 0.0f), FLT_EPSILON);

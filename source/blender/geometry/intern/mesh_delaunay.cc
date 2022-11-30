@@ -91,7 +91,7 @@ Mesh *simplex_to_mesh_separate(const Span<float3> positions, const Span<int4> te
 
     /* Local indices, same for every tet */
     int3 tri[4];
-    topology::simplex_triangles(int4{0, 1, 2, 3}, tri[0], tri[1], tri[2], tri[3]);
+    topology::tetrahedron_triangles(int4{0, 1, 2, 3}, tri[0], tri[1], tri[2], tri[3]);
 
     for (const int k : IndexRange(4)) {
       const int poly_i = polystart + k;
@@ -119,7 +119,7 @@ Mesh *simplex_to_mesh_shared(const Span<float3> positions, const Span<int4> tets
   Set<int3> tri_set;
   for (const int tet_i : tets.index_range()) {
     int3 tri[4];
-    topology::simplex_triangles(tets[tet_i], tri[0], tri[1], tri[2], tri[3]);
+    topology::tetrahedron_triangles(tets[tet_i], tri[0], tri[1], tri[2], tri[3]);
     for (const int k : IndexRange(4)) {
       bool flipped;
       const int3 key = get_unique_tri(tri[k], flipped);
@@ -205,12 +205,12 @@ Mesh *simplex_to_dual_mesh(const Span<float3> positions,
     const int4 neighbor = side_map[tet_i];
 
     float3 center;
-    topology::simplex_circumcenter(
+    topology::tetrahedron_circumcenter(
         positions[tet[0]], positions[tet[1]], positions[tet[2]], positions[tet[3]], center);
     copy_v3_v3(tet_centers[tet_i].co, center);
 
     int3 tri[4];
-    topology::simplex_triangles(tet, tri[0], tri[1], tri[2], tri[3]);
+    topology::tetrahedron_triangles(tet, tri[0], tri[1], tri[2], tri[3]);
 
     for (const int k : IndexRange(4)) {
       if (neighbor[k] < 0) {
@@ -270,7 +270,7 @@ Mesh *simplex_to_dual_mesh(const Span<float3> positions,
     while (true) {
       const int4 &tet = tets[tet_i];
       int3 tri[4];
-      topology::simplex_triangles(tet, tri[0], tri[1], tri[2], tri[3]);
+      topology::tetrahedron_triangles(tet, tri[0], tri[1], tri[2], tri[3]);
 
       const int corner_a = (vert_a == tet[0] ?
                                 0 :
@@ -410,7 +410,7 @@ Array<int4> tet_build_side_to_tet_map(Span<int4> tets)
   Map<int3, int2> tet_map;
   for (const int tet_i : tets.index_range()) {
     int3 tri[4];
-    topology::simplex_triangles(tets[tet_i], tri[0], tri[1], tri[2], tri[3]);
+    topology::tetrahedron_triangles(tets[tet_i], tri[0], tri[1], tri[2], tri[3]);
     for (const int k : IndexRange(4)) {
       bool flipped;
       const int3 key = get_unique_tri(tri[k], flipped);
@@ -428,7 +428,7 @@ Array<int4> tet_build_side_to_tet_map(Span<int4> tets)
   Array<int4> result(tets.size());
   for (const int tet_i : tets.index_range()) {
     int3 tri0, tri1, tri2, tri3;
-    topology::simplex_triangles(tets[tet_i], tri0, tri1, tri2, tri3);
+    topology::tetrahedron_triangles(tets[tet_i], tri0, tri1, tri2, tri3);
     bool flipped0, flipped1, flipped2, flipped3;
     const int3 key0 = get_unique_tri(tri0, flipped0);
     const int3 key1 = get_unique_tri(tri1, flipped1);
@@ -453,7 +453,7 @@ Array<int4> tet_build_side_to_tet_map(Span<int4> tets)
 int tet_find_containing(Span<float3> positions, Span<int4> tets, const float3 &point)
 {
   for (const int tet_i : tets.index_range()) {
-    if (topology::simplex_contains_point(positions, tets[tet_i], point)) {
+    if (topology::tetrahedron_contains_point(positions, tets[tet_i], point)) {
       return tet_i;
     }
   }
@@ -465,7 +465,7 @@ int tet_find_circumscribed(Span<float3> positions, Span<int4> tets, const float3
   for (const int tet_i : tets.index_range()) {
     const int4 &tet = tets[tet_i];
     float3 center;
-    if (topology::simplex_circumcenter(
+    if (topology::tetrahedron_circumcenter(
             positions[tet[0]], positions[tet[1]], positions[tet[2]], positions[tet[3]], center)) {
       if (math::distance_squared(point, center) <=
           math::distance_squared(positions[tet[0]], center)) {
@@ -532,10 +532,10 @@ int tet_find_circumscribed_from_known(Span<float3> positions,
     const int4 &tet = tets[tet_i];
 
     float3 v[4], n[4];
-    topology::simplex_geometry(positions, tet, v[0], v[1], v[2], v[3], n[0], n[1], n[2], n[3]);
+    topology::tetrahedron_geometry(positions, tet, v[0], v[1], v[2], v[3], n[0], n[1], n[2], n[3]);
 
     float3 center;
-    if (topology::simplex_circumcenter(v[0], v[1], v[2], v[3], center) &&
+    if (topology::tetrahedron_circumcenter(v[0], v[1], v[2], v[3], center) &&
         math::distance_squared(dst_point, center) <= math::distance_squared(v[0], center)) {
       /* Found violated simplex */
       break;
@@ -622,9 +622,9 @@ Array<bool> check_delaunay_condition(const Span<float3> positions,
       const float3 pos[4] = {
           positions[tet[0]], positions[tet[1]], positions[tet[2]], positions[tet[3]]};
       float3 center;
-      if (topology::simplex_circumcenter(pos[0], pos[1], pos[2], pos[3], center)) {
+      if (topology::tetrahedron_circumcenter(pos[0], pos[1], pos[2], pos[3], center)) {
         if (math::length_squared(new_point - center) <= math::length_squared(pos[0] - center)) {
-          /* Simplex circum-sphere contains the point,
+          /* Simplex circumsphere contains the point,
            * mark it and add to the stack for checking neighbors.
            */
           result[simplex_k] = true;
@@ -665,7 +665,7 @@ void tet_fan_construct(Array<int4> &tets,
     ++removed_tets;
 
     int3 tri[4];
-    topology::simplex_triangles(tets[tet_i], tri[0], tri[1], tri[2], tri[3]);
+    topology::tetrahedron_triangles(tets[tet_i], tri[0], tri[1], tri[2], tri[3]);
 
     const int4 neighbor = side_map[tet_i];
     for (const int k : IndexRange(4)) {
@@ -695,7 +695,7 @@ void tet_fan_construct(Array<int4> &tets,
     if (replace[tet_i]) {
       /* Generate new tet fan */
       int3 tri[4];
-      topology::simplex_triangles(tets[tet_i], tri[0], tri[1], tri[2], tri[3]);
+      topology::tetrahedron_triangles(tets[tet_i], tri[0], tri[1], tri[2], tri[3]);
       const int4 neighbor = side_map[tet_i];
       for (const int k : IndexRange(4)) {
         /* Skip open or internal faces */
@@ -740,7 +740,7 @@ void tet_fan_construct(Array<int4> &tets,
   new_tet_cur = boundary_start;
   for (const int tet_i : tets.index_range()) {
     int3 tri[4];
-    topology::simplex_triangles(tets[tet_i], tri[0], tri[1], tri[2], tri[3]);
+    topology::tetrahedron_triangles(tets[tet_i], tri[0], tri[1], tri[2], tri[3]);
 
     if (replace[tet_i]) {
       /* Generate new tet fan */

@@ -52,11 +52,11 @@ class SimplexGeometry : public ::SimplexGeometry {
    */
   int point_num() const;
   /**
-   * The number of simplices.
+   * The number of tetrahedrons.
    */
-  int simplex_num() const;
+  int tetrahedron_num() const;
   IndexRange points_range() const;
-  IndexRange simplex_range() const;
+  IndexRange tetrahedrons_range() const;
 
   /**
    * Point positions.
@@ -67,8 +67,8 @@ class SimplexGeometry : public ::SimplexGeometry {
   /**
    * Simplex vertex indices.
    */
-  Span<int4> simplex_vertices() const;
-  MutableSpan<int4> simplex_vertices_for_write();
+  Span<int4> tetrahedrons() const;
+  MutableSpan<int4> tetrahedrons_for_write();
 
   blender::bke::AttributeAccessor attributes() const;
   blender::bke::MutableAttributeAccessor attributes_for_write();
@@ -78,7 +78,7 @@ class SimplexGeometry : public ::SimplexGeometry {
    */
 
   /** Change the number of elements. New values should be properly initialized afterwards. */
-  void resize(int point_num, int simplex_num);
+  void resize(int point_num, int tetrahedron_num);
 
   /** Call after any operation that changes the positions */
   void tag_positions_changed();
@@ -124,7 +124,8 @@ namespace topology {
 /* Returns index triplets for each of the 4 tet sides.
  * For a tet (A, B, C, D) the sides are defined as triangles ABC, BAD, CBD, DAC.
  */
-inline void simplex_triangles(const int4 &verts, int3 &r_tri0, int3 &r_tri1, int3 &r_tri2, int3 &r_tri3)
+inline void tetrahedron_triangles(
+    const int4 &verts, int3 &r_tri0, int3 &r_tri1, int3 &r_tri2, int3 &r_tri3)
 {
   r_tri0 = int3(verts[0], verts[1], verts[2]);
   r_tri1 = int3(verts[1], verts[0], verts[3]);
@@ -136,8 +137,8 @@ inline void simplex_triangles(const int4 &verts, int3 &r_tri0, int3 &r_tri1, int
  * The n-th point is part of the n-th side.
  * Normal vectors are not normalized!
  */
-void simplex_geometry(Span<float3> positions,
-                      const int4 &verts,
+void tetrahedron_geometry(Span<float3> positions,
+                      const int4 &tet,
                       float3 &v0,
                       float3 &v1,
                       float3 &v2,
@@ -147,9 +148,9 @@ void simplex_geometry(Span<float3> positions,
                       float3 &n2,
                       float3 &n3);
 
-bool simplex_contains_point(Span<float3> positions, const int4 &verts, const float3 &point);
+bool tetrahedron_contains_point(Span<float3> positions, const int4 &tet, const float3 &point);
 
-bool simplex_circumcenter(
+bool tetrahedron_circumcenter(
     const float3 &p0, const float3 &p1, const float3 &p2, const float3 &p3, float3 &r_center);
 
 }  // namespace topology
@@ -164,17 +165,17 @@ inline int SimplexGeometry::point_num() const
 {
   return ((::SimplexGeometry *)this)->point_num;
 }
-inline int SimplexGeometry::simplex_num() const
+inline int SimplexGeometry::tetrahedron_num() const
 {
-  return ((::SimplexGeometry *)this)->simplex_num;
+  return ((::SimplexGeometry *)this)->tetrahedron_num;
 }
 inline IndexRange SimplexGeometry::points_range() const
 {
   return IndexRange(this->point_num());
 }
-inline IndexRange SimplexGeometry::simplex_range() const
+inline IndexRange SimplexGeometry::tetrahedrons_range() const
 {
-  return IndexRange(this->simplex_num());
+  return IndexRange(this->tetrahedron_num());
 }
 
 /** \} */

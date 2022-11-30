@@ -76,11 +76,11 @@ static void node_geo_exec(GeoNodeExecParams params)
     switch (output_type) {
       case GEO_NODE_SIMPLEX_TO_MESH_TETRAHEDRA:
         mesh = geometry::simplex::simplex_to_mesh(
-            geometry->positions(), geometry->simplex_vertices(), mode);
+            geometry->positions(), geometry->tetrahedrons(), mode);
         break;
       case GEO_NODE_SIMPLEX_TO_MESH_DUAL:
         mesh = geometry::simplex::simplex_to_dual_mesh(
-            geometry->positions(), geometry->simplex_vertices(), mode);
+            geometry->positions(), geometry->tetrahedrons(), mode);
         break;
       default:
         BLI_assert_unreachable();

@@ -115,7 +115,7 @@ static void node_geo_exec(GeoNodeExecParams params)
 
   SimplexGeometry *geometry = new SimplexGeometry(points.size(), tets.size());
   geometry->positions_for_write().copy_from(points);
-  geometry->simplex_vertices_for_write().copy_from(tets);
+  geometry->tetrahedrons_for_write().copy_from(tets);
 
   params.set_output("Geometry", GeometrySet::create_with_simplex(geometry));
 }

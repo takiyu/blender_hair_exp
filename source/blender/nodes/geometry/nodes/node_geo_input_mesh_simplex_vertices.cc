@@ -45,7 +45,7 @@ enum class VertNumber { V1, V2, V3, V4 };
 template<int V>
 static VArray<int> construct_simplex_verts_gvarray(const SimplexGeometry &geometry)
 {
-  const Span<int4> verts = geometry.simplex_vertices();
+  const Span<int4> verts = geometry.tetrahedrons();
   return VArray<int>::ForFunc(verts.size(), [verts](const int i) -> int { return verts[i][V]; });
 }
 
@@ -119,7 +119,7 @@ template <int V>
 static VArray<float3> construct_simplex_positions_gvarray(const SimplexGeometry &geometry)
 {
   const Span<float3> positions = geometry.positions();
-  const Span<int4> verts = geometry.simplex_vertices();
+  const Span<int4> verts = geometry.tetrahedrons();
 
   return VArray<float3>::ForFunc(verts.size(), [positions, verts](const int i) {
     const int index = verts[i][V];
