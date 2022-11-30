@@ -317,9 +317,9 @@ void BKE_remesh_reproject_sculpt_face_sets(Mesh *target, const Mesh *source)
   using namespace blender::bke;
   const AttributeAccessor src_attributes = source->attributes();
   MutableAttributeAccessor dst_attributes = target->attributes_for_write();
-  const MPoly *target_polys = (const MPoly *)CustomData_get_layer(&target->pdata, CD_MPOLY);
   const Span<float3> target_positions = target->positions();
-  const MLoop *target_loops = (const MLoop *)CustomData_get_layer(&target->ldata, CD_MLOOP);
+  const Span<MPoly> target_polys = target->polys();
+  const Span<MLoop> target_loops = target->loops();
 
   const VArray<int> src_face_sets = src_attributes.lookup<int>(".sculpt_face_set",
                                                                ATTR_DOMAIN_FACE);
@@ -398,6 +398,7 @@ void BKE_remesh_reproject_vertex_paint(Mesh *target, const Mesh *source)
     size_t data_size = CustomData_sizeof(layer->type);
     void *target_data = target_cdata->layers[layer_i].data;
     void *source_data = layer->data;
+    const Span<float3> target_positions = target->positions();
 
     if (domain == ATTR_DOMAIN_POINT) {
       blender::threading::parallel_for(
