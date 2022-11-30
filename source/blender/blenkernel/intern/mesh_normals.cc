@@ -213,7 +213,7 @@ void BKE_mesh_calc_poly_normal(const MPoly *mpoly,
 
 struct MeshCalcNormalsData_Poly {
   const float (*positions)[3];
-  const int *corner_verts;
+  const MLoop *mloop;
   const MPoly *mpoly;
 
   /** Polygon normal output. */
@@ -226,13 +226,12 @@ static void mesh_calc_normals_poly_fn(void *__restrict userdata,
 {
   const MeshCalcNormalsData_Poly *data = (MeshCalcNormalsData_Poly *)userdata;
   const MPoly *mp = &data->mpoly[pidx];
-  BKE_mesh_calc_poly_normal(
-      mp, data->corner_verts + mp->loopstart, data->positions, data->pnors[pidx]);
+  BKE_mesh_calc_poly_normal(mp, data->mloop + mp->loopstart, data->positions, data->pnors[pidx]);
 }
 
 void BKE_mesh_calc_normals_poly(const float (*positions)[3],
                                 int /*mvert_len*/,
-                                const int *corner_verts,
+                                const MLoop *mloop,
                                 int /*mloop_len*/,
                                 const MPoly *mpoly,
                                 int mpoly_len,
@@ -246,7 +245,7 @@ void BKE_mesh_calc_normals_poly(const float (*positions)[3],
 
   MeshCalcNormalsData_Poly data = {};
   data.mpoly = mpoly;
-  data.corner_verts = corner_verts;
+  data.mloop = mloop;
   data.positions = positions;
   data.pnors = r_poly_normals;
 
@@ -264,94 +263,94 @@ void BKE_mesh_calc_normals_poly(const float (*positions)[3],
 
 struct MeshCalcNormalsData_PolyAndVertex {
   const float (*positions)[3];
-  const int *corner_verts;
+  const MLoop *mloop;
   const MPoly *mpoly;
 
-  /** Polygon normal output. */
-  float (*pnors)[3];
-  /** Vertex normal output. */
-  float (*vnors)[3];
-};
-
-static void mesh_calc_normals_poly_and_vertex_accum_fn(void *__restrict userdata,
-                                                       const int pidx,
-                                                       const TaskParallelTLS *__restrict /*tls*/)
-{
-  const MeshCalcNormalsData_PolyAndVertex *data = (MeshCalcNormalsData_PolyAndVertex *)userdata;
-  const MPoly *mp = &data->mpoly[pidx];
-  const int *corner_verts = data->corner_verts;
-  const float(*positions)[3] = data->positions;
-  float(*vnors)[3] = data->vnors;
-
-  float pnor_temp[3];
-  float *pnor = data->pnors ? data->pnors[pidx] : pnor_temp;
-
-  const int i_end = mp->totloop - 1;
-
-  /* Polygon Normal and edge-vector. */
-  /* Inline version of #BKE_mesh_calc_poly_normal, also does edge-vectors. */
+  /* Zero the vertex normal array for accumulation. */
   {
-    zero_v3(pnor);
-    /* Newell's Method */
-    const float *v_curr = positions[corner_verts[i_end]];
-    for (int i_next = 0; i_next <= i_end; i_next++) {
-      const float *v_next = positions[corner_verts[i_next]];
-      add_newell_cross_v3_v3v3(pnor, v_curr, v_next);
-      v_curr = v_next;
+    memset(vert_normals.data(), 0, vert_normals.as_span().size_in_bytes());
+  }
+
+  static void mesh_calc_normals_poly_and_vertex_accum_fn(void *__restrict userdata,
+                                                         const int pidx,
+                                                         const TaskParallelTLS *__restrict /*tls*/)
+  {
+    const MeshCalcNormalsData_PolyAndVertex *data = (MeshCalcNormalsData_PolyAndVertex *)userdata;
+    const MPoly *mp = &data->mpoly[pidx];
+    const MLoop *ml = &data->mloop[mp->loopstart];
+    const float(*positions)[3] = data->positions;
+    float(*vnors)[3] = data->vnors;
+
+    float3 &pnor = poly_normals[poly_i];
+
+    const int i_end = poly.totloop - 1;
+
+    /* Polygon Normal and edge-vector. */
+    /* Inline version of #BKE_mesh_calc_poly_normal, also does edge-vectors. */
+    {
+      zero_v3(pnor);
+      /* Newell's Method */
+      const float *v_curr = positions[ml[i_end].v];
+      for (int i_next = 0; i_next <= i_end; i_next++) {
+        const float *v_next = positions[ml[i_next].v];
+        add_newell_cross_v3_v3v3(pnor, v_curr, v_next);
+        v_curr = v_next;
+      }
+      if (UNLIKELY(normalize_v3(pnor) == 0.0f)) {
+        pnor[2] = 1.0f; /* Other axes set to zero. */
+      }
     }
-    if (UNLIKELY(normalize_v3(pnor) == 0.0f)) {
-      pnor[2] = 1.0f; /* Other axes set to zero. */
+
+    /* Accumulate angle weighted face normal into the vertex normal. */
+    /* Inline version of #accumulate_vertex_normals_poly_v3. */
+    {
+      float edvec_prev[3], edvec_next[3], edvec_end[3];
+      const float *v_curr = positions[ml[i_end].v];
+      sub_v3_v3v3(edvec_prev, positions[ml[i_end - 1].v], v_curr);
+      normalize_v3(edvec_prev);
+      copy_v3_v3(edvec_end, edvec_prev);
+
+      for (int i_next = 0, i_curr = i_end; i_next <= i_end; i_curr = i_next++) {
+        const float *v_next = positions[ml[i_next].v];
+
+        /* Skip an extra normalization by reusing the first calculated edge. */
+        if (i_next != i_end) {
+          sub_v3_v3v3(edvec_next, v_curr, v_next);
+          normalize_v3(edvec_next);
+        }
+        else {
+          copy_v3_v3(edvec_next, edvec_end);
+        }
+
+        /* Calculate angle between the two poly edges incident on this vertex. */
+        const float fac = saacos(-dot_v3v3(edvec_prev, edvec_next));
+        const float vnor_add[3] = {pnor[0] * fac, pnor[1] * fac, pnor[2] * fac};
+
+        add_v3_v3_atomic(vnors[ml[i_curr].v], vnor_add);
+        v_curr = v_next;
+        copy_v3_v3(edvec_prev, edvec_next);
+      }
     }
   }
 
-  /* Accumulate angle weighted face normal into the vertex normal. */
-  /* Inline version of #accumulate_vertex_normals_poly_v3. */
+  /* Normalize and validate computed vertex normals. */
   {
-    float edvec_prev[3], edvec_next[3], edvec_end[3];
-    const float *v_curr = positions[corner_verts[i_end]];
-    sub_v3_v3v3(edvec_prev, positions[corner_verts[i_end - 1]], v_curr);
-    normalize_v3(edvec_prev);
-    copy_v3_v3(edvec_end, edvec_prev);
+    threading::parallel_for(positions.index_range(), 1024, [&](const IndexRange range) {
+      for (const int vert_i : range) {
+        float *no = vert_normals[vert_i];
 
-    for (int i_next = 0, i_curr = i_end; i_next <= i_end; i_curr = i_next++) {
-      const float *v_next = positions[corner_verts[i_next]];
-
-      /* Skip an extra normalization by reusing the first calculated edge. */
-      if (i_next != i_end) {
-        sub_v3_v3v3(edvec_next, v_curr, v_next);
-        normalize_v3(edvec_next);
+        if (UNLIKELY(normalize_v3(no) == 0.0f)) {
+          /* Following Mesh convention; we use vertex coordinate itself for normal in this case. */
+          normalize_v3_v3(no, positions[vert_i]);
+        }
       }
-      else {
-        copy_v3_v3(edvec_next, edvec_end);
-      }
-
-      /* Calculate angle between the two poly edges incident on this vertex. */
-      const float fac = saacos(-dot_v3v3(edvec_prev, edvec_next));
-      const float vnor_add[3] = {pnor[0] * fac, pnor[1] * fac, pnor[2] * fac};
-
-      add_v3_v3_atomic(vnors[corner_verts[i_curr]], vnor_add);
-      v_curr = v_next;
-      copy_v3_v3(edvec_prev, edvec_next);
-    }
-  }
-}
-
-static void mesh_calc_normals_poly_and_vertex_finalize_fn(
-    void *__restrict userdata, const int vidx, const TaskParallelTLS *__restrict /*tls*/)
-{
-  MeshCalcNormalsData_PolyAndVertex *data = (MeshCalcNormalsData_PolyAndVertex *)userdata;
-
-  float *no = data->vnors[vidx];
-
-  if (UNLIKELY(normalize_v3(no) == 0.0f)) {
-    /* Following Mesh convention; we use vertex coordinate itself for normal in this case. */
-    normalize_v3_v3(no, data->positions[vidx]);
+    });
   }
 }
 
 void BKE_mesh_calc_normals_poly_and_vertex(const float (*positions)[3],
                                            const int mvert_len,
-                                           const int *corner_verts,
+                                           const MLoop *mloop,
                                            const int /*mloop_len*/,
                                            const MPoly *mpoly,
                                            const int mpoly_len,
@@ -366,7 +365,7 @@ void BKE_mesh_calc_normals_poly_and_vertex(const float (*positions)[3],
 
   MeshCalcNormalsData_PolyAndVertex data = {};
   data.mpoly = mpoly;
-  data.corner_verts = corner_verts;
+  data.mloop = mloop;
   data.positions = positions;
   data.pnors = r_poly_normals;
   data.vnors = r_vert_normals;

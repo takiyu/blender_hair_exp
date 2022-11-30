@@ -569,6 +569,20 @@ Array<Vector<int>> build_vert_to_edge_map(const Span<MEdge> edges, const int ver
   return map;
 }
 
+Array<Vector<int>> build_vert_to_poly_map(const Span<MPoly> polys,
+                                          const Span<int> corner_verts,
+                                          int verts_num)
+{
+  Array<Vector<int>> map(verts_num);
+  for (const int64_t i : polys.index_range()) {
+    const MPoly &poly = polys[i];
+    for (const int64_t vert_i : corner_verts.slice(poly.loopstart, poly.totloop)) {
+      map[int(vert_i)].append(int(i));
+    }
+  }
+  return map;
+}
+
 Array<Vector<int>> build_vert_to_loop_map(const Span<int> corner_verts, const int verts_num)
 {
   Array<Vector<int>> map(verts_num);
