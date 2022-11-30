@@ -316,11 +316,13 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
   result = BKE_mesh_new_nomain_from_template(mesh, maxvert, maxedge, 0, maxloop, maxpoly);
 
   const MPoly *orig_mpoly = BKE_mesh_polys(mesh);
-  const MLoop *orig_mloop = BKE_mesh_loops(mesh);
+  const int *orig_corner_verts = BKE_mesh_corner_verts(mesh);
+  const int *orig_corner_edges = BKE_mesh_corner_edges(mesh);
   float(*positions)[3] = BKE_mesh_positions_for_write(result);
   MEdge *edges = BKE_mesh_edges_for_write(result);
   MPoly *mpoly = BKE_mesh_polys_for_write(result);
-  MLoop *mloop = BKE_mesh_loops_for_write(result);
+  int *corner_verts = BKE_mesh_corner_verts_for_write(result);
+  int *corner_edges = BKE_mesh_corner_edges_for_write(result);
 
   MLoopCol *mloopcols_index = CustomData_get_layer_named(
       &result->ldata, CD_PROP_BYTE_COLOR, pimd->index_layer_name);
@@ -486,23 +488,23 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
       mp->loopstart += p_skip * totloop;
 
       {
-        const MLoop *inML = orig_mloop + inMP->loopstart;
-        MLoop *ml = mloop + mp->loopstart;
+        int orig_corner_i = inMP->loopstart;
+        int dst_corner_i = mp->loopstart;
         int j = mp->totloop;
 
         CustomData_copy_data(&mesh->ldata, &result->ldata, inMP->loopstart, mp->loopstart, j);
-        for (; j; j--, ml++, inML++) {
-          ml->v = inML->v + (p_skip * totvert);
-          ml->e = inML->e + (p_skip * totedge);
-          const int ml_index = (ml - mloop);
+        for (; j; j--, orig_corner_i++, dst_corner_i++) {
+          corner_verts[dst_corner_i] = orig_corner_verts[orig_corner_i] + (p_skip * totvert);
+          corner_edges[dst_corner_i] = orig_corner_edges[orig_corner_i] + (p_skip * totedge);
+          const int vert_i = corner_verts[orig_corner_i];
           if (mloopcols_index != NULL) {
-            const int part_index = vert_part_index[ml->v];
-            store_float_in_vcol(&mloopcols_index[ml_index],
+            const int part_index = vert_part_index[vert_i];
+            store_float_in_vcol(&mloopcols_index[dst_corner_i],
                                 (float)part_index / (float)(psys->totpart - 1));
           }
           if (mloopcols_value != NULL) {
-            const float part_value = vert_part_value[ml->v];
-            store_float_in_vcol(&mloopcols_value[ml_index], part_value);
+            const float part_value = vert_part_value[vert_i];
+            store_float_in_vcol(&mloopcols_value[dst_corner_i], part_value);
           }
         }
       }

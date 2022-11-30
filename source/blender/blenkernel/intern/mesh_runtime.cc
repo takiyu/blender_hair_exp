@@ -325,7 +325,8 @@ bool BKE_mesh_runtime_is_valid(Mesh *me_eval)
   MutableSpan<float3> positions = me_eval->positions_for_write();
   MutableSpan<MEdge> edges = me_eval->edges_for_write();
   MutableSpan<MPoly> polys = me_eval->polys_for_write();
-  MutableSpan<MLoop> loops = me_eval->loops_for_write();
+  MutableSpan<int> corner_verts = me_eval->corner_verts_for_write();
+  MutableSpan<int> corner_edges = me_eval->corner_edges_for_write();
 
   is_valid &= BKE_mesh_validate_all_customdata(
       &me_eval->vdata,

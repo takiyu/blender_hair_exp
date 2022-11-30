@@ -42,7 +42,8 @@ typedef struct {
   const float (*vert_normals)[3];
   MEdge *medge;
   MFace *mface;
-  MLoop *mloop;
+  int *corner_verts;
+  int *corner_edges;
   MPoly *mpoly;
 
   /* Cached */

@@ -115,7 +115,7 @@ static void mesh_data_init_primitives(MeshData &mesh_data)
     for (int j = 0; j < 3; j++) {
       MeshUVVert uv_vert;
       uv_vert.loop = tri.tri[j];
-      uv_vert.vertex = &mesh_data.vertices[mesh_data.mloop[uv_vert.loop].v];
+      uv_vert.vertex = &mesh_data.vertices[mesh_data.corner_verts[uv_vert.loop]];
       uv_vert.uv = mesh_data.mloopuv[uv_vert.loop].uv;
       primitive.vertices.append(uv_vert);
     }
@@ -131,8 +131,8 @@ static void mesh_data_init_edges(MeshData &mesh_data)
     const MLoopTri &tri = mesh_data.looptri[i];
     MeshPrimitive &primitive = mesh_data.primitives[i];
     for (int j = 0; j < 3; j++) {
-      int v1 = mesh_data.mloop[tri.tri[j]].v;
-      int v2 = mesh_data.mloop[tri.tri[(j + 1) % 3]].v;
+      int v1 = mesh_data.corner_verts[tri.tri[j]];
+      int v2 = mesh_data.corner_verts[tri.tri[(j + 1) % 3]];
 
       void **edge_index_ptr;
       int64_t edge_index;
@@ -218,12 +218,12 @@ static void mesh_data_init(MeshData &mesh_data)
 MeshData::MeshData(const MLoopTri *looptri,
                    const int64_t looptri_len,
                    const int64_t vert_len,
-                   const MLoop *mloop,
+                   const int *corner_verts,
                    const MLoopUV *mloopuv)
     : looptri(looptri),
       looptri_len(looptri_len),
       vert_len(vert_len),
-      mloop(mloop),
+      corner_verts(corner_verts),
       mloopuv(mloopuv)
 {
   mesh_data_init(*this);

@@ -111,7 +111,7 @@ void BKE_mesh_ensure_default_orig_index_customdata_no_check(struct Mesh *mesh);
  * Find the index of the loop in 'poly' which references vertex,
  * returns -1 if not found
  */
-int poly_find_loop_from_vert(const struct MPoly *poly, const int *poly_corner_verts, int vert);
+int poly_find_loop_from_vert(const struct MPoly *poly, const int *poly_verts, int vert);
 /**
  * Fill \a r_adj with the loop indices in \a poly adjacent to the
  * vertex. Returns the index of the loop matching vertex, or -1 if the
@@ -131,8 +131,9 @@ int BKE_mesh_edge_other_vert(const struct MEdge *e, int v);
  * Sets each output array element to the edge index if it is a real edge, or -1.
  */
 void BKE_mesh_looptri_get_real_edges(const struct MEdge *edges,
-                                     const struct MLoop *loops,
-                                     const struct MLoopTri *looptri,
+                                     const int *corner_verts,
+                                     const int *corner_edges,
+                                     const struct MLoopTri *tri,
                                      int r_edges[3]);
 
 /**
@@ -439,7 +440,7 @@ bool BKE_mesh_vertex_normals_are_dirty(const struct Mesh *mesh);
 bool BKE_mesh_poly_normals_are_dirty(const struct Mesh *mesh);
 
 void BKE_mesh_calc_poly_normal(const struct MPoly *mpoly,
-                               const int *poly_corner_verts,
+                               const int *poly_verts,
                                const float (*positions)[3],
                                float r_no[3]);
 
@@ -919,7 +920,8 @@ bool BKE_mesh_validate_arrays(struct Mesh *me,
                               unsigned int totedge,
                               struct MFace *mfaces,
                               unsigned int totface,
-                              struct MLoop *mloops,
+                              int *corner_verts,
+                              int *corner_edges,
                               unsigned int totloop,
                               struct MPoly *mpolys,
                               unsigned int totpoly,
@@ -1045,22 +1047,22 @@ BLI_INLINE MPoly *BKE_mesh_polys_for_write(Mesh *mesh)
   return (MPoly *)CustomData_duplicate_referenced_layer(&mesh->pdata, CD_MPOLY, mesh->totpoly);
 }
 
-BLI_INLINE const MLoop *BKE_mesh_corner_verts(const Mesh *mesh)
+BLI_INLINE const int *BKE_mesh_corner_verts(const Mesh *mesh)
 {
-  return (const MLoop *)nullptr;
+  return (const int *)NULL;
 }
 BLI_INLINE int *BKE_mesh_corner_verts_for_write(Mesh *mesh)
 {
-  return (int *)nullptr;
+  return (int *)NULL;
 }
 
 BLI_INLINE const int *BKE_mesh_corner_edges(const Mesh *mesh)
 {
-  return (const int *)nullptr;
+  return (const int *)NULL;
 }
 BLI_INLINE int *BKE_mesh_corner_edges_for_write(Mesh *mesh)
 {
-  return (int *)nullptr;
+  return (int *)NULL;
 }
 
 BLI_INLINE const MDeformVert *BKE_mesh_deform_verts(const Mesh *mesh)
@@ -1112,15 +1114,6 @@ inline blender::Span<MPoly> Mesh::polys() const
 inline blender::MutableSpan<MPoly> Mesh::polys_for_write()
 {
   return {BKE_mesh_polys_for_write(this), this->totpoly};
-}
-
-inline blender::Span<MLoop> Mesh::loops() const
-{
-  return {BKE_mesh_loops(this), this->totloop};
-}
-inline blender::MutableSpan<MLoop> Mesh::loops_for_write()
-{
-  return {BKE_mesh_loops_for_write(this), this->totloop};
 }
 
 inline blender::Span<int> Mesh::corner_verts() const

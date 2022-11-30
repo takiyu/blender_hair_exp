@@ -96,7 +96,7 @@ struct MeshData {
   const MLoopTri *looptri;
   const int64_t looptri_len;
   const int64_t vert_len;
-  const MLoop *mloop;
+  const int *corner_verts;
   const MLoopUV *mloopuv;
 
  public:
@@ -109,12 +109,12 @@ struct MeshData {
   explicit MeshData(const MLoopTri *looptri,
                     const int64_t looptri_len,
                     const int64_t vert_len,
-                    const MLoop *mloop,
+                    const int *corner_verts,
                     const MLoopUV *mloopuv)
       : looptri(looptri),
         looptri_len(looptri_len),
         vert_len(vert_len),
-        mloop(mloop),
+        corner_verts(corner_verts),
         mloopuv(mloopuv)
   {
     init_vertices();
@@ -145,7 +145,7 @@ struct MeshData {
       for (int j = 0; j < 3; j++) {
         MeshUVVert uv_vert;
         uv_vert.loop = tri.tri[j];
-        uv_vert.vertex = &vertices[mloop[uv_vert.loop].v];
+        uv_vert.vertex = &vertices[corner_verts[uv_vert.loop]];
         uv_vert.uv = mloopuv[uv_vert.loop].uv;
         primitive.vertices.append(uv_vert);
       }
@@ -161,8 +161,8 @@ struct MeshData {
       const MLoopTri &tri = looptri[i];
       MeshPrimitive &primitive = primitives[i];
       for (int j = 0; j < 3; j++) {
-        int v1 = mloop[tri.tri[j]].v;
-        int v2 = mloop[tri.tri[(j + 1) % 3]].v;
+        int v1 = corner_verts[tri.tri[j]];
+        int v2 = corner_verts[tri.tri[(j + 1) % 3]];
         /* TODO: Use lookup_ptr to be able to store edge 0. */
         void *v = BLI_edgehash_lookup(eh, v1, v2);
         int64_t edge_index;

@@ -132,7 +132,6 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
 
   Mesh *result;
   MEdge *me;
-  MLoop *ml;
   MPoly *mp;
   float mtx[4][4];
   float plane_co[3], plane_no[3];
@@ -218,7 +217,12 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
     memcpy(BKE_mesh_edges_for_write(result), BKE_mesh_edges(mesh), sizeof(MEdge) * mesh->totedge);
   }
   if (!CustomData_has_layer(&mesh->pdata, CD_MPOLY)) {
-    memcpy(BKE_mesh_loops_for_write(result), BKE_mesh_loops(mesh), sizeof(MLoop) * mesh->totloop);
+    memcpy(BKE_mesh_corner_verts_for_write(result),
+           BKE_mesh_corner_verts(mesh),
+           sizeof(int) * mesh->totloop);
+    memcpy(BKE_mesh_corner_edges_for_write(result),
+           BKE_mesh_corner_edges(mesh),
+           sizeof(int) * mesh->totloop);
     memcpy(BKE_mesh_polys_for_write(result), BKE_mesh_polys(mesh), sizeof(MPoly) * mesh->totpoly);
   }
 
@@ -316,9 +320,8 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
 
   /* adjust mirrored poly loopstart indices, and reverse loop order (normals) */
   mp = BKE_mesh_polys_for_write(result) + maxPolys;
-  ml = BKE_mesh_loops_for_write(result);
+  int *corner_edges = BKE_mesh_loops_for_write(result);
   for (i = 0; i < maxPolys; i++, mp++) {
-    MLoop *ml2;
     int j, e;
 
     /* reverse the loop, but we keep the first vertex in the face the same,
@@ -334,21 +337,22 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
                            1);
     }
 
-    ml2 = ml + mp->loopstart + maxLoops;
-    e = ml2[0].e;
+    int *corner_edge_2 = corner_edges + mp->loopstart + maxLoops;
+    e = corner_edge_2[0];
     for (j = 0; j < mp->totloop - 1; j++) {
-      ml2[j].e = ml2[j + 1].e;
+      corner_edge_2[j] = corner_edge_2[j + 1];
     }
-    ml2[mp->totloop - 1].e = e;
+    corner_edge_2[mp->totloop - 1] = e;
 
     mp->loopstart += maxLoops;
   }
 
   /* adjust mirrored loop vertex and edge indices */
-  ml = BKE_mesh_loops_for_write(result) + maxLoops;
-  for (i = 0; i < maxLoops; i++, ml++) {
-    ml->v += maxVerts;
-    ml->e += maxEdges;
+  int *corner_verts = BKE_mesh_corner_verts_for_write(result) + maxLoops;
+  int *corner_edges = BKE_mesh_corner_edges_for_write(result) + maxLoops;
+  for (i = 0; i < maxLoops; i++) {
+    corner_verts[i] += maxVerts;
+    corner_edges[i] += maxEdges;
   }
 
   /* handle uvs,

@@ -92,7 +92,7 @@ static void extract_sculpt_data_init(const MeshRenderData *mr,
       for (int l = 0; l < p->totloop; l++) {
         float v_mask = 0.0f;
         if (cd_mask) {
-          v_mask = cd_mask[loops[mp_loop].v];
+          v_mask = cd_mask[mr->corner_verts[mp_loop]];
         }
         vbo_data->mask = v_mask;
 
@@ -131,7 +131,7 @@ static void extract_sculpt_data_init_subdiv(const DRWSubdivCache *subdiv_cache,
   const float *cd_mask = (const float *)CustomData_get_layer(cd_vdata, CD_PAINT_MASK);
 
   const Span<MPoly> coarse_polys = coarse_mesh->polys();
-  const Span<MLoop> coarse_loops = coarse_mesh->loops();
+  const Span<int> coarse_corner_verts = coarse_mesh->corner_verts();
 
   if (cd_mask) {
     GPUVertFormat mask_format = {0};
@@ -147,8 +147,7 @@ static void extract_sculpt_data_init_subdiv(const DRWSubdivCache *subdiv_cache,
 
       for (int loop_index = mpoly->loopstart; loop_index < mpoly->loopstart + mpoly->totloop;
            loop_index++) {
-        const MLoop *ml = &coarse_loops[loop_index];
-        *v_mask++ = cd_mask[ml->v];
+        *v_mask++ = cd_mask[coarse_corner_verts[loop_index]];
       }
     }
 

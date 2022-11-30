@@ -209,7 +209,6 @@ static void extract_edituv_lines_iter_poly_mesh(const MeshRenderData *mr,
                                                 void *_data)
 {
   MeshExtract_EditUvElem_Data *data = static_cast<MeshExtract_EditUvElem_Data *>(_data);
-  const MLoop *mloop = mr->mloop;
   const int ml_index_end = mp->loopstart + mp->totloop;
 
   bool mp_hidden, mp_select;
@@ -224,12 +223,12 @@ static void extract_edituv_lines_iter_poly_mesh(const MeshRenderData *mr,
   }
 
   for (int ml_index = mp->loopstart; ml_index < ml_index_end; ml_index += 1) {
-    const MLoop *ml = &mloop[ml_index];
+    const int edge_i = mr->corner_edges[ml_index];
 
     const int ml_index_last = mp->totloop + mp->loopstart - 1;
     const int ml_index_next = (ml_index == ml_index_last) ? mp->loopstart : (ml_index + 1);
     const bool real_edge = (mr->e_origindex == nullptr ||
-                            mr->e_origindex[ml->e] != ORIGINDEX_NONE);
+                            mr->e_origindex[edge_i] != ORIGINDEX_NONE);
     edituv_edge_add(data, mp_hidden || !real_edge, mp_select, ml_index, ml_index_next);
   }
 }
@@ -400,12 +399,11 @@ static void extract_edituv_points_iter_poly_mesh(const MeshRenderData *mr,
   const bool mp_hidden = (efa) ? BM_elem_flag_test_bool(efa, BM_ELEM_HIDDEN) : true;
   const bool mp_select = (efa) ? BM_elem_flag_test_bool(efa, BM_ELEM_SELECT) : false;
 
-  const MLoop *mloop = mr->mloop;
   const int ml_index_end = mp->loopstart + mp->totloop;
   for (int ml_index = mp->loopstart; ml_index < ml_index_end; ml_index += 1) {
-    const MLoop *ml = &mloop[ml_index];
+    const int vert_i = mr->corner_verts[ml_index];
 
-    const bool real_vert = !mr->v_origindex || mr->v_origindex[ml->v] != ORIGINDEX_NONE;
+    const bool real_vert = !mr->v_origindex || mr->v_origindex[vert_i] != ORIGINDEX_NONE;
     edituv_point_add(data, mp_hidden || !real_vert, mp_select, ml_index);
   }
 }
@@ -559,13 +557,12 @@ static void extract_edituv_fdots_iter_poly_mesh(const MeshRenderData *mr,
   if (mr->use_subsurf_fdots) {
     const BLI_bitmap *facedot_tags = mr->me->runtime->subsurf_face_dot_tags;
 
-    const MLoop *mloop = mr->mloop;
     const int ml_index_end = mp->loopstart + mp->totloop;
     for (int ml_index = mp->loopstart; ml_index < ml_index_end; ml_index += 1) {
-      const MLoop *ml = &mloop[ml_index];
+      const int vert_i = mr->corner_verts[ml_index];
 
       const bool real_fdot = !mr->p_origindex || (mr->p_origindex[mp_index] != ORIGINDEX_NONE);
-      const bool subd_fdot = BLI_BITMAP_TEST(facedot_tags, ml->v);
+      const bool subd_fdot = BLI_BITMAP_TEST(facedot_tags, vert_i);
       edituv_facedot_add(data, mp_hidden || !real_fdot || !subd_fdot, mp_select, mp_index);
     }
   }

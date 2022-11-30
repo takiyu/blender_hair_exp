@@ -307,6 +307,7 @@ static void calc_boundaries(const Mesh &mesh,
  */
 static bool sort_vertex_polys(const Span<MEdge> edges,
                               const Span<MPoly> polys,
+                              const Span<int> corner_verts,
                               const Span<int> corner_edges,
                               const int vertex_index,
                               const bool boundary_vertex,
@@ -346,17 +347,19 @@ static bool sort_vertex_polys(const Span<MEdge> edges,
   if (boundary_vertex) {
     /* Our first polygon needs to be one which has a boundary edge. */
     for (const int i : connected_polys.index_range()) {
-      const MLoop &first_loop = loops[poly_vertex_corners[i].first];
-      const MLoop &second_loop = loops[poly_vertex_corners[i].second];
-      if (edge_types[first_loop.e] == EdgeType::Boundary && first_loop.v == vertex_index) {
-        shared_edge_i = second_loop.e;
+      const int corner_1 = poly_vertex_corners[i].first;
+      const int corner_2 = poly_vertex_corners[i].second;
+      if (edge_types[corner_edges[corner_1]] == EdgeType::Boundary &&
+          corner_verts[corner_1] == vertex_index) {
+        shared_edge_i = corner_edges[corner_2];
         r_sorted_corners[0] = poly_vertex_corners[i].first;
         std::swap(connected_polys[i], connected_polys[0]);
         std::swap(poly_vertex_corners[i], poly_vertex_corners[0]);
         break;
       }
-      if (edge_types[second_loop.e] == EdgeType::Boundary && second_loop.v == vertex_index) {
-        shared_edge_i = first_loop.e;
+      if (edge_types[corner_edges[corner_2]] == EdgeType::Boundary &&
+          corner_verts[corner_2] == vertex_index) {
+        shared_edge_i = corner_edges[corner_1];
         r_sorted_corners[0] = poly_vertex_corners[i].second;
         std::swap(connected_polys[i], connected_polys[0]);
         std::swap(poly_vertex_corners[i], poly_vertex_corners[0]);
@@ -367,17 +370,17 @@ static bool sort_vertex_polys(const Span<MEdge> edges,
       /* The rotation is inconsistent between the two polygons on the boundary. Just choose one
        * of the polygon's orientation. */
       for (const int i : connected_polys.index_range()) {
-        const MLoop &first_loop = loops[poly_vertex_corners[i].first];
-        const MLoop &second_loop = loops[poly_vertex_corners[i].second];
-        if (edge_types[first_loop.e] == EdgeType::Boundary) {
-          shared_edge_i = second_loop.e;
+        const int corner_1 = poly_vertex_corners[i].first;
+        const int corner_2 = poly_vertex_corners[i].second;
+        if (edge_types[corner_edges[corner_1]] == EdgeType::Boundary) {
+          shared_edge_i = corner_edges[corner_2];
           r_sorted_corners[0] = poly_vertex_corners[i].first;
           std::swap(connected_polys[i], connected_polys[0]);
           std::swap(poly_vertex_corners[i], poly_vertex_corners[0]);
           break;
         }
-        if (edge_types[second_loop.e] == EdgeType::Boundary) {
-          shared_edge_i = first_loop.e;
+        if (edge_types[corner_edges[corner_2]] == EdgeType::Boundary) {
+          shared_edge_i = corner_edges[corner_1];
           r_sorted_corners[0] = poly_vertex_corners[i].second;
           std::swap(connected_polys[i], connected_polys[0]);
           std::swap(poly_vertex_corners[i], poly_vertex_corners[0]);
@@ -388,15 +391,15 @@ static bool sort_vertex_polys(const Span<MEdge> edges,
   }
   else {
     /* Any polygon can be the first. Just need to check the orientation. */
-    const MLoop &first_loop = loops[poly_vertex_corners[0].first];
-    const MLoop &second_loop = loops[poly_vertex_corners[0].second];
-    if (first_loop.v == vertex_index) {
-      shared_edge_i = second_loop.e;
+    const int corner_1 = poly_vertex_corners.first().first;
+    const int corner_2 = poly_vertex_corners.first().second;
+    if (corner_verts[corner_1] == vertex_index) {
+      shared_edge_i = corner_edges[corner_2];
       r_sorted_corners[0] = poly_vertex_corners[0].first;
     }
     else {
       r_sorted_corners[0] = poly_vertex_corners[0].second;
-      shared_edge_i = first_loop.e;
+      shared_edge_i = corner_edges[corner_1];
     }
   }
   BLI_assert(shared_edge_i != -1);
@@ -407,16 +410,17 @@ static bool sort_vertex_polys(const Span<MEdge> edges,
     /* Look at the other polys to see if it has this shared edge. */
     int j = i + 1;
     for (; j < connected_polys.size(); ++j) {
-      const MLoop &first_loop = loops[poly_vertex_corners[j].first];
-      const MLoop &second_loop = loops[poly_vertex_corners[j].second];
-      if (first_loop.e == shared_edge_i) {
+      const int corner_1 = poly_vertex_corners[j].first;
+      const int corner_2 = poly_vertex_corners[j].second;
+
+      if (corner_edges[corner_1] == shared_edge_i) {
         r_sorted_corners[i + 1] = poly_vertex_corners[j].first;
-        shared_edge_i = second_loop.e;
+        shared_edge_i = corner_edges[corner_2];
         break;
       }
-      if (second_loop.e == shared_edge_i) {
+      if (corner_edges[corner_2] == shared_edge_i) {
         r_sorted_corners[i + 1] = poly_vertex_corners[j].second;
-        shared_edge_i = first_loop.e;
+        shared_edge_i = corner_edges[corner_1];
         break;
       }
     }
@@ -606,11 +610,11 @@ static void dissolve_redundant_verts(const Span<MEdge> edges,
  */
 static Mesh *calc_dual_mesh(const Mesh &src_mesh, const bool keep_boundaries)
 {
-  const Span<float3> src_positions = mesh_in.positions();
-  const Span<MEdge> src_edges = mesh_in.edges();
-  const Span<MPoly> src_polys = mesh_in.polys();
-  const Span<int> src_corner_verts = mesh_in.corner_verts();
-  const Span<int> src_corner_edges = mesh_in.corner_edges();
+  const Span<float3> src_positions = src_mesh.positions();
+  const Span<MEdge> src_edges = src_mesh.edges();
+  const Span<MPoly> src_polys = src_mesh.polys();
+  const Span<int> src_corner_verts = src_mesh.corner_verts();
+  const Span<int> src_corner_edges = src_mesh.corner_edges();
 
   Array<VertexType> vertex_types(src_mesh.totvert);
   Array<EdgeType> edge_types(src_mesh.totedge);
@@ -636,6 +640,7 @@ static Mesh *calc_dual_mesh(const Mesh &src_mesh, const bool keep_boundaries)
         Array<int> shared_edges(loop_indices.size());
         vertex_ok = sort_vertex_polys(src_edges,
                                       src_polys,
+                                      src_corner_verts,
                                       src_corner_edges,
                                       i,
                                       false,
@@ -649,6 +654,7 @@ static Mesh *calc_dual_mesh(const Mesh &src_mesh, const bool keep_boundaries)
         Array<int> shared_edges(loop_indices.size() - 1);
         vertex_ok = sort_vertex_polys(src_edges,
                                       src_polys,
+                                      src_corner_verts,
                                       src_corner_edges,
                                       i,
                                       true,

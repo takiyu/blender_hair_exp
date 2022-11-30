@@ -270,7 +270,6 @@ void BKE_mesh_foreach_mapped_face_center(
     const float(*positions)[3] = BKE_mesh_positions(mesh);
     const MPoly *mp = BKE_mesh_polys(mesh);
     const Span<int> corner_verts = mesh->corner_verts();
-    const MLoop *ml;
     float _no_buf[3];
     float *no = (flag & MESH_FOREACH_USE_NORMAL) ? _no_buf : nullptr;
     const int *index = static_cast<const int *>(CustomData_get_layer(&mesh->pdata, CD_ORIGINDEX));
@@ -282,10 +281,9 @@ void BKE_mesh_foreach_mapped_face_center(
           continue;
         }
         float cent[3];
-        ml = &loops[mp->loopstart];
         BKE_mesh_calc_poly_center(mp, &corner_verts[mp->loopstart], positions, cent);
         if (flag & MESH_FOREACH_USE_NORMAL) {
-          BKE_mesh_calc_poly_normal(mp, ml, positions, no);
+          BKE_mesh_calc_poly_normal(mp, &corner_verts[mp->loopstart], positions, no);
         }
         func(userData, orig, cent, no);
       }
@@ -293,10 +291,9 @@ void BKE_mesh_foreach_mapped_face_center(
     else {
       for (int i = 0; i < mesh->totpoly; i++, mp++) {
         float cent[3];
-        ml = &loops[mp->loopstart];
-        BKE_mesh_calc_poly_center(mp, ml, positions, cent);
+        BKE_mesh_calc_poly_center(mp, &corner_verts[mp->loopstart], positions, cent);
         if (flag & MESH_FOREACH_USE_NORMAL) {
-          BKE_mesh_calc_poly_normal(mp, ml, positions, no);
+          BKE_mesh_calc_poly_normal(mp, &corner_verts[mp->loopstart], positions, no);
         }
         func(userData, i, cent, no);
       }
@@ -312,8 +309,7 @@ void BKE_mesh_foreach_mapped_subdiv_face_center(
 {
   const float(*positions)[3] = BKE_mesh_positions(mesh);
   const MPoly *mp = BKE_mesh_polys(mesh);
-  const MLoop *loops = BKE_mesh_loops(mesh);
-  const MLoop *ml;
+  const Span<int> corner_verts = mesh->corner_verts();
   const float(*vert_normals)[3] = (flag & MESH_FOREACH_USE_NORMAL) ?
                                       BKE_mesh_vertex_normals_ensure(mesh) :
                                       nullptr;
@@ -327,26 +323,26 @@ void BKE_mesh_foreach_mapped_subdiv_face_center(
       if (orig == ORIGINDEX_NONE) {
         continue;
       }
-      ml = &loops[mp->loopstart];
-      for (int j = 0; j < mp->totloop; j++, ml++) {
-        if (BLI_BITMAP_TEST(facedot_tags, ml->v)) {
+      for (int j = 0; j < mp->totloop; j++) {
+        const int vert_i = corner_verts[mp->loopstart + j];
+        if (BLI_BITMAP_TEST(facedot_tags, vert_i)) {
           func(userData,
                orig,
-               positions[ml->v],
-               (flag & MESH_FOREACH_USE_NORMAL) ? vert_normals[ml->v] : nullptr);
+               positions[vert_i],
+               (flag & MESH_FOREACH_USE_NORMAL) ? vert_normals[vert_i] : nullptr);
         }
       }
     }
   }
   else {
     for (int i = 0; i < mesh->totpoly; i++, mp++) {
-      ml = &loops[mp->loopstart];
-      for (int j = 0; j < mp->totloop; j++, ml++) {
-        if (BLI_BITMAP_TEST(facedot_tags, ml->v)) {
+      for (int j = 0; j < mp->totloop; j++) {
+        const int vert_i = corner_verts[mp->loopstart + j];
+        if (BLI_BITMAP_TEST(facedot_tags, vert_i)) {
           func(userData,
                i,
-               positions[ml->v],
-               (flag & MESH_FOREACH_USE_NORMAL) ? vert_normals[ml->v] : nullptr);
+               positions[vert_i],
+               (flag & MESH_FOREACH_USE_NORMAL) ? vert_normals[vert_i] : nullptr);
         }
       }
     }

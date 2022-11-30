@@ -320,7 +320,7 @@ void BKE_remesh_reproject_sculpt_face_sets(Mesh *target, const Mesh *source)
   MutableAttributeAccessor dst_attributes = target->attributes_for_write();
   const Span<float3> target_positions = target->positions();
   const Span<MPoly> target_polys = target->polys();
-  const Span<MLoop> target_loops = target->loops();
+  const Span<int> target_corner_verts = target->corner_verts();
 
   const VArray<int> src_face_sets = src_attributes.lookup<int>(".sculpt_face_set",
                                                                ATTR_DOMAIN_FACE);
@@ -348,7 +348,7 @@ void BKE_remesh_reproject_sculpt_face_sets(Mesh *target, const Mesh *source)
       nearest.dist_sq = FLT_MAX;
       const MPoly *mpoly = &target_polys[i];
       BKE_mesh_calc_poly_center(mpoly,
-                                &target_loops[mpoly->loopstart],
+                                &target_corner_verts[mpoly->loopstart],
                                 reinterpret_cast<const float(*)[3]>(target_positions.data()),
                                 from_co);
       BLI_bvhtree_find_nearest(

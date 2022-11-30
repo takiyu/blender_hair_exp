@@ -213,7 +213,8 @@ bool BKE_mesh_validate_arrays(Mesh *mesh,
                               uint totedge,
                               MFace *mfaces,
                               uint totface,
-                              MLoop *mloops,
+                              int *corner_verts,
+                              int *corner_edges,
                               uint totloop,
                               MPoly *mpolys,
                               uint totpoly,
@@ -1305,9 +1306,9 @@ void BKE_mesh_strip_loose_edges(Mesh *me)
   /* And now, update loops' edge indices. */
   /* XXX We hope no loop was pointing to a striped edge!
    *     Else, its e will be set to INVALID_LOOP_EDGE_MARKER :/ */
-  MutableSpan<MLoop> loops = me->loops_for_write();
-  for (MLoop &loop : loops) {
-    loop.e = new_idx[loop.e];
+  MutableSpan<int> corner_edges = me->corner_edges_for_write();
+  for (const int i : corner_edges.index_range()) {
+    corner_edges[i] = new_idx[corner_edges[i]];
   }
 
   MEM_freeN(new_idx);

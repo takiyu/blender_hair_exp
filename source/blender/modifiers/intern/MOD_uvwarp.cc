@@ -81,7 +81,7 @@ static void matrix_from_obj_pchan(float mat[4][4], Object *ob, const char *bonen
 
 struct UVWarpData {
   const MPoly *mpoly;
-  const int *corner_verts;
+  blender::Span<int> corner_verts;
   MLoopUV *mloopuv;
 
   const MDeformVert *dvert;
@@ -98,7 +98,7 @@ static void uv_warp_compute(void *__restrict userdata,
   const UVWarpData *data = static_cast<const UVWarpData *>(userdata);
 
   const MPoly *mp = &data->mpoly[i];
-  const MLoop *ml = &data->mloop[mp->loopstart];
+  const int *poly_verts = &data->corner_verts[mp->loopstart];
   MLoopUV *mluv = &data->mloopuv[mp->loopstart];
 
   const MDeformVert *dvert = data->dvert;
@@ -109,12 +109,12 @@ static void uv_warp_compute(void *__restrict userdata,
   int l;
 
   if (dvert) {
-    for (l = 0; l < mp->totloop; l++, ml++, mluv++) {
-      const int corner_i = mp->loopstart + l;
+    for (l = 0; l < mp->totloop; l++, mluv++) {
+      const int vert_i = poly_verts[l];
       float uv[2];
       const float weight = data->invert_vgroup ?
-                               1.0f - BKE_defvert_find_weight(&dvert[ml->v], defgrp_index) :
-                               BKE_defvert_find_weight(&dvert[ml->v], defgrp_index);
+                               1.0f - BKE_defvert_find_weight(&dvert[vert_i], defgrp_index) :
+                               BKE_defvert_find_weight(&dvert[vert_i], defgrp_index);
 
       uv_warp_from_mat4_pair(uv, mluv->uv, warp_mat);
       interp_v2_v2v2(mluv->uv, mluv->uv, uv, weight);
@@ -194,7 +194,6 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
   CustomData_validate_layer_name(&mesh->ldata, CD_MLOOPUV, umd->uvlayer_name, uvname);
 
   const MPoly *polys = BKE_mesh_polys(mesh);
-  const MLoop *loops = BKE_mesh_loops(mesh);
   polys_num = mesh->totpoly;
   loops_num = mesh->totloop;
 
@@ -205,7 +204,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
 
   UVWarpData data{};
   data.mpoly = polys;
-  data.mloop = loops;
+  data.corner_verts = mesh->corner_verts();
   data.mloopuv = mloopuv;
   data.dvert = dvert;
   data.defgrp_index = defgrp_index;

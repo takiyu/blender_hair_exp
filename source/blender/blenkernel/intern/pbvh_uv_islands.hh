@@ -95,7 +95,7 @@ struct MeshData {
   const MLoopTri *looptri;
   const int64_t looptri_len;
   const int64_t vert_len;
-  const MLoop *mloop;
+  const int *corner_verts;
   const MLoopUV *mloopuv;
 
   Vector<MeshPrimitive> primitives;
@@ -108,7 +108,7 @@ struct MeshData {
   explicit MeshData(const MLoopTri *looptri,
                     const int64_t looptri_len,
                     const int64_t vert_len,
-                    const MLoop *mloop,
+                    const int *corner_verts,
                     const MLoopUV *mloopuv);
 };
 

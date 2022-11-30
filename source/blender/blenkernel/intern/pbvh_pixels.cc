@@ -100,12 +100,15 @@ static void extract_barycentric_pixels(UDIMTilePixels &tile_data,
   }
 }
 
-static void init_triangles(PBVH *pbvh, PBVHNode *node, NodeData *node_data, const MLoop *mloop)
+/** Update the geometry primitives of the pbvh. */
+static void update_geom_primitives(PBVH &pbvh, const uv_islands::MeshData &mesh_data)
 {
-  for (int i = 0; i < node->totprim; i++) {
-    const MLoopTri *lt = &pbvh->looptri[node->prim_indices[i]];
-    node_data->triangles.append(
-        int3(mloop[lt->tri[0]].v, mloop[lt->tri[1]].v, mloop[lt->tri[2]].v));
+  PBVHData &pbvh_data = BKE_pbvh_pixels_data_get(pbvh);
+  pbvh_data.clear_data();
+  for (const uv_islands::MeshPrimitive &mesh_primitive : mesh_data.primitives) {
+    pbvh_data.geom_primitives.append(int3(mesh_primitive.vertices[0].vertex->v,
+                                          mesh_primitive.vertices[1].vertex->v,
+                                          mesh_primitive.vertices[2].vertex->v));
   }
 }
 
@@ -358,10 +361,22 @@ static void update_pixels(PBVH *pbvh, Mesh *mesh, Image *image, ImageUser *image
     return;
   }
 
-  for (PBVHNode *node : nodes_to_update) {
-    NodeData *node_data = static_cast<NodeData *>(node->pixels.node_data);
-    const Span<MLoop> loops = mesh->loops();
-    init_triangles(pbvh, node, node_data, loops.data());
+  uv_islands::MeshData mesh_data(
+      pbvh->looptri, pbvh->totprim, pbvh->totvert, pbvh->corner_verts, ldata_uv);
+  uv_islands::UVIslands islands(mesh_data);
+
+  uv_islands::UVIslandsMask uv_masks;
+  ImageUser tile_user = *image_user;
+  LISTBASE_FOREACH (ImageTile *, tile_data, &image->tiles) {
+    image::ImageTileWrapper image_tile(tile_data);
+    tile_user.tile = image_tile.get_tile_number();
+    ImBuf *tile_buffer = BKE_image_acquire_ibuf(image, &tile_user, nullptr);
+    if (tile_buffer == nullptr) {
+      continue;
+    }
+    uv_masks.add_tile(float2(image_tile.get_tile_x_offset(), image_tile.get_tile_y_offset()),
+                      ushort2(tile_buffer->x, tile_buffer->y));
+    BKE_image_release_ibuf(image, tile_buffer, nullptr);
   }
   uv_masks.add(islands);
   uv_masks.dilate(image->seam_margin);
