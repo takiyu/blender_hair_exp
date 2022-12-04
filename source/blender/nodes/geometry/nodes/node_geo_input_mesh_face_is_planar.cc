@@ -40,8 +40,7 @@ class PlanarFieldInput final : public bke::MeshFieldInput {
     const Span<float3> positions = mesh.positions();
     const Span<MPoly> polys = mesh.polys();
     const Span<int> corner_verts = mesh.corner_verts();
-    const Span<float3> poly_normals{
-        reinterpret_cast<const float3 *>(BKE_mesh_poly_normals_ensure(&mesh)), mesh.totpoly};
+    const Span<float3> poly_normals = mesh.poly_normals();
 
     bke::MeshFieldContext context{mesh, ATTR_DOMAIN_FACE};
     fn::FieldEvaluator evaluator{context, polys.size()};
@@ -49,7 +48,8 @@ class PlanarFieldInput final : public bke::MeshFieldInput {
     evaluator.evaluate();
     const VArray<float> thresholds = evaluator.get_evaluated<float>(0);
 
-    auto planar_fn = [positions, polys, corner_verts, thresholds, poly_normals](const int i) -> bool {
+    auto planar_fn =
+        [positions, polys, corner_verts, thresholds, poly_normals](const int i) -> bool {
       const MPoly &poly = polys[i];
       if (poly.totloop <= 3) {
         return true;
