@@ -249,6 +249,118 @@ bNodeSocket &Vector::update_or_build(bNodeTree &ntree, bNode &node, bNodeSocket 
 /** \} */
 
 /* -------------------------------------------------------------------- */
+/** \name #Matrix3x3
+ * \{ */
+
+bNodeSocket &Matrix3x3::build(bNodeTree &ntree, bNode &node) const
+{
+  bNodeSocket &socket = *nodeAddStaticSocket(
+      &ntree, &node, in_out_, SOCK_MATRIX3x3, PROP_MATRIX, identifier_.c_str(), name_.c_str());
+  this->set_common_flags(socket);
+  bNodeSocketValueMatrix3x3 &value = *(bNodeSocketValueMatrix3x3 *)socket.default_value;
+  copy_m3_m3(value.value, default_value_.ptr());
+  value.min = soft_min_value_;
+  value.max = soft_max_value_;
+  return socket;
+}
+
+bool Matrix3x3::matches(const bNodeSocket &socket) const
+{
+  if (!this->matches_common_data(socket)) {
+    return false;
+  }
+  if (socket.type != SOCK_MATRIX3x3) {
+    return false;
+  }
+  if (socket.typeinfo->subtype != PROP_MATRIX) {
+    return false;
+  }
+  return true;
+}
+
+bool Matrix3x3::can_connect(const bNodeSocket &socket) const
+{
+  if (!sockets_can_connect(*this, socket)) {
+    return false;
+  }
+  return basic_types_can_connect(*this, socket);
+}
+
+bNodeSocket &Matrix3x3::update_or_build(bNodeTree &ntree, bNode &node, bNodeSocket &socket) const
+{
+  if (socket.type != SOCK_MATRIX3x3) {
+    BLI_assert(socket.in_out == in_out_);
+    return this->build(ntree, node);
+  }
+  if (socket.typeinfo->subtype != PROP_MATRIX) {
+    modify_subtype_except_for_storage(socket, PROP_MATRIX);
+  }
+  this->set_common_flags(socket);
+  bNodeSocketValueMatrix3x3 &value = *(bNodeSocketValueMatrix3x3 *)socket.default_value;
+  value.subtype = PROP_MATRIX;
+  STRNCPY(socket.name, name_.c_str());
+  return socket;
+}
+
+/** \} */
+
+/* -------------------------------------------------------------------- */
+/** \name #Matrix4x4
+ * \{ */
+
+bNodeSocket &Matrix4x4::build(bNodeTree &ntree, bNode &node) const
+{
+  bNodeSocket &socket = *nodeAddStaticSocket(
+      &ntree, &node, in_out_, SOCK_MATRIX4x4, PROP_MATRIX, identifier_.c_str(), name_.c_str());
+  this->set_common_flags(socket);
+  bNodeSocketValueMatrix4x4 &value = *(bNodeSocketValueMatrix4x4 *)socket.default_value;
+  copy_m4_m4(value.value, default_value_.ptr());
+  value.min = soft_min_value_;
+  value.max = soft_max_value_;
+  return socket;
+}
+
+bool Matrix4x4::matches(const bNodeSocket &socket) const
+{
+  if (!this->matches_common_data(socket)) {
+    return false;
+  }
+  if (socket.type != SOCK_MATRIX4x4) {
+    return false;
+  }
+  if (socket.typeinfo->subtype != PROP_MATRIX) {
+    return false;
+  }
+  return true;
+}
+
+bool Matrix4x4::can_connect(const bNodeSocket &socket) const
+{
+  if (!sockets_can_connect(*this, socket)) {
+    return false;
+  }
+  return basic_types_can_connect(*this, socket);
+}
+
+bNodeSocket &Matrix4x4::update_or_build(bNodeTree &ntree, bNode &node, bNodeSocket &socket) const
+{
+  if (socket.type != SOCK_MATRIX4x4) {
+    BLI_assert(socket.in_out == in_out_);
+    return this->build(ntree, node);
+  }
+  if (socket.typeinfo->subtype != PROP_MATRIX) {
+    modify_subtype_except_for_storage(socket, PROP_MATRIX);
+  }
+  this->set_common_flags(socket);
+  bNodeSocketValueMatrix4x4 &value = *(bNodeSocketValueMatrix4x4 *)socket.default_value;
+  value.subtype = PROP_MATRIX;
+  STRNCPY(socket.name, name_.c_str());
+  return socket;
+}
+
+/** \} */
+
+/* -------------------------------------------------------------------- */
 /** \name #Bool
  * \{ */
 

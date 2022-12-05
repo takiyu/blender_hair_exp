@@ -7,6 +7,8 @@
 #include "RNA_types.h"
 
 #include "BLI_color.hh"
+#include "BLI_float3x3.hh"
+#include "BLI_float4x4.hh"
 #include "BLI_math_vec_types.hh"
 
 namespace blender::nodes::decl {
@@ -94,6 +96,58 @@ class VectorBuilder : public SocketDeclarationBuilder<Vector> {
   VectorBuilder &min(float min);
   VectorBuilder &max(float max);
   VectorBuilder &compact();
+};
+
+class Matrix3x3Builder;
+
+class Matrix3x3 : public SocketDeclaration {
+ private:
+  float3x3 default_value_ = float3x3::identity();
+  float soft_min_value_ = -FLT_MAX;
+  float soft_max_value_ = FLT_MAX;
+
+  friend Matrix3x3Builder;
+
+ public:
+  using Builder = Matrix3x3Builder;
+
+  bNodeSocket &build(bNodeTree &ntree, bNode &node) const override;
+  bool matches(const bNodeSocket &socket) const override;
+  bNodeSocket &update_or_build(bNodeTree &ntree, bNode &node, bNodeSocket &socket) const override;
+  bool can_connect(const bNodeSocket &socket) const override;
+};
+
+class Matrix3x3Builder : public SocketDeclarationBuilder<Matrix3x3> {
+ public:
+  Matrix3x3Builder &default_value(const float3x3 value);
+  Matrix3x3Builder &min(float min);
+  Matrix3x3Builder &max(float max);
+};
+
+class Matrix4x4Builder;
+
+class Matrix4x4 : public SocketDeclaration {
+ private:
+  float4x4 default_value_ = float4x4::identity();
+  float soft_min_value_ = -FLT_MAX;
+  float soft_max_value_ = FLT_MAX;
+
+  friend Matrix4x4Builder;
+
+ public:
+  using Builder = Matrix4x4Builder;
+
+  bNodeSocket &build(bNodeTree &ntree, bNode &node) const override;
+  bool matches(const bNodeSocket &socket) const override;
+  bNodeSocket &update_or_build(bNodeTree &ntree, bNode &node, bNodeSocket &socket) const override;
+  bool can_connect(const bNodeSocket &socket) const override;
+};
+
+class Matrix4x4Builder : public SocketDeclarationBuilder<Matrix4x4> {
+ public:
+  Matrix4x4Builder &default_value(const float4x4 value);
+  Matrix4x4Builder &min(float min);
+  Matrix4x4Builder &max(float max);
 };
 
 class BoolBuilder;

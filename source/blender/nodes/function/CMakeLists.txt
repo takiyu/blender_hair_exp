@@ -21,18 +21,22 @@ set(SRC
   nodes/node_fn_align_euler_to_vector.cc
   nodes/node_fn_boolean_math.cc
   nodes/node_fn_combine_color.cc
+  nodes/node_fn_combine_matrix.cc
   nodes/node_fn_compare.cc
   nodes/node_fn_float_to_int.cc
   nodes/node_fn_input_bool.cc
   nodes/node_fn_input_color.cc
   nodes/node_fn_input_int.cc
+  nodes/node_fn_input_matrix.cc
   nodes/node_fn_input_special_characters.cc
   nodes/node_fn_input_string.cc
   nodes/node_fn_input_vector.cc
+  nodes/node_fn_matrix_math.cc
   nodes/node_fn_random_value.cc
   nodes/node_fn_replace_string.cc
   nodes/node_fn_rotate_euler.cc
   nodes/node_fn_separate_color.cc
+  nodes/node_fn_separate_matrix.cc
   nodes/node_fn_slice_string.cc
   nodes/node_fn_string_length.cc
   nodes/node_fn_value_to_string.cc
