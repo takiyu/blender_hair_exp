@@ -368,7 +368,6 @@ void BKE_remesh_reproject_vertex_paint(Mesh *target, const Mesh *source)
 {
   BVHTreeFromMesh bvhtree = {nullptr};
   BKE_bvhtree_from_mesh_get(&bvhtree, source, BVHTREE_FROM_VERTS, 2);
-  const Span<float3> target_positions = target->positions();
 
   int i = 0;
   const CustomDataLayer *layer;
