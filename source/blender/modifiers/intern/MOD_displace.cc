@@ -312,8 +312,11 @@ static void displaceModifier_do(DisplaceModifierData *dmd,
       float(*clnors)[3] = static_cast<float(*)[3]>(CustomData_get_layer(ldata, CD_NORMAL));
       vert_clnors = static_cast<float(*)[3]>(
           MEM_malloc_arrayN(verts_num, sizeof(*vert_clnors), __func__));
-      BKE_mesh_normals_loop_to_vertex(
-          verts_num, BKE_mesh_loops(mesh), mesh->totloop, (const float(*)[3])clnors, vert_clnors);
+      BKE_mesh_normals_loop_to_vertex(verts_num,
+                                      BKE_mesh_corner_verts(mesh),
+                                      mesh->totloop,
+                                      (const float(*)[3])clnors,
+                                      vert_clnors);
     }
     else {
       direction = MOD_DISP_DIR_NOR;

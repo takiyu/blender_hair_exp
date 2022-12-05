@@ -151,15 +151,13 @@ static void extract_edit_data_iter_poly_mesh(const MeshRenderData *mr,
 {
   EditLoopData *vbo_data = *(EditLoopData **)_data;
 
-  const MLoop *mloop = mr->mloop;
   const int ml_index_end = mp->loopstart + mp->totloop;
   for (int ml_index = mp->loopstart; ml_index < ml_index_end; ml_index += 1) {
-    const MLoop *ml = &mloop[ml_index];
     EditLoopData *data = vbo_data + ml_index;
     memset(data, 0x0, sizeof(*data));
     BMFace *efa = bm_original_face_get(mr, mp_index);
-    BMEdge *eed = bm_original_edge_get(mr, ml->e);
-    BMVert *eve = bm_original_vert_get(mr, ml->v);
+    BMEdge *eed = bm_original_edge_get(mr, mr->corner_verts[ml_index]);
+    BMVert *eve = bm_original_vert_get(mr, mr->corner_edges[ml_index]);
     if (efa) {
       mesh_render_data_face_flag(mr, efa, -1, data);
     }

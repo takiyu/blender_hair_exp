@@ -56,7 +56,7 @@ struct BLaplacianSystem {
   /* Pointers to data. */
   float (*vertexCos)[3];
   const MPoly *mpoly;
-  const MLoop *mloop;
+  const int *corner_verts;
   const MEdge *medges;
   LinearSolver *context;
 
@@ -70,7 +70,7 @@ static float compute_volume(const float center[3],
                             float (*vertexCos)[3],
                             const MPoly *mpoly,
                             int polys_num,
-                            const MLoop *mloop);
+                            const int *corner_verts);
 static LaplacianSystem *init_laplacian_system(int a_numEdges,
                                               int a_numPolys,
                                               int a_numLoops,
@@ -99,7 +99,7 @@ static void delete_laplacian_system(LaplacianSystem *sys)
   }
   sys->vertexCos = NULL;
   sys->mpoly = NULL;
-  sys->mloop = NULL;
+  sys->corner_verts = NULL;
   sys->medges = NULL;
   MEM_freeN(sys);
 }
@@ -144,7 +144,7 @@ static float compute_volume(const float center[3],
                             float (*vertexCos)[3],
                             const MPoly *mpoly,
                             int polys_num,
-                            const MLoop *mloop)
+                            const int *corner_verts)
 {
   int i;
   float vol = 0.0f;
@@ -343,7 +343,7 @@ static void validate_solution(LaplacianSystem *sys, short flag, float lambda, fl
 
   if (flag & MOD_LAPLACIANSMOOTH_PRESERVE_VOLUME) {
     vini = compute_volume(
-        sys->vert_centroid, sys->vertexCos, sys->mpoly, sys->polys_num, sys->mloop);
+        sys->vert_centroid, sys->vertexCos, sys->mpoly, sys->polys_num, sys->corner_verts);
   }
   for (i = 0; i < sys->verts_num; i++) {
     if (sys->zerola[i] == false) {
@@ -365,7 +365,7 @@ static void validate_solution(LaplacianSystem *sys, short flag, float lambda, fl
   }
   if (flag & MOD_LAPLACIANSMOOTH_PRESERVE_VOLUME) {
     vend = compute_volume(
-        sys->vert_centroid, sys->vertexCos, sys->mpoly, sys->polys_num, sys->mloop);
+        sys->vert_centroid, sys->vertexCos, sys->mpoly, sys->polys_num, sys->corner_verts);
     volume_preservation(sys, vini, vend, flag);
   }
 }
@@ -387,7 +387,7 @@ static void laplaciansmoothModifier_do(
   }
 
   sys->mpoly = BKE_mesh_polys(mesh);
-  sys->mloop = BKE_mesh_loops(mesh);
+  sys->corner_verts = BKE_mesh_corner_verts(mesh);
   sys->medges = BKE_mesh_edges(mesh);
   sys->vertexCos = vertexCos;
   sys->min_area = 0.00001f;

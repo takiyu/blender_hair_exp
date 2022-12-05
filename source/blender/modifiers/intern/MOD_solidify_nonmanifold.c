@@ -187,7 +187,7 @@ Mesh *MOD_solidify_nonmanifold_modifyMesh(ModifierData *md,
   const float(*orig_positions)[3] = BKE_mesh_positions(mesh);
   const MEdge *orig_medge = BKE_mesh_edges(mesh);
   const MPoly *orig_mpoly = BKE_mesh_polys(mesh);
-  const MLoop *orig_mloop = BKE_mesh_loops(mesh);
+  const MLoop *orig_mloop = BKE_mesh_corner_verts(mesh);
 
   /* These might be null. */
   const float *orig_vert_bweight = CustomData_get_layer(&mesh->vdata, CD_BWEIGHT);

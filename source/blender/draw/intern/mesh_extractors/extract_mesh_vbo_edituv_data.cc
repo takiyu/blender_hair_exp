@@ -76,17 +76,14 @@ static void extract_edituv_data_iter_poly_mesh(const MeshRenderData *mr,
                                                void *_data)
 {
   MeshExtract_EditUVData_Data *data = static_cast<MeshExtract_EditUVData_Data *>(_data);
-  const MLoop *mloop = mr->mloop;
   const int ml_index_end = mp->loopstart + mp->totloop;
   for (int ml_index = mp->loopstart; ml_index < ml_index_end; ml_index += 1) {
-    const MLoop *ml = &mloop[ml_index];
-
     EditLoopData *eldata = &data->vbo_data[ml_index];
     memset(eldata, 0x0, sizeof(*eldata));
     BMFace *efa = bm_original_face_get(mr, mp_index);
     if (efa) {
-      BMEdge *eed = bm_original_edge_get(mr, ml->e);
-      BMVert *eve = bm_original_vert_get(mr, ml->v);
+      BMEdge *eed = bm_original_edge_get(mr,mr->corner_verts[ml_index] );
+      BMVert *eve = bm_original_vert_get(mr,mr->corner_edges[ml_index] );
       if (eed && eve) {
         /* Loop on an edge endpoint. */
         BMLoop *l = BM_face_edge_share_loop(efa, eed);
@@ -99,8 +96,7 @@ static void extract_edituv_data_iter_poly_mesh(const MeshRenderData *mr,
            * For this, we check if the previous loop was on an edge. */
           const int ml_index_last = mp->loopstart + mp->totloop - 1;
           const int l_prev = (ml_index == mp->loopstart) ? ml_index_last : (ml_index - 1);
-          const MLoop *ml_prev = &mr->mloop[l_prev];
-          eed = bm_original_edge_get(mr, ml_prev->e);
+          eed = bm_original_edge_get(mr, mr->corner_edges[l_prev]);
         }
         if (eed) {
           /* Mapped points on an edge between two edit verts. */

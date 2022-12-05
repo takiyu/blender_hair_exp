@@ -64,16 +64,15 @@ static void extract_lnor_iter_poly_mesh(const MeshRenderData *mr,
 {
   const bool hidden = mr->hide_poly && mr->hide_poly[mp_index];
 
-  const MLoop *mloop = mr->mloop;
   const int ml_index_end = mp->loopstart + mp->totloop;
   for (int ml_index = mp->loopstart; ml_index < ml_index_end; ml_index += 1) {
-    const MLoop *ml = &mloop[ml_index];
+    const int vert_i = mr->corner_verts[ml_index];
     GPUPackedNormal *lnor_data = &(*(GPUPackedNormal **)data)[ml_index];
     if (mr->loop_normals) {
       *lnor_data = GPU_normal_convert_i10_v3(mr->loop_normals[ml_index]);
     }
     else if (mp->flag & ME_SMOOTH) {
-      *lnor_data = GPU_normal_convert_i10_v3(mr->vert_normals[ml->v]);
+      *lnor_data = GPU_normal_convert_i10_v3(mr->vert_normals[vert_i]);
     }
     else {
       *lnor_data = GPU_normal_convert_i10_v3(mr->poly_normals[mp_index]);
@@ -83,7 +82,7 @@ static void extract_lnor_iter_poly_mesh(const MeshRenderData *mr,
      * Only use origindex in edit mode where it is used to display the edge-normals.
      * In paint mode it will use the un-mapped data to draw the wire-frame. */
     if (hidden ||
-        (mr->edit_bmesh && (mr->v_origindex) && mr->v_origindex[ml->v] == ORIGINDEX_NONE)) {
+        (mr->edit_bmesh && (mr->v_origindex) && mr->v_origindex[vert_i] == ORIGINDEX_NONE)) {
       lnor_data->w = -1;
     }
     else if (mr->select_poly && mr->select_poly[mp_index]) {
@@ -189,16 +188,15 @@ static void extract_lnor_hq_iter_poly_mesh(const MeshRenderData *mr,
 {
   const bool hidden = mr->hide_poly && mr->hide_poly[mp_index];
 
-  const MLoop *mloop = mr->mloop;
   const int ml_index_end = mp->loopstart + mp->totloop;
   for (int ml_index = mp->loopstart; ml_index < ml_index_end; ml_index += 1) {
-    const MLoop *ml = &mloop[ml_index];
+    const int vert_i = mr->corner_verts[ml_index];
     gpuHQNor *lnor_data = &(*(gpuHQNor **)data)[ml_index];
     if (mr->loop_normals) {
       normal_float_to_short_v3(&lnor_data->x, mr->loop_normals[ml_index]);
     }
     else if (mp->flag & ME_SMOOTH) {
-      normal_float_to_short_v3(&lnor_data->x, mr->vert_normals[ml->v]);
+      normal_float_to_short_v3(&lnor_data->x, mr->vert_normals[vert_i]);
     }
     else {
       normal_float_to_short_v3(&lnor_data->x, mr->poly_normals[mp_index]);
@@ -208,7 +206,7 @@ static void extract_lnor_hq_iter_poly_mesh(const MeshRenderData *mr,
      * Only use origindex in edit mode where it is used to display the edge-normals.
      * In paint mode it will use the un-mapped data to draw the wire-frame. */
     if (hidden ||
-        (mr->edit_bmesh && (mr->v_origindex) && mr->v_origindex[ml->v] == ORIGINDEX_NONE)) {
+        (mr->edit_bmesh && (mr->v_origindex) && mr->v_origindex[vert_i] == ORIGINDEX_NONE)) {
       lnor_data->w = -1;
     }
     else if (mr->select_poly && mr->select_poly[mp_index]) {

@@ -240,7 +240,8 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
   uint edge_offset;
 
   MPoly *mp_new;
-  MLoop *ml_new;
+  int *corner_verts_new;
+  int *corner_edges_new;
   MEdge *med_new, *med_new_firstloop;
   Object *ob_axis = ltmd->ob_axis;
 
@@ -384,12 +385,14 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
   const float(*positions_orig)[3] = BKE_mesh_positions(mesh);
   const MEdge *medge_orig = BKE_mesh_edges(mesh);
   const MPoly *mpoly_orig = BKE_mesh_polys(mesh);
-  const MLoop *mloop_orig = BKE_mesh_loops(mesh);
+  const int *corner_verts_orig = BKE_mesh_corner_verts(mesh);
+  const int *corner_edges_orig = BKE_mesh_corner_edges(mesh);
 
   float(*positions_new)[3] = BKE_mesh_positions_for_write(result);
   MEdge *medge_new = BKE_mesh_edges_for_write(result);
   MPoly *mpoly_new = BKE_mesh_polys_for_write(result);
-  MLoop *mloop_new = BKE_mesh_loops_for_write(result);
+  int *corner_verts_orig = BKE_mesh_corner_verts_for_write(result);
+  int *corner_edges_orig = BKE_mesh_corner_edges_for_write(result);
 
   if (!CustomData_has_layer(&result->pdata, CD_ORIGINDEX)) {
     CustomData_add_layer(&result->pdata, CD_ORIGINDEX, CD_SET_DEFAULT, NULL, (int)maxPolys);
@@ -449,15 +452,16 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
       uint loopstart = (uint)mp_orig->loopstart;
       uint loopend = loopstart + (uint)mp_orig->totloop;
 
-      const MLoop *ml_orig = &mloop_orig[loopstart];
       uint k;
-      for (k = loopstart; k < loopend; k++, ml_orig++) {
-        edge_poly_map[ml_orig->e] = i;
-        vert_loop_map[ml_orig->v] = k;
+      for (k = loopstart; k < loopend; k++) {
+        const int vert_i = corner_verts_orig[loopstart + k];
+        const int edge_i = corner_edges_orig[loopstart + k];
+        edge_poly_map[edge_i] = i;
+        vert_loop_map[vert_i] = k;
 
         /* also order edges based on faces */
-        if (medge_new[ml_orig->e].v1 != ml_orig->v) {
-          SWAP(uint, medge_new[ml_orig->e].v1, medge_new[ml_orig->e].v2);
+        if (medge_new[edge_i].v1 != vert_i) {
+          SWAP(uint, medge_new[edge_i].v1, medge_new[edge_i].v2);
         }
       }
     }
@@ -822,7 +826,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
   }
 
   mp_new = mpoly_new;
-  ml_new = mloop_new;
+  int dst_corner_i = 0;
   med_new_firstloop = medge_new;
 
   /* more of an offset in this case */
@@ -884,23 +888,21 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
 
       /* Loop-Custom-Data */
       if (has_mloop_orig) {
-        int l_index = (int)(ml_new - mloop_new);
-
         CustomData_copy_data(
-            &mesh->ldata, &result->ldata, (int)mloop_index_orig[0], l_index + 0, 1);
+            &mesh->ldata, &result->ldata, (int)mloop_index_orig[0], dst_corner_i + 0, 1);
         CustomData_copy_data(
-            &mesh->ldata, &result->ldata, (int)mloop_index_orig[1], l_index + 1, 1);
+            &mesh->ldata, &result->ldata, (int)mloop_index_orig[1], dst_corner_i + 1, 1);
         CustomData_copy_data(
-            &mesh->ldata, &result->ldata, (int)mloop_index_orig[1], l_index + 2, 1);
+            &mesh->ldata, &result->ldata, (int)mloop_index_orig[1], dst_corner_i + 2, 1);
         CustomData_copy_data(
-            &mesh->ldata, &result->ldata, (int)mloop_index_orig[0], l_index + 3, 1);
+            &mesh->ldata, &result->ldata, (int)mloop_index_orig[0], dst_corner_i + 3, 1);
 
         if (mloopuv_layers_tot) {
           uint uv_lay;
           const float uv_u_offset_a = (float)(step)*uv_u_scale;
           const float uv_u_offset_b = (float)(step + 1) * uv_u_scale;
           for (uv_lay = 0; uv_lay < mloopuv_layers_tot; uv_lay++) {
-            MLoopUV *mluv = &mloopuv_layers[uv_lay][l_index];
+            MLoopUV *mluv = &mloopuv_layers[uv_lay][dst_corner_i];
 
             mluv[quad_ord[0]].uv[0] += uv_u_offset_a;
             mluv[quad_ord[1]].uv[0] += uv_u_offset_a;
@@ -911,13 +913,11 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
       }
       else {
         if (mloopuv_layers_tot) {
-          int l_index = (int)(ml_new - mloop_new);
-
           uint uv_lay;
           const float uv_u_offset_a = (float)(step)*uv_u_scale;
           const float uv_u_offset_b = (float)(step + 1) * uv_u_scale;
           for (uv_lay = 0; uv_lay < mloopuv_layers_tot; uv_lay++) {
-            MLoopUV *mluv = &mloopuv_layers[uv_lay][l_index];
+            MLoopUV *mluv = &mloopuv_layers[uv_lay][dst_corner_i];
 
             copy_v2_fl2(mluv[quad_ord[0]].uv, uv_u_offset_a, uv_v_offset_a);
             copy_v2_fl2(mluv[quad_ord[1]].uv, uv_u_offset_a, uv_v_offset_b);
@@ -930,16 +930,18 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
       /* Loop-Data */
       if (!(close && step == step_last)) {
         /* regular segments */
-        ml_new[quad_ord[0]].v = i1;
-        ml_new[quad_ord[1]].v = i2;
-        ml_new[quad_ord[2]].v = i2 + totvert;
-        ml_new[quad_ord[3]].v = i1 + totvert;
+        corner_verts_new[dst_corner_i + quad_ord[0]] = i1;
+        corner_verts_new[dst_corner_i + quad_ord[0]] = i1;
+        corner_verts_new[dst_corner_i + quad_ord[1]] = i2;
+        corner_verts_new[dst_corner_i + quad_ord[2]] = i2 + totvert;
+        corner_verts_new[dst_corner_i + quad_ord[3]] = i1 + totvert;
 
-        ml_new[quad_ord_ofs[0]].e = step == 0 ? i :
-                                                (edge_offset + step + (i * (step_tot - 1))) - 1;
-        ml_new[quad_ord_ofs[1]].e = totedge + i2;
-        ml_new[quad_ord_ofs[2]].e = edge_offset + step + (i * (step_tot - 1));
-        ml_new[quad_ord_ofs[3]].e = totedge + i1;
+        corner_edges_new[dst_corner_i + quad_ord_ofs[0]] =
+            step == 0 ? i : (edge_offset + step + (i * (step_tot - 1))) - 1;
+        corner_edges_new[dst_corner_i + quad_ord_ofs[1]] = totedge + i2;
+        corner_edges_new[dst_corner_i + quad_ord_ofs[2]] = edge_offset + step +
+                                                           (i * (step_tot - 1));
+        corner_edges_new[dst_corner_i + quad_ord_ofs[3]] = totedge + i1;
 
         /* new vertical edge */
         if (step) { /* The first set is already done */
@@ -953,19 +955,21 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
       }
       else {
         /* last segment */
-        ml_new[quad_ord[0]].v = i1;
-        ml_new[quad_ord[1]].v = i2;
-        ml_new[quad_ord[2]].v = med_new_firstloop->v2;
-        ml_new[quad_ord[3]].v = med_new_firstloop->v1;
+        corner_verts_new[dst_corner_i + quad_ord[0]] = i1;
+        corner_verts_new[dst_corner_i + quad_ord[1]] = i2;
+        corner_verts_new[dst_corner_i + quad_ord[2]] = med_new_firstloop->v2;
+        corner_verts_new[dst_corner_i + quad_ord[3]] = med_new_firstloop->v1;
 
-        ml_new[quad_ord_ofs[0]].e = (edge_offset + step + (i * (step_tot - 1))) - 1;
-        ml_new[quad_ord_ofs[1]].e = totedge + i2;
-        ml_new[quad_ord_ofs[2]].e = i;
-        ml_new[quad_ord_ofs[3]].e = totedge + i1;
+        corner_edges_new[dst_corner_i + quad_ord_ofs[0]] = (edge_offset + step +
+                                                            (i * (step_tot - 1))) -
+                                                           1;
+        corner_edges_new[dst_corner_i + quad_ord_ofs[1]] = totedge + i2;
+        corner_edges_new[dst_corner_i + quad_ord_ofs[2]] = i;
+        corner_edges_new[dst_corner_i + quad_ord_ofs[3]] = totedge + i1;
       }
 
       mp_new++;
-      ml_new += 4;
+      dst_corner_i += 4;
       mpoly_index++;
     }
 

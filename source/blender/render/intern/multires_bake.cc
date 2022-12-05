@@ -474,8 +474,7 @@ static void do_multires_bake(MultiresBakeRender *bkr,
 
   const float(*positions)[3] = (float(*)[3])dm->getVertArray(dm);
   MPoly *mpoly = dm->getPolyArray(dm);
-  MLoop *mloop = dm->getLoopArray(dm);
-  MLoopUV *mloopuv = dm->getLoopDataArray(dm, CD_MLOOPUV);
+  MLoopUV *mloopuv = static_cast<MLoopUV *>(dm->getLoopDataArray(dm, CD_MLOOPUV));
   float *pvtangent = NULL;
 
   ListBase threads;
@@ -555,14 +554,14 @@ static void do_multires_bake(MultiresBakeRender *bkr,
     handle->queue = &queue;
 
     handle->data.mpoly = mpoly;
-    handle->data.material_indices = CustomData_get_layer_named(
-        &dm->polyData, CD_PROP_INT32, "material_index");
-    handle->data.mvert = mvert;
+    handle->data.material_indices = static_cast<const int *>(
+        CustomData_get_layer_named(&dm->polyData, CD_PROP_INT32, "material_index"));
+    handle->data.positions = positions;
     handle->data.vert_normals = vert_normals;
     handle->data.mloopuv = mloopuv;
     BKE_image_get_tile_uv(ima, tile->tile_number, handle->data.uv_offset);
     handle->data.mlooptri = mlooptri;
-    handle->data.corner_verts = corner_verts;
+    handle->data.corner_verts = dm->getCornerVertArray(dm);
     handle->data.pvtangent = pvtangent;
     handle->data.precomputed_normals = poly_normals; /* don't strictly need this */
     handle->data.w = ibuf->x;

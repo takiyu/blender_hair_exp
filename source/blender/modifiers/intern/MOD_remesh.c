@@ -64,7 +64,7 @@ static void init_dualcon_mesh(DualConInput *input, Mesh *mesh)
   input->co_stride = sizeof(float[3]);
   input->totco = mesh->totvert;
 
-  input->mloop = (void *)BKE_mesh_loops(mesh);
+  input->mloop = (void *)BKE_mesh_corner_verts(mesh);
   input->loop_stride = sizeof(int);
 
   input->looptri = (void *)BKE_mesh_runtime_looptri_ensure(mesh);

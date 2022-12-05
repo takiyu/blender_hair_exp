@@ -89,21 +89,20 @@ static void extract_pos_nor_iter_poly_mesh(const MeshRenderData *mr,
   MeshExtract_PosNor_Data *data = static_cast<MeshExtract_PosNor_Data *>(_data);
   const bool poly_hidden = mr->hide_poly && mr->hide_poly[mp_index];
 
-  const MLoop *mloop = mr->mloop;
   const int ml_index_end = mp->loopstart + mp->totloop;
   for (int ml_index = mp->loopstart; ml_index < ml_index_end; ml_index += 1) {
-    const MLoop *ml = &mloop[ml_index];
+    const int vert_i = mr->corner_verts[ml_index];
 
     PosNorLoop *vert = &data->vbo_data[ml_index];
-    const bool vert_hidden = mr->hide_vert && mr->hide_vert[ml->v];
-    copy_v3_v3(vert->pos, mr->positions[ml->v]);
-    vert->nor = data->normals[ml->v].low;
+    const bool vert_hidden = mr->hide_vert && mr->hide_vert[vert_i];
+    copy_v3_v3(vert->pos, mr->positions[vert_i]);
+    vert->nor = data->normals[vert_i].low;
     /* Flag for paint mode overlay. */
     if (poly_hidden || vert_hidden ||
-        ((mr->v_origindex) && (mr->v_origindex[ml->v] == ORIGINDEX_NONE))) {
+        ((mr->v_origindex) && (mr->v_origindex[vert_i] == ORIGINDEX_NONE))) {
       vert->nor.w = -1;
     }
-    else if (mr->select_vert && mr->select_vert[ml->v]) {
+    else if (mr->select_vert && mr->select_vert[vert_i]) {
       vert->nor.w = 1;
     }
     else {
@@ -464,22 +463,21 @@ static void extract_pos_nor_hq_iter_poly_mesh(const MeshRenderData *mr,
   MeshExtract_PosNorHQ_Data *data = static_cast<MeshExtract_PosNorHQ_Data *>(_data);
   const bool poly_hidden = mr->hide_poly && mr->hide_poly[mp - mr->mpoly];
 
-  const MLoop *mloop = mr->mloop;
   const int ml_index_end = mp->loopstart + mp->totloop;
   for (int ml_index = mp->loopstart; ml_index < ml_index_end; ml_index += 1) {
-    const MLoop *ml = &mloop[ml_index];
+    const int vert_i = mr->corner_verts[ml_index];
 
-    const bool vert_hidden = mr->hide_vert && mr->hide_vert[ml->v];
+    const bool vert_hidden = mr->hide_vert && mr->hide_vert[vert_i];
     PosNorHQLoop *vert = &data->vbo_data[ml_index];
-    copy_v3_v3(vert->pos, mr->positions[ml->v]);
-    copy_v3_v3_short(vert->nor, data->normals[ml->v].high);
+    copy_v3_v3(vert->pos, mr->positions[vert_i]);
+    copy_v3_v3_short(vert->nor, data->normals[vert_i].high);
 
     /* Flag for paint mode overlay. */
     if (poly_hidden || vert_hidden ||
-        ((mr->v_origindex) && (mr->v_origindex[ml->v] == ORIGINDEX_NONE))) {
+        ((mr->v_origindex) && (mr->v_origindex[vert_i] == ORIGINDEX_NONE))) {
       vert->nor[3] = -1;
     }
-    else if (mr->select_vert && mr->select_vert[ml->v]) {
+    else if (mr->select_vert && mr->select_vert[vert_i]) {
       vert->nor[3] = 1;
     }
     else {

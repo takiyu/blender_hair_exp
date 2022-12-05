@@ -262,6 +262,8 @@ static void mesh_blend_write(BlendWriter *writer, ID *id, const void *id_address
 
       mesh->mvert = BKE_mesh_legacy_convert_positions_to_verts(
           mesh, temp_arrays_for_legacy_format, vert_layers);
+      mesh->mloop = BKE_mesh_legacy_convert_corners_to_loops(
+          mesh, temp_arrays_for_legacy_format, loop_layers);
       BKE_mesh_legacy_convert_hide_layers_to_flags(mesh);
       BKE_mesh_legacy_convert_selection_layers_to_flags(mesh);
       BKE_mesh_legacy_convert_material_indices_to_mpoly(mesh);
@@ -273,7 +275,6 @@ static void mesh_blend_write(BlendWriter *writer, ID *id, const void *id_address
       /* Set deprecated mesh data pointers for forward compatibility. */
       mesh->medge = const_cast<MEdge *>(mesh->edges().data());
       mesh->mpoly = const_cast<MPoly *>(mesh->polys().data());
-      mesh->mloop = const_cast<MLoop *>(mesh->loops().data());
       mesh->dvert = const_cast<MDeformVert *>(mesh->deform_verts().data());
     }
 

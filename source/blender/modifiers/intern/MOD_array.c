@@ -276,12 +276,12 @@ static void mesh_merge_transform(Mesh *result,
   int *index_orig;
   int i;
   MEdge *me;
-  MLoop *ml;
   MPoly *mp;
   float(*result_positions)[3] = BKE_mesh_positions_for_write(result);
   MEdge *result_edges = BKE_mesh_edges_for_write(result);
   MPoly *result_polys = BKE_mesh_polys_for_write(result);
-  MLoop *result_loops = BKE_mesh_loops_for_write(result);
+  int *result_corner_verts = BKE_mesh_corner_verts_for_write(result);
+  int *result_corner_edges = BKE_mesh_corner_edges_for_write(result);
 
   CustomData_copy_data(&cap_mesh->vdata, &result->vdata, 0, cap_verts_index, cap_nverts);
   CustomData_copy_data(&cap_mesh->edata, &result->edata, 0, cap_edges_index, cap_nedges);
@@ -321,10 +321,9 @@ static void mesh_merge_transform(Mesh *result,
   }
 
   /* adjust cap loop vertex and edge indices */
-  ml = result_loops + cap_loops_index;
-  for (i = 0; i < cap_nloops; i++, ml++) {
-    ml->v += cap_verts_index;
-    ml->e += cap_edges_index;
+  for (i = 0; i < cap_nloops; i++) {
+    result_corner_verts[cap_loops_index + i] += cap_verts_index;
+    result_corner_edges[cap_loops_index + i] += cap_edges_index;
   }
 
   /* Set #CD_ORIGINDEX. */
@@ -354,7 +353,6 @@ static Mesh *arrayModifier_doArray(ArrayModifierData *amd,
                                    const Mesh *mesh)
 {
   MEdge *me;
-  MLoop *ml;
   MPoly *mp;
   int i, j, c, count;
   float length = amd->length;
@@ -427,7 +425,8 @@ static Mesh *arrayModifier_doArray(ArrayModifierData *amd,
   unit_m4(offset);
   const MEdge *src_edges = BKE_mesh_edges(mesh);
   const MPoly *src_polys = BKE_mesh_polys(mesh);
-  const MLoop *src_loops = BKE_mesh_loops(mesh);
+  const int *src_corner_verts = BKE_mesh_corner_verts(mesh);
+  const int *src_corner_edges = BKE_mesh_corner_edges(mesh);
 
   if (amd->offset_type & MOD_ARR_OFF_CONST) {
     add_v3_v3(offset[3], amd->offset);
@@ -536,7 +535,8 @@ static Mesh *arrayModifier_doArray(ArrayModifierData *amd,
   float(*result_positions)[3] = BKE_mesh_positions_for_write(result);
   MEdge *result_edges = BKE_mesh_edges_for_write(result);
   MPoly *result_polys = BKE_mesh_polys_for_write(result);
-  MLoop *result_loops = BKE_mesh_loops_for_write(result);
+  int *result_corner_verts = BKE_mesh_corner_verts_for_write(result);
+  int *result_corner_edges = BKE_mesh_corner_edges_for_write(result);
 
   if (use_merge) {
     /* Will need full_doubles_map for handling merge */
@@ -556,7 +556,8 @@ static Mesh *arrayModifier_doArray(ArrayModifierData *amd,
     memcpy(result_edges, src_edges, sizeof(MEdge) * mesh->totedge);
   }
   if (!CustomData_has_layer(&mesh->pdata, CD_MPOLY)) {
-    memcpy(result_loops, src_loops, sizeof(MLoop) * mesh->totloop);
+    memcpy(result_corner_verts, src_corner_verts, sizeof(int) * mesh->totloop);
+    memcpy(result_corner_edges, src_corner_edges, sizeof(int) * mesh->totloop);
     memcpy(result_polys, src_polys, sizeof(MPoly) * mesh->totpoly);
   }
 
@@ -611,10 +612,10 @@ static Mesh *arrayModifier_doArray(ArrayModifierData *amd,
     }
 
     /* adjust loop vertex and edge indices */
-    ml = result_loops + c * chunk_nloops;
-    for (i = 0; i < chunk_nloops; i++, ml++) {
-      ml->v += c * chunk_nverts;
-      ml->e += c * chunk_nedges;
+    const int chunk_corner_start = c * chunk_nloops;
+    for (i = 0; i < chunk_nloops; i++) {
+      result_corner_verts[chunk_corner_start] += c * chunk_nverts;
+      result_corner_edges[chunk_corner_start] += c * chunk_nedges;
     }
 
     /* Handle merge between chunk n and n-1 */

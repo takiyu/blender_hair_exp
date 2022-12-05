@@ -182,7 +182,7 @@ static void meshcache_do(MeshCacheModifierData *mcmd,
       BKE_mesh_calc_relative_deform(
           BKE_mesh_polys(me),
           me->totpoly,
-          BKE_mesh_loops(me),
+          BKE_mesh_corner_verts(me),
           me->totvert,
 
           (const float(*)[3])positions,      /* From the original Mesh. */

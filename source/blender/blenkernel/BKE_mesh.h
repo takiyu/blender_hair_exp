@@ -540,7 +540,7 @@ enum {
  * Collection of #MLoopNorSpace basic storage & pre-allocation.
  */
 typedef struct MLoopNorSpaceArray {
-  MLoopNorSpace **lspacearr; /* MLoop aligned array */
+  MLoopNorSpace **lspacearr; /* Face corner aligned array */
   struct LinkNode
       *loops_pool; /* Allocated once, avoids to call BLI_linklist_prepend_arena() for each loop! */
   char data_type;  /* Whether we store loop indices, or pointers to BMLoop. */
@@ -756,12 +756,12 @@ void BKE_mesh_calc_volume(const float (*positions)[3],
                           int mverts_num,
                           const struct MLoopTri *mlooptri,
                           int looptri_num,
-                          const struct MLoop *mloop,
+                          const int *corner_verts,
                           float *r_volume,
                           float r_center[3]);
 
 /**
- * Flip a single MLoop's #MDisps structure,
+ * Flip a single corner's #MDisps structure,
  * low level function to be called from face-flipping code which re-arranged the mdisps themselves.
  */
 void BKE_mesh_mdisp_flip(struct MDisps *md, bool use_loop_mdisp_flip);

@@ -1938,7 +1938,7 @@ static void mesh_init_origspace(Mesh *mesh)
   // const int numloop = mesh->totloop;
   const Span<float3> positions = mesh->positions();
   const Span<MPoly> polys = mesh->polys();
-  const Span<MLoop> loops = mesh->loops();
+  const Span<int> corner_verts = mesh->corner_verts();
 
   const MPoly *mp = polys.data();
   int i, j, k;
@@ -1954,20 +1954,21 @@ static void mesh_init_origspace(Mesh *mesh)
       }
     }
     else {
-      const MLoop *l = &loops[mp->loopstart];
       float p_nor[3], co[3];
       float mat[3][3];
 
       float min[2] = {FLT_MAX, FLT_MAX}, max[2] = {-FLT_MAX, -FLT_MAX};
       float translate[2], scale[2];
 
-      BKE_mesh_calc_poly_normal(
-          mp, l, reinterpret_cast<const float(*)[3]>(positions.data()), p_nor);
+      BKE_mesh_calc_poly_normal(mp,
+                                &corner_verts[mp->loopstart],
+                                reinterpret_cast<const float(*)[3]>(positions.data()),
+                                p_nor);
       axis_dominant_v3_to_m3(mat, p_nor);
 
       vcos_2d.resize(mp->totloop);
-      for (j = 0; j < mp->totloop; j++, l++) {
-        mul_v3_m3v3(co, mat, positions[l->v]);
+      for (j = 0; j < mp->totloop; j++) {
+        mul_v3_m3v3(co, mat, positions[corner_verts[mp->totloop + j]]);
         copy_v2_v2(vcos_2d[j], co);
 
         for (k = 0; k < 2; k++) {

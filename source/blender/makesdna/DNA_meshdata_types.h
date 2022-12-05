@@ -220,8 +220,8 @@ enum {
  * It may also be useful to check whether or not two vertices of a triangle
  * form an edge in the underlying mesh.
  *
- * This can be done by checking the edge of the referenced loop (#MLoop.e),
- * the winding of the #MLoopTri and the #MLoop's will always match,
+ * This can be done by checking the edge of the referenced corner,
+ * the winding of the #MLoopTri and the corners's will always match,
  * however the order of vertices in the edge is undefined.
  *
  * \code{.c}
@@ -477,8 +477,8 @@ enum {
  * \{ */
 
 /**
- * Used in Blender pre 2.63, See #MLoop, #MPoly for face data stored in the blend file.
- * Use for reading old files and in a handful of cases which should be removed eventually.
+ * Used in Blender pre 2.63, See #Mesh::corner_verts(), #MPoly for face data stored in the blend
+ * file. Use for reading old files and in a handful of cases which should be removed eventually.
  */
 typedef struct MFace {
   unsigned int v1, v2, v3, v4;

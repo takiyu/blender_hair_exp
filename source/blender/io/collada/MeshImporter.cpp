@@ -615,9 +615,8 @@ void MeshImporter::read_polys(COLLADAFW::Mesh *collada_mesh,
   VCOLDataWrapper vcol(collada_mesh->getColors());
 
   MutableSpan<MPoly> polys = me->polys_for_write();
-  MutableSpan<MLoop> loops = me->loops_for_write();
+  MutableSpan<int> corner_verts = me->corner_verts_for_write();
   MPoly *mpoly = polys.data();
-  MLoop *mloop = loops.data();
   int loop_index = 0;
 
   MaterialIdPrimitiveArrayMap mat_prim_map;
@@ -660,7 +659,8 @@ void MeshImporter::read_polys(COLLADAFW::Mesh *collada_mesh,
           /* For each triangle store indices of its 3 vertices */
           uint triangle_vertex_indices[3] = {
               first_vertex, position_indices[1], position_indices[2]};
-          set_poly_indices(mpoly, mloop, loop_index, triangle_vertex_indices, 3);
+          set_poly_indices(
+              mpoly, &corner_verts[loop_index], loop_index, triangle_vertex_indices, 3);
 
           if (mp_has_normals) { /* vertex normals, same implementation as for the triangles */
             /* The same for vertices normals. */
@@ -675,7 +675,6 @@ void MeshImporter::read_polys(COLLADAFW::Mesh *collada_mesh,
           if (material_indices) {
             material_indices++;
           }
-          mloop += 3;
           loop_index += 3;
           prim.totpoly++;
         }
@@ -708,7 +707,8 @@ void MeshImporter::read_polys(COLLADAFW::Mesh *collada_mesh,
           continue; /* TODO: add support for holes */
         }
 
-        bool broken_loop = set_poly_indices(mpoly, mloop, loop_index, position_indices, vcount);
+        bool broken_loop = set_poly_indices(
+            mpoly, &corner_verts[loop_index], loop_index, position_indices, vcount);
         if (broken_loop) {
           invalid_loop_holes += 1;
         }
@@ -778,7 +778,6 @@ void MeshImporter::read_polys(COLLADAFW::Mesh *collada_mesh,
         if (material_indices) {
           material_indices++;
         }
-        mloop += vcount;
         loop_index += vcount;
         start_index += vcount;
         prim.totpoly++;
@@ -900,8 +899,8 @@ std::string *MeshImporter::get_geometry_name(const std::string &mesh_name)
 
 static bool bc_has_out_of_bound_indices(Mesh *me)
 {
-  for (const MLoop &loop : me->loops()) {
-    if (loop.v >= me->totvert) {
+  for (const int vert_i : me->corner_verts()) {
+    if (vert_i >= me->totvert) {
       return true;
     }
   }

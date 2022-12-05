@@ -95,7 +95,7 @@ static void rna_Mesh_calc_smooth_groups(
                                              mesh->totedge,
                                              BKE_mesh_polys(mesh),
                                              mesh->totpoly,
-                                             BKE_mesh_loops(mesh),
+                                             BKE_mesh_corner_edges(mesh),
                                              mesh->totloop,
                                              r_group_total,
                                              use_bitflags);
@@ -166,8 +166,11 @@ static void rna_Mesh_transform(Mesh *mesh, float mat[16], bool shape_keys)
 
 static void rna_Mesh_flip_normals(Mesh *mesh)
 {
-  BKE_mesh_polys_flip(
-      BKE_mesh_polys(mesh), BKE_mesh_loops_for_write(mesh), &mesh->ldata, mesh->totpoly);
+  BKE_mesh_polys_flip(BKE_mesh_polys(mesh),
+                      BKE_mesh_corner_verts_for_write(mesh),
+                      BKE_mesh_corner_edges_for_write(mesh),
+                      &mesh->ldata,
+                      mesh->totpoly);
   BKE_mesh_tessface_clear(mesh);
   BKE_mesh_runtime_clear_geometry(mesh);
 

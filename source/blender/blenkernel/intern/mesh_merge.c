@@ -206,7 +206,7 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
   const int totpoly = mesh->totpoly;
   const MEdge *src_edges = BKE_mesh_edges(mesh);
   const MPoly *src_polys = BKE_mesh_polys(mesh);
-  const MLoop *src_loops = BKE_mesh_loops(mesh);
+  const MLoop *src_loops = BKE_mesh_corner_verts(mesh);
 
   const int totvert_final = totvert - tot_vtargetmap;
 

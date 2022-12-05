@@ -317,7 +317,7 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
 
   /* adjust mirrored poly loopstart indices, and reverse loop order (normals) */
   mp = BKE_mesh_polys_for_write(result) + maxPolys;
-  int *corner_edges = BKE_mesh_loops_for_write(result);
+  int *corner_edges = BKE_mesh_corner_edges_for_write(result);
   for (i = 0; i < maxPolys; i++, mp++) {
     int j, e;
 

@@ -62,8 +62,6 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, struct
   int *vertMap, *edgeMap, *faceMap;
   float frac;
   MPoly *mpoly_dst;
-  MLoop *ml_dst;
-  const MLoop *ml_src;
   GHashIterator gh_iter;
   /* maps vert indices in old mesh to indices in new mesh */
   GHash *vertHash = BLI_ghash_int_new("build ve apply gh");
@@ -77,7 +75,8 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, struct
   const int poly_src_num = mesh->totpoly;
   const MEdge *medge_src = BKE_mesh_edges(mesh);
   const MPoly *mpoly_src = BKE_mesh_polys(mesh);
-  const MLoop *mloop_src = BKE_mesh_loops(mesh);
+  const int *corner_verts_src = BKE_mesh_corner_verts(mesh);
+  const int *corner_edges_src = BKE_mesh_corner_edges(mesh);
 
   vertMap = MEM_malloc_arrayN(vert_src_num, sizeof(*vertMap), "build modifier vertMap");
   edgeMap = MEM_malloc_arrayN(edge_src_num, sizeof(*edgeMap), "build modifier edgeMap");
@@ -100,7 +99,6 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, struct
   /* if there's at least one face, build based on faces */
   if (faces_dst_num) {
     const MPoly *mpoly, *mp;
-    const MLoop *ml, *mloop;
     uintptr_t hash_num, hash_num_alt;
 
     if (bmd->flag & MOD_BUILD_FLAG_RANDOMIZE) {
@@ -111,15 +109,13 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, struct
      * mapped to the new indices
      */
     mpoly = mpoly_src;
-    mloop = mloop_src;
     hash_num = 0;
     for (i = 0; i < faces_dst_num; i++) {
       mp = mpoly + faceMap[i];
-      ml = mloop + mp->loopstart;
-
-      for (j = 0; j < mp->totloop; j++, ml++) {
+      for (j = 0; j < mp->totloop; j++) {
+        const int vert_i = corner_verts_src[mp->loopstart + j];
         void **val_p;
-        if (!BLI_ghash_ensure_p(vertHash, POINTER_FROM_INT(ml->v), &val_p)) {
+        if (!BLI_ghash_ensure_p(vertHash, POINTER_FROM_INT(vert_i), &val_p)) {
           *val_p = (void *)hash_num;
           hash_num++;
         }
@@ -203,7 +199,8 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, struct
       mesh, BLI_ghash_len(vertHash), BLI_ghash_len(edgeHash), 0, loops_dst_num, faces_dst_num);
   MEdge *result_edges = BKE_mesh_edges_for_write(result);
   MPoly *result_polys = BKE_mesh_polys_for_write(result);
-  MLoop *result_loops = BKE_mesh_loops_for_write(result);
+  int *result_corner_verts = BKE_mesh_corner_verts_for_write(result);
+  int *result_corner_edges = BKE_mesh_corner_edges_for_write(result);
 
   /* copy the vertices across */
   GHASH_ITER (gh_iter, vertHash) {
@@ -229,7 +226,6 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, struct
   }
 
   mpoly_dst = result_polys;
-  ml_dst = result_loops;
 
   /* copy the faces across, remapping indices */
   k = 0;
@@ -246,10 +242,13 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, struct
     CustomData_copy_data(
         &mesh->ldata, &result->ldata, source->loopstart, dest->loopstart, dest->totloop);
 
-    ml_src = mloop_src + source->loopstart;
-    for (j = 0; j < source->totloop; j++, k++, ml_src++, ml_dst++) {
-      ml_dst->v = POINTER_AS_INT(BLI_ghash_lookup(vertHash, POINTER_FROM_INT(ml_src->v)));
-      ml_dst->e = POINTER_AS_INT(BLI_ghash_lookup(edgeHash2, POINTER_FROM_INT(ml_src->e)));
+    for (j = 0; j < source->totloop; j++, k++) {
+      const int vert_src = corner_verts_src[source->loopstart + j];
+      const int edge_src = corner_edges_src[source->loopstart + j];
+      result_corner_verts[dest->loopstart + j] = POINTER_AS_INT(
+          BLI_ghash_lookup(vertHash, POINTER_FROM_INT(vert_src)));
+      result_corner_edges[dest->loopstart + j] = POINTER_AS_INT(
+          BLI_ghash_lookup(edgeHash2, POINTER_FROM_INT(edge_src)));
     }
   }
 

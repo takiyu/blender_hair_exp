@@ -217,9 +217,9 @@ static void statvis_calc_thickness(const MeshRenderData *mr, float *r_thickness)
     const MLoopTri *mlooptri = mr->mlooptri;
     for (int i = 0; i < mr->tri_len; i++, mlooptri++) {
       const int index = mlooptri->poly;
-      const float *cos[3] = {mr->positions[mr->mloop[mlooptri->tri[0]].v],
-                             mr->positions[mr->mloop[mlooptri->tri[1]].v],
-                             mr->positions[mr->mloop[mlooptri->tri[2]].v]};
+      const float *cos[3] = {mr->positions[mr->corner_verts[mlooptri->tri[0]]],
+                             mr->positions[mr->corner_verts[mlooptri->tri[1]]],
+                             mr->positions[mr->corner_verts[mlooptri->tri[2]]]};
       float ray_co[3];
       float ray_no[3];
 
@@ -260,7 +260,7 @@ static void statvis_calc_thickness(const MeshRenderData *mr, float *r_thickness)
 
 struct BVHTree_OverlapData {
   const float3 *positions;
-  const MLoop *loops;
+  const int *corner_verts;
   const MLoopTri *mlooptri;
   float epsilon;
 };
@@ -276,12 +276,12 @@ static bool bvh_overlap_cb(void *userdata, int index_a, int index_b, int /*threa
     return false;
   }
 
-  const float *tri_a_co[3] = {data->positions[data->loops[tri_a->tri[0]].v],
-                              data->positions[data->loops[tri_a->tri[1]].v],
-                              data->positions[data->loops[tri_a->tri[2]].v]};
-  const float *tri_b_co[3] = {data->positions[data->loops[tri_b->tri[0]].v],
-                              data->positions[data->loops[tri_b->tri[1]].v],
-                              data->positions[data->loops[tri_b->tri[2]].v]};
+  const float *tri_a_co[3] = {data->positions[data->corner_verts[tri_a->tri[0]]],
+                              data->positions[data->corner_verts[tri_a->tri[1]]],
+                              data->positions[data->corner_verts[tri_a->tri[2]]]};
+  const float *tri_b_co[3] = {data->positions[data->corner_verts[tri_b->tri[0]]],
+                              data->positions[data->corner_verts[tri_b->tri[1]]],
+                              data->positions[data->corner_verts[tri_b->tri[2]]]};
   float ix_pair[2][3];
   int verts_shared = 0;
 
@@ -343,7 +343,7 @@ static void statvis_calc_intersect(const MeshRenderData *mr, float *r_intersect)
 
     struct BVHTree_OverlapData data = {nullptr};
     data.positions = mr->positions;
-    data.loops = mr->mloop;
+    data.corner_verts = mr->corner_verts;
     data.mlooptri = mr->mlooptri;
     data.epsilon = BLI_bvhtree_get_epsilon(tree);
 
@@ -449,14 +449,14 @@ static void statvis_calc_distort(const MeshRenderData *mr, float *r_distort)
         fac = 0.0f;
 
         for (int i = 1; i <= mp->totloop; i++) {
-          const MLoop *l_prev = &mr->mloop[mp->loopstart + (i - 1) % mp->totloop];
-          const MLoop *l_curr = &mr->mloop[mp->loopstart + (i + 0) % mp->totloop];
-          const MLoop *l_next = &mr->mloop[mp->loopstart + (i + 1) % mp->totloop];
+          const int corner_prev = mp->loopstart + (i - 1) % mp->totloop;
+          const int corner_curr = mp->loopstart + (i + 0) % mp->totloop;
+          const int corner_next = mp->loopstart + (i + 1) % mp->totloop;
           float no_corner[3];
           normal_tri_v3(no_corner,
-                        mr->positions[l_prev->v],
-                        mr->positions[l_curr->v],
-                        mr->positions[l_next->v]);
+                        mr->positions[mr->corner_verts[corner_prev]],
+                        mr->positions[mr->corner_verts[corner_curr]],
+                        mr->positions[mr->corner_verts[corner_next]]);
           /* simple way to detect (what is most likely) concave */
           if (dot_v3v3(f_no, no_corner) < 0.0f) {
             negate_v3(no_corner);
@@ -532,11 +532,11 @@ static void statvis_calc_sharp(const MeshRenderData *mr, float *r_sharp)
 
     for (int mp_index = 0; mp_index < mr->poly_len; mp_index++, mp++) {
       for (int i = 0; i < mp->totloop; i++) {
-        const MLoop *l_curr = &mr->mloop[mp->loopstart + (i + 0) % mp->totloop];
-        const MLoop *l_next = &mr->mloop[mp->loopstart + (i + 1) % mp->totloop];
+        const int vert_curr = mr->corner_verts[mp->loopstart + (i + 0) % mp->totloop];
+        const int vert_next = mr->corner_verts[mp->loopstart + (i + 1) % mp->totloop];
         float angle;
         void **pval;
-        bool value_is_init = BLI_edgehash_ensure_p(eh, l_curr->v, l_next->v, &pval);
+        bool value_is_init = BLI_edgehash_ensure_p(eh, vert_curr, vert_next, &pval);
         if (!value_is_init) {
           *pval = (void *)mr->poly_normals[mp_index];
           /* non-manifold edge, yet... */
@@ -547,7 +547,7 @@ static void statvis_calc_sharp(const MeshRenderData *mr, float *r_sharp)
           const float *f2_no = static_cast<const float *>(*pval);
           angle = angle_normalized_v3v3(f1_no, f2_no);
           angle = is_edge_convex_v3(
-                      mr->positions[l_curr->v], mr->positions[l_next->v], f1_no, f2_no) ?
+                      mr->positions[vert_curr], mr->positions[vert_next], f1_no, f2_no) ?
                       angle :
                       -angle;
           /* Tag as manifold. */
@@ -557,8 +557,8 @@ static void statvis_calc_sharp(const MeshRenderData *mr, float *r_sharp)
           /* non-manifold edge */
           angle = DEG2RADF(90.0f);
         }
-        float *col1 = &vert_angles[l_curr->v];
-        float *col2 = &vert_angles[l_next->v];
+        float *col1 = &vert_angles[vert_curr];
+        float *col2 = &vert_angles[vert_next];
         *col1 = max_ff(*col1, angle);
         *col2 = max_ff(*col2, angle);
       }
@@ -579,9 +579,9 @@ static void statvis_calc_sharp(const MeshRenderData *mr, float *r_sharp)
     BLI_edgehashIterator_free(ehi);
     BLI_edgehash_free(eh, nullptr);
 
-    const MLoop *ml = mr->mloop;
-    for (int l_index = 0; l_index < mr->loop_len; l_index++, ml++) {
-      r_sharp[l_index] = sharp_remap(vert_angles[ml->v], min, max, minmax_irange);
+    for (int l_index = 0; l_index < mr->loop_len; l_index++) {
+      const int vert_i = mr->corner_verts[l_index];
+      r_sharp[l_index] = sharp_remap(vert_angles[vert_i], min, max, minmax_irange);
     }
   }
 

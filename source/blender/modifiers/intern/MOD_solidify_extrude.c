@@ -67,7 +67,7 @@ static void mesh_calc_hq_normal(Mesh *mesh,
   const int edges_num = mesh->totedge;
   const int polys_num = mesh->totpoly;
   const MPoly *mpoly = BKE_mesh_polys(mesh);
-  const MLoop *mloop = BKE_mesh_loops(mesh);
+  const int *corner_edges = BKE_mesh_corner_edges(mesh);
   const MEdge *medge = BKE_mesh_edges(mesh);
 
   const MPoly *mp = mpoly;
@@ -82,11 +82,11 @@ static void mesh_calc_hq_normal(Mesh *mesh,
     for (i = 0; i < polys_num; i++, mp++) {
       int j;
 
-      const MLoop *ml = mloop + mp->loopstart;
+      for (j = 0; j < mp->totloop; j++) {
+        const int edge_i = corner_edges[mp->loopstart + j];
 
-      for (j = 0; j < mp->totloop; j++, ml++) {
         /* --- add edge ref to face --- */
-        edge_ref = &edge_ref_array[ml->e];
+        edge_ref = &edge_ref_array[edge_i];
         if (!edgeref_is_init(edge_ref)) {
           edge_ref->p1 = i;
           edge_ref->p2 = -1;
@@ -98,7 +98,7 @@ static void mesh_calc_hq_normal(Mesh *mesh,
           /* 3+ faces using an edge, we can't handle this usefully */
           edge_ref->p1 = edge_ref->p2 = -1;
 #ifdef USE_NONMANIFOLD_WORKAROUND
-          BLI_BITMAP_ENABLE(edge_tmp_tag, ml->e);
+          BLI_BITMAP_ENABLE(edge_tmp_tag, edge_i);
 #endif
         }
         /* --- done --- */
@@ -218,7 +218,8 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
   const float(*orig_positions)[3] = BKE_mesh_positions(mesh);
   const MEdge *orig_medge = BKE_mesh_edges(mesh);
   const MPoly *orig_mpoly = BKE_mesh_polys(mesh);
-  const MLoop *orig_mloop = BKE_mesh_loops(mesh);
+  const int *orig_corner_verts = BKE_mesh_corner_verts(mesh);
+  const int *orig_corner_edges = BKE_mesh_corner_edges(mesh);
 
   if (need_poly_normals) {
     /* calculate only face normals */

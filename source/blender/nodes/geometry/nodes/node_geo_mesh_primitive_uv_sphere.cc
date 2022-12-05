@@ -180,7 +180,8 @@ BLI_NOINLINE static void calculate_sphere_faces(MutableSpan<MPoly> polys, const 
   }
 }
 
-BLI_NOINLINE static void calculate_sphere_corners(MutableSpan<MLoop> loops,
+BLI_NOINLINE static void calculate_sphere_corners(MutableSpan<int> corner_verts,
+                                                  MutableSpan<int> corner_edges,
                                                   const int segments,
                                                   const int rings)
 {

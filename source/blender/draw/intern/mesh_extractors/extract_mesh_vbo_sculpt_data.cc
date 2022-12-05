@@ -56,7 +56,6 @@ static void extract_sculpt_data_init(const MeshRenderData *mr,
   };
 
   gpuSculptData *vbo_data = (gpuSculptData *)GPU_vertbuf_get_data(vbo);
-  const MLoop *loops = (const MLoop *)CustomData_get_layer(cd_ldata, CD_MLOOP);
 
   if (mr->extract_type == MR_EXTRACT_BMESH) {
     int cd_mask_ofs = CustomData_get_offset(cd_vdata, CD_PAINT_MASK);
