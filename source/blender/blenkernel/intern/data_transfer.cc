@@ -1513,8 +1513,8 @@ bool BKE_object_data_transfer_ex(struct Depsgraph *depsgraph,
       const int num_edges_dst = me_dst->totedge;
       const MPoly *polys_dst = BKE_mesh_polys(me_dst);
       const int num_polys_dst = me_dst->totpoly;
-      const int *corner_verts = BKE_mesh_corner_verts(me_dst);
-      const int *corner_edges = BKE_mesh_corner_edgess(me_dst);
+      const int *corner_verts_dst = BKE_mesh_corner_verts(me_dst);
+      const int *corner_edges_dst = BKE_mesh_corner_edges(me_dst);
       const int num_loops_dst = me_dst->totloop;
       CustomData *ldata_dst = &me_dst->ldata;
 
@@ -1554,8 +1554,8 @@ bool BKE_object_data_transfer_ex(struct Depsgraph *depsgraph,
                                             num_verts_dst,
                                             edges_dst,
                                             num_edges_dst,
-                                            corner_verts,
-                                            corner_edges,
+                                            corner_verts_dst,
+                                            corner_edges_dst,
                                             num_loops_dst,
                                             polys_dst,
                                             num_polys_dst,
@@ -1571,9 +1571,15 @@ bool BKE_object_data_transfer_ex(struct Depsgraph *depsgraph,
       }
 
       if (mdef && vg_idx != -1 && !weights[LDATA]) {
-        weights[LDATA] = MEM_mallocN(sizeof(*weights[LDATA]) * (size_t)num_loops_dst, __func__);
-        BKE_defvert_extract_vgroup_to_loopweights(
-            mdef, vg_idx, num_verts_dst, loops_dst, num_loops_dst, invert_vgroup, weights[LDATA]);
+        weights[LDATA] = static_cast<float *>(
+            MEM_mallocN(sizeof(*weights[LDATA]) * (size_t)num_loops_dst, __func__));
+        BKE_defvert_extract_vgroup_to_loopweights(mdef,
+                                                  vg_idx,
+                                                  num_verts_dst,
+                                                  corner_verts_dst,
+                                                  num_loops_dst,
+                                                  invert_vgroup,
+                                                  weights[LDATA]);
       }
 
       if (data_transfer_layersmapping_generate(&lay_map,
@@ -1609,8 +1615,8 @@ bool BKE_object_data_transfer_ex(struct Depsgraph *depsgraph,
       const int num_verts_dst = me_dst->totvert;
       const MPoly *polys_dst = BKE_mesh_polys(me_dst);
       const int num_polys_dst = me_dst->totpoly;
-      const int *corner_verts = BKE_mesh_corner_verts(me_dst);
-      const int *corner_edges = BKE_mesh_corner_edgess(me_dst);
+      const int *corner_verts_dst = BKE_mesh_corner_verts(me_dst);
+      const int *corner_edges_dst = BKE_mesh_corner_edges(me_dst);
       const int num_loops_dst = me_dst->totloop;
 
       if (!geom_map_init[PDATA]) {
@@ -1644,7 +1650,7 @@ bool BKE_object_data_transfer_ex(struct Depsgraph *depsgraph,
                                             ray_radius,
                                             me_dst,
                                             positions_dst,
-                                            corner_verts,
+                                            corner_verts_dst,
                                             polys_dst,
                                             num_polys_dst,
                                             me_src,
@@ -1658,7 +1664,7 @@ bool BKE_object_data_transfer_ex(struct Depsgraph *depsgraph,
         BKE_defvert_extract_vgroup_to_polyweights(mdef,
                                                   vg_idx,
                                                   num_verts_dst,
-                                                  corner_verts,
+                                                  corner_verts_dst,
                                                   num_loops_dst,
                                                   polys_dst,
                                                   num_polys_dst,
