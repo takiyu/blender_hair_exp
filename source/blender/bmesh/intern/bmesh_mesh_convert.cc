@@ -154,14 +154,14 @@ void BM_mesh_bm_from_me(BMesh *bm, const Mesh *me, const struct BMeshFromMeshPar
   for (const int l : IndexRange(CustomData_number_of_layers(&mesh_ldata, CD_PROP_FLOAT2))) {
     char name[MAX_CUSTOMDATA_LAYER_NAME];
     BKE_get_uv_map_vert_selection_name(CustomData_get_layer_name(&mesh_ldata, CD_PROP_FLOAT2, l),
-                                   name);
+                                       name);
     if (CustomData_get_named_layer_index(&mesh_ldata, CD_PROP_BOOL, name) < 0) {
       CustomData_add_layer_named(
           &mesh_ldata, CD_PROP_BOOL, CD_SET_DEFAULT, nullptr, me->totloop, name);
       temporary_layers_to_delete.append(std::string(name));
     }
     BKE_get_uv_map_edge_selection_name(CustomData_get_layer_name(&mesh_ldata, CD_PROP_FLOAT2, l),
-                                   name);
+                                       name);
     if (CustomData_get_named_layer_index(&mesh_ldata, CD_PROP_BOOL, name) < 0) {
       CustomData_add_layer_named(
           &mesh_ldata, CD_PROP_BOOL, CD_SET_DEFAULT, nullptr, me->totloop, name);
@@ -987,13 +987,15 @@ void BM_mesh_bm_to_me(Main *bmain, BMesh *bm, Mesh *me, const struct BMeshToMesh
   /* Mark uv selection layers which are all false as 'nocopy'
    */
 
-
   for (const int l : IndexRange(CustomData_number_of_layers(&bm->ldata, CD_PROP_FLOAT2))) {
     char const *layer_name = CustomData_get_layer_name(&bm->ldata, CD_PROP_FLOAT2, l);
     char sub_layer_name[MAX_CUSTOMDATA_LAYER_NAME];
-    int vertsel_layer_index = CustomData_get_named_layer_index(&bm->ldata, CD_PROP_BOOL, BKE_get_uv_map_vert_selection_name(layer_name, sub_layer_name));
-    int edgesel_layer_index = CustomData_get_named_layer_index(&bm->ldata, CD_PROP_BOOL, BKE_get_uv_map_edge_selection_name(layer_name, sub_layer_name));
-    int pin_layer_index = CustomData_get_named_layer_index(&bm->ldata, CD_PROP_BOOL, BKE_get_uv_map_pin_name(layer_name, sub_layer_name));
+    int vertsel_layer_index = CustomData_get_named_layer_index(
+        &bm->ldata, CD_PROP_BOOL, BKE_get_uv_map_vert_selection_name(layer_name, sub_layer_name));
+    int edgesel_layer_index = CustomData_get_named_layer_index(
+        &bm->ldata, CD_PROP_BOOL, BKE_get_uv_map_edge_selection_name(layer_name, sub_layer_name));
+    int pin_layer_index = CustomData_get_named_layer_index(
+        &bm->ldata, CD_PROP_BOOL, BKE_get_uv_map_pin_name(layer_name, sub_layer_name));
     int vertsel_offset = bm->ldata.layers[vertsel_layer_index].offset;
     int edgesel_offset = bm->ldata.layers[edgesel_layer_index].offset;
     int pin_offset = bm->ldata.layers[pin_layer_index].offset;
@@ -1005,31 +1007,31 @@ void BM_mesh_bm_to_me(Main *bmain, BMesh *bm, Mesh *me, const struct BMeshToMesh
       BMIter liter;
       BMLoop *l;
       BM_ITER_ELEM (l, &liter, f, BM_LOOPS_OF_FACE) {
-          need_vertsel |= BM_ELEM_CD_GET_BOOL(l, vertsel_offset);
-          need_edgesel |= BM_ELEM_CD_GET_BOOL(l, edgesel_offset);
-          need_pin |= BM_ELEM_CD_GET_BOOL(l, pin_offset);
+        need_vertsel |= BM_ELEM_CD_GET_BOOL(l, vertsel_offset);
+        need_edgesel |= BM_ELEM_CD_GET_BOOL(l, edgesel_offset);
+        need_pin |= BM_ELEM_CD_GET_BOOL(l, pin_offset);
       }
     }
 
     if (need_vertsel) {
-        bm->ldata.layers[vertsel_layer_index].flag &= ~CD_FLAG_NOCOPY;
-    } else {
-        bm->ldata.layers[vertsel_layer_index].flag |= CD_FLAG_NOCOPY;
+      bm->ldata.layers[vertsel_layer_index].flag &= ~CD_FLAG_NOCOPY;
+    }
+    else {
+      bm->ldata.layers[vertsel_layer_index].flag |= CD_FLAG_NOCOPY;
     }
     if (need_edgesel) {
-        bm->ldata.layers[edgesel_layer_index].flag &= ~CD_FLAG_NOCOPY;
-    } else {
-        bm->ldata.layers[edgesel_layer_index].flag |= CD_FLAG_NOCOPY;
+      bm->ldata.layers[edgesel_layer_index].flag &= ~CD_FLAG_NOCOPY;
+    }
+    else {
+      bm->ldata.layers[edgesel_layer_index].flag |= CD_FLAG_NOCOPY;
     }
     if (need_pin) {
-        bm->ldata.layers[pin_layer_index].flag &= ~CD_FLAG_NOCOPY;
-    } else {
-        bm->ldata.layers[pin_layer_index].flag |= CD_FLAG_NOCOPY;
+      bm->ldata.layers[pin_layer_index].flag &= ~CD_FLAG_NOCOPY;
     }
-
-
+    else {
+      bm->ldata.layers[pin_layer_index].flag |= CD_FLAG_NOCOPY;
+    }
   }
-
 
   {
     CustomData_MeshMasks mask = CD_MASK_MESH;

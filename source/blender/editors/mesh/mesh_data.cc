@@ -341,14 +341,16 @@ bool *ED_mesh_uv_map_ensure_vert_selection(Mesh *mesh, const int uv_index)
   using namespace blender::bke;
   char buffer[MAX_CUSTOMDATA_LAYER_NAME];
   const char *uv_name = CustomData_get_layer_name(&mesh->ldata, CD_PROP_FLOAT2, uv_index);
-  return ensure_corner_boolean_attribute(*mesh, BKE_get_uv_map_vert_selection_name(uv_name, buffer));
+  return ensure_corner_boolean_attribute(*mesh,
+                                         BKE_get_uv_map_vert_selection_name(uv_name, buffer));
 }
 bool *ED_mesh_uv_map_ensure_edge_selection(Mesh *mesh, const int uv_index)
 {
   using namespace blender::bke;
   char buffer[MAX_CUSTOMDATA_LAYER_NAME];
   const char *uv_name = CustomData_get_layer_name(&mesh->ldata, CD_PROP_FLOAT2, uv_index);
-  return ensure_corner_boolean_attribute(*mesh, BKE_get_uv_map_edge_selection_name(uv_name, buffer));
+  return ensure_corner_boolean_attribute(*mesh,
+                                         BKE_get_uv_map_edge_selection_name(uv_name, buffer));
 }
 bool *ED_mesh_uv_map_ensure_pin(Mesh *mesh, const int uv_index)
 {

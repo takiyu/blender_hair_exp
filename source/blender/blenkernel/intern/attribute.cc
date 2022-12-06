@@ -838,4 +838,3 @@ char const *BKE_get_uv_map_pin_name(char const *uv_map_name, char *buffer)
   BLI_snprintf(buffer, MAX_CUSTOMDATA_LAYER_NAME, ".%s.%s", UV_PINNED_NAME, uv_map_name);
   return buffer;
 }
-

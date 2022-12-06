@@ -4112,8 +4112,8 @@ static void proj_paint_layer_clone_init(ProjPaintState *ps, ProjPaintLayerClone 
         MEM_mallocN(ps->totpoly_eval * sizeof(float(*)[2]), "proj_paint_mtfaces"));
 
     if (layer_num != -1) {
-      mloopuv_clone_base = static_cast <const float(*)[2]>(CustomData_get_layer_n(
-                                             &ps->me_eval->ldata, CD_PROP_FLOAT2, layer_num));
+      mloopuv_clone_base = static_cast<const float(*)[2]>(
+          CustomData_get_layer_n(&ps->me_eval->ldata, CD_PROP_FLOAT2, layer_num));
     }
 
     if (mloopuv_clone_base == nullptr) {

@@ -1477,9 +1477,10 @@ void BKE_mesh_legacy_convert_uvs_to_struct(
   char edge_name[MAX_CUSTOMDATA_LAYER_NAME];
   char pin_name[MAX_CUSTOMDATA_LAYER_NAME];
   for (const CustomDataLayer &layer : face_corner_layers_to_write) {
-    uv_sublayers_to_skip.add_multiple_new({BKE_get_uv_map_vert_selection_name(layer.name, vert_name),
-                                           BKE_get_uv_map_edge_selection_name(layer.name, edge_name),
-                                           BKE_get_uv_map_pin_name(layer.name, pin_name)});
+    uv_sublayers_to_skip.add_multiple_new(
+        {BKE_get_uv_map_vert_selection_name(layer.name, vert_name),
+         BKE_get_uv_map_edge_selection_name(layer.name, edge_name),
+         BKE_get_uv_map_pin_name(layer.name, pin_name)});
   }
 
   for (const CustomDataLayer &layer : face_corner_layers_to_write) {

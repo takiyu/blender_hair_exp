@@ -4171,9 +4171,9 @@ void CustomData_from_bmesh_block(const CustomData *source,
   int dest_i = 0;
   for (int src_i = 0; src_i < source->totlayer; src_i++) {
 
-     if (source->layers[src_i].flag & CD_FLAG_NOCOPY) {
-       continue;
-     }
+    if (source->layers[src_i].flag & CD_FLAG_NOCOPY) {
+      continue;
+    }
 
     /* find the first dest layer with type >= the source type
      * (this should work because layers are ordered by type)
