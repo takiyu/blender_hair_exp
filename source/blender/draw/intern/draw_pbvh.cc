@@ -975,7 +975,8 @@ struct PBVHBatches {
       }
 
       int r_edges[3];
-      BKE_mesh_looptri_get_real_edges(edges.data(), args->mloop, lt, r_edges);
+      BKE_mesh_looptri_get_real_edges(
+          edges.data(), args->corner_verts, args->corner_edges, lt, r_edges);
 
       if (r_edges[0] != -1) {
         edge_count++;
@@ -1000,7 +1001,8 @@ struct PBVHBatches {
       }
 
       int r_edges[3];
-      BKE_mesh_looptri_get_real_edges(edges.data(), args->mloop, lt, r_edges);
+      BKE_mesh_looptri_get_real_edges(
+          edges.data(), args->corner_verts, args->corner_edges, lt, r_edges);
 
       if (r_edges[0] != -1) {
         GPU_indexbuf_add_line_verts(&elb_lines, vertex_i, vertex_i + 1);

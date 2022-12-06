@@ -71,7 +71,7 @@ struct CDStreamConfig {
   std::map<std::string, Alembic::AbcGeom::OC4fGeomParam> abc_vertex_colors;
 
   CDStreamConfig()
-      : mloop(NULL),
+      : corner_verts(NULL),
         totloop(0),
         mpoly(NULL),
         totpoly(0),

@@ -200,11 +200,12 @@ class MeshFairingContext : public FairingContext {
     MutableSpan<float3> positions = mesh->positions_for_write();
     medge_ = mesh->edges();
     mpoly_ = mesh->polys();
-    mloop_ = mesh->loops();
+    corner_verts_ = mesh->corner_verts();
+    corner_edges_ = mesh->corner_edges();
     BKE_mesh_vert_loop_map_create(&vlmap_,
                                   &vlmap_mem_,
                                   mpoly_.data(),
-                                  mloop_.data(),
+                                  corner_verts_.data(),
                                   mesh->totvert,
                                   mesh->totpoly,
                                   mesh->totloop);
@@ -222,7 +223,8 @@ class MeshFairingContext : public FairingContext {
       }
     }
 
-    loop_to_poly_map_ = blender::bke::mesh_topology::build_loop_to_poly_map(mpoly_, mloop_.size());
+    loop_to_poly_map_ = blender::bke::mesh_topology::build_loop_to_poly_map(mpoly_,
+                                                                            corner_verts_.size());
   }
 
   ~MeshFairingContext() override
@@ -238,8 +240,8 @@ class MeshFairingContext : public FairingContext {
     const int vert = corner_verts_[loop];
     const MPoly *p = &mpoly_[loop_to_poly_map_[loop]];
     const int corner = poly_find_loop_from_vert(p, &corner_verts_[p->loopstart], vert);
-    copy_v3_v3(r_adj_next, co_[ME_POLY_LOOP_NEXT(mloop_, p, corner)->v]);
-    copy_v3_v3(r_adj_prev, co_[ME_POLY_LOOP_PREV(mloop_, p, corner)->v]);
+    copy_v3_v3(r_adj_next, co_[corner_verts_[ME_POLY_LOOP_NEXT(p, corner)]]);
+    copy_v3_v3(r_adj_prev, co_[corner_verts_[ME_POLY_LOOP_PREV(p, corner)]]);
   }
 
   int other_vertex_index_from_loop(const int loop, const uint v) override

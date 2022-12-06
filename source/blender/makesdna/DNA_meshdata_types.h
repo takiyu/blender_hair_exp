@@ -105,21 +105,6 @@ enum {
   /* ME_HIDE = (1 << 4), */
 };
 
-/**
- * Mesh Face Corners.
- * "Loop" is an internal name for the corner of a polygon (#MPoly).
- *
- * Typically accessed with #Mesh.loops().
- */
-#ifdef DNA_DEPRECATED_ALLOW
-typedef struct MLoop {
-  /** Vertex index. */
-  unsigned int v;
-  /** Edge index into an #MEdge array. */
-  unsigned int e;
-} MLoop;
-#endif
-
 /** \} */
 
 /* -------------------------------------------------------------------- */
@@ -182,9 +167,9 @@ enum {
  *
  * // access vertex locations.
  * float *vtri_co[3] = {
- *     positions[mloop[lt->tri[0]].v],
- *     positions[mloop[lt->tri[1]].v],
- *     positions[mloop[lt->tri[2]].v],
+ *     positions[corner_verts[lt->tri[0]]],
+ *     positions[corner_verts[lt->tri[1]]],
+ *     positions[corner_verts[lt->tri[2]]],
  * };
  *
  * // access UV coordinates (works for all loop data, vertex colors... etc).
@@ -208,10 +193,10 @@ enum {
  * int j, lt_tot = ME_POLY_TRI_TOT(mp);
  *
  * for (j = 0; j < lt_tot; j++, lt++) {
- *     unsigned int vtri[3] = {
- *         mloop[lt->tri[0]].v,
- *         mloop[lt->tri[1]].v,
- *         mloop[lt->tri[2]].v,
+ *     int vtri[3] = {
+ *         corner_verts[lt->tri[0]],
+ *         corner_verts[lt->tri[1]],
+ *         corner_verts[lt->tri[2]],
  *     };
  *     printf("tri %u %u %u\n", vtri[0], vtri[1], vtri[2]);
  * };
@@ -228,8 +213,8 @@ enum {
  * // print real edges from an MLoopTri: lt
  * int j, j_next;
  * for (j = 2, j_next = 0; j_next < 3; j = j_next++) {
- *     MEdge *ed = &medge[mloop[lt->tri[j]].e];
- *     unsigned int tri_edge[2]  = {mloop[lt->tri[j]].v, mloop[lt->tri[j_next]].v};
+ *     MEdge *ed = &medge[corner_edges[lt->tri[j]]];
+ *     unsigned int tri_edge[2]  = {corner_verts[lt->tri[j]], corner_verts[lt->tri[j_next]]};
  *
  *     if (((ed->v1 == tri_edge[0]) && (ed->v2 == tri_edge[1])) ||
  *         ((ed->v1 == tri_edge[1]) && (ed->v2 == tri_edge[0])))
@@ -475,6 +460,20 @@ enum {
 /* -------------------------------------------------------------------- */
 /** \name Deprecated Structs
  * \{ */
+
+/**
+ * Mesh Face Corners.
+ * Deprecated storage for the vertex of a face corner and the following edge.
+ * Replaced by the "corner_verts" and "corner_edges" arrays.
+ */
+#ifdef DNA_DEPRECATED_ALLOW
+typedef struct MLoop {
+  /** Vertex index. */
+  unsigned int v;
+  /** Edge index into an #MEdge array. */
+  unsigned int e;
+} MLoop;
+#endif
 
 /**
  * Used in Blender pre 2.63, See #Mesh::corner_verts(), #MPoly for face data stored in the blend

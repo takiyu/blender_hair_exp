@@ -423,7 +423,7 @@ void BKE_remesh_reproject_vertex_paint(Mesh *target, const Mesh *source)
         BKE_mesh_vert_loop_map_create(&source_lmap,
                                       &source_lmap_mem,
                                       source->polys().data(),
-                                      source->loops().data(),
+                                      source->corner_verts().data(),
                                       source->totvert,
                                       source->totpoly,
                                       source->totloop);
@@ -431,7 +431,7 @@ void BKE_remesh_reproject_vertex_paint(Mesh *target, const Mesh *source)
         BKE_mesh_vert_loop_map_create(&target_lmap,
                                       &target_lmap_mem,
                                       target->polys().data(),
-                                      target->loops().data(),
+                                      target->corner_verts().data(),
                                       target->totvert,
                                       target->totpoly,
                                       target->totloop);

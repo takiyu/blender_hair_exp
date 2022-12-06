@@ -135,7 +135,7 @@ static void do_draw_face_sets_brush_task_cb_ex(void *__restrict userdata,
         const MPoly *p = &ss->mpoly[vert_map->indices[j]];
 
         float poly_center[3];
-        BKE_mesh_calc_poly_center(p, &ss->mloop[p->loopstart], positions, poly_center);
+        BKE_mesh_calc_poly_center(p, &ss->corner_verts[p->loopstart], positions, poly_center);
 
         if (!sculpt_brush_test_sq_fn(&test, poly_center)) {
           continue;

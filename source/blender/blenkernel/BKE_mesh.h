@@ -771,8 +771,6 @@ void BKE_mesh_mdisp_flip(struct MDisps *md, bool use_loop_mdisp_flip);
  * (keeping the same vertex as 'start point').
  *
  * \param mpoly: the polygon to flip.
- * \param mloop: the full loops array.
- * \param ldata: the loops custom data.
  */
 void BKE_mesh_polygon_flip_ex(const struct MPoly *mpoly,
                               int *corner_verts,

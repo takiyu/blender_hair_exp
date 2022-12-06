@@ -267,7 +267,7 @@ static Mesh *generate_ocean_geometry(OceanModifierData *omd, Mesh *mesh_orig, co
 
   gogd.positions = BKE_mesh_positions_for_write(result);
   gogd.mpolys = BKE_mesh_polys_for_write(result);
-  gogd.mloops = BKE_mesh_loops_for_write(result);
+  gogd.corner_verts = BKE_mesh_corner_verts_for_write(result);
 
   TaskParallelSettings settings;
   BLI_parallel_range_settings_defaults(&settings);
@@ -384,7 +384,7 @@ static Mesh *doOcean(ModifierData *md, const ModifierEvalContext *ctx, Mesh *mes
       const MPoly *mp;
 
       for (i = 0, mp = polys; i < polys_num; i++, mp++) {
-        const int *corner_vert = &mloops[mp->loopstart];
+        const int *corner_vert = &corner_verts[mp->loopstart];
         MLoopCol *mlcol = &mloopcols[mp->loopstart];
 
         MLoopCol *mlcolspray = NULL;

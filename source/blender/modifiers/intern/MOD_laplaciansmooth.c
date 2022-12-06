@@ -151,14 +151,16 @@ static float compute_volume(const float center[3],
 
   for (i = 0; i < polys_num; i++) {
     const MPoly *mp = &mpoly[i];
-    const MLoop *l_first = &mloop[mp->loopstart];
-    const MLoop *l_prev = l_first + 1;
-    const MLoop *l_curr = l_first + 2;
-    const MLoop *l_term = l_first + mp->totloop;
+    int corner_first = mp->loopstart;
+    int corner_prev = corner_first + 1;
+    int corner_curr = corner_first + 2;
+    int corner_term = corner_first + mp->totloop;
 
-    for (; l_curr != l_term; l_prev = l_curr, l_curr++) {
-      vol += volume_tetrahedron_signed_v3(
-          center, vertexCos[l_first->v], vertexCos[l_prev->v], vertexCos[l_curr->v]);
+    for (; corner_curr != corner_term; corner_prev = corner_curr, corner_curr++) {
+      vol += volume_tetrahedron_signed_v3(center,
+                                          vertexCos[corner_verts[corner_first]],
+                                          vertexCos[corner_verts[corner_prev]],
+                                          vertexCos[corner_verts[corner_curr]]);
     }
   }
 
@@ -218,42 +220,44 @@ static void init_laplacian_matrix(LaplacianSystem *sys)
     sys->eweights[i] = w1;
   }
 
+  const int *corner_verts = sys->corner_verts;
+
   for (i = 0; i < sys->polys_num; i++) {
     const MPoly *mp = &sys->mpoly[i];
-    const MLoop *l_next = &sys->mloop[mp->loopstart];
-    const MLoop *l_term = l_next + mp->totloop;
-    const MLoop *l_prev = l_term - 2;
-    const MLoop *l_curr = l_term - 1;
+    int corner_next = mp->loopstart;
+    int corner_term = corner_next + mp->totloop;
+    int corner_prev = corner_term - 2;
+    int corner_curr = corner_term - 1;
 
-    for (; l_next != l_term; l_prev = l_curr, l_curr = l_next, l_next++) {
-      const float *v_prev = sys->vertexCos[l_prev->v];
-      const float *v_curr = sys->vertexCos[l_curr->v];
-      const float *v_next = sys->vertexCos[l_next->v];
-      const uint l_curr_index = l_curr - sys->mloop;
+    for (; corner_next != corner_term;
+         corner_prev = corner_curr, corner_curr = corner_next, corner_next++) {
+      const float *v_prev = sys->vertexCos[corner_verts[corner_prev]];
+      const float *v_curr = sys->vertexCos[corner_verts[corner_curr]];
+      const float *v_next = sys->vertexCos[corner_verts[corner_next]];
 
-      sys->ne_fa_num[l_curr->v] += 1;
+      sys->ne_fa_num[corner_verts[corner_curr]] += 1;
 
       areaf = area_tri_v3(v_prev, v_curr, v_next);
 
       if (areaf < sys->min_area) {
-        sys->zerola[l_curr->v] = true;
+        sys->zerola[corner_verts[corner_curr]] = true;
       }
 
-      sys->ring_areas[l_prev->v] += areaf;
-      sys->ring_areas[l_curr->v] += areaf;
-      sys->ring_areas[l_next->v] += areaf;
+      sys->ring_areas[corner_verts[corner_prev]] += areaf;
+      sys->ring_areas[corner_verts[corner_curr]] += areaf;
+      sys->ring_areas[corner_verts[corner_next]] += areaf;
 
       w1 = cotangent_tri_weight_v3(v_curr, v_next, v_prev) / 2.0f;
       w2 = cotangent_tri_weight_v3(v_next, v_prev, v_curr) / 2.0f;
       w3 = cotangent_tri_weight_v3(v_prev, v_curr, v_next) / 2.0f;
 
-      sys->fweights[l_curr_index][0] += w1;
-      sys->fweights[l_curr_index][1] += w2;
-      sys->fweights[l_curr_index][2] += w3;
+      sys->fweights[corner_curr][0] += w1;
+      sys->fweights[corner_curr][1] += w2;
+      sys->fweights[corner_curr][2] += w3;
 
-      sys->vweights[l_curr->v] += w2 + w3;
-      sys->vweights[l_next->v] += w1 + w3;
-      sys->vweights[l_prev->v] += w1 + w2;
+      sys->vweights[corner_verts[corner_curr]] += w2 + w3;
+      sys->vweights[corner_verts[corner_next]] += w1 + w3;
+      sys->vweights[corner_verts[corner_prev]] += w1 + w2;
     }
   }
   for (i = 0; i < sys->edges_num; i++) {
@@ -273,49 +277,57 @@ static void fill_laplacian_matrix(LaplacianSystem *sys)
   int i;
   uint idv1, idv2;
 
+  const int *corner_verts = sys->corner_verts;
+
   for (i = 0; i < sys->polys_num; i++) {
     const MPoly *mp = &sys->mpoly[i];
-    const MLoop *l_next = &sys->mloop[mp->loopstart];
-    const MLoop *l_term = l_next + mp->totloop;
-    const MLoop *l_prev = l_term - 2;
-    const MLoop *l_curr = l_term - 1;
+    int corner_next = mp->loopstart;
+    int corner_term = corner_next + mp->totloop;
+    int corner_prev = corner_term - 2;
+    int corner_curr = corner_term - 1;
 
-    for (; l_next != l_term; l_prev = l_curr, l_curr = l_next, l_next++) {
-      const uint l_curr_index = l_curr - sys->mloop;
+    for (; corner_next != corner_term;
+         corner_prev = corner_curr, corner_curr = corner_next, corner_next++) {
 
       /* Is ring if number of faces == number of edges around vertex. */
-      if (sys->ne_ed_num[l_curr->v] == sys->ne_fa_num[l_curr->v] &&
-          sys->zerola[l_curr->v] == false) {
+      if (sys->ne_ed_num[corner_verts[corner_curr]] == sys->ne_fa_num[corner_verts[corner_curr]] &&
+          sys->zerola[corner_verts[corner_curr]] == false) {
         EIG_linear_solver_matrix_add(sys->context,
-                                     l_curr->v,
-                                     l_next->v,
-                                     sys->fweights[l_curr_index][2] * sys->vweights[l_curr->v]);
+                                     corner_verts[corner_curr],
+                                     corner_verts[corner_next],
+                                     sys->fweights[corner_curr][2] *
+                                         sys->vweights[corner_verts[corner_curr]]);
         EIG_linear_solver_matrix_add(sys->context,
-                                     l_curr->v,
-                                     l_prev->v,
-                                     sys->fweights[l_curr_index][1] * sys->vweights[l_curr->v]);
+                                     corner_verts[corner_curr],
+                                     corner_verts[corner_prev],
+                                     sys->fweights[corner_curr][1] *
+                                         sys->vweights[corner_verts[corner_curr]]);
       }
-      if (sys->ne_ed_num[l_next->v] == sys->ne_fa_num[l_next->v] &&
-          sys->zerola[l_next->v] == false) {
+      if (sys->ne_ed_num[corner_verts[corner_next]] == sys->ne_fa_num[corner_verts[corner_next]] &&
+          sys->zerola[corner_verts[corner_next]] == false) {
         EIG_linear_solver_matrix_add(sys->context,
-                                     l_next->v,
-                                     l_curr->v,
-                                     sys->fweights[l_curr_index][2] * sys->vweights[l_next->v]);
+                                     corner_verts[corner_next],
+                                     corner_verts[corner_curr],
+                                     sys->fweights[corner_curr][2] *
+                                         sys->vweights[corner_verts[corner_next]]);
         EIG_linear_solver_matrix_add(sys->context,
-                                     l_next->v,
-                                     l_prev->v,
-                                     sys->fweights[l_curr_index][0] * sys->vweights[l_next->v]);
+                                     corner_verts[corner_next],
+                                     corner_verts[corner_prev],
+                                     sys->fweights[corner_curr][0] *
+                                         sys->vweights[corner_verts[corner_next]]);
       }
-      if (sys->ne_ed_num[l_prev->v] == sys->ne_fa_num[l_prev->v] &&
-          sys->zerola[l_prev->v] == false) {
+      if (sys->ne_ed_num[corner_verts[corner_prev]] == sys->ne_fa_num[corner_verts[corner_prev]] &&
+          sys->zerola[corner_verts[corner_prev]] == false) {
         EIG_linear_solver_matrix_add(sys->context,
-                                     l_prev->v,
-                                     l_curr->v,
-                                     sys->fweights[l_curr_index][1] * sys->vweights[l_prev->v]);
+                                     corner_verts[corner_prev],
+                                     corner_verts[corner_curr],
+                                     sys->fweights[corner_curr][1] *
+                                         sys->vweights[corner_verts[corner_prev]]);
         EIG_linear_solver_matrix_add(sys->context,
-                                     l_prev->v,
-                                     l_next->v,
-                                     sys->fweights[l_curr_index][0] * sys->vweights[l_prev->v]);
+                                     corner_verts[corner_prev],
+                                     corner_verts[corner_next],
+                                     sys->fweights[corner_curr][0] *
+                                         sys->vweights[corner_verts[corner_prev]]);
       }
     }
   }

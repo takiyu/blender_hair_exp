@@ -959,7 +959,8 @@ static void weld_poly_split_recursive(Span<int> vert_dest_map,
   *r_loop_kill += loop_kill;
 
 #ifdef USE_WELD_DEBUG
-  weld_assert_poly_no_vert_repetition(*r_wp, wloop, mloop, r_weld_mesh->loop_map);
+  weld_assert_poly_no_vert_repetition(
+      *r_wp, wloop, corner_verts, corner_edges, r_weld_mesh->loop_map);
 #endif
 }
 
@@ -1026,7 +1027,8 @@ static void weld_poly_loop_ctx_setup(const Span<int> corner_verts,
 
         weld_poly_split_recursive(vert_dest_map,
 #ifdef USE_WELD_DEBUG
-                                  mloop,
+                                  corner_verts,
+                                  corner_edges,
 #endif
                                   ctx_verts_len,
                                   &wp,
@@ -1037,7 +1039,8 @@ static void weld_poly_loop_ctx_setup(const Span<int> corner_verts,
     }
 
 #ifdef USE_WELD_DEBUG
-    weld_assert_poly_and_loop_kill_len(r_weld_mesh, mloop, mpoly, poly_kill_len, loop_kill_len);
+    weld_assert_poly_and_loop_kill_len(
+        r_weld_mesh, corner_verts, corner_edges, mpoly, poly_kill_len, loop_kill_len);
 #endif
 
     /* Setup Polygon Overlap. */
@@ -1165,7 +1168,8 @@ static void weld_poly_loop_ctx_setup(const Span<int> corner_verts,
   }
 
 #ifdef USE_WELD_DEBUG
-  weld_assert_poly_and_loop_kill_len(r_weld_mesh, mloop, mpoly, poly_kill_len, loop_kill_len);
+  weld_assert_poly_and_loop_kill_len(
+      r_weld_mesh, corner_verts, corner_edges, mpoly, poly_kill_len, loop_kill_len);
 #endif
 
   r_weld_mesh->poly_kill_len = poly_kill_len;

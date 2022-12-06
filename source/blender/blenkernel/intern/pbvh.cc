@@ -96,7 +96,7 @@ static void pbvh_vertex_color_get(const PBVH &pbvh, PBVHVertRef vertex, float r_
     for (const int i_poly : Span(melem.indices, melem.count)) {
       const MPoly &mp = pbvh.mpoly[i_poly];
       Span<T> colors{static_cast<const T *>(pbvh.color_layer->data) + mp.loopstart, mp.totloop};
-      Span<int> poly_verts{pbvh.mloop + mp.loopstart, mp.totloop};
+      Span<int> poly_verts{pbvh.corner_verts + mp.loopstart, mp.totloop};
 
       for (const int i : IndexRange(mp.totloop)) {
         if (poly_verts[i] == index) {
@@ -129,7 +129,7 @@ static void pbvh_vertex_color_set(PBVH &pbvh, PBVHVertRef vertex, const float co
     for (const int i_poly : Span(melem.indices, melem.count)) {
       const MPoly &mp = pbvh.mpoly[i_poly];
       MutableSpan<T> colors{static_cast<T *>(pbvh.color_layer->data) + mp.loopstart, mp.totloop};
-      Span<int> poly_verts{pbvh.mloop + mp.loopstart, mp.totloop};
+      Span<int> poly_verts{pbvh.corner_verts + mp.loopstart, mp.totloop};
 
       for (const int i : IndexRange(mp.totloop)) {
         if (poly_verts[i] == index) {
