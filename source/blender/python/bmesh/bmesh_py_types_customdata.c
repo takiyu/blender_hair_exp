@@ -511,6 +511,15 @@ static PyObject *bpy_bmlayercollection_new(BPy_BMLayerCollection *self, PyObject
     BM_data_layer_add(self->bm, data, self->type);
   }
 
+  if (self->type == CD_PROP_FLOAT2 && self->htype == BM_LOOP) {
+    /* Because adding CustomData layers to a bmesh will invalidate any existing pointers
+     * in Py objects we can't lazily add the associated bool layers. So add them all right
+     * now. */
+    const char *active_uv_name = CustomData_get_active_layer_name(&self->bm->ldata,
+                                                                  CD_PROP_FLOAT2);
+    BM_uv_map_ensure_selection_pin_attributes(self->bm, active_uv_name);
+  }
+
   index = CustomData_number_of_layers(data, self->type) - 1;
   BLI_assert(index >= 0);
 
