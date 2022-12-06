@@ -873,7 +873,7 @@ void BM_data_layer_ensure_named(BMesh *bm, CustomData *data, int type, const cha
   }
 }
 
-void BM_uv_map_ensure_selection_pin_attributes(BMesh *bm, const char *uv_map_name)
+void BM_uv_map_ensure_selection_and_pin_attributes(BMesh *bm, const char *uv_map_name)
 {
   char name[MAX_CUSTOMDATA_LAYER_NAME];
   BM_data_layer_ensure_named(

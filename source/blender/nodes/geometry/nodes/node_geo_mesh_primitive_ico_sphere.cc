@@ -36,8 +36,11 @@ static Mesh *create_ico_sphere_mesh(const int subdivisions, const float radius)
   const BMAllocTemplate allocsize = {0, 0, 0, 0};
   BMesh *bm = BM_mesh_create(&allocsize, &bmesh_create_params);
   BM_data_layer_add_named(bm, &bm->ldata, CD_PROP_FLOAT2, nullptr);
-
-  BM_uv_map_ensure_selection_pin_attributes(
+  /* Make sure the associated bool layers exists as well.
+   * Normally this would be done when adding a UV layer via python
+   * or when copying from Mesh, but when we 'manually' create the UV layer
+   * we need to make sure the bool layers exist as well. */
+  BM_uv_map_ensure_selection_and_pin_attributes(
       bm, CustomData_get_layer_name(&bm->ldata, CD_PROP_FLOAT2, 0));
 
   BMO_op_callf(bm,
