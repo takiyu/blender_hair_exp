@@ -563,8 +563,10 @@ void BKE_mesh_polygon_flip_ex(const MPoly *mpoly,
 {
   int loopstart = mpoly->loopstart;
   int loopend = loopstart + mpoly->totloop - 1;
-  const bool corner_verts_in_data = (CustomData_get_layer(ldata, CD_MLOOP) == corner_verts);
-  const bool corner_edges_in_data = (CustomData_get_layer(ldata, CD_MLOOP) == corner_edges);
+  const bool corner_verts_in_data = (CustomData_get_layer_named(
+                                         ldata, CD_PROP_INT32, ".corner_vert") == corner_verts);
+  const bool corner_edges_in_data = (CustomData_get_layer_named(
+                                         ldata, CD_PROP_INT32, ".corner_edge") == corner_edges);
 
   if (mdisp) {
     for (int i = loopstart; i <= loopend; i++) {

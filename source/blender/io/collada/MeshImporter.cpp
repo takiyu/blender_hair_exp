@@ -456,7 +456,8 @@ void MeshImporter::allocate_poly_data(COLLADAFW::Mesh *collada_mesh, Mesh *me)
     me->totpoly = total_poly_count;
     me->totloop = total_loop_count;
     CustomData_add_layer(&me->pdata, CD_MPOLY, CD_SET_DEFAULT, nullptr, me->totpoly);
-    CustomData_add_layer(&me->ldata, CD_MLOOP, CD_SET_DEFAULT, nullptr, me->totloop);
+    CustomData_add_layer_named(
+        &me->ldata, CD_PROP_INT32, CD_SET_DEFAULT, nullptr, me->totloop, ".corner_vert");
 
     uint totuvset = collada_mesh->getUVCoords().getInputInfosArray().getCount();
     for (int i = 0; i < totuvset; i++) {

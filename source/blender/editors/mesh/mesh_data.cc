@@ -1225,8 +1225,13 @@ static void mesh_add_loops(Mesh *mesh, int len)
   CustomData_copy(&mesh->ldata, &ldata, CD_MASK_MESH.lmask, CD_SET_DEFAULT, totloop);
   CustomData_copy_data(&mesh->ldata, &ldata, 0, 0, mesh->totloop);
 
-  if (!CustomData_has_layer(&ldata, CD_MLOOP)) {
-    CustomData_add_layer(&ldata, CD_MLOOP, CD_SET_DEFAULT, nullptr, totloop);
+  if (!CustomData_get_layer_named(&ldata, CD_PROP_INT32, ".corner_vert")) {
+    CustomData_add_layer_named(
+        &ldata, CD_PROP_INT32, CD_SET_DEFAULT, nullptr, totloop, ".corner_vert");
+  }
+  if (!CustomData_get_layer_named(&ldata, CD_PROP_INT32, ".corner_edge")) {
+    CustomData_add_layer_named(
+        &ldata, CD_PROP_INT32, CD_SET_DEFAULT, nullptr, totloop, ".corner_edge");
   }
 
   BKE_mesh_runtime_clear_cache(mesh);

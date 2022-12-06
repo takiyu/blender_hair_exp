@@ -33,7 +33,7 @@
  * and may be called again with direct_reverse=-1 for reverse order.
  * \return 1 if polys are identical,  0 if polys are different.
  */
-static int cddm_poly_compare(const MLoop *mloop_array,
+static int cddm_poly_compare(const int *corner_verts,
                              const MPoly *mpoly_source,
                              const MPoly *mpoly_target,
                              const int *vtargetmap,
@@ -45,13 +45,13 @@ static int cddm_poly_compare(const MLoop *mloop_array,
   bool compare_completed = false;
   bool same_loops = false;
 
-  const MLoop *mloop_source, *mloop_target;
+  const int *corner_vert_source, *corner_vert_target;
 
   BLI_assert(ELEM(direct_reverse, 1, -1));
 
   i_loop_source = 0;
-  mloop_source = mloop_array + mpoly_source->loopstart;
-  vert_source = mloop_source->v;
+  corner_vert_source = corner_verts + mpoly_source->loopstart;
+  vert_source = *corner_vert_source;
 
   if (vtargetmap[vert_source] != -1) {
     vert_source = vtargetmap[vert_source];
@@ -62,9 +62,10 @@ static int cddm_poly_compare(const MLoop *mloop_array,
   }
 
   /* Find same vertex within mpoly_target's loops */
-  mloop_target = mloop_array + mpoly_target->loopstart;
-  for (i_loop_target = 0; i_loop_target < mpoly_target->totloop; i_loop_target++, mloop_target++) {
-    if (mloop_target->v == vert_source) {
+  corner_vert_target = corner_verts + mpoly_target->loopstart;
+  for (i_loop_target = 0; i_loop_target < mpoly_target->totloop;
+       i_loop_target++, corner_vert_target++) {
+    if (*corner_vert_target == vert_source) {
       break;
     }
   }
@@ -74,8 +75,9 @@ static int cddm_poly_compare(const MLoop *mloop_array,
     return false;
   }
 
-  /* Now mloop_source and m_loop_target have one identical vertex */
-  /* mloop_source is at position 0, while m_loop_target has advanced to find identical vertex */
+  /* Now corner_vert_source and m_loop_target have one identical vertex */
+  /* corner_vert_source is at position 0, while m_loop_target has advanced to find identical vertex
+   */
   /* Go around the loop and check that all vertices match in same order */
   /* Skipping source loops when consecutive source vertices are mapped to same target vertex */
 
@@ -88,7 +90,7 @@ static int cddm_poly_compare(const MLoop *mloop_array,
 
   while (!compare_completed) {
 
-    vert_target = mloop_target->v;
+    vert_target = *corner_vert_target;
 
     /* First advance i_loop_source, until it points to different vertex, after mapping applied */
     do {
@@ -107,8 +109,8 @@ static int cddm_poly_compare(const MLoop *mloop_array,
         break; /* Polys are different */
       }
 
-      mloop_source++;
-      vert_source = mloop_source->v;
+      corner_vert_source++;
+      vert_source = *corner_vert_source;
 
       if (vtargetmap[vert_source] != -1) {
         vert_source = vtargetmap[vert_source];
@@ -130,8 +132,8 @@ static int cddm_poly_compare(const MLoop *mloop_array,
     if (i_loop_target_offset == mpoly_target->totloop) {
       /* End of loops for target only, that means no match */
       /* except if all remaining source vertices are mapped to first target */
-      for (; i_loop_source < mpoly_source->totloop; i_loop_source++, mloop_source++) {
-        vert_source = vtargetmap[mloop_source->v];
+      for (; i_loop_source < mpoly_source->totloop; i_loop_source++, corner_vert_source++) {
+        vert_source = vtargetmap[*corner_vert_source];
         if (vert_source != first_vert_source) {
           compare_completed = true;
           same_loops = false;
@@ -151,8 +153,8 @@ static int cddm_poly_compare(const MLoop *mloop_array,
     if (i_loop_target_adjusted < 0) {
       i_loop_target_adjusted += mpoly_target->totloop;
     }
-    mloop_target = mloop_array + mpoly_target->loopstart + i_loop_target_adjusted;
-    vert_target = mloop_target->v;
+    corner_vert_target = corner_verts + mpoly_target->loopstart + i_loop_target_adjusted;
+    vert_target = *corner_vert_target;
 
     if (vert_target != vert_source) {
       same_loops = false; /* Polys are different */
@@ -206,7 +208,8 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
   const int totpoly = mesh->totpoly;
   const MEdge *src_edges = BKE_mesh_edges(mesh);
   const MPoly *src_polys = BKE_mesh_polys(mesh);
-  const MLoop *src_loops = BKE_mesh_corner_verts(mesh);
+  const int *src_corner_verts = BKE_mesh_corner_verts(mesh);
+  const int *src_corner_edges = BKE_mesh_corner_edges(mesh);
 
   const int totvert_final = totvert - tot_vtargetmap;
 
@@ -224,13 +227,14 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
   STACK_DECLARE(medge);
   STACK_DECLARE(olde);
 
-  const MLoop *ml;
-  MLoop *mloop = MEM_malloc_arrayN(totloop, sizeof(*mloop), __func__);
+  int *corner_verts = MEM_malloc_arrayN(totloop, sizeof(int), __func__);
+  int *corner_edges = MEM_malloc_arrayN(totloop, sizeof(int), __func__);
   int *oldl = MEM_malloc_arrayN(totloop, sizeof(*oldl), __func__);
 #ifdef USE_LOOPS
   int *newl = MEM_malloc_arrayN(totloop, sizeof(*newl), __func__);
 #endif
-  STACK_DECLARE(mloop);
+  STACK_DECLARE(corner_verts);
+  STACK_DECLARE(corner_edges);
   STACK_DECLARE(oldl);
 
   const MPoly *mp;
@@ -254,7 +258,8 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
   STACK_INIT(oldp, totpoly);
 
   STACK_INIT(medge, totedge);
-  STACK_INIT(mloop, totloop);
+  STACK_INIT(corner_verts, totloop);
+  STACK_INIT(corner_edges, totloop);
   STACK_INIT(mpoly, totpoly);
 
   /* fill newv with destination vertex indices */
@@ -323,11 +328,11 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
     for (i = 0; i < totpoly; i++, mp++, mpgh++) {
       mpgh->poly_index = i;
       mpgh->totloops = mp->totloop;
-      ml = src_loops + mp->loopstart;
       mpgh->hash_sum = mpgh->hash_xor = 0;
-      for (j = 0; j < mp->totloop; j++, ml++) {
-        mpgh->hash_sum += ml->v;
-        mpgh->hash_xor ^= ml->v;
+      for (j = 0; j < mp->totloop; j++) {
+        const int vert_i = src_corner_verts[mp->loopstart + j];
+        mpgh->hash_sum += vert_i;
+        mpgh->hash_xor ^= vert_i;
       }
       BLI_gset_insert(poly_gset, mpgh);
     }
@@ -335,7 +340,7 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
     /* Can we optimize by reusing an old `pmap`? How do we know an old `pmap` is stale? */
     /* When called by `MOD_array.c` the `cddm` has just been created, so it has no valid `pmap`. */
     BKE_mesh_vert_poly_map_create(
-        &poly_map, &poly_map_mem, src_polys, src_loops, totvert, totpoly, totloop);
+        &poly_map, &poly_map_mem, src_polys, src_corner_verts, totvert, totpoly, totloop);
   } /* done preparing for fast poly compare */
 
   BLI_bitmap *vert_tag = BLI_BITMAP_NEW(mesh->totvert, __func__);
@@ -344,20 +349,19 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
   for (i = 0; i < totpoly; i++, mp++) {
     MPoly *mp_new;
 
-    ml = src_loops + mp->loopstart;
-
     /* check faces with all vertices merged */
     bool all_verts_merged = true;
 
-    for (j = 0; j < mp->totloop; j++, ml++) {
-      if (vtargetmap[ml->v] == -1) {
+    for (j = 0; j < mp->totloop; j++) {
+      const int vert_i = src_corner_verts[mp->loopstart + j];
+      if (vtargetmap[vert_i] == -1) {
         all_verts_merged = false;
         /* This will be used to check for poly using several time the same vert. */
-        BLI_BITMAP_DISABLE(vert_tag, ml->v);
+        BLI_BITMAP_DISABLE(vert_tag, vert_i);
       }
       else {
         /* This will be used to check for poly using several time the same vert. */
-        BLI_BITMAP_DISABLE(vert_tag, vtargetmap[ml->v]);
+        BLI_BITMAP_DISABLE(vert_tag, vtargetmap[vert_i]);
       }
     }
 
@@ -377,11 +381,11 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
 
         /* Use poly_gset for fast (although not 100% certain) identification of same poly */
         /* First, make up a poly_summary structure */
-        ml = src_loops + mp->loopstart;
         pkey.hash_sum = pkey.hash_xor = 0;
         pkey.totloops = 0;
-        for (j = 0; j < mp->totloop; j++, ml++) {
-          v_target = vtargetmap[ml->v]; /* Cannot be -1, they are all mapped */
+        for (j = 0; j < mp->totloop; j++) {
+          const int vert_i = src_corner_verts[mp->loopstart + j];
+          v_target = vtargetmap[vert_i]; /* Cannot be -1, they are all mapped */
           pkey.hash_sum += v_target;
           pkey.hash_xor ^= v_target;
           pkey.totloops++;
@@ -395,17 +399,16 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
            */
 
           /* Consider current loop again */
-          ml = src_loops + mp->loopstart;
           /* Consider the target of the loop's first vert */
-          v_target = vtargetmap[ml->v];
+          v_target = vtargetmap[src_corner_verts[mp->loopstart]];
           /* Now see if v_target belongs to a poly that shares all vertices with source poly,
            * in same order, or reverse order */
 
           for (i_poly = 0; i_poly < poly_map[v_target].count; i_poly++) {
             const MPoly *target_poly = src_polys + *(poly_map[v_target].indices + i_poly);
 
-            if (cddm_poly_compare(src_loops, mp, target_poly, vtargetmap, +1) ||
-                cddm_poly_compare(src_loops, mp, target_poly, vtargetmap, -1)) {
+            if (cddm_poly_compare(corner_verts, mp, target_poly, vtargetmap, +1) ||
+                cddm_poly_compare(corner_verts, mp, target_poly, vtargetmap, -1)) {
               found = true;
               break;
             }
@@ -423,21 +426,24 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
      * or they were all merged, but targets do not make up an identical poly,
      * the poly is retained.
      */
-    ml = src_loops + mp->loopstart;
-
     c = 0;
-    MLoop *last_valid_ml = NULL;
-    MLoop *first_valid_ml = NULL;
+    int *last_valid_corner_vert = NULL;
+    int *last_valid_corner_edge = NULL;
+    int *first_valid_corner_vert = NULL;
+    int *first_valid_corner_edge = NULL;
     bool need_edge_from_last_valid_ml = false;
     bool need_edge_to_first_valid_ml = false;
     int created_edges = 0;
-    for (j = 0; j < mp->totloop; j++, ml++) {
-      const uint mlv = (vtargetmap[ml->v] != -1) ? vtargetmap[ml->v] : ml->v;
+    for (j = 0; j < mp->totloop; j++) {
+      const int orig_vert_i = src_corner_verts[mp->loopstart + j];
+      const int orig_edge_i = src_corner_edges[mp->loopstart + j];
+      const uint mlv = (vtargetmap[orig_vert_i] != -1) ? vtargetmap[orig_vert_i] : orig_vert_i;
 #ifndef NDEBUG
       {
-        const MLoop *next_ml = src_loops + mp->loopstart + ((j + 1) % mp->totloop);
-        uint next_mlv = (vtargetmap[next_ml->v] != -1) ? vtargetmap[next_ml->v] : next_ml->v;
-        med = src_edges + ml->e;
+        const int next_corner_vert = src_corner_verts[mp->loopstart + ((j + 1) % mp->totloop)];
+        uint next_mlv = (vtargetmap[next_corner_vert] != -1) ? vtargetmap[next_corner_vert] :
+                                                               next_corner_vert;
+        med = src_edges + orig_edge_i;
         uint v1 = (vtargetmap[med->v1] != -1) ? vtargetmap[med->v1] : med->v1;
         uint v2 = (vtargetmap[med->v2] != -1) ? vtargetmap[med->v2] : med->v2;
         BLI_assert((mlv == v1 && next_mlv == v2) || (mlv == v2 && next_mlv == v1));
@@ -445,54 +451,60 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
 #endif
       /* A loop is only valid if its matching edge is,
        * and it's not reusing a vertex already used by this poly. */
-      if (LIKELY((newe[ml->e] != -1) && !BLI_BITMAP_TEST(vert_tag, mlv))) {
+      if (LIKELY((newe[orig_edge_i] != -1) && !BLI_BITMAP_TEST(vert_tag, mlv))) {
         BLI_BITMAP_ENABLE(vert_tag, mlv);
 
-        if (UNLIKELY(last_valid_ml != NULL && need_edge_from_last_valid_ml)) {
+        if (UNLIKELY(last_valid_corner_vert != NULL && need_edge_from_last_valid_ml)) {
           /* We need to create a new edge between last valid loop and this one! */
           void **val_p;
 
-          uint v1 = (vtargetmap[last_valid_ml->v] != -1) ? vtargetmap[last_valid_ml->v] :
-                                                           last_valid_ml->v;
+          uint v1 = (vtargetmap[*last_valid_corner_vert] != -1) ?
+                        vtargetmap[*last_valid_corner_vert] :
+                        *last_valid_corner_vert;
           uint v2 = mlv;
           BLI_assert(v1 != v2);
           if (BLI_edgehash_ensure_p(ehash, v1, v2, &val_p)) {
-            last_valid_ml->e = POINTER_AS_INT(*val_p);
+            last_valid_corner_edge = POINTER_AS_INT(*val_p);
           }
           else {
             const int new_eidx = STACK_SIZE(medge);
-            STACK_PUSH(olde, olde[last_valid_ml->e]);
-            STACK_PUSH(medge, src_edges[last_valid_ml->e]);
-            medge[new_eidx].v1 = last_valid_ml->v;
-            medge[new_eidx].v2 = ml->v;
+            STACK_PUSH(olde, olde[*last_valid_corner_edge]);
+            STACK_PUSH(medge, src_edges[*last_valid_corner_edge]);
+            medge[new_eidx].v1 = *last_valid_corner_vert;
+            medge[new_eidx].v2 = orig_vert_i;
             /* DO NOT change newe mapping,
              * could break actual values due to some deleted original edges. */
             *val_p = POINTER_FROM_INT(new_eidx);
             created_edges++;
 
-            last_valid_ml->e = new_eidx;
+            *last_valid_corner_edge = new_eidx;
           }
           need_edge_from_last_valid_ml = false;
         }
 
 #ifdef USE_LOOPS
-        newl[j + mp->loopstart] = STACK_SIZE(mloop);
+        newl[j + mp->loopstart] = STACK_SIZE(corner_verts);
 #endif
         STACK_PUSH(oldl, j + mp->loopstart);
-        last_valid_ml = STACK_PUSH_RET_PTR(mloop);
-        *last_valid_ml = *ml;
-        if (first_valid_ml == NULL) {
-          first_valid_ml = last_valid_ml;
+        last_valid_corner_vert = STACK_PUSH_RET_PTR(corner_verts);
+        last_valid_corner_edge = STACK_PUSH_RET_PTR(corner_edges);
+        *last_valid_corner_vert = orig_vert_i;
+        *last_valid_corner_edge = orig_edge_i;
+        if (first_valid_corner_vert == NULL) {
+          first_valid_corner_vert = last_valid_corner_vert;
+        }
+        if (first_valid_corner_edge == NULL) {
+          first_valid_corner_edge = last_valid_corner_edge;
         }
         c++;
 
         /* We absolutely HAVE to handle edge index remapping here, otherwise potential newly
          * created edges in that part of code make remapping later totally unreliable. */
-        BLI_assert(newe[ml->e] != -1);
-        last_valid_ml->e = newe[ml->e];
+        BLI_assert(newe[orig_edge_i] != -1);
+        *last_valid_corner_edge = newe[orig_edge_i];
       }
       else {
-        if (last_valid_ml != NULL) {
+        if (last_valid_corner_vert != NULL) {
           need_edge_from_last_valid_ml = true;
         }
         else {
@@ -500,31 +512,33 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
         }
       }
     }
-    if (UNLIKELY(last_valid_ml != NULL && !ELEM(first_valid_ml, NULL, last_valid_ml) &&
+    if (UNLIKELY(last_valid_corner_vert != NULL &&
+                 !ELEM(first_valid_corner_vert, NULL, last_valid_corner_vert) &&
                  (need_edge_to_first_valid_ml || need_edge_from_last_valid_ml))) {
       /* We need to create a new edge between last valid loop and first valid one! */
       void **val_p;
 
-      uint v1 = (vtargetmap[last_valid_ml->v] != -1) ? vtargetmap[last_valid_ml->v] :
-                                                       last_valid_ml->v;
-      uint v2 = (vtargetmap[first_valid_ml->v] != -1) ? vtargetmap[first_valid_ml->v] :
-                                                        first_valid_ml->v;
+      uint v1 = (vtargetmap[*last_valid_corner_vert] != -1) ? vtargetmap[*last_valid_corner_vert] :
+                                                              *last_valid_corner_vert;
+      uint v2 = (vtargetmap[*first_valid_corner_vert] != -1) ?
+                    vtargetmap[*first_valid_corner_vert] :
+                    *first_valid_corner_vert;
       BLI_assert(v1 != v2);
       if (BLI_edgehash_ensure_p(ehash, v1, v2, &val_p)) {
-        last_valid_ml->e = POINTER_AS_INT(*val_p);
+        last_valid_corner_edge = POINTER_AS_INT(*val_p);
       }
       else {
         const int new_eidx = STACK_SIZE(medge);
-        STACK_PUSH(olde, olde[last_valid_ml->e]);
-        STACK_PUSH(medge, src_edges[last_valid_ml->e]);
-        medge[new_eidx].v1 = last_valid_ml->v;
-        medge[new_eidx].v2 = first_valid_ml->v;
+        STACK_PUSH(olde, olde[*last_valid_corner_edge]);
+        STACK_PUSH(medge, src_edges[*last_valid_corner_edge]);
+        medge[new_eidx].v1 = *last_valid_corner_vert;
+        medge[new_eidx].v2 = *first_valid_corner_vert;
         /* DO NOT change newe mapping,
          * could break actual values due to some deleted original edges. */
         *val_p = POINTER_FROM_INT(new_eidx);
         created_edges++;
 
-        last_valid_ml->e = new_eidx;
+        *last_valid_corner_edge = new_eidx;
       }
       need_edge_to_first_valid_ml = need_edge_from_last_valid_ml = false;
     }
@@ -535,7 +549,8 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
     }
     if (UNLIKELY(c < 3)) {
       STACK_DISCARD(oldl, c);
-      STACK_DISCARD(mloop, c);
+      STACK_DISCARD(corner_verts, c);
+      STACK_DISCARD(corner_edges, c);
       if (created_edges > 0) {
         for (j = STACK_SIZE(medge) - created_edges; j < STACK_SIZE(medge); j++) {
           BLI_edgehash_remove(ehash, medge[j].v1, medge[j].v2, NULL);
@@ -550,7 +565,7 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
     *mp_new = *mp;
     mp_new->totloop = c;
     BLI_assert(mp_new->totloop >= 3);
-    mp_new->loopstart = STACK_SIZE(mloop) - c;
+    mp_new->loopstart = STACK_SIZE(corner_verts) - c;
 
     STACK_PUSH(oldp, i);
   } /* End of the loop that tests polys. */
@@ -564,7 +579,7 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
 
   /* Create new cddm. */
   result = BKE_mesh_new_nomain_from_template(
-      mesh, totvert_final, STACK_SIZE(medge), 0, STACK_SIZE(mloop), STACK_SIZE(mpoly));
+      mesh, totvert_final, STACK_SIZE(medge), 0, STACK_SIZE(corner_verts), STACK_SIZE(mpoly));
 
   /* Update edge indices and copy customdata. */
   MEdge *new_med = medge;
@@ -581,11 +596,10 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
   }
 
   /* Update loop indices and copy customdata. */
-  MLoop *new_ml = mloop;
-  for (i = 0; i < result->totloop; i++, new_ml++) {
+  for (i = 0; i < result->totloop; i++) {
     /* Edge remapping has already be done in main loop handling part above. */
     BLI_assert(newv[new_ml->v] != -1);
-    new_ml->v = newv[new_ml->v];
+    corner_verts[i] = newv[corner_verts[i]];
 
     CustomData_copy_data(&mesh->ldata, &result->ldata, oldl[i], i, 1);
   }
@@ -605,15 +619,23 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
   if (STACK_SIZE(medge)) {
     memcpy(BKE_mesh_edges_for_write(result), medge, sizeof(MEdge) * STACK_SIZE(medge));
   }
-  if (STACK_SIZE(mloop)) {
-    memcpy(BKE_mesh_loops_for_write(result), mloop, sizeof(MLoop) * STACK_SIZE(mloop));
+  if (STACK_SIZE(corner_verts)) {
+    memcpy(BKE_mesh_corner_verts_for_write(result),
+           corner_verts,
+           sizeof(int) * STACK_SIZE(corner_verts));
+  }
+  if (STACK_SIZE(corner_edges)) {
+    memcpy(BKE_mesh_corner_edges_for_write(result),
+           corner_edges,
+           sizeof(int) * STACK_SIZE(corner_edges));
   }
   if (STACK_SIZE(mpoly)) {
     memcpy(BKE_mesh_polys_for_write(result), mpoly, sizeof(MPoly) * STACK_SIZE(mpoly));
   }
 
   MEM_freeN(medge);
-  MEM_freeN(mloop);
+  MEM_freeN(corner_verts);
+  MEM_freeN(corner_edges);
   MEM_freeN(mpoly);
 
   MEM_freeN(newv);

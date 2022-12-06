@@ -2110,14 +2110,14 @@ const CustomData_MeshMasks CD_MASK_BAREMESH = {
     /* emask */ CD_MASK_MEDGE,
     /* fmask */ 0,
     /* pmask */ CD_MASK_MPOLY | CD_MASK_FACEMAP,
-    /* lmask */ CD_MASK_MLOOP,
+    /* lmask */ CD_MASK_PROP_INT32,
 };
 const CustomData_MeshMasks CD_MASK_BAREMESH_ORIGINDEX = {
     /* vmask */ CD_MASK_PROP_FLOAT3 | CD_MASK_ORIGINDEX,
     /* emask */ CD_MASK_MEDGE | CD_MASK_ORIGINDEX,
     /* fmask */ 0,
     /* pmask */ CD_MASK_MPOLY | CD_MASK_FACEMAP | CD_MASK_ORIGINDEX,
-    /* lmask */ CD_MASK_MLOOP,
+    /* lmask */ CD_MASK_PROP_INT32,
 };
 const CustomData_MeshMasks CD_MASK_MESH = {
     /* vmask */ (CD_MASK_PROP_FLOAT3 | CD_MASK_MDEFORMVERT | CD_MASK_MVERT_SKIN |
@@ -2128,8 +2128,8 @@ const CustomData_MeshMasks CD_MASK_MESH = {
     /* pmask */
     (CD_MASK_MPOLY | CD_MASK_FACEMAP | CD_MASK_FREESTYLE_FACE | CD_MASK_PROP_ALL),
     /* lmask */
-    (CD_MASK_MLOOP | CD_MASK_MDISPS | CD_MASK_MLOOPUV | CD_MASK_CUSTOMLOOPNORMAL |
-     CD_MASK_GRID_PAINT_MASK | CD_MASK_PROP_ALL),
+    (CD_MASK_MDISPS | CD_MASK_MLOOPUV | CD_MASK_CUSTOMLOOPNORMAL | CD_MASK_GRID_PAINT_MASK |
+     CD_MASK_PROP_ALL),
 };
 const CustomData_MeshMasks CD_MASK_DERIVEDMESH = {
     /* vmask */ (CD_MASK_ORIGINDEX | CD_MASK_MDEFORMVERT | CD_MASK_SHAPEKEY | CD_MASK_MVERT_SKIN |
@@ -2172,7 +2172,7 @@ const CustomData_MeshMasks CD_MASK_EVERYTHING = {
     (CD_MASK_MPOLY | CD_MASK_BM_ELEM_PYPTR | CD_MASK_ORIGINDEX | CD_MASK_FACEMAP |
      CD_MASK_FREESTYLE_FACE | CD_MASK_PROP_ALL),
     /* lmask */
-    (CD_MASK_MLOOP | CD_MASK_BM_ELEM_PYPTR | CD_MASK_MDISPS | CD_MASK_NORMAL | CD_MASK_MLOOPUV |
+    (CD_MASK_BM_ELEM_PYPTR | CD_MASK_MDISPS | CD_MASK_NORMAL | CD_MASK_MLOOPUV |
      CD_MASK_CUSTOMLOOPNORMAL | CD_MASK_MLOOPTANGENT | CD_MASK_PREVIEW_MLOOPCOL |
      CD_MASK_ORIGSPACE_MLOOP | CD_MASK_GRID_PAINT_MASK | CD_MASK_PROP_ALL),
 };
@@ -2380,7 +2380,9 @@ static bool attribute_stored_in_bmesh_flag(const StringRef name)
               ".select_vert",
               ".select_edge",
               ".select_poly",
-              "material_index");
+              "material_index"
+              ".corner_vert",
+              ".corner_edge");
 }
 
 CustomData CustomData_shallow_copy_remove_non_bmesh_attributes(const CustomData *src,

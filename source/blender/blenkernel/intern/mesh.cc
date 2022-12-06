@@ -892,8 +892,13 @@ static void mesh_ensure_cdlayers_primary(Mesh *mesh, bool do_tessface)
   if (!CustomData_get_layer(&mesh->edata, CD_MEDGE)) {
     CustomData_add_layer(&mesh->edata, CD_MEDGE, CD_SET_DEFAULT, nullptr, mesh->totedge);
   }
-  if (!CustomData_get_layer(&mesh->ldata, CD_MLOOP)) {
-    CustomData_add_layer(&mesh->ldata, CD_MLOOP, CD_SET_DEFAULT, nullptr, mesh->totloop);
+  if (!CustomData_get_layer_named(&mesh->ldata, CD_PROP_INT32, ".corner_vert")) {
+    CustomData_add_layer_named(
+        &mesh->ldata, CD_PROP_INT32, CD_SET_DEFAULT, nullptr, mesh->totloop, ".corner_vert");
+  }
+  if (!CustomData_get_layer_named(&mesh->ldata, CD_PROP_INT32, ".corner_edge")) {
+    CustomData_add_layer_named(
+        &mesh->ldata, CD_PROP_INT32, CD_SET_DEFAULT, nullptr, mesh->totloop, ".corner_edge");
   }
   if (!CustomData_get_layer(&mesh->pdata, CD_MPOLY)) {
     CustomData_add_layer(&mesh->pdata, CD_MPOLY, CD_SET_DEFAULT, nullptr, mesh->totpoly);

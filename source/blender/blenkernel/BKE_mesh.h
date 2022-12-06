@@ -1047,20 +1047,24 @@ BLI_INLINE MPoly *BKE_mesh_polys_for_write(Mesh *mesh)
 
 BLI_INLINE const int *BKE_mesh_corner_verts(const Mesh *mesh)
 {
-  return (const int *)NULL;
+  return (const float(*)[3])CustomData_get_layer_named(
+      &mesh->ldata, CD_PROP_INT32, ".corner_vert");
 }
 BLI_INLINE int *BKE_mesh_corner_verts_for_write(Mesh *mesh)
 {
-  return (int *)NULL;
+  return (float(*)[3])CustomData_duplicate_referenced_layer_named(
+      &mesh->ldata, CD_PROP_INT32, ".corner_vert", mesh->totloop);
 }
 
 BLI_INLINE const int *BKE_mesh_corner_edges(const Mesh *mesh)
 {
-  return (const int *)NULL;
+  return (const float(*)[3])CustomData_get_layer_named(
+      &mesh->ldata, CD_PROP_INT32, ".corner_edge");
 }
 BLI_INLINE int *BKE_mesh_corner_edges_for_write(Mesh *mesh)
 {
-  return (int *)NULL;
+  return (float(*)[3])CustomData_duplicate_referenced_layer_named(
+      &mesh->ldata, CD_PROP_INT32, ".corner_edge", mesh->totloop);
 }
 
 BLI_INLINE const MDeformVert *BKE_mesh_deform_verts(const Mesh *mesh)
@@ -1116,20 +1120,20 @@ inline blender::MutableSpan<MPoly> Mesh::polys_for_write()
 
 inline blender::Span<int> Mesh::corner_verts() const
 {
-  return {};
+  return {BKE_mesh_corner_verts(this), mesh->totloop};
 }
 inline blender::MutableSpan<int> Mesh::corner_verts_for_write()
 {
-  return {};
+  return {BKE_mesh_corner_verts_for_write(this), mesh->totloop};
 }
 
 inline blender::Span<int> Mesh::corner_edges() const
 {
-  return {};
+  return {BKE_mesh_corner_edges(this), mesh->totloop};
 }
 inline blender::MutableSpan<int> Mesh::corner_edges_for_write()
 {
-  return {};
+  return {BKE_mesh_corner_edges_for_write(this), mesh->totloop};
 }
 
 inline blender::Span<MDeformVert> Mesh::deform_verts() const

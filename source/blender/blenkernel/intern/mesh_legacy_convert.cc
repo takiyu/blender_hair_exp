@@ -1624,3 +1624,57 @@ void BKE_mesh_legacy_convert_verts_to_positions(Mesh *mesh)
 }
 
 /** \} */
+
+/* -------------------------------------------------------------------- */
+/** \name Face Corner Conversion
+ * \{ */
+
+MLoop *BKE_mesh_legacy_convert_corners_to_loops(
+    Mesh *mesh,
+    blender::ResourceScope &temp_arrays_for_convert,
+    blender::Vector<CustomDataLayer, 16> &loop_layers_to_write)
+{
+  using namespace blender;
+  const Span<int> corner_verts = mesh->corner_verts();
+  const Span<int> corner_edges = mesh->corner_edges();
+
+  CustomDataLayer mloop_layer{};
+  mloop_layer.type = CD_MLOOP;
+  MutableSpan<MLoop> loops = temp_arrays_for_convert.construct<Array<MLoop>>(mesh->totloop);
+  mloop_layer.data = loops.data();
+
+  threading::parallel_for(loops.index_range(), 2048, [&](IndexRange range) {
+    for (const int i : range) {
+      loops[i].v = corner_verts[i];
+      loops[i].e = corner_edges[i];
+    }
+  });
+
+  loop_layers_to_write.append(mloop_layer);
+  return loops.data();
+}
+
+void BKE_mesh_legacy_convert_loops_to_corners(Mesh *mesh)
+{
+  using namespace blender;
+  const Span<MLoop> loops(static_cast<MLoop *>(CustomData_get_layer(&mesh->ldata, CD_MLOOP)),
+                          mesh->totloop);
+  MutableSpan<int> corner_verts(
+      static_cast<int *>(CustomData_add_layer_named(
+          &mesh->ldata, CD_PROP_INT32, CD_CONSTRUCT, nullptr, mesh->totloop, ".corner_vert")),
+      mesh->totloop);
+  MutableSpan<int> corner_edges(
+      static_cast<int *>(CustomData_add_layer_named(
+          &mesh->ldata, CD_PROP_INT32, CD_CONSTRUCT, nullptr, mesh->totloop, ".corner_edge")),
+      mesh->totloop);
+  threading::parallel_for(loops.index_range(), 2048, [&](IndexRange range) {
+    for (const int i : range) {
+      corner_verts[i] = loops[i].v;
+      corner_edges[i] = loops[i].e;
+    }
+  });
+
+  CustomData_free_layers(&mesh->ldata, CD_MLOOP, mesh->totloop);
+}
+
+/** \} */

@@ -123,12 +123,16 @@ static MEdge *dm_getEdgeArray(DerivedMesh *dm)
 
 static int *dm_getCornerVertArray(DerivedMesh *dm)
 {
-  int *corner_verts = (int *)CustomData_get_layer(&dm->loopData, CD_MLOOP);
+  int *corner_verts = (int *)CustomData_get_layer_named(
+      &dm->loopData, CD_PROP_INT32, ".corner_vert");
 
   if (!corner_verts) {
-    corner_verts = (int *)CustomData_add_layer(
-        &dm->loopData, CD_MLOOP, CD_SET_DEFAULT, nullptr, dm->getNumLoops(dm));
-    CustomData_set_layer_flag(&dm->loopData, CD_MLOOP, CD_FLAG_TEMPORARY);
+    corner_verts = (int *)CustomData_add_layer_named(&dm->loopData,
+                                                     CD_PROP_INT32,
+                                                     CD_SET_DEFAULT,
+                                                     nullptr,
+                                                     dm->getNumLoops(dm),
+                                                     ".corner_vert");
     dm->copyCornerVertArray(dm, corner_verts);
   }
 
@@ -137,12 +141,16 @@ static int *dm_getCornerVertArray(DerivedMesh *dm)
 
 static int *dm_getCornerEdgeArray(DerivedMesh *dm)
 {
-  int *corner_edges = (int *)CustomData_get_layer(&dm->loopData, CD_MLOOP);
+  int *corner_edges = (int *)CustomData_get_layer_named(
+      &dm->loopData, CD_PROP_INT32, ".corner_edge");
 
   if (!corner_edges) {
-    corner_edges = (int *)CustomData_add_layer(
-        &dm->loopData, CD_MLOOP, CD_SET_DEFAULT, nullptr, dm->getNumLoops(dm));
-    CustomData_set_layer_flag(&dm->loopData, CD_MLOOP, CD_FLAG_TEMPORARY);
+    corner_edges = (int *)CustomData_add_layer_named(&dm->loopData,
+                                                     CD_PROP_INT32,
+                                                     CD_SET_DEFAULT,
+                                                     nullptr,
+                                                     dm->getNumLoops(dm),
+                                                     ".corner_edge");
     dm->copyCornerEdgeArray(dm, corner_edges);
   }
 

@@ -974,7 +974,10 @@ void BM_mesh_bm_to_me(Main *bmain, BMesh *bm, Mesh *me, const struct BMeshToMesh
   CustomData_add_layer_named(
       &me->vdata, CD_PROP_FLOAT3, CD_CONSTRUCT, nullptr, me->totvert, "position");
   CustomData_add_layer(&me->edata, CD_MEDGE, CD_SET_DEFAULT, nullptr, me->totedge);
-  CustomData_add_layer(&me->ldata, CD_MLOOP, CD_SET_DEFAULT, nullptr, me->totloop);
+  CustomData_add_layer_named(
+      &me->ldata, CD_PROP_INT32, CD_SET_DEFAULT, nullptr, me->totloop, ".corner_vert");
+  CustomData_add_layer_named(
+      &me->ldata, CD_PROP_INT32, CD_SET_DEFAULT, nullptr, me->totloop, ".corner_edge");
   CustomData_add_layer(&me->pdata, CD_MPOLY, CD_SET_DEFAULT, nullptr, me->totpoly);
   MutableSpan<float3> positions = me->positions_for_write();
   MutableSpan<MEdge> medge = me->edges_for_write();
@@ -1220,7 +1223,10 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
         &me->vdata, CD_PROP_FLOAT3, CD_CONSTRUCT, nullptr, bm->totvert, "position");
   }
   CustomData_add_layer(&me->edata, CD_MEDGE, CD_SET_DEFAULT, nullptr, bm->totedge);
-  CustomData_add_layer(&me->ldata, CD_MLOOP, CD_SET_DEFAULT, nullptr, bm->totloop);
+  CustomData_add_layer_named(
+      &me->ldata, CD_PROP_INT32, CD_SET_DEFAULT, nullptr, bm->totloop, ".corner_vert");
+  CustomData_add_layer_named(
+      &me->ldata, CD_PROP_INT32, CD_SET_DEFAULT, nullptr, bm->totloop, ".corner_edge");
   CustomData_add_layer(&me->pdata, CD_MPOLY, CD_SET_DEFAULT, nullptr, bm->totface);
 
   /* Don't process shape-keys, we only feed them through the modifier stack as needed,

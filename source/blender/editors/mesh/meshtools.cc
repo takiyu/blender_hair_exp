@@ -586,10 +586,10 @@ int ED_mesh_join_objects_exec(bContext *C, wmOperator *op)
   float3 *positions = (float3 *)CustomData_add_layer_named(
       &vdata, CD_PROP_FLOAT3, CD_SET_DEFAULT, nullptr, totvert, "position");
   medge = (MEdge *)CustomData_add_layer(&edata, CD_MEDGE, CD_SET_DEFAULT, nullptr, totedge);
-  int *corner_verts = (int *)CustomData_add_layer(
-      &ldata, CD_MLOOP, CD_CONSTRUCT, nullptr, totloop);
-  int *corner_edges = (int *)CustomData_add_layer(
-      &ldata, CD_MLOOP, CD_CONSTRUCT, nullptr, totloop);
+  int *corner_verts = (int *)CustomData_add_layer_named(
+      &ldata, CD_PROP_INT32, CD_CONSTRUCT, nullptr, totloop, ".corner_vert");
+  int *corner_edges = (int *)CustomData_add_layer_named(
+      &ldata, CD_PROP_INT32, CD_CONSTRUCT, nullptr, totloop, ".corner_edge");
   mpoly = (MPoly *)CustomData_add_layer(&pdata, CD_MPOLY, CD_SET_DEFAULT, nullptr, totpoly);
 
   vertofs = 0;

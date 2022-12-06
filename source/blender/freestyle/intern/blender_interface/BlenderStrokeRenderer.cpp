@@ -585,10 +585,10 @@ void BlenderStrokeRenderer::GenerateStrokeMesh(StrokeGroup *group, bool hasTex)
       &mesh->edata, CD_MEDGE, CD_SET_DEFAULT, nullptr, mesh->totedge);
   MPoly *polys = (MPoly *)CustomData_add_layer(
       &mesh->pdata, CD_MPOLY, CD_SET_DEFAULT, nullptr, mesh->totpoly);
-  int *corner_verts = (int *)CustomData_add_layer(
-      &mesh->ldata, CD_MLOOP, CD_SET_DEFAULT, nullptr, mesh->totloop);
-  int *corner_edges = (int *)CustomData_add_layer(
-      &mesh->ldata, CD_MLOOP, CD_SET_DEFAULT, nullptr, mesh->totloop);
+  int *corner_verts = (int *)CustomData_add_layer_named(
+      &mesh->ldata, CD_PROP_INT32, CD_SET_DEFAULT, nullptr, mesh->totloop, ".corner_vert");
+  int *corner_edges = (int *)CustomData_add_layer_named(
+      &mesh->ldata, CD_PROP_INT32, CD_SET_DEFAULT, nullptr, mesh->totloop, ".corner_vert");
   int *material_indices = (int *)CustomData_add_layer_named(
       &mesh->pdata, CD_PROP_INT32, CD_SET_DEFAULT, nullptr, mesh->totpoly, "material_index");
   MLoopUV *loopsuv[2] = {nullptr};
