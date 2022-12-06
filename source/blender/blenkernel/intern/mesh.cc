@@ -546,9 +546,6 @@ static int customdata_compare(
           }
           break;
         }
-        case CD_MLOOP: {
-          break;
-        }
         case CD_MLOOPUV: {
           MLoopUV *lp1 = (MLoopUV *)l1->data;
           MLoopUV *lp2 = (MLoopUV *)l2->data;
