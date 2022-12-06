@@ -121,18 +121,32 @@ static MEdge *dm_getEdgeArray(DerivedMesh *dm)
   return medge;
 }
 
-static MLoop *dm_getLoopArray(DerivedMesh *dm)
+static int *dm_getCornerVertArray(DerivedMesh *dm)
 {
-  MLoop *mloop = (MLoop *)CustomData_get_layer(&dm->loopData, CD_MLOOP);
+  int *corner_verts = (int *)CustomData_get_layer(&dm->loopData, CD_MLOOP);
 
-  if (!mloop) {
-    mloop = (MLoop *)CustomData_add_layer(
+  if (!corner_verts) {
+    corner_verts = (int *)CustomData_add_layer(
         &dm->loopData, CD_MLOOP, CD_SET_DEFAULT, nullptr, dm->getNumLoops(dm));
     CustomData_set_layer_flag(&dm->loopData, CD_MLOOP, CD_FLAG_TEMPORARY);
-    dm->copyLoopArray(dm, mloop);
+    dm->copyCornerVertArray(dm, corner_verts);
   }
 
-  return mloop;
+  return corner_verts;
+}
+
+static int *dm_getCornerEdgeArray(DerivedMesh *dm)
+{
+  int *corner_edges = (int *)CustomData_get_layer(&dm->loopData, CD_MLOOP);
+
+  if (!corner_edges) {
+    corner_edges = (int *)CustomData_add_layer(
+        &dm->loopData, CD_MLOOP, CD_SET_DEFAULT, nullptr, dm->getNumLoops(dm));
+    CustomData_set_layer_flag(&dm->loopData, CD_MLOOP, CD_FLAG_TEMPORARY);
+    dm->copyCornerEdgeArray(dm, corner_edges);
+  }
+
+  return corner_edges;
 }
 
 static MPoly *dm_getPolyArray(DerivedMesh *dm)
@@ -185,7 +199,8 @@ void DM_init_funcs(DerivedMesh *dm)
   /* default function implementations */
   dm->getVertArray = dm_getVertArray;
   dm->getEdgeArray = dm_getEdgeArray;
-  dm->getLoopArray = dm_getLoopArray;
+  dm->getCornerVertArray = dm_getCornerVertArray;
+  dm->getCornerEdgeArray = dm_getCornerEdgeArray;
   dm->getPolyArray = dm_getPolyArray;
 
   dm->getLoopTriArray = dm_getLoopTriArray;

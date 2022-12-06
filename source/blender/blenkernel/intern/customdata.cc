@@ -1852,7 +1852,7 @@ static const LayerTypeInfo LAYERTYPEINFO[CD_NUMTYPES] = {
     {sizeof(MRecast), "MRecast", 1, N_("Recast"), nullptr, nullptr, nullptr, nullptr},
     /* 25: CD_MPOLY */
     {sizeof(MPoly), "MPoly", 1, N_("NGon Face"), nullptr, nullptr, nullptr, nullptr, nullptr},
-    /* 26: CD_MLOOP */
+    /* 26: CD_MLOOP */ /* DEPRECATED*/
     {sizeof(MLoop),
      "MLoop",
      1,

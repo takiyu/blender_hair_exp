@@ -1038,7 +1038,7 @@ static void copyFinalLoopArray_task_cb(void *__restrict userdata,
   int *corner_verts = data->corner_verts;
   int *corner_edges = data->corner_edges;
 
-  size_t loop_index = 4 * (size_t)grid_index * (grid_size - 1) * (grid_size - 1);
+  size_t loop_i = 4 * (size_t)grid_index * (grid_size - 1) * (grid_size - 1);
   for (int S = 0; S < num_verts; S++) {
     for (int y = 0; y < grid_size - 1; y++) {
       for (int x = 0; x < grid_size - 1; x++) {
@@ -1048,24 +1048,26 @@ static void copyFinalLoopArray_task_cb(void *__restrict userdata,
         const int v3 = getFaceIndex(ss, f, S, x + 1, y + 1, edge_size, grid_size);
         const int v4 = getFaceIndex(ss, f, S, x + 1, y + 0, edge_size, grid_size);
 
-        corner_verts[loop_index] = v1;
-        corner_edges[loop_index] = POINTER_AS_UINT(BLI_edgehash_lookup(ccgdm->ehash, v1, v2));
-        loop_index++;
-        corner_verts[loop_index] = v2;
-        corner_edges[loop_index] = POINTER_AS_UINT(BLI_edgehash_lookup(ccgdm->ehash, v2, v3));
-        loop_index++;
-        corner_verts[loop_index] = v3;
-        corner_edges[loop_index] = POINTER_AS_UINT(BLI_edgehash_lookup(ccgdm->ehash, v3, v4));
-        loop_index++;
-        corner_verts[loop_index] = v4;
-        corner_edges[loop_index] = POINTER_AS_UINT(BLI_edgehash_lookup(ccgdm->ehash, v4, v1));
-        loop_index++;
+        if (corner_verts) {
+          corner_verts[loop_i + 0] = v1;
+          corner_verts[loop_i + 1] = v2;
+          corner_verts[loop_i + 2] = v3;
+          corner_verts[loop_i + 3] = v4;
+        }
+        if (corner_edges) {
+          corner_edges[loop_i + 0] = POINTER_AS_UINT(BLI_edgehash_lookup(ccgdm->ehash, v1, v2));
+          corner_edges[loop_i + 1] = POINTER_AS_UINT(BLI_edgehash_lookup(ccgdm->ehash, v2, v3));
+          corner_edges[loop_i + 2] = POINTER_AS_UINT(BLI_edgehash_lookup(ccgdm->ehash, v3, v4));
+          corner_edges[loop_i + 3] = POINTER_AS_UINT(BLI_edgehash_lookup(ccgdm->ehash, v4, v1));
+        }
+
+        loop_i += 4;
       }
     }
   }
 }
 
-static void ccgDM_copyFinalLoopArray(DerivedMesh *dm, MLoop *mloop)
+static void ccgDM_copyFinalCornerVertArray(DerivedMesh *dm, int *r_corner_verts)
 {
   CCGDerivedMesh *ccgdm = (CCGDerivedMesh *)dm;
   CCGSubSurf *ss = ccgdm->ss;
@@ -1090,7 +1092,53 @@ static void ccgDM_copyFinalLoopArray(DerivedMesh *dm, MLoop *mloop)
 
   CopyFinalLoopArrayData data;
   data.ccgdm = ccgdm;
-  data.mloop = mloop;
+  data.corner_verts = r_corner_verts;
+  data.corner_edges = NULL;
+  data.grid_size = ccgSubSurf_getGridSize(ss);
+  data.grid_offset = dm->getGridOffset(dm);
+  data.edge_size = ccgSubSurf_getEdgeSize(ss);
+
+  /* NOTE: For a dense subdivision we've got enough work for each face and
+   * hence can dedicate whole thread to single face. For less dense
+   * subdivision we handle multiple faces per thread.
+   */
+  data.mloop_index = data.grid_size >= 5 ? 1 : 8;
+
+  TaskParallelSettings settings;
+  BLI_parallel_range_settings_defaults(&settings);
+  settings.min_iter_per_thread = 1;
+
+  BLI_task_parallel_range(
+      0, ccgSubSurf_getNumFaces(ss), &data, copyFinalLoopArray_task_cb, &settings);
+}
+
+static void ccgDM_copyFinalCornerEdgeArray(DerivedMesh *dm, int *r_corner_edges)
+{
+  CCGDerivedMesh *ccgdm = (CCGDerivedMesh *)dm;
+  CCGSubSurf *ss = ccgdm->ss;
+
+  if (!ccgdm->ehash) {
+    BLI_mutex_lock(&ccgdm->loops_cache_lock);
+    if (!ccgdm->ehash) {
+      MEdge *medge;
+      EdgeHash *ehash;
+
+      ehash = BLI_edgehash_new_ex(__func__, ccgdm->dm.numEdgeData);
+      medge = ccgdm->dm.getEdgeArray((DerivedMesh *)ccgdm);
+
+      for (int i = 0; i < ccgdm->dm.numEdgeData; i++) {
+        BLI_edgehash_insert(ehash, medge[i].v1, medge[i].v2, POINTER_FROM_INT(i));
+      }
+
+      atomic_cas_ptr((void **)&ccgdm->ehash, ccgdm->ehash, ehash);
+    }
+    BLI_mutex_unlock(&ccgdm->loops_cache_lock);
+  }
+
+  CopyFinalLoopArrayData data;
+  data.ccgdm = ccgdm;
+  data.corner_verts = NULL;
+  data.corner_edges = r_corner_edges;
   data.grid_size = ccgSubSurf_getGridSize(ss);
   data.grid_offset = dm->getGridOffset(dm);
   data.edge_size = ccgSubSurf_getEdgeSize(ss);
@@ -1499,7 +1547,8 @@ static void set_default_ccgdm_callbacks(CCGDerivedMesh *ccgdm)
 
   ccgdm->dm.copyVertArray = ccgDM_copyFinalVertArray;
   ccgdm->dm.copyEdgeArray = ccgDM_copyFinalEdgeArray;
-  ccgdm->dm.copyLoopArray = ccgDM_copyFinalLoopArray;
+  ccgdm->dm.copyCornerVertArray = ccgDM_copyFinalCornerVertArray;
+  ccgdm->dm.copyCornerEdgeArray = ccgDM_copyFinalCornerEdgeArray;
   ccgdm->dm.copyPolyArray = ccgDM_copyFinalPolyArray;
 
   ccgdm->dm.getVertDataArray = ccgDM_get_vert_data_layer;

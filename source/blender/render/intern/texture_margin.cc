@@ -530,7 +530,7 @@ static void generate_margin(ImBuf *ibuf,
     totedge = dm->getNumEdges(dm);
     totloop = dm->getNumLoops(dm);
     mpoly = dm->getPolyArray(dm);
-    corner_edges = dm->getLoopArray(dm);
+    corner_edges = dm->getCornerEdgeArray(dm);
     mloopuv = (MLoopUV const *)dm->getLoopDataArray(dm, CD_MLOOPUV);
 
     looptri = dm->getLoopTriArray(dm);

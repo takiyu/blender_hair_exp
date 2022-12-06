@@ -138,7 +138,8 @@ struct DerivedMesh {
    */
   void (*copyVertArray)(DerivedMesh *dm, float (*r_positions)[3]);
   void (*copyEdgeArray)(DerivedMesh *dm, struct MEdge *r_edge);
-  void (*copyLoopArray)(DerivedMesh *dm, struct MLoop *r_loop);
+  void (*copyCornerVertArray)(DerivedMesh *dm, int *r_corner_verts);
+  void (*copyCornerEdgeArray)(DerivedMesh *dm, int *r_corner_edges);
   void (*copyPolyArray)(DerivedMesh *dm, struct MPoly *r_poly);
 
   /** Return a pointer to the entire array of vert/edge/face custom data

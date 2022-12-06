@@ -88,10 +88,16 @@ static void cdDM_copyEdgeArray(DerivedMesh *dm, MEdge *r_edge)
   memcpy(r_edge, cddm->medge, sizeof(*r_edge) * dm->numEdgeData);
 }
 
-static void cdDM_copyLoopArray(DerivedMesh *dm, MLoop *r_loop)
+static void cdDM_copyCornerVertArray(DerivedMesh *dm, int *r_corner_verts)
 {
   CDDerivedMesh *cddm = (CDDerivedMesh *)dm;
-  memcpy(r_loop, cddm->mloop, sizeof(*r_loop) * dm->numLoopData);
+  memcpy(r_corner_verts, cddm->corner_verts, sizeof(*r_corner_verts) * dm->numLoopData);
+}
+
+static void cdDM_copyCornerEdgeArray(DerivedMesh *dm, int *r_corner_edges)
+{
+  CDDerivedMesh *cddm = (CDDerivedMesh *)dm;
+  memcpy(r_corner_edges, cddm->corner_edges, sizeof(*r_corner_edges) * dm->numLoopData);
 }
 
 static void cdDM_copyPolyArray(DerivedMesh *dm, MPoly *r_poly)
@@ -122,8 +128,12 @@ static void cdDM_recalc_looptri(DerivedMesh *dm)
   DM_ensure_looptri_data(dm);
   BLI_assert(totpoly == 0 || cddm->dm.looptris.array_wip != NULL);
 
-  BKE_mesh_recalc_looptri(
-      cddm->mloop, cddm->mpoly, cddm->positions, totloop, totpoly, cddm->dm.looptris.array_wip);
+  BKE_mesh_recalc_looptri(cddm->corner_verts,
+                          cddm->mpoly,
+                          cddm->positions,
+                          totloop,
+                          totpoly,
+                          cddm->dm.looptris.array_wip);
 
   BLI_assert(cddm->dm.looptris.array == NULL);
   atomic_cas_ptr(
@@ -167,7 +177,8 @@ static CDDerivedMesh *cdDM_create(const char *desc)
 
   dm->copyVertArray = cdDM_copyVertArray;
   dm->copyEdgeArray = cdDM_copyEdgeArray;
-  dm->copyLoopArray = cdDM_copyLoopArray;
+  dm->copyCornerVertArray = cdDM_copyCornerVertArray;
+  dm->copyCornerEdgeArray = cdDM_copyCornerEdgeArray;
   dm->copyPolyArray = cdDM_copyPolyArray;
 
   dm->getVertDataArray = DM_get_vert_data_layer;
@@ -223,7 +234,8 @@ static DerivedMesh *cdDM_from_mesh_ex(Mesh *mesh,
    * or dirty normals. */
   cddm->vert_normals = BKE_mesh_vertex_normals_ensure(mesh);
   cddm->medge = CustomData_get_layer(&dm->edgeData, CD_MEDGE);
-  cddm->mloop = CustomData_get_layer(&dm->loopData, CD_MLOOP);
+  cddm->corner_verts = CustomData_get_layer(&dm->loopData, CD_MLOOP);
+  cddm->corner_edges = CustomData_get_layer(&dm->loopData, CD_MLOOP);
   cddm->mpoly = CustomData_get_layer(&dm->polyData, CD_MPOLY);
 #if 0
   cddm->mface = CustomData_get_layer(&dm->faceData, CD_MFACE);
