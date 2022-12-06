@@ -10,6 +10,8 @@
 #include "DNA_node_types.h"
 
 #include "BLI_color.hh"
+#include "BLI_float3x3.hh"
+#include "BLI_float4x4.hh"
 #include "BLI_listbase.h"
 #include "BLI_math_vec_types.hh"
 #include "BLI_string.h"
@@ -70,6 +72,24 @@ struct bNodeSocket *node_add_socket_from_template(struct bNodeTree *ntree,
     }
     case SOCK_VECTOR: {
       bNodeSocketValueVector *dval = (bNodeSocketValueVector *)sock->default_value;
+      dval->value[0] = stemp->val1;
+      dval->value[1] = stemp->val2;
+      dval->value[2] = stemp->val3;
+      dval->min = stemp->min;
+      dval->max = stemp->max;
+      break;
+    }
+    case SOCK_MATRIX3x3: {
+      bNodeSocketValueMatrix3x3 *dval = (bNodeSocketValueMatrix3x3 *)sock->default_value;
+      dval->value[0] = stemp->val1;
+      dval->value[1] = stemp->val2;
+      dval->value[2] = stemp->val3;
+      dval->min = stemp->min;
+      dval->max = stemp->max;
+      break;
+    }
+    case SOCK_MATRIX4x4: {
+      bNodeSocketValueMatrix4x4 *dval = (bNodeSocketValueMatrix4x4 *)sock->default_value;
       dval->value[0] = stemp->val1;
       dval->value[1] = stemp->val2;
       dval->value[2] = stemp->val3;
@@ -330,6 +350,34 @@ void node_socket_init_default_value(bNodeSocket *sock)
       sock->default_value = dval;
       break;
     }
+    case SOCK_MATRIX3x3: {
+      static float default_value[][3] = {
+          {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}};
+      bNodeSocketValueMatrix3x3 *dval = MEM_cnew<bNodeSocketValueMatrix3x3>(
+          "node socket value matrix 3x3");
+      dval->subtype = subtype;
+      copy_m3_m3(dval->value, default_value);
+      dval->min = -FLT_MAX;
+      dval->max = FLT_MAX;
+
+      sock->default_value = dval;
+      break;
+    }
+    case SOCK_MATRIX4x4: {
+      static float default_value[][4] = {{1.0f, 0.0f, 0.0f, 0.0f},
+                                         {0.0f, 1.0f, 0.0f, 0.0f},
+                                         {0.0f, 0.0f, 1.0f, 0.0f},
+                                         {0.0f, 0.0f, 0.0f, 1.0f}};
+      bNodeSocketValueMatrix4x4 *dval = MEM_cnew<bNodeSocketValueMatrix4x4>(
+          "node socket value vector");
+      dval->subtype = subtype;
+      copy_m4_m4(dval->value, default_value);
+      dval->min = -FLT_MAX;
+      dval->max = FLT_MAX;
+
+      sock->default_value = dval;
+      break;
+    }
     case SOCK_RGBA: {
       static float default_value[] = {0.0f, 0.0f, 0.0f, 1.0f};
       bNodeSocketValueRGBA *dval = MEM_cnew<bNodeSocketValueRGBA>("node socket value color");
@@ -427,6 +475,18 @@ void node_socket_copy_default_value(bNodeSocket *to, const bNodeSocket *from)
     case SOCK_VECTOR: {
       bNodeSocketValueVector *toval = (bNodeSocketValueVector *)to->default_value;
       bNodeSocketValueVector *fromval = (bNodeSocketValueVector *)from->default_value;
+      *toval = *fromval;
+      break;
+    }
+    case SOCK_MATRIX3x3: {
+      bNodeSocketValueMatrix3x3 *toval = (bNodeSocketValueMatrix3x3 *)to->default_value;
+      bNodeSocketValueMatrix3x3 *fromval = (bNodeSocketValueMatrix3x3 *)from->default_value;
+      *toval = *fromval;
+      break;
+    }
+    case SOCK_MATRIX4x4: {
+      bNodeSocketValueMatrix4x4 *toval = (bNodeSocketValueMatrix4x4 *)to->default_value;
+      bNodeSocketValueMatrix4x4 *fromval = (bNodeSocketValueMatrix4x4 *)from->default_value;
       *toval = *fromval;
       break;
     }
@@ -590,6 +650,22 @@ static void standard_node_socket_interface_verify_socket(bNodeTree * /*ntree*/,
       toval->max = fromval->max;
       break;
     }
+    case SOCK_MATRIX3x3: {
+      bNodeSocketValueMatrix3x3 *toval = (bNodeSocketValueMatrix3x3 *)sock->default_value;
+      const bNodeSocketValueMatrix3x3 *fromval = (const bNodeSocketValueMatrix3x3 *)
+                                                  interface_socket->default_value;
+      toval->min = fromval->min;
+      toval->max = fromval->max;
+      break;
+    }
+    case SOCK_MATRIX4x4: {
+      bNodeSocketValueMatrix4x4 *toval = (bNodeSocketValueMatrix4x4 *)sock->default_value;
+      const bNodeSocketValueMatrix4x4 *fromval = (const bNodeSocketValueMatrix4x4 *)
+                                                  interface_socket->default_value;
+      toval->min = fromval->min;
+      toval->max = fromval->max;
+      break;
+    }
   }
 }
 
@@ -740,6 +816,38 @@ static bNodeSocketType *make_socket_type_vector(PropertySubType subtype)
     blender::float3 value;
     socket.typeinfo->get_base_cpp_value(socket, &value);
     new (r_value) ValueOrField<blender::float3>(value);
+  };
+  return socktype;
+}
+
+static bNodeSocketType *make_socket_type_matrix3()
+{
+  bNodeSocketType *socktype = make_standard_socket_type(SOCK_MATRIX3x3, PROP_MATRIX);
+  socktype->base_cpp_type = &blender::CPPType::get<blender::float3x3>();
+  socktype->get_base_cpp_value = [](const bNodeSocket &socket, void *r_value) {
+    *(blender::float3x3 *)r_value = ((bNodeSocketValueMatrix3x3 *)socket.default_value)->value;
+  };
+  socktype->geometry_nodes_cpp_type = &blender::CPPType::get<ValueOrField<blender::float3x3>>();
+  socktype->get_geometry_nodes_cpp_value = [](const bNodeSocket &socket, void *r_value) {
+    blender::float3x3 value;
+    socket.typeinfo->get_base_cpp_value(socket, &value);
+    new (r_value) ValueOrField<blender::float3x3>(value);
+  };
+  return socktype;
+}
+
+static bNodeSocketType *make_socket_type_matrix4()
+{
+  bNodeSocketType *socktype = make_standard_socket_type(SOCK_MATRIX4x4, PROP_MATRIX);
+  socktype->base_cpp_type = &blender::CPPType::get<blender::float4x4>();
+  socktype->get_base_cpp_value = [](const bNodeSocket &socket, void *r_value) {
+    *(blender::float4x4 *)r_value = ((bNodeSocketValueMatrix4x4 *)socket.default_value)->value;
+  };
+  socktype->geometry_nodes_cpp_type = &blender::CPPType::get<ValueOrField<blender::float4x4>>();
+  socktype->get_geometry_nodes_cpp_value = [](const bNodeSocket &socket, void *r_value) {
+    blender::float4x4 value;
+    socket.typeinfo->get_base_cpp_value(socket, &value);
+    new (r_value) ValueOrField<blender::float4x4>(value);
   };
   return socktype;
 }

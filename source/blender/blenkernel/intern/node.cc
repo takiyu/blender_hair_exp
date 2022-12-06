@@ -1883,6 +1883,10 @@ const char *nodeStaticSocketInterfaceType(int type, int subtype)
       return "NodeSocketInterfaceTexture";
     case SOCK_MATERIAL:
       return "NodeSocketInterfaceMaterial";
+    case SOCK_MATRIX3x3:
+      return "NodeSocketInterfaceMatrix3x3";
+    case SOCK_MATRIX4x4:
+      return "NodeSocketInterfaceMatrix4x4";
   }
   return nullptr;
 }
@@ -1916,6 +1920,10 @@ const char *nodeStaticSocketLabel(int type, int /*subtype*/)
       return "Texture";
     case SOCK_MATERIAL:
       return "Material";
+    case SOCK_MATRIX3x3:
+      return "Matrix3x3";
+    case SOCK_MATRIX4x4:
+      return "Matrix4x4";
   }
   return nullptr;
 }

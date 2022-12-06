@@ -72,7 +72,7 @@ namespace node_field_inferencing {
 
 static bool is_field_socket_type(eNodeSocketDatatype type)
 {
-  return ELEM(type, SOCK_FLOAT, SOCK_INT, SOCK_BOOLEAN, SOCK_VECTOR, SOCK_RGBA);
+  return ELEM(type, SOCK_FLOAT, SOCK_INT, SOCK_BOOLEAN, SOCK_VECTOR, SOCK_RGBA, SOCK_MATRIX3x3, SOCK_MATRIX4x4);
 }
 
 static bool is_field_socket_type(const bNodeSocket &socket)

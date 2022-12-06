@@ -1200,6 +1200,8 @@ static const float std_node_socket_colors[][4] = {
     {0.96, 0.96, 0.96, 1.0}, /* SOCK_COLLECTION */
     {0.62, 0.31, 0.64, 1.0}, /* SOCK_TEXTURE */
     {0.92, 0.46, 0.51, 1.0}, /* SOCK_MATERIAL */
+    {0.01, 0.61, 0.66, 1.0}, /* SOCK_MATRIX3x3 */
+    {0.01, 0.36, 0.62, 1.0}, /* SOCK_MATRIX4x4 */
 };
 
 /* common color callbacks for standard types */
@@ -1318,6 +1320,24 @@ static void std_node_socket_draw(
           uiLayout *column = uiLayoutColumn(layout, true);
           uiItemR(column, ptr, "default_value", DEFAULT_FLAGS, text, ICON_NONE);
         }
+      }
+      break;
+    case SOCK_MATRIX3x3:
+      if (sock->flag & SOCK_COMPACT) {
+        uiTemplateComponentMenu(layout, ptr, "default_value", text);
+      }
+      else {
+        uiLayout *column = uiLayoutColumn(layout, true);
+        uiItemR(column, ptr, "default_value", DEFAULT_FLAGS, text, ICON_NONE);
+      }
+      break;
+    case SOCK_MATRIX4x4:
+      if (sock->flag & SOCK_COMPACT) {
+        uiTemplateComponentMenu(layout, ptr, "default_value", text);
+      }
+      else {
+        uiLayout *column = uiLayoutColumn(layout, true);
+        uiItemR(column, ptr, "default_value", DEFAULT_FLAGS, text, ICON_NONE);
       }
       break;
     case SOCK_RGBA: {
@@ -1445,6 +1465,20 @@ static void std_node_socket_interface_draw(bContext * /*C*/, uiLayout *layout, P
     }
     case SOCK_VECTOR: {
       uiItemR(col, ptr, "default_value", UI_ITEM_R_EXPAND, IFACE_("Default"), ICON_NONE);
+      uiLayout *sub = uiLayoutColumn(col, true);
+      uiItemR(sub, ptr, "min_value", DEFAULT_FLAGS, IFACE_("Min"), ICON_NONE);
+      uiItemR(sub, ptr, "max_value", DEFAULT_FLAGS, IFACE_("Max"), ICON_NONE);
+      break;
+    }
+    case SOCK_MATRIX3x3: {
+      uiItemR(col, ptr, "default_value", DEFAULT_FLAGS, IFACE_("Default"), ICON_NONE);
+      uiLayout *sub = uiLayoutColumn(col, true);
+      uiItemR(sub, ptr, "min_value", DEFAULT_FLAGS, IFACE_("Min"), ICON_NONE);
+      uiItemR(sub, ptr, "max_value", DEFAULT_FLAGS, IFACE_("Max"), ICON_NONE);
+      break;
+    }
+    case SOCK_MATRIX4x4: {
+      uiItemR(col, ptr, "default_value", DEFAULT_FLAGS, IFACE_("Default"), ICON_NONE);
       uiLayout *sub = uiLayoutColumn(col, true);
       uiItemR(sub, ptr, "min_value", DEFAULT_FLAGS, IFACE_("Min"), ICON_NONE);
       uiItemR(sub, ptr, "max_value", DEFAULT_FLAGS, IFACE_("Max"), ICON_NONE);

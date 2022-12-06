@@ -12,6 +12,8 @@
 #include "MEM_guardedalloc.h"
 
 #include "BLI_array.hh"
+#include "BLI_float3x3.hh"
+#include "BLI_float4x4.hh"
 #include "BLI_listbase.h"
 #include "BLI_math_vec_types.hh"
 #include "BLI_multi_value_map.hh"
@@ -100,6 +102,8 @@ using blender::ColorGeometry4f;
 using blender::CPPType;
 using blender::destruct_ptr;
 using blender::float3;
+using blender::float3x3;
+using blender::float4x4;
 using blender::FunctionRef;
 using blender::GMutablePointer;
 using blender::GMutableSpan;
@@ -417,7 +421,7 @@ static const std::string attribute_name_suffix = "_attribute_name";
  */
 static bool socket_type_has_attribute_toggle(const bNodeSocket &socket)
 {
-  return ELEM(socket.type, SOCK_FLOAT, SOCK_VECTOR, SOCK_BOOLEAN, SOCK_RGBA, SOCK_INT);
+  return ELEM(socket.type, SOCK_FLOAT, SOCK_VECTOR, SOCK_BOOLEAN, SOCK_RGBA, SOCK_INT, SOCK_MATRIX3x3, SOCK_MATRIX4x4);
 }
 
 /**
@@ -471,6 +475,36 @@ id_property_create_from_socket(const bNodeSocket &socket)
       ui_data->default_array = (double *)MEM_mallocN(sizeof(double[3]), "mod_prop_default");
       ui_data->default_array_len = 3;
       for (const int i : IndexRange(3)) {
+        ui_data->default_array[i] = double(value->value[i]);
+      }
+      return property;
+    }
+    case SOCK_MATRIX3x3: {
+      const bNodeSocketValueMatrix3x3 *value = static_cast<const bNodeSocketValueMatrix3x3 *>(
+          socket.default_value);
+      auto property = bke::idprop::create(socket.identifier, Span<float>(value->value, 9));
+      IDPropertyUIDataFloat *ui_data = (IDPropertyUIDataFloat *)IDP_ui_data_ensure(property.get());
+      ui_data->base.rna_subtype = PROP_MATRIX;
+      ui_data->min = ui_data->soft_min = double(value->min);
+      ui_data->max = ui_data->soft_max = double(value->max);
+      ui_data->default_array = (double *)MEM_mallocN(sizeof(double[9]), "mod_prop_default");
+      ui_data->default_array_len = 9;
+      for (const int i : IndexRange(9)) {
+        ui_data->default_array[i] = double(value->value[i]);
+      }
+      return property;
+    }
+    case SOCK_MATRIX4x4: {
+      const bNodeSocketValueMatrix4x4 *value = static_cast<const bNodeSocketValueMatrix4x4 *>(
+          socket.default_value);
+      auto property = bke::idprop::create(socket.identifier, Span<float>(value->value, 16));
+      IDPropertyUIDataFloat *ui_data = (IDPropertyUIDataFloat *)IDP_ui_data_ensure(property.get());
+      ui_data->base.rna_subtype = PROP_MATRIX;
+      ui_data->min = ui_data->soft_min = double(value->min);
+      ui_data->max = ui_data->soft_max = double(value->max);
+      ui_data->default_array = (double *)MEM_mallocN(sizeof(double[16]), "mod_prop_default");
+      ui_data->default_array_len = 16;
+      for (const int i : IndexRange(16)) {
         ui_data->default_array[i] = double(value->value[i]);
       }
       return property;
@@ -551,6 +585,10 @@ static bool id_property_type_matches_socket(const bNodeSocket &socket, const IDP
       return property.type == IDP_INT;
     case SOCK_VECTOR:
       return property.type == IDP_ARRAY && property.subtype == IDP_FLOAT && property.len == 3;
+    case SOCK_MATRIX3x3:
+      return property.type == IDP_ARRAY && property.subtype == IDP_FLOAT && property.len == 9;
+    case SOCK_MATRIX4x4:
+      return property.type == IDP_ARRAY && property.subtype == IDP_FLOAT && property.len == 16;
     case SOCK_RGBA:
       return property.type == IDP_ARRAY && property.subtype == IDP_FLOAT && property.len == 4;
     case SOCK_BOOLEAN:
@@ -593,6 +631,18 @@ static void init_socket_cpp_value_from_property(const IDProperty &property,
       float3 value;
       copy_v3_v3(value, (const float *)IDP_Array(&property));
       new (r_value) ValueOrField<float3>(value);
+      break;
+    }
+    case SOCK_MATRIX3x3: {
+      float3x3 value;
+      copy_m3_m3(value.ptr(), (const float (*)[3])IDP_Array(&property));
+      new (r_value) ValueOrField<float3x3>(value);
+      break;
+    }
+    case SOCK_MATRIX4x4: {
+      float4x4 value;
+      copy_m4_m4(value.ptr(), (const float(*)[4])IDP_Array(&property));
+      new (r_value) ValueOrField<float4x4>(value);
       break;
     }
     case SOCK_RGBA: {

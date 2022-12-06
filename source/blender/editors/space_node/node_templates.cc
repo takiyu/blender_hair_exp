@@ -868,6 +868,8 @@ static void ui_node_draw_input(
     else {
       switch (input.type) {
         case SOCK_VECTOR:
+        case SOCK_MATRIX3x3:
+        case SOCK_MATRIX4x4:
           uiItemS(sub);
           sub = uiLayoutColumn(sub, true);
           ATTR_FALLTHROUGH;
