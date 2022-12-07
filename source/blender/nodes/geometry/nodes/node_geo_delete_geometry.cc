@@ -215,7 +215,7 @@ static void copy_masked_polys_to_new_mesh(const Mesh &src_mesh,
 
     MPoly &mp_dst = dst_polys[i_dst];
     mp_dst = mp_src;
-    mp_dst.totloop = new_loop_starts[i_dst];
+    mp_dst.loopstart = new_loop_starts[i_dst];
     MutableSpan<int> dst_poly_verts = dst_corner_verts.slice(mp_dst.loopstart, size);
     MutableSpan<int> dst_poly_edges = dst_corner_edges.slice(mp_dst.loopstart, size);
 
@@ -249,7 +249,7 @@ static void copy_masked_polys_to_new_mesh(const Mesh &src_mesh,
 
     MPoly &mp_dst = dst_polys[i_dst];
     mp_dst = mp_src;
-    mp_dst.totloop = new_loop_starts[i_dst];
+    mp_dst.loopstart = new_loop_starts[i_dst];
     MutableSpan<int> dst_poly_verts = dst_corner_verts.slice(mp_dst.loopstart, size);
     MutableSpan<int> dst_poly_edges = dst_corner_edges.slice(mp_dst.loopstart, size);
 
@@ -281,7 +281,7 @@ static void copy_masked_polys_to_new_mesh(const Mesh &src_mesh,
 
     MPoly &mp_dst = dst_polys[i_dst];
     mp_dst = mp_src;
-    mp_dst.totloop = new_loop_starts[i_dst];
+    mp_dst.loopstart = new_loop_starts[i_dst];
     MutableSpan<int> dst_poly_verts = dst_corner_verts.slice(mp_dst.loopstart, size);
     MutableSpan<int> dst_poly_edges = dst_corner_edges.slice(mp_dst.loopstart, size);
 
@@ -821,6 +821,8 @@ static void do_mesh_separation(GeometrySet &geometry_set,
   Map<AttributeIDRef, AttributeKind> attributes;
   geometry_set.gather_attributes_for_propagation(
       {GEO_COMPONENT_TYPE_MESH}, GEO_COMPONENT_TYPE_MESH, false, attributes);
+  attributes.remove(".corner_vert");
+  attributes.remove(".corner_edge");
 
   switch (mode) {
     case GEO_NODE_DELETE_GEOMETRY_MODE_ALL: {

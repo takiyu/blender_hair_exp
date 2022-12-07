@@ -833,6 +833,8 @@ static OrderedAttributes gather_generic_mesh_attributes_to_propagate(
   in_geometry_set.gather_attributes_for_propagation(
       src_component_types, GEO_COMPONENT_TYPE_MESH, true, attributes_to_propagate);
   attributes_to_propagate.remove("position");
+  attributes_to_propagate.remove(".corner_vert");
+  attributes_to_propagate.remove(".corner_edge");
   attributes_to_propagate.remove("normal");
   attributes_to_propagate.remove("shade_smooth");
   r_create_id = attributes_to_propagate.pop_try("id").has_value();
@@ -953,7 +955,7 @@ static void execute_realize_mesh_task(const RealizeInstancesOptions &options,
   const IndexRange dst_vert_range(task.start_indices.vertex, src_positions.size());
   const IndexRange dst_edge_range(task.start_indices.edge, src_edges.size());
   const IndexRange dst_poly_range(task.start_indices.poly, src_polys.size());
-  const IndexRange dst_corner_range(task.start_indices.corner, all_dst_corner_verts.size());
+  const IndexRange dst_corner_range(task.start_indices.corner, src_corner_verts.size());
 
   MutableSpan<float3> dst_positions = all_dst_positions.slice(dst_vert_range);
   MutableSpan<MEdge> dst_edges = all_dst_edges.slice(dst_edge_range);

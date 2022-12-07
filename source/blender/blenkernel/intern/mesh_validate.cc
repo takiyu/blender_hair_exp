@@ -615,11 +615,11 @@ bool BKE_mesh_validate_arrays(Mesh *mesh,
           const int vert_i = corner_verts[sp->loopstart + j];
           if (vert_i >= totvert) {
             /* Invalid vert idx. */
-            PRINT_ERR("\tLoop %d has invalid vert reference (%d)", sp->loopstart + j, vert_i);
+            PRINT_ERR("\tLoop %u has invalid vert reference (%d)", sp->loopstart + j, vert_i);
             sp->invalid = true;
           }
           else if (BLI_BITMAP_TEST(vert_tag, vert_i)) {
-            PRINT_ERR("\tPoly %d has duplicated vert reference at corner (%d)", i, j);
+            PRINT_ERR("\tPoly %u has duplicated vert reference at corner (%u)", i, j);
             sp->invalid = true;
           }
           else {
@@ -634,7 +634,7 @@ bool BKE_mesh_validate_arrays(Mesh *mesh,
 
         /* Test all poly's loops. */
         for (j = 0; j < mp->totloop; j++) {
-          const int corner_i = sp->loopstart = j;
+          const int corner_i = sp->loopstart + j;
           const int vert_i = corner_verts[corner_i];
           const int edge_i = corner_edges[corner_i];
           v1 = vert_i;
@@ -656,13 +656,13 @@ bool BKE_mesh_validate_arrays(Mesh *mesh,
               int prev_e = edge_i;
               corner_edges[corner_i] = POINTER_AS_INT(BLI_edgehash_lookup(edge_hash, v1, v2));
               fix_flag.loops_edge = true;
-              PRINT_ERR("\tLoop %u has invalid edge reference (%d), fixed using edge %d",
+              PRINT_ERR("\tLoop %d has invalid edge reference (%d), fixed using edge %d",
                         corner_i,
                         prev_e,
                         corner_edges[corner_i]);
             }
             else {
-              PRINT_ERR("\tLoop %u has invalid edge reference (%u)", corner_i, edge_i);
+              PRINT_ERR("\tLoop %d has invalid edge reference (%d)", corner_i, edge_i);
               sp->invalid = true;
             }
           }

@@ -1250,7 +1250,6 @@ static void loop_split_worker_do(LoopSplitTaskDataCommon *common_data,
                                  LoopSplitTaskData *data,
                                  BLI_Stack *edge_vectors)
 {
-  BLI_assert(data->ml_curr);
   if (data->e2l_prev) {
     BLI_assert((edge_vectors == nullptr) || BLI_stack_is_empty(edge_vectors));
     data->edge_vectors = edge_vectors;

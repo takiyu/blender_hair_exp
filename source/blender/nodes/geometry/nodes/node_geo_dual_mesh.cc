@@ -139,6 +139,8 @@ static void transfer_attributes(
    * Remove anonymous attributes that don't need to be propagated.*/
   Set<AttributeIDRef> attribute_ids = src_attributes.all_ids();
   attribute_ids.remove("position");
+  attribute_ids.remove(".corner_vert");
+  attribute_ids.remove(".corner_edge");
   attribute_ids.remove_if([](const AttributeIDRef &id) { return !id.should_be_kept(); });
 
   for (const AttributeIDRef &id : attribute_ids) {

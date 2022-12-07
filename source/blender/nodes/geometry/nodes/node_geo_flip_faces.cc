@@ -51,6 +51,9 @@ static void mesh_flip_faces(Mesh &mesh, const Field<bool> &selection_field)
         if (meta_data.data_type == CD_PROP_STRING) {
           return true;
         }
+        if (attribute_id.is_named() && ELEM(attribute_id.name(), ".corner_vert", ".corner_edge")) {
+          return true;
+        }
         if (meta_data.domain == ATTR_DOMAIN_CORNER) {
           GSpanAttributeWriter attribute = attributes.lookup_or_add_for_write_span(
               attribute_id, ATTR_DOMAIN_CORNER, meta_data.data_type);

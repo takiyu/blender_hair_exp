@@ -408,6 +408,8 @@ static void copy_face_attributes_without_id(GeometrySet &geometry_set,
 {
   Map<AttributeIDRef, AttributeKind> attributes = gather_attributes_without_id(
       geometry_set, GEO_COMPONENT_TYPE_MESH);
+  attributes.remove(".corner_vert");
+  attributes.remove(".corner_edge");
 
   for (const Map<AttributeIDRef, AttributeKind>::Item entry : attributes.items()) {
     const AttributeIDRef attribute_id = entry.key;

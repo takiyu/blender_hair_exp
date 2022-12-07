@@ -234,6 +234,9 @@ static void extrude_mesh_vertices(Mesh &mesh,
     if (!ELEM(meta_data.domain, ATTR_DOMAIN_POINT, ATTR_DOMAIN_EDGE)) {
       return true;
     }
+    if (id.is_named() && ELEM(id.name(), ".corner_vert", ".corner_edge")) {
+      return true;
+    }
     if (meta_data.data_type == CD_PROP_STRING) {
       return true;
     }
@@ -489,6 +492,9 @@ static void extrude_mesh_edges(Mesh &mesh,
 
   attributes.for_all([&](const AttributeIDRef &id, const AttributeMetaData meta_data) {
     if (meta_data.data_type == CD_PROP_STRING) {
+      return true;
+    }
+    if (id.is_named() && ELEM(id.name(), ".corner_vert", ".corner_edge")) {
       return true;
     }
     GSpanAttributeWriter attribute = attributes.lookup_or_add_for_write_span(
@@ -881,6 +887,9 @@ static void extrude_mesh_face_regions(Mesh &mesh,
 
   attributes.for_all([&](const AttributeIDRef &id, const AttributeMetaData meta_data) {
     if (meta_data.data_type == CD_PROP_STRING) {
+      return true;
+    }
+    if (id.is_named() && ELEM(id.name(), ".corner_vert", ".corner_edge")) {
       return true;
     }
     GSpanAttributeWriter attribute = attributes.lookup_or_add_for_write_span(

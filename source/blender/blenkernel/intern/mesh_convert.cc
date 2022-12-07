@@ -126,7 +126,7 @@ static void make_edges_mdata_extend(Mesh &mesh)
 
     for (i = 0, mp = polys.data(); i < mesh.totpoly; i++, mp++) {
       int corner_i = mp->loopstart;
-      int corner_i_prev = mp->loopstart;
+      int corner_i_prev = mp->loopstart + (mp->totloop - 1);
       int j;
       for (j = 0; j < mp->totloop; j++, corner_i++) {
         /* lookup hashed edge index */

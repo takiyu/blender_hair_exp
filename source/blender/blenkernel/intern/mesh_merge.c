@@ -598,7 +598,7 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
   /* Update loop indices and copy customdata. */
   for (i = 0; i < result->totloop; i++) {
     /* Edge remapping has already be done in main loop handling part above. */
-    BLI_assert(newv[new_ml->v] != -1);
+    BLI_assert(newv[corner_verts[i]] != -1);
     corner_verts[i] = newv[corner_verts[i]];
 
     CustomData_copy_data(&mesh->ldata, &result->ldata, oldl[i], i, 1);

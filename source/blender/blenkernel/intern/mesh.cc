@@ -538,8 +538,6 @@ static int customdata_compare(
           int ptot = m1->totpoly;
 
           for (j = 0; j < ptot; j++, p1++, p2++) {
-            int k;
-
             if (p1->totloop != p2->totloop) {
               return MESHCMP_POLYMISMATCH;
             }
