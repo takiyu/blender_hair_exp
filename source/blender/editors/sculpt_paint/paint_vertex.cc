@@ -3341,7 +3341,7 @@ static void do_vpaint_brush_smear(bContext *C,
                   UNUSED_VARS_NDEBUG(l_index);
                   const MPoly *mp = &ss->mpoly[p_index];
                   if (!use_face_sel || select_poly[p_index]) {
-                    for (int k = 0; k < mp->totloop; k++, ml_other++) {
+                    for (int k = 0; k < mp->totloop; k++) {
                       const int other_corner_i = mp->loopstart + k;
                       const int v_other_index = ss->corner_verts[other_corner_i];
                       if (v_other_index != v_index) {
@@ -3359,7 +3359,7 @@ static void do_vpaint_brush_smear(bContext *C,
                         int elem_index;
 
                         if constexpr (domain == ATTR_DOMAIN_POINT) {
-                          elem_index = ml_other->v;
+                          elem_index = v_other_index;
                         }
                         else {
                           elem_index = mp->loopstart + k;

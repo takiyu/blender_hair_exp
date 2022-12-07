@@ -346,7 +346,6 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
 
   /* adjust mirrored loop vertex and edge indices */
   int *corner_verts = BKE_mesh_corner_verts_for_write(result) + maxLoops;
-  int *corner_edges = BKE_mesh_corner_edges_for_write(result) + maxLoops;
   for (i = 0; i < maxLoops; i++) {
     corner_verts[i] += maxVerts;
     corner_edges[i] += maxEdges;

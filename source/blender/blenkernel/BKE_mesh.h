@@ -1047,23 +1047,21 @@ BLI_INLINE MPoly *BKE_mesh_polys_for_write(Mesh *mesh)
 
 BLI_INLINE const int *BKE_mesh_corner_verts(const Mesh *mesh)
 {
-  return (const float(*)[3])CustomData_get_layer_named(
-      &mesh->ldata, CD_PROP_INT32, ".corner_vert");
+  return (const int *)CustomData_get_layer_named(&mesh->ldata, CD_PROP_INT32, ".corner_vert");
 }
 BLI_INLINE int *BKE_mesh_corner_verts_for_write(Mesh *mesh)
 {
-  return (float(*)[3])CustomData_duplicate_referenced_layer_named(
+  return (int *)CustomData_duplicate_referenced_layer_named(
       &mesh->ldata, CD_PROP_INT32, ".corner_vert", mesh->totloop);
 }
 
 BLI_INLINE const int *BKE_mesh_corner_edges(const Mesh *mesh)
 {
-  return (const float(*)[3])CustomData_get_layer_named(
-      &mesh->ldata, CD_PROP_INT32, ".corner_edge");
+  return (const int *)CustomData_get_layer_named(&mesh->ldata, CD_PROP_INT32, ".corner_edge");
 }
 BLI_INLINE int *BKE_mesh_corner_edges_for_write(Mesh *mesh)
 {
-  return (float(*)[3])CustomData_duplicate_referenced_layer_named(
+  return (int *)CustomData_duplicate_referenced_layer_named(
       &mesh->ldata, CD_PROP_INT32, ".corner_edge", mesh->totloop);
 }
 
@@ -1120,20 +1118,20 @@ inline blender::MutableSpan<MPoly> Mesh::polys_for_write()
 
 inline blender::Span<int> Mesh::corner_verts() const
 {
-  return {BKE_mesh_corner_verts(this), mesh->totloop};
+  return {BKE_mesh_corner_verts(this), this->totloop};
 }
 inline blender::MutableSpan<int> Mesh::corner_verts_for_write()
 {
-  return {BKE_mesh_corner_verts_for_write(this), mesh->totloop};
+  return {BKE_mesh_corner_verts_for_write(this), this->totloop};
 }
 
 inline blender::Span<int> Mesh::corner_edges() const
 {
-  return {BKE_mesh_corner_edges(this), mesh->totloop};
+  return {BKE_mesh_corner_edges(this), this->totloop};
 }
 inline blender::MutableSpan<int> Mesh::corner_edges_for_write()
 {
-  return {BKE_mesh_corner_edges_for_write(this), mesh->totloop};
+  return {BKE_mesh_corner_edges_for_write(this), this->totloop};
 }
 
 inline blender::Span<MDeformVert> Mesh::deform_verts() const

@@ -309,7 +309,7 @@ void BKE_mesh_foreach_mapped_subdiv_face_center(
 {
   const float(*positions)[3] = BKE_mesh_positions(mesh);
   const MPoly *mp = BKE_mesh_polys(mesh);
-  const Span<int> corner_verts = mesh->corner_verts();
+  const blender::Span<int> corner_verts = mesh->corner_verts();
   const float(*vert_normals)[3] = (flag & MESH_FOREACH_USE_NORMAL) ?
                                       BKE_mesh_vertex_normals_ensure(mesh) :
                                       nullptr;

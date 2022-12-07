@@ -471,7 +471,7 @@ static const char *cmpcode_to_str(int code)
 
 /** Thresh is threshold for comparing vertices, UV's, vertex colors, weights, etc. */
 static int customdata_compare(
-    CustomData *c1, CustomData *c2, const int total_length, Mesh *m1, Mesh *m2, const float thresh)
+    CustomData *c1, CustomData *c2, const int total_length, Mesh *m1, const float thresh)
 {
   const float thresh_sq = thresh * thresh;
   CustomDataLayer *l1, *l2;
@@ -715,19 +715,19 @@ const char *BKE_mesh_cmp(Mesh *me1, Mesh *me2, float thresh)
     return "Number of loops don't match";
   }
 
-  if ((c = customdata_compare(&me1->vdata, &me2->vdata, me1->totvert, me1, me2, thresh))) {
+  if ((c = customdata_compare(&me1->vdata, &me2->vdata, me1->totvert, me1, thresh))) {
     return cmpcode_to_str(c);
   }
 
-  if ((c = customdata_compare(&me1->edata, &me2->edata, me1->totedge, me1, me2, thresh))) {
+  if ((c = customdata_compare(&me1->edata, &me2->edata, me1->totedge, me1, thresh))) {
     return cmpcode_to_str(c);
   }
 
-  if ((c = customdata_compare(&me1->ldata, &me2->ldata, me1->totloop, me1, me2, thresh))) {
+  if ((c = customdata_compare(&me1->ldata, &me2->ldata, me1->totloop, me1, thresh))) {
     return cmpcode_to_str(c);
   }
 
-  if ((c = customdata_compare(&me1->pdata, &me2->pdata, me1->totpoly, me1, me2, thresh))) {
+  if ((c = customdata_compare(&me1->pdata, &me2->pdata, me1->totpoly, me1, thresh))) {
     return cmpcode_to_str(c);
   }
 
@@ -1481,14 +1481,13 @@ void BKE_mesh_looptri_get_real_edges(const MEdge *edges,
     const int corner_1 = tri->tri[i];
     const int corner_2 = tri->tri[i_next];
     const int vert_1 = corner_verts[corner_1];
-    const int vert_2 = corner_verts[corner_1];
-    const int edge_1 = corner_edges[corner_1];
-    const int edge_2 = corner_edges[corner_1];
-    const MEdge *e = &edges[edge_1];
+    const int vert_2 = corner_verts[corner_2];
+    const int edge = corner_edges[corner_1];
+    const MEdge *e = &edges[edge];
 
     bool is_real = (vert_1 == e->v1 && vert_2 == e->v2) || (vert_1 == e->v2 && vert_2 == e->v1);
 
-    r_edges[i] = is_real ? edge_1 : -1;
+    r_edges[i] = is_real ? edge : -1;
   }
 }
 

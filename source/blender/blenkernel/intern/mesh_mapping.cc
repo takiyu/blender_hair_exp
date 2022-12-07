@@ -397,16 +397,15 @@ void BKE_mesh_edge_loop_map_create(MeshElemMap **r_map,
   int *indices = static_cast<int *>(MEM_mallocN(sizeof(int) * size_t(totloop) * 2, __func__));
   int *index_step;
   const MPoly *mp;
-  int i;
 
   /* count face users */
-  for (const int i : IndexRange(totloop)) {
+  for (const int64_t i : IndexRange(totloop)) {
     map[corner_edges[i]].count += 2;
   }
 
   /* create offsets */
   index_step = indices;
-  for (i = 0; i < totedge; i++) {
+  for (int i = 0; i < totedge; i++) {
     map[i].indices = index_step;
     index_step += map[i].count;
 
@@ -414,11 +413,12 @@ void BKE_mesh_edge_loop_map_create(MeshElemMap **r_map,
     map[i].count = 0;
   }
 
+  int i;
+
   /* assign loop-edge users */
   for (i = 0, mp = mpoly; i < totpoly; mp++, i++) {
     MeshElemMap *map_ele;
     const int max_loop = mp->loopstart + mp->totloop;
-    int j = mp->loopstart;
     for (int j = mp->loopstart; j < max_loop; j++) {
       map_ele = &map[corner_edges[j]];
       map_ele->indices[map_ele->count++] = j;
@@ -1020,8 +1020,8 @@ static bool mesh_check_island_boundary_uv(const MPoly * /*mp*/,
 
     BLI_assert(edge_to_loops->count >= 2 && (edge_to_loops->count % 2) == 0);
 
-    const uint v1 = corner_verts[edge_to_loops->indices[0]];
-    const uint v2 = corner_verts[edge_to_loops->indices[1]];
+    const int v1 = corner_verts[edge_to_loops->indices[0]];
+    const int v2 = corner_verts[edge_to_loops->indices[1]];
     const float *uvco_v1 = luvs[edge_to_loops->indices[0]].uv;
     const float *uvco_v2 = luvs[edge_to_loops->indices[1]].uv;
     for (int i = 2; i < edge_to_loops->count; i += 2) {

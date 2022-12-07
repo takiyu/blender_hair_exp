@@ -41,6 +41,7 @@ typedef struct PBVH_GPU_Args {
   const struct Mesh *me;
   const float (*mesh_positions)[3];
   const int *corner_verts;
+  const int *corner_edges;
   const struct MPoly *mpoly;
   int mesh_verts_num, mesh_faces_num, mesh_grids_num;
   struct CustomData *vdata, *ldata, *pdata;

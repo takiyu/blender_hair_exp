@@ -1482,11 +1482,11 @@ Mesh *BKE_mball_polygonize(Depsgraph *depsgraph, Scene *scene, Object *ob)
     mpoly[i].totloop = count;
     mpoly[i].flag = ME_SMOOTH;
 
-    corner_verts[loop_offset] = uint32_t(indices[0]);
-    corner_verts[loop_offset + 1] = uint32_t(indices[1]);
-    corner_verts[loop_offset + 2] = uint32_t(indices[2]);
+    corner_verts[loop_offset] = indices[0];
+    corner_verts[loop_offset + 1] = indices[1];
+    corner_verts[loop_offset + 2] = indices[2];
     if (count == 4) {
-      corner_verts[loop_offset + 3] = uint32_t(indices[3]);
+      corner_verts[loop_offset + 3] = indices[3];
     }
 
     loop_offset += count;

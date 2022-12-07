@@ -240,8 +240,6 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
   uint edge_offset;
 
   MPoly *mp_new;
-  int *corner_verts_new;
-  int *corner_edges_new;
   MEdge *med_new, *med_new_firstloop;
   Object *ob_axis = ltmd->ob_axis;
 
@@ -391,8 +389,8 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
   float(*positions_new)[3] = BKE_mesh_positions_for_write(result);
   MEdge *medge_new = BKE_mesh_edges_for_write(result);
   MPoly *mpoly_new = BKE_mesh_polys_for_write(result);
-  int *corner_verts_orig = BKE_mesh_corner_verts_for_write(result);
-  int *corner_edges_orig = BKE_mesh_corner_edges_for_write(result);
+  int *corner_verts_new = BKE_mesh_corner_verts_for_write(result);
+  int *corner_edges_new = BKE_mesh_corner_edges_for_write(result);
 
   if (!CustomData_has_layer(&result->pdata, CD_ORIGINDEX)) {
     CustomData_add_layer(&result->pdata, CD_ORIGINDEX, CD_SET_DEFAULT, NULL, (int)maxPolys);
@@ -454,8 +452,8 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
 
       uint k;
       for (k = loopstart; k < loopend; k++) {
-        const int vert_i = corner_verts_orig[loopstart + k];
-        const int edge_i = corner_edges_orig[loopstart + k];
+        const uint vert_i = (uint)corner_verts_orig[loopstart + k];
+        const uint edge_i = (uint)corner_edges_orig[loopstart + k];
         edge_poly_map[edge_i] = i;
         vert_loop_map[vert_i] = k;
 
@@ -930,18 +928,18 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
       /* Loop-Data */
       if (!(close && step == step_last)) {
         /* regular segments */
-        corner_verts_new[dst_corner_i + quad_ord[0]] = i1;
-        corner_verts_new[dst_corner_i + quad_ord[0]] = i1;
-        corner_verts_new[dst_corner_i + quad_ord[1]] = i2;
-        corner_verts_new[dst_corner_i + quad_ord[2]] = i2 + totvert;
-        corner_verts_new[dst_corner_i + quad_ord[3]] = i1 + totvert;
+        corner_verts_new[dst_corner_i + quad_ord[0]] = (int)i1;
+        corner_verts_new[dst_corner_i + quad_ord[0]] = (int)i1;
+        corner_verts_new[dst_corner_i + quad_ord[1]] = (int)i2;
+        corner_verts_new[dst_corner_i + quad_ord[2]] = (int)(i2 + totvert);
+        corner_verts_new[dst_corner_i + quad_ord[3]] = (int)(i1 + totvert);
 
         corner_edges_new[dst_corner_i + quad_ord_ofs[0]] =
-            step == 0 ? i : (edge_offset + step + (i * (step_tot - 1))) - 1;
-        corner_edges_new[dst_corner_i + quad_ord_ofs[1]] = totedge + i2;
-        corner_edges_new[dst_corner_i + quad_ord_ofs[2]] = edge_offset + step +
-                                                           (i * (step_tot - 1));
-        corner_edges_new[dst_corner_i + quad_ord_ofs[3]] = totedge + i1;
+            (int)(step == 0 ? i : (edge_offset + step + (i * (step_tot - 1))) - 1);
+        corner_edges_new[dst_corner_i + quad_ord_ofs[1]] = (int)(totedge + i2);
+        corner_edges_new[dst_corner_i + quad_ord_ofs[2]] = (int)(edge_offset + step +
+                                                                 (i * (step_tot - 1)));
+        corner_edges_new[dst_corner_i + quad_ord_ofs[3]] = (int)(totedge + i1);
 
         /* new vertical edge */
         if (step) { /* The first set is already done */
@@ -955,17 +953,16 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
       }
       else {
         /* last segment */
-        corner_verts_new[dst_corner_i + quad_ord[0]] = i1;
-        corner_verts_new[dst_corner_i + quad_ord[1]] = i2;
-        corner_verts_new[dst_corner_i + quad_ord[2]] = med_new_firstloop->v2;
-        corner_verts_new[dst_corner_i + quad_ord[3]] = med_new_firstloop->v1;
+        corner_verts_new[dst_corner_i + quad_ord[0]] = (int)i1;
+        corner_verts_new[dst_corner_i + quad_ord[1]] = (int)i2;
+        corner_verts_new[dst_corner_i + quad_ord[2]] = (int)med_new_firstloop->v2;
+        corner_verts_new[dst_corner_i + quad_ord[3]] = (int)med_new_firstloop->v1;
 
-        corner_edges_new[dst_corner_i + quad_ord_ofs[0]] = (edge_offset + step +
-                                                            (i * (step_tot - 1))) -
-                                                           1;
-        corner_edges_new[dst_corner_i + quad_ord_ofs[1]] = totedge + i2;
-        corner_edges_new[dst_corner_i + quad_ord_ofs[2]] = i;
-        corner_edges_new[dst_corner_i + quad_ord_ofs[3]] = totedge + i1;
+        corner_edges_new[dst_corner_i + quad_ord_ofs[0]] =
+            (int)((edge_offset + step + (i * (step_tot - 1))) - 1);
+        corner_edges_new[dst_corner_i + quad_ord_ofs[1]] = (int)(totedge + i2);
+        corner_edges_new[dst_corner_i + quad_ord_ofs[2]] = (int)i;
+        corner_edges_new[dst_corner_i + quad_ord_ofs[3]] = (int)(totedge + i1);
       }
 
       mp_new++;

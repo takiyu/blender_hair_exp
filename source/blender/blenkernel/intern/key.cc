@@ -2237,6 +2237,7 @@ void BKE_keyblock_mesh_calc_normals(const KeyBlock *kb,
   const MEdge *edges = BKE_mesh_edges(mesh);
   const MPoly *polys = BKE_mesh_polys(mesh);
   const int *corner_verts = BKE_mesh_corner_verts(mesh);
+  const int *corner_edges = BKE_mesh_corner_edges(mesh);
 
   const bool loop_normals_needed = r_loopnors != nullptr;
   const bool vert_normals_needed = r_vertnors != nullptr || loop_normals_needed;
@@ -2281,6 +2282,7 @@ void BKE_keyblock_mesh_calc_normals(const KeyBlock *kb,
                                 edges,
                                 mesh->totedge,
                                 corner_verts,
+                                corner_edges,
                                 r_loopnors,
                                 mesh->totloop,
                                 polys,

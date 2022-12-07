@@ -150,7 +150,7 @@ static bool sculpt_expand_is_face_in_active_component(SculptSession *ss,
                                                       ExpandCache *expand_cache,
                                                       const int f)
 {
-  const int vert_i = &ss->corner_verts[ss->mpoly[f].loopstart];
+  const int vert_i = ss->corner_verts[ss->mpoly[f].loopstart];
   return sculpt_expand_is_vert_in_active_component(ss, expand_cache, BKE_pbvh_make_vref(vert_i));
 }
 
@@ -1090,7 +1090,7 @@ static void sculpt_expand_snap_initialize_from_enabled(SculptSession *ss,
     const MPoly *poly = &ss->mpoly[p];
     bool any_disabled = false;
     for (int l = 0; l < poly->totloop; l++) {
-      const int vert_i = &ss->corner_verts[l + poly->loopstart];
+      const int vert_i = ss->corner_verts[l + poly->loopstart];
       if (!BLI_BITMAP_TEST(enabled_verts, vert_i)) {
         any_disabled = true;
         break;
@@ -1976,7 +1976,7 @@ static void sculpt_expand_delete_face_set_id(int *r_face_sets,
       int other_id = delete_id;
       const MPoly *c_poly = &polys[f_index];
       for (int l = 0; l < c_poly->totloop; l++) {
-        const int vert_i = &corner_verts[c_poly->loopstart + l];
+        const int vert_i = corner_verts[c_poly->loopstart + l];
         const MeshElemMap *vert_map = &pmap[vert_i];
         for (int i = 0; i < vert_map->count; i++) {
 

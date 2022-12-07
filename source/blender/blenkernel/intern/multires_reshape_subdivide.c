@@ -48,9 +48,9 @@ static void multires_subdivide_create_object_space_linear_grids(Mesh *mesh)
       int prev_loop_index = l - 1 >= 0 ? loop_index - 1 : loop_index + poly->totloop - 1;
       int next_loop_index = l + 1 < poly->totloop ? loop_index + 1 : poly->loopstart;
 
-      const int vert = &corner_verts[loop_index];
-      const int vert_next = &corner_verts[next_loop_index];
-      const int vert_prev = &corner_verts[prev_loop_index];
+      const int vert = corner_verts[loop_index];
+      const int vert_next = corner_verts[next_loop_index];
+      const int vert_prev = corner_verts[prev_loop_index];
 
       copy_v3_v3(disps[0], poly_center);
       mid_v3_v3v3(disps[1], positions[vert], positions[vert_next]);

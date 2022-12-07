@@ -222,7 +222,7 @@ static void copy_masked_polys_to_new_mesh(const Mesh &src_mesh,
     dst_poly_verts.copy_from(src_poly_verts);
 
     for (const int i : IndexRange(size)) {
-      dst_poly_edges[i] = edge_map[dst_poly_edges[i]];
+      dst_poly_edges[i] = edge_map[src_poly_edges[i]];
     }
   }
 }
@@ -286,10 +286,10 @@ static void copy_masked_polys_to_new_mesh(const Mesh &src_mesh,
     MutableSpan<int> dst_poly_edges = dst_corner_edges.slice(mp_dst.loopstart, size);
 
     for (const int i : IndexRange(size)) {
-      dst_poly_verts[i] = vertex_map[dst_poly_verts[i]];
+      dst_poly_verts[i] = vertex_map[src_poly_verts[i]];
     }
     for (const int i : IndexRange(size)) {
-      dst_poly_edges[i] = edge_map[dst_poly_edges[i]];
+      dst_poly_edges[i] = edge_map[src_poly_edges[i]];
     }
   }
 }
@@ -781,8 +781,8 @@ static void compute_selected_mesh_data_from_poly_selection(const Mesh &mesh,
 
       /* Add the vertices and the edges. */
       for (const int corner : IndexRange(poly_src.loopstart, poly_src.totloop)) {
-        const int vert_i= corner_verts[corner];
-        const int edge_i= corner_edges[corner];
+        const int vert_i = corner_verts[corner];
+        const int edge_i = corner_edges[corner];
         /* Check first if it has not yet been added. */
         if (r_vertex_map[vert_i] == -1) {
           r_vertex_map[vert_i] = selected_verts_num;

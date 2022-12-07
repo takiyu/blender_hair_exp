@@ -1657,6 +1657,10 @@ MLoop *BKE_mesh_legacy_convert_corners_to_loops(
 void BKE_mesh_legacy_convert_loops_to_corners(Mesh *mesh)
 {
   using namespace blender;
+  if (CustomData_get_layer_named(&mesh->ldata, CD_PROP_INT32, ".corner_vert") &&
+      CustomData_get_layer_named(&mesh->ldata, CD_PROP_INT32, ".corner_edge")) {
+    return;
+  }
   const Span<MLoop> loops(static_cast<MLoop *>(CustomData_get_layer(&mesh->ldata, CD_MLOOP)),
                           mesh->totloop);
   MutableSpan<int> corner_verts(

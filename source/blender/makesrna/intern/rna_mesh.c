@@ -579,7 +579,7 @@ static int rna_MeshLoop_edge_index_get(PointerRNA *ptr)
 
 static void rna_MeshLoop_edge_index_set(PointerRNA *ptr, int value)
 {
-  const Mesh *me = rna_mesh(ptr);
+  Mesh *me = rna_mesh(ptr);
   const int index = rna_MeshLoop_index_get(ptr);
   BKE_mesh_corner_edges_for_write(me)[index] = value;
 }

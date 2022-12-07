@@ -559,13 +559,14 @@ static void extrude_mesh_edges(Mesh &mesh,
                * polygons that share an edge with the extruded edge. */
               for (const int i_connected_poly : connected_polys.index_range()) {
                 const MPoly &connected_poly = polys[connected_polys[i_connected_poly]];
-                for (const int vert_i :
-                     corner_verts.slice(connected_poly.loopstart, connected_poly.totloop)) {
+                for (const int corner_i :
+                     IndexRange(connected_poly.loopstart, connected_poly.totloop)) {
+                  const int vert_i = corner_verts[corner_i];
                   if (vert_i == orig_vert_1) {
-                    mixer.mix_in(0, data[i_loop]);
+                    mixer.mix_in(0, data[corner_i]);
                   }
                   if (vert_i == orig_vert_2) {
-                    mixer.mix_in(1, data[i_loop]);
+                    mixer.mix_in(1, data[corner_i]);
                   }
                 }
               }
@@ -576,10 +577,10 @@ static void extrude_mesh_edges(Mesh &mesh,
                * simpler (though probably slower) to just match the corner data based on the vertex
                * indices. */
               for (const int i : IndexRange(4 * i_edge_selection, 4)) {
-                if (ELEM(new_loops[i].v, new_vert_1, orig_vert_1)) {
+                if (ELEM(new_corner_verts[i], new_vert_1, orig_vert_1)) {
                   new_data[i] = side_poly_corner_data.first();
                 }
-                else if (ELEM(new_loops[i].v, new_vert_2, orig_vert_2)) {
+                else if (ELEM(new_corner_verts[i], new_vert_2, orig_vert_2)) {
                   new_data[i] = side_poly_corner_data.last();
                 }
               }
@@ -943,10 +944,10 @@ static void extrude_mesh_face_regions(Mesh &mesh,
                   T data_1;
                   T data_2;
                   for (const int i_loop : IndexRange(poly.loopstart, poly.totloop)) {
-                    if (loops[i_loop].v == new_vert_1) {
+                    if (corner_verts[i_loop] == new_vert_1) {
                       data_1 = data[i_loop];
                     }
-                    if (loops[i_loop].v == new_vert_2) {
+                    if (corner_verts[i_loop] == new_vert_2) {
                       data_2 = data[i_loop];
                     }
                   }
@@ -955,10 +956,10 @@ static void extrude_mesh_face_regions(Mesh &mesh,
                    * simpler (though probably slower) to just match the corner data based on the
                    * vertex indices. */
                   for (const int i : IndexRange(4 * i_boundary_edge, 4)) {
-                    if (ELEM(new_loops[i].v, new_vert_1, orig_vert_1)) {
+                    if (ELEM(new_corner_verts[i], new_vert_1, orig_vert_1)) {
                       new_data[i] = data_1;
                     }
-                    else if (ELEM(new_loops[i].v, new_vert_2, orig_vert_2)) {
+                    else if (ELEM(new_corner_verts[i], new_vert_2, orig_vert_2)) {
                       new_data[i] = data_2;
                     }
                   }
@@ -1295,7 +1296,6 @@ static void extrude_individual_mesh_faces(Mesh &mesh,
       MutableSpan<int> poly_edges = corner_edges.slice(poly.loopstart, poly.totloop);
 
       for (const int i : IndexRange(poly.totloop)) {
-        const int corner_i = poly.loopstart + i;
         poly_verts[i] = new_vert_range[poly_corner_range[i]];
         poly_edges[i] = duplicate_edge_range[poly_corner_range[i]];
       }

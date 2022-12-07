@@ -234,7 +234,7 @@ void BKE_mesh_calc_normals_poly(const float (*positions)[3],
                                 int mpoly_len,
                                 float (*r_poly_normals)[3])
 {
-  calculate_normals_poly({reinterpret_cast<const float3 *>(positions), mpoly_len},
+  calculate_normals_poly({reinterpret_cast<const float3 *>(positions), verts_num},
                          {mpoly, mpoly_len},
                          {corner_verts, mloop_len},
                          {reinterpret_cast<float3 *>(r_poly_normals), mpoly_len});

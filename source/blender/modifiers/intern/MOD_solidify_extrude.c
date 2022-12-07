@@ -24,10 +24,6 @@
 #include "MOD_solidify_util.h" /* own include */
 #include "MOD_util.h"
 
-#ifdef __GNUC__
-#  pragma GCC diagnostic error "-Wsign-conversion"
-#endif
-
 /* -------------------------------------------------------------------- */
 /** \name High Quality Normal Calculation Function
  * \{ */
@@ -265,7 +261,7 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
         const int vert_i = orig_corner_verts[corner_i];
         const int prev_vert_i = orig_corner_verts[corner_i_prev];
         /* add edge user */
-        eidx = orig_corner_edges[corner_i_prev];
+        eidx = (int)(orig_corner_edges[corner_i_prev]);
         if (edge_users[eidx] == INVALID_UNUSED) {
           ed = orig_medge + eidx;
           BLI_assert(ELEM(prev_vert_i, ed->v1, ed->v2) && ELEM(vert_i, ed->v1, ed->v2));
@@ -530,7 +526,7 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
           const int vert_i = orig_corner_verts[corner_i];
           const int prev_vert_i = orig_corner_verts[prev_corner_i];
           /* add edge user */
-          eidx = orig_corner_edges[prev_corner_i];
+          eidx = (int)orig_corner_edges[prev_corner_i];
           const MEdge *ed = orig_medge + eidx;
           BLI_assert(ELEM(prev_vert_i, ed->v1, ed->v2) && ELEM(vert_i, ed->v1, ed->v2));
           char flip = (char)((prev_vert_i > vert_i) == (ed->v1 < ed->v2));

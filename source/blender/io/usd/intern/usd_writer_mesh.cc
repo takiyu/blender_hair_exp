@@ -429,7 +429,7 @@ void USDGenericMeshWriter::write_normals(const Mesh *mesh, pxr::UsdGeomMesh usd_
       else {
         /* Smooth shaded, use individual vert normals. */
         for (const int vert_i : corner_verts.slice(poly.loopstart, poly.totloop)) {
-          loop_normals.push_back(pxr::GfVec3f(vert_normals[corner_verts]));
+          loop_normals.push_back(pxr::GfVec3f(vert_normals[vert_i]));
         }
       }
     }

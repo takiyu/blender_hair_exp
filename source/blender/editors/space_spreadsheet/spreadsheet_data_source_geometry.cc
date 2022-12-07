@@ -210,8 +210,8 @@ std::unique_ptr<ColumnValues> GeometryDataSource::get_column_values(
                                                 VArray<int>::ForSpan(mesh->corner_verts()));
         }
         if (STREQ(column_id.name, "Edge")) {
-          return std::make_unique<ColumnValues>(
-              column_id.name, VArray<int>::ForSpan(mesh->corner_edges());
+          return std::make_unique<ColumnValues>(column_id.name,
+                                                VArray<int>::ForSpan(mesh->corner_edges()));
         }
       }
     }

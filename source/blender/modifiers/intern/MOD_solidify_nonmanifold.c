@@ -22,10 +22,6 @@
 #include "MOD_solidify_util.h" /* Own include. */
 #include "MOD_util.h"
 
-#ifdef __GNUC__
-#  pragma GCC diagnostic error "-Wsign-conversion"
-#endif
-
 /* -------------------------------------------------------------------- */
 /** \name Local Utilities
  * \{ */
@@ -2531,8 +2527,8 @@ Mesh *MOD_solidify_nonmanifold_modifyMesh(ModifierData *md,
             valid_edges++;
             const uint flip = (uint)(vm[orig_medge[new_edge->old_edge].v2] ==
                                      vm[orig_corner_verts[loopstart + j]]);
-            BLI_assert(flip ||
-                       vm[orig_medge[new_edge->old_edge].v1] == vm[orig_corner_verts[loopstart + j]]);
+            BLI_assert(flip || vm[orig_medge[new_edge->old_edge].v1] ==
+                                   vm[orig_corner_verts[loopstart + j]]);
             /* The vert that's in the current loop. */
             const uint new_v1 = new_edge->link_edge_groups[flip]->new_vert;
             /* The vert that's in the next loop. */

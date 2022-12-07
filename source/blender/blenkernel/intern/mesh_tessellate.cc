@@ -52,22 +52,22 @@ BLI_INLINE void mesh_calc_tessellation_for_face_impl(const int *corner_verts,
   const uint mp_loopstart = uint(mpoly[poly_index].loopstart);
   const uint mp_totloop = uint(mpoly[poly_index].totloop);
 
-#define ML_TO_MLT(i1, i2, i3) \
-  { \
-    ARRAY_SET_ITEMS(mlt->tri, mp_loopstart + i1, mp_loopstart + i2, mp_loopstart + i3); \
-    mlt->poly = poly_index; \
-  } \
-  ((void)0)
+  auto create_tri = [&](uint i1, uint i2, uint i3) {
+    mlt->tri[0] = mp_loopstart + i1;
+    mlt->tri[1] = mp_loopstart + i2;
+    mlt->tri[2] = mp_loopstart + i3;
+    mlt->poly = poly_index;
+  };
 
   switch (mp_totloop) {
     case 3: {
-      ML_TO_MLT(0, 1, 2);
+      create_tri(0, 1, 2);
       break;
     }
     case 4: {
-      ML_TO_MLT(0, 1, 2);
+      create_tri(0, 1, 2);
       MLoopTri *mlt_a = mlt++;
-      ML_TO_MLT(0, 2, 3);
+      create_tri(0, 2, 3);
       MLoopTri *mlt_b = mlt;
 
       if (UNLIKELY(face_normal ? is_quad_flip_v3_first_third_fast_with_normal(
@@ -100,10 +100,9 @@ BLI_INLINE void mesh_calc_tessellation_for_face_impl(const int *corner_verts,
         zero_v3(normal);
 
         /* Calc normal, flipped: to get a positive 2D cross product. */
-        int corner_i = mp_loopstart;
         co_prev = positions[corner_verts[mp_totloop - 1]];
-        for (uint j = 0; j < mp_totloop; j++, corner_i++) {
-          co_curr = positions[corner_verts[corner_i]];
+        for (uint j = 0; j < mp_totloop; j++) {
+          co_curr = positions[corner_verts[mp_loopstart + j]];
           add_newell_cross_v3_v3v3(normal, co_prev, co_curr);
           co_prev = co_curr;
         }
@@ -128,9 +127,8 @@ BLI_INLINE void mesh_calc_tessellation_for_face_impl(const int *corner_verts,
       float(*projverts)[2] = static_cast<float(*)[2]>(
           BLI_memarena_alloc(pf_arena, sizeof(*projverts) * size_t(mp_totloop)));
 
-      int corner_i = mp_loopstart;
-      for (uint j = 0; j < mp_totloop; j++, corner_i++) {
-        mul_v2_m3v3(projverts[j], axis_mat, positions[corner_verts[corner_i]]);
+      for (uint j = 0; j < mp_totloop; j++) {
+        mul_v2_m3v3(projverts[j], axis_mat, positions[corner_verts[mp_loopstart + j]]);
       }
 
       BLI_polyfill_calc_arena(projverts, mp_totloop, 1, tris, pf_arena);
@@ -138,7 +136,7 @@ BLI_INLINE void mesh_calc_tessellation_for_face_impl(const int *corner_verts,
       /* Apply fill. */
       for (uint j = 0; j < totfilltri; j++, mlt++) {
         const uint *tri = tris[j];
-        ML_TO_MLT(tri[0], tri[1], tri[2]);
+        create_tri(tri[0], tri[1], tri[2]);
       }
 
       BLI_memarena_clear(pf_arena);

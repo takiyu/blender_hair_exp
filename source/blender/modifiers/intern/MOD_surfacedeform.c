@@ -290,15 +290,15 @@ static int buildAdjacencyMap(const MPoly *poly,
   /* Find polygons adjacent to edges. */
   for (int i = 0; i < polys_num; i++, poly++) {
     for (int j = 0; j < poly->totloop; j++) {
-      const int edge = corner_edges[poly->loopstart + j];
-      if (edge_polys[edge].num == 0) {
-        edge_polys[edge].polys[0] = i;
-        edge_polys[edge].polys[1] = -1;
-        edge_polys[edge].num++;
+      const int edge_i = corner_edges[poly->loopstart + j];
+      if (edge_polys[edge_i].num == 0) {
+        edge_polys[edge_i].polys[0] = i;
+        edge_polys[edge_i].polys[1] = -1;
+        edge_polys[edge_i].num++;
       }
-      else if (edge_polys[edge].num == 1) {
-        edge_polys[edge].polys[1] = i;
-        edge_polys[edge].num++;
+      else if (edge_polys[edge_i].num == 1) {
+        edge_polys[edge_i].polys[1] = i;
+        edge_polys[edge_i].num++;
       }
       else {
         return MOD_SDEF_BIND_RESULT_NONMANY_ERR;

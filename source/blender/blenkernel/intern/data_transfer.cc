@@ -1616,7 +1616,6 @@ bool BKE_object_data_transfer_ex(struct Depsgraph *depsgraph,
       const MPoly *polys_dst = BKE_mesh_polys(me_dst);
       const int num_polys_dst = me_dst->totpoly;
       const int *corner_verts_dst = BKE_mesh_corner_verts(me_dst);
-      const int *corner_edges_dst = BKE_mesh_corner_edges(me_dst);
       const int num_loops_dst = me_dst->totloop;
 
       if (!geom_map_init[PDATA]) {

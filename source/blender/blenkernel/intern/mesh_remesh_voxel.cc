@@ -133,10 +133,10 @@ static Mesh *remesh_quadriflow(const Mesh *input_mesh,
     const int loopstart = i * 4;
     poly.loopstart = loopstart;
     poly.totloop = 4;
-    corner_verts[loopstart] = = qrd.out_faces[loopstart];
-    corner_verts[loopstart + 1] = = qrd.out_faces[loopstart + 1];
-    corner_verts[loopstart + 2] = = qrd.out_faces[loopstart + 2];
-    corner_verts[loopstart + 3] = = qrd.out_faces[loopstart + 3];
+    corner_verts[loopstart] = qrd.out_faces[loopstart];
+    corner_verts[loopstart + 1] = qrd.out_faces[loopstart + 1];
+    corner_verts[loopstart + 2] = qrd.out_faces[loopstart + 2];
+    corner_verts[loopstart + 3] = qrd.out_faces[loopstart + 3];
   }
 
   BKE_mesh_calc_edges(mesh, false, false);

@@ -667,6 +667,7 @@ static void pbvh_draw_args_init(PBVH *pbvh, PBVH_GPU_Args *args, PBVHNode *node)
   args->face_sets_color_seed = pbvh->face_sets_color_seed;
   args->mesh_positions = pbvh->mesh_positions;
   args->corner_verts = pbvh->corner_verts;
+  args->corner_edges = pbvh->mesh ? BKE_mesh_corner_edges(pbvh->mesh) : NULL;
   args->mpoly = pbvh->mpoly;
   args->mlooptri = pbvh->looptri;
 

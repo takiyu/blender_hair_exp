@@ -464,7 +464,7 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
           uint v2 = mlv;
           BLI_assert(v1 != v2);
           if (BLI_edgehash_ensure_p(ehash, v1, v2, &val_p)) {
-            last_valid_corner_edge = POINTER_AS_INT(*val_p);
+            *last_valid_corner_edge = POINTER_AS_INT(*val_p);
           }
           else {
             const int new_eidx = STACK_SIZE(medge);
@@ -525,7 +525,7 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
                     *first_valid_corner_vert;
       BLI_assert(v1 != v2);
       if (BLI_edgehash_ensure_p(ehash, v1, v2, &val_p)) {
-        last_valid_corner_edge = POINTER_AS_INT(*val_p);
+        *last_valid_corner_edge = POINTER_AS_INT(*val_p);
       }
       else {
         const int new_eidx = STACK_SIZE(medge);
