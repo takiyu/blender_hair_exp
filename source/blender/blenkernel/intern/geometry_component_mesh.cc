@@ -1250,6 +1250,35 @@ static ComponentAttributeProviders create_attribute_providers_for_mesh()
                                                        nullptr,
                                                        AttributeValidator{&material_index_clamp});
 
+  static const fn::CustomMF_SI_SO<int, int> int_index_clamp{
+      "Index Validate",
+      [](int value) { return std::clamp(value, 0, std::numeric_limits<int>::max()); },
+      fn::CustomMF_presets::AllSpanOrSingle()};
+  static BuiltinCustomDataLayerProvider corner_vert(".corner_vert",
+                                                    ATTR_DOMAIN_CORNER,
+                                                    CD_PROP_INT32,
+                                                    CD_PROP_INT32,
+                                                    BuiltinAttributeProvider::NonCreatable,
+                                                    BuiltinAttributeProvider::Writable,
+                                                    BuiltinAttributeProvider::NonDeletable,
+                                                    corner_access,
+                                                    make_array_read_attribute<int>,
+                                                    make_array_write_attribute<int>,
+                                                    nullptr,
+                                                    AttributeValidator{&int_index_clamp});
+  static BuiltinCustomDataLayerProvider corner_edge(".corner_edge",
+                                                    ATTR_DOMAIN_CORNER,
+                                                    CD_PROP_INT32,
+                                                    CD_PROP_INT32,
+                                                    BuiltinAttributeProvider::NonCreatable,
+                                                    BuiltinAttributeProvider::Writable,
+                                                    BuiltinAttributeProvider::NonDeletable,
+                                                    corner_access,
+                                                    make_array_read_attribute<int>,
+                                                    make_array_write_attribute<int>,
+                                                    nullptr,
+                                                    AttributeValidator{&int_index_clamp});
+
   static BuiltinCustomDataLayerProvider shade_smooth(
       "shade_smooth",
       ATTR_DOMAIN_FACE,
@@ -1290,14 +1319,20 @@ static ComponentAttributeProviders create_attribute_providers_for_mesh()
   static CustomDataAttributeProvider edge_custom_data(ATTR_DOMAIN_EDGE, edge_access);
   static CustomDataAttributeProvider face_custom_data(ATTR_DOMAIN_FACE, face_access);
 
-  return ComponentAttributeProviders(
-      {&position, &id, &material_index, &shade_smooth, &normal, &crease},
-      {&uvs,
-       &corner_custom_data,
-       &vertex_groups,
-       &point_custom_data,
-       &edge_custom_data,
-       &face_custom_data});
+  return ComponentAttributeProviders({&position,
+                                      &corner_vert,
+                                      &corner_edge,
+                                      &id,
+                                      &material_index,
+                                      &shade_smooth,
+                                      &normal,
+                                      &crease},
+                                     {&uvs,
+                                      &corner_custom_data,
+                                      &vertex_groups,
+                                      &point_custom_data,
+                                      &edge_custom_data,
+                                      &face_custom_data});
 }
 
 static AttributeAccessorFunctions get_mesh_accessor_functions()
