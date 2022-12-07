@@ -92,8 +92,7 @@ static void set_coarse_positions(Subdiv *subdiv,
   for (int poly_index = 0; poly_index < mesh->totpoly; poly_index++) {
     const MPoly *poly = &mpoly[poly_index];
     for (int i = 0; i < poly->totloop; i++) {
-      const int corner = poly->loopstart + i;
-      BLI_BITMAP_ENABLE(vertex_used_map, corner_verts[corner]);
+      BLI_BITMAP_ENABLE(vertex_used_map, corner_verts[poly->loopstart + i]);
     }
   }
   /* Use a temporary buffer so we do not upload vertices one at a time to the GPU. */

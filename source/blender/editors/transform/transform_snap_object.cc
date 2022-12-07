@@ -1719,7 +1719,7 @@ static void nearest2d_data_init_mesh(const Mesh *mesh,
   r_nearest2d->vert_normals = BKE_mesh_vertex_normals_ensure(mesh);
   r_nearest2d->edge = mesh->edges().data();
   r_nearest2d->corner_verts = mesh->corner_verts().data();
-  r_nearest2d->corner_verts = mesh->corner_edges().data();
+  r_nearest2d->corner_edges = mesh->corner_edges().data();
   r_nearest2d->looptri = BKE_mesh_runtime_looptri_ensure(mesh);
 
   r_nearest2d->is_persp = is_persp;

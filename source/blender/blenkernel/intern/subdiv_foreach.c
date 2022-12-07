@@ -431,7 +431,7 @@ static void subdiv_foreach_edge_vertices_regular_do(SubdivForeachTaskContext *ct
   const int ptex_face_index = ctx->face_ptex_offset[coarse_poly_index];
   for (int corner = 0; corner < coarse_poly->totloop; corner++) {
     const int coarse_vert_index = ctx->coarse_corner_verts[coarse_poly->loopstart + corner];
-    const int coarse_edge_index = ctx->coarse_corner_verts[coarse_poly->loopstart + corner];
+    const int coarse_edge_index = ctx->coarse_corner_edges[coarse_poly->loopstart + corner];
     if (check_usage &&
         BLI_BITMAP_TEST_AND_SET_ATOMIC(ctx->coarse_edges_used_map, coarse_edge_index)) {
       continue;
@@ -494,7 +494,7 @@ static void subdiv_foreach_edge_vertices_special_do(SubdivForeachTaskContext *ct
   int ptex_face_index = ptex_face_start_index;
   for (int corner = 0; corner < coarse_poly->totloop; corner++, ptex_face_index++) {
     const int coarse_vert_index = ctx->coarse_corner_verts[coarse_poly->loopstart + corner];
-    const int coarse_edge_index = ctx->coarse_corner_verts[coarse_poly->loopstart + corner];
+    const int coarse_edge_index = ctx->coarse_corner_edges[coarse_poly->loopstart + corner];
     if (check_usage &&
         BLI_BITMAP_TEST_AND_SET_ATOMIC(ctx->coarse_edges_used_map, coarse_edge_index)) {
       continue;
@@ -793,7 +793,7 @@ static void subdiv_foreach_edges_all_patches_regular(SubdivForeachTaskContext *c
   /* Connect inner part of patch to boundary. */
   for (int corner = 0; corner < coarse_poly->totloop; corner++) {
     const int coarse_vert_index = ctx->coarse_corner_verts[coarse_poly->loopstart + corner];
-    const int coarse_edge_index = ctx->coarse_corner_verts[coarse_poly->loopstart + corner];
+    const int coarse_edge_index = ctx->coarse_corner_edges[coarse_poly->loopstart + corner];
     const MEdge *coarse_edge = &ctx->coarse_edges[coarse_edge_index];
     const int start_edge_vertex = ctx->vertices_edge_offset +
                                   coarse_edge_index * num_subdiv_vertices_per_coarse_edge;
@@ -901,11 +901,11 @@ static void subdiv_foreach_edges_all_patches_special(SubdivForeachTaskContext *c
     }
   }
   /* Connect inner path of patch to boundary. */
-  int prev_corner_index = coarse_poly->totloop - 1;
+  int prev_corner = coarse_poly->totloop - 1;
   for (int corner = 0; corner < coarse_poly->totloop; corner++) {
     const int vert_i = ctx->coarse_corner_verts[coarse_poly->loopstart + corner];
     const int edge_i = ctx->coarse_corner_edges[coarse_poly->loopstart + corner];
-    const int prev_edge_i = ctx->coarse_corner_edges[coarse_poly->loopstart + prev_corner_index];
+    const int prev_edge_i = ctx->coarse_corner_edges[coarse_poly->loopstart + prev_corner];
     {
       const MEdge *coarse_edge = &ctx->coarse_edges[edge_i];
       const int start_edge_vertex = ctx->vertices_edge_offset +
@@ -940,7 +940,7 @@ static void subdiv_foreach_edges_all_patches_special(SubdivForeachTaskContext *c
             ctx->foreach_context, tls, ORIGINDEX_NONE, subdiv_edge_index, false, v1, v2);
       }
     }
-    prev_corner_index = corner;
+    prev_corner = corner;
   }
 }
 

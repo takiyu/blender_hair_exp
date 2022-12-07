@@ -235,7 +235,7 @@ static DerivedMesh *cdDM_from_mesh_ex(Mesh *mesh,
   cddm->vert_normals = BKE_mesh_vertex_normals_ensure(mesh);
   cddm->medge = CustomData_get_layer(&dm->edgeData, CD_MEDGE);
   cddm->corner_verts = CustomData_get_layer_named(&dm->loopData, CD_PROP_INT32, ".corner_vert");
-  cddm->corner_edges = CustomData_get_layer_named(&dm->loopData, CD_PROP_INT32, ".corner_vert");
+  cddm->corner_edges = CustomData_get_layer_named(&dm->loopData, CD_PROP_INT32, ".corner_edge");
   cddm->mpoly = CustomData_get_layer(&dm->polyData, CD_MPOLY);
 #if 0
   cddm->mface = CustomData_get_layer(&dm->faceData, CD_MFACE);
