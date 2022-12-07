@@ -1192,7 +1192,7 @@ static void extrude_individual_mesh_faces(Mesh &mesh,
           threading::parallel_for(poly_selection.index_range(), 512, [&](const IndexRange range) {
             for (const int i_selection : range) {
               const MPoly &poly = polys[poly_selection[i_selection]];
-              const Span<int> poly_edges = poly_edges.slice(poly.loopstart, poly.totloop);
+              const Span<int> poly_edges = corner_edges.slice(poly.loopstart, poly.totloop);
 
               const IndexRange poly_corner_range = selected_corner_range(index_offsets,
                                                                          i_selection);
