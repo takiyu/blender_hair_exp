@@ -734,7 +734,7 @@ const char *BKE_mesh_cmp(Mesh *me1, Mesh *me2, float thresh)
 
 bool BKE_mesh_attribute_required(const char *name)
 {
-  return StringRef(name) == "position";
+  return ELEM(StringRef(name), "position", ".corner_vert", ".corner_edge");
 }
 
 void BKE_mesh_ensure_skin_customdata(Mesh *me)

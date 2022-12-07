@@ -2380,7 +2380,7 @@ static bool attribute_stored_in_bmesh_flag(const StringRef name)
               ".select_vert",
               ".select_edge",
               ".select_poly",
-              "material_index"
+              "material_index",
               ".corner_vert",
               ".corner_edge");
 }
