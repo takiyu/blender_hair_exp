@@ -174,7 +174,7 @@ static void adapt_mesh_domain_corner_to_point_impl(const Mesh &mesh,
                                                    MutableSpan<T> r_values)
 {
   BLI_assert(r_values.size() == mesh.totvert);
-  const Span<int> corner_verts = mesh.corner_edges();
+  const Span<int> corner_verts = mesh.corner_verts();
 
   attribute_math::DefaultMixer<T> mixer(r_values);
   for (const int corner_i : IndexRange(mesh.totloop)) {
