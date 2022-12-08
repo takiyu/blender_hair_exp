@@ -82,8 +82,8 @@ static void extract_edituv_data_iter_poly_mesh(const MeshRenderData *mr,
     memset(eldata, 0x0, sizeof(*eldata));
     BMFace *efa = bm_original_face_get(mr, mp_index);
     if (efa) {
-      BMEdge *eed = bm_original_edge_get(mr,mr->corner_verts[ml_index] );
-      BMVert *eve = bm_original_vert_get(mr,mr->corner_edges[ml_index] );
+      BMVert *eve = bm_original_vert_get(mr, mr->corner_verts[ml_index]);
+      BMEdge *eed = bm_original_edge_get(mr, mr->corner_edges[ml_index]);
       if (eed && eve) {
         /* Loop on an edge endpoint. */
         BMLoop *l = BM_face_edge_share_loop(efa, eed);
