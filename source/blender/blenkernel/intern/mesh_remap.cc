@@ -179,8 +179,8 @@ static void mesh_calc_eigen_matrix(const float (*positions)[3],
   if (positions) {
     float(*co)[3];
 
-    cos = static_cast<float(*)[3]>(MEM_mallocN(sizeof(*cos) * (size_t)numverts, __func__));
-    memcpy(cos, positions, sizeof(float[3]) * numverts);
+    cos = static_cast<float(*)[3]>(MEM_mallocN(sizeof(*cos) * size_t(numverts), __func__));
+    memcpy(cos, positions, sizeof(float[3]) * size_t(numverts));
     /* TODO(sergey): For until we officially drop all compilers which
      * doesn't handle casting correct we use workaround to avoid explicit
      * cast here.
