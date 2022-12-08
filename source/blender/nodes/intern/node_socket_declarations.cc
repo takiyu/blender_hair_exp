@@ -255,7 +255,7 @@ bNodeSocket &Vector::update_or_build(bNodeTree &ntree, bNode &node, bNodeSocket 
 bNodeSocket &Matrix3x3::build(bNodeTree &ntree, bNode &node) const
 {
   bNodeSocket &socket = *nodeAddStaticSocket(
-      &ntree, &node, in_out_, SOCK_MATRIX3x3, PROP_MATRIX, identifier_.c_str(), name_.c_str());
+      &ntree, &node, in_out_, SOCK_MATRIX_3X3, PROP_MATRIX, identifier_.c_str(), name_.c_str());
   this->set_common_flags(socket);
   bNodeSocketValueMatrix3x3 &value = *(bNodeSocketValueMatrix3x3 *)socket.default_value;
   copy_m3_m3(value.value, default_value_.ptr());
@@ -269,7 +269,7 @@ bool Matrix3x3::matches(const bNodeSocket &socket) const
   if (!this->matches_common_data(socket)) {
     return false;
   }
-  if (socket.type != SOCK_MATRIX3x3) {
+  if (socket.type != SOCK_MATRIX_3X3) {
     return false;
   }
   return true;
@@ -277,12 +277,12 @@ bool Matrix3x3::matches(const bNodeSocket &socket) const
 
 bool Matrix3x3::can_connect(const bNodeSocket &socket) const
 {
-  return sockets_can_connect(*this, socket) && socket.type == SOCK_MATRIX3x3;
+  return sockets_can_connect(*this, socket) && socket.type == SOCK_MATRIX_3X3;
 }
 
 bNodeSocket &Matrix3x3::update_or_build(bNodeTree &ntree, bNode &node, bNodeSocket &socket) const
 {
-  if (socket.type != SOCK_MATRIX3x3) {
+  if (socket.type != SOCK_MATRIX_3X3) {
     BLI_assert(socket.in_out == in_out_);
     return this->build(ntree, node);
   }
@@ -301,7 +301,7 @@ bNodeSocket &Matrix3x3::update_or_build(bNodeTree &ntree, bNode &node, bNodeSock
 bNodeSocket &Matrix4x4::build(bNodeTree &ntree, bNode &node) const
 {
   bNodeSocket &socket = *nodeAddStaticSocket(
-      &ntree, &node, in_out_, SOCK_MATRIX4x4, PROP_MATRIX, identifier_.c_str(), name_.c_str());
+      &ntree, &node, in_out_, SOCK_MATRIX_4X4, PROP_MATRIX, identifier_.c_str(), name_.c_str());
   this->set_common_flags(socket);
   bNodeSocketValueMatrix4x4 &value = *(bNodeSocketValueMatrix4x4 *)socket.default_value;
   copy_m4_m4(value.value, default_value_.ptr());
@@ -315,7 +315,7 @@ bool Matrix4x4::matches(const bNodeSocket &socket) const
   if (!this->matches_common_data(socket)) {
     return false;
   }
-  if (socket.type != SOCK_MATRIX4x4) {
+  if (socket.type != SOCK_MATRIX_4X4) {
     return false;
   }
   return true;
@@ -323,12 +323,12 @@ bool Matrix4x4::matches(const bNodeSocket &socket) const
 
 bool Matrix4x4::can_connect(const bNodeSocket &socket) const
 {
-  return sockets_can_connect(*this, socket) && socket.type == SOCK_MATRIX4x4;
+  return sockets_can_connect(*this, socket) && socket.type == SOCK_MATRIX_4X4;
 }
 
 bNodeSocket &Matrix4x4::update_or_build(bNodeTree &ntree, bNode &node, bNodeSocket &socket) const
 {
-  if (socket.type != SOCK_MATRIX4x4) {
+  if (socket.type != SOCK_MATRIX_4X4) {
     BLI_assert(socket.in_out == in_out_);
     return this->build(ntree, node);
   }

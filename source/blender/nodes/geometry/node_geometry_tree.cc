@@ -101,8 +101,8 @@ static bool geometry_node_tree_socket_type_valid(bNodeTreeType * /*treetype*/,
                                                      SOCK_TEXTURE,
                                                      SOCK_IMAGE,
                                                      SOCK_MATERIAL,
-                                                     SOCK_MATRIX3x3,
-                                                     SOCK_MATRIX4x4);
+                                                     SOCK_MATRIX_3X3,
+                                                     SOCK_MATRIX_4X4);
 }
 
 void register_node_tree_type_geo()
