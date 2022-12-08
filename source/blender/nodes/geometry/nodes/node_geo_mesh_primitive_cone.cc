@@ -373,8 +373,8 @@ static void calculate_cone_faces(const ConeConfig &config,
                                  MutableSpan<int> corner_edges,
                                  MutableSpan<MPoly> polys)
 {
-  int rings_poly_start;
-  int rings_loop_start;
+  int rings_poly_start = 0;
+  int rings_loop_start = 0;
   if (config.top_has_center_vert) {
     rings_poly_start = config.circle_segments;
     rings_loop_start = config.circle_segments * 3;
