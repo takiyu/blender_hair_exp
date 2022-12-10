@@ -3,6 +3,7 @@
 #include "BLI_color.hh"
 #include "BLI_cpp_type_make.hh"
 #include "BLI_cpp_types_make.hh"
+#include "BLI_float3x3.hh"
 #include "BLI_float4x4.hh"
 #include "BLI_math_vec_types.hh"
 
@@ -47,6 +48,7 @@ BLI_CPP_TYPE_MAKE(bool, CPPTypeFlags::BasicType)
 BLI_CPP_TYPE_MAKE(float, CPPTypeFlags::BasicType)
 BLI_CPP_TYPE_MAKE(blender::float2, CPPTypeFlags::BasicType)
 BLI_CPP_TYPE_MAKE(blender::float3, CPPTypeFlags::BasicType)
+BLI_CPP_TYPE_MAKE(blender::float3x3, CPPTypeFlags::BasicType)
 BLI_CPP_TYPE_MAKE(blender::float4x4, CPPTypeFlags::BasicType)
 
 BLI_CPP_TYPE_MAKE(int8_t, CPPTypeFlags::BasicType)
@@ -75,6 +77,7 @@ void register_cpp_types()
   BLI_CPP_TYPE_REGISTER(float);
   BLI_CPP_TYPE_REGISTER(blender::float2);
   BLI_CPP_TYPE_REGISTER(blender::float3);
+  BLI_CPP_TYPE_REGISTER(blender::float3x3);
   BLI_CPP_TYPE_REGISTER(blender::float4x4);
 
   BLI_CPP_TYPE_REGISTER(int8_t);
