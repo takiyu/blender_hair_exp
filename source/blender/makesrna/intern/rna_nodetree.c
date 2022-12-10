@@ -5209,6 +5209,7 @@ static void def_fn_input_matrix_4x4(StructRNA *srna)
   static const float default_vec0[] = {1.0f, 0.0f, 0.0f};
   static const float default_vec1[] = {0.0f, 1.0f, 0.0f};
   static const float default_vec2[] = {0.0f, 0.0f, 1.0f};
+  static const float default_vec3[] = {0.0f, 0.0f, 0.0f};
   static const float default_elements[] = {
       1.0f,
       0.0f,
@@ -5248,15 +5249,22 @@ static void def_fn_input_matrix_4x4(StructRNA *srna)
   prop = RNA_def_property(srna, "vec1", PROP_FLOAT, PROP_NONE);
   RNA_def_property_float_sdna(prop, NULL, "vec1");
   RNA_def_property_array(prop, 3);
-  RNA_def_property_float_array_default(prop, default_vec0);
+  RNA_def_property_float_array_default(prop, default_vec1);
   RNA_def_property_ui_text(prop, "Vector 1", "Row or column vector");
   RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_Node_update");
 
   prop = RNA_def_property(srna, "vec2", PROP_FLOAT, PROP_NONE);
   RNA_def_property_float_sdna(prop, NULL, "vec2");
   RNA_def_property_array(prop, 3);
-  RNA_def_property_float_array_default(prop, default_vec0);
+  RNA_def_property_float_array_default(prop, default_vec2);
   RNA_def_property_ui_text(prop, "Vector 2", "Row or column vector");
+  RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_Node_update");
+
+  prop = RNA_def_property(srna, "vec3", PROP_FLOAT, PROP_NONE);
+  RNA_def_property_float_sdna(prop, NULL, "vec3");
+  RNA_def_property_array(prop, 3);
+  RNA_def_property_float_array_default(prop, default_vec3);
+  RNA_def_property_ui_text(prop, "Vector 3", "Row or column vector");
   RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_Node_update");
 
   prop = RNA_def_property(srna, "elements", PROP_FLOAT, PROP_MATRIX);

@@ -75,18 +75,18 @@ static void node_build_multi_function(NodeMultiFunctionBuilder &builder)
       matrix[0][0] = storage.vec0[0];
       matrix[0][1] = storage.vec1[0];
       matrix[0][2] = storage.vec2[0];
-      matrix[0][3] = 0.0f;
+      matrix[0][3] = storage.vec3[0];
       matrix[1][0] = storage.vec0[1];
       matrix[1][1] = storage.vec1[1];
       matrix[1][2] = storage.vec2[1];
-      matrix[1][3] = 0.0f;
+      matrix[1][3] = storage.vec3[1];
       matrix[2][0] = storage.vec0[2];
       matrix[2][1] = storage.vec1[2];
       matrix[2][2] = storage.vec2[2];
-      matrix[2][3] = 0.0f;
-      matrix[3][0] = storage.vec0[3];
-      matrix[3][1] = storage.vec1[3];
-      matrix[3][2] = storage.vec2[3];
+      matrix[2][3] = storage.vec3[2];
+      matrix[3][0] = 0.0f;
+      matrix[3][1] = 0.0f;
+      matrix[3][2] = 0.0f;
       matrix[3][3] = 1.0f;
       break;
     case NODE_COMBSEP_MATRIX_ELEMENTS:
