@@ -305,10 +305,10 @@ const EnumPropertyItem rna_enum_node_matrix_math_items[] = {
     RNA_ENUM_ITEM_SEPR,
     {NODE_MATRIX_MATH_DETERMINANT, "DETERMINANT", 0, "Determinant", ""},
     {NODE_MATRIX_MATH_TRACE, "TRACE", 0, "Trace", ""},
-    RNA_ENUM_ITEM_SEPR,
-    {NODE_MATRIX_MATH_IS_SYMMETRIC, "IS_SYMMETRIC", 0, "Is Symmetric", ""},
-    {NODE_MATRIX_MATH_IS_ANTI_SYMMETRIC, "IS_ANTI_SYMMETRIC", 0, "Is Anti-Symmetric", ""},
-    {NODE_MATRIX_MATH_IS_ORTHOGONAL, "IS_ORTHOGONAL", 0, "Is Orthogonal", ""},
+    //RNA_ENUM_ITEM_SEPR,
+    //{NODE_MATRIX_MATH_IS_SYMMETRIC, "IS_SYMMETRIC", 0, "Is Symmetric", ""},
+    //{NODE_MATRIX_MATH_IS_ANTI_SYMMETRIC, "IS_ANTI_SYMMETRIC", 0, "Is Anti-Symmetric", ""},
+    //{NODE_MATRIX_MATH_IS_ORTHOGONAL, "IS_ORTHOGONAL", 0, "Is Orthogonal", ""},
     {0, NULL, 0, NULL, NULL},
 };
 

@@ -282,7 +282,7 @@ DefNode(FunctionNode, FN_NODE_VALUE_TO_STRING, 0, "VALUE_TO_STRING", ValueToStri
 DefNode(FunctionNode, FN_NODE_INPUT_MATRIX_4X4, def_fn_input_matrix_4x4, "INPUT_MATRIX_4X4", InputMatrix, "4x4 Matrix", "")
 DefNode(FunctionNode, FN_NODE_SEPARATE_MATRIX_4X4, def_fn_combsep_matrix, "SEPARATE_MATRIX_4X4", SeparateMatrix, "Separate 4x4 Matrix", "")
 DefNode(FunctionNode, FN_NODE_COMBINE_MATRIX_4X4, def_fn_combsep_matrix, "COMBINE_MATRIX_4X4", CombineMatrix, "Combine 4x4 Matrix", "")
-DefNode(FunctionNode, FN_NODE_MATRIX_4X4_MATH, def_fn_matrix_4x4_math, "MATRIX_4X4_MATH", MatrixMath, "4x4 Matrix Math", "")
+DefNode(FunctionNode, FN_NODE_MATRIX_4X4_MATH, def_fn_matrix_4x4_math, "MATRIX_4X4_MATH", Matrix4x4Math, "4x4 Matrix Math", "")
 
 DefNode(GeometryNode, GEO_NODE_ACCUMULATE_FIELD, def_geo_accumulate_field, "ACCUMULATE_FIELD", AccumulateField, "Accumulate Field", "Add the values of an evaluated field together and output the running total for each element")
 DefNode(GeometryNode, GEO_NODE_ATTRIBUTE_DOMAIN_SIZE, def_geo_attribute_domain_size, "ATTRIBUTE_DOMAIN_SIZE", AttributeDomainSize, "Domain Size", "Retrieve the number of elements in a geometry for each attribute domain")

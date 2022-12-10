@@ -2,90 +2,114 @@
 
 #include "node_function_util.hh"
 
+#include "NOD_socket_search_link.hh"
+
 #include "UI_interface.h"
 #include "UI_resources.h"
 
-namespace blender::nodes::node_fn_matrix4x4_math_cc {
+namespace blender::math {
 
-NODE_STORAGE_FUNCS(NodeCombSepColor)
+/* XXX These are placeholder functions based on BLI math until SIMD versions are available */
+
+inline float4x4 [[nodiscard]] add(const float4x4 &a, const float4x4 &b)
+{
+  float4x4 r;
+  add_m4_m4m4(r.ptr(), a.ptr(), b.ptr());
+  return r;
+}
+
+inline float4x4 [[nodiscard]] subtract(const float4x4 &a, const float4x4 &b)
+{
+  float4x4 r;
+  sub_m4_m4m4(r.ptr(), a.ptr(), b.ptr());
+  return r;
+}
+
+}
+
+namespace blender::nodes::node_fn_matrix4x4_math_cc {
 
 static void node_declare(NodeDeclarationBuilder &b)
 {
   b.is_function_node();
-  b.add_input<decl::Float>(N_("Red")).default_value(0.0f).min(0.0f).max(1.0f).subtype(PROP_FACTOR);
-  b.add_input<decl::Float>(N_("Green"))
-      .default_value(0.0f)
-      .min(0.0f)
-      .max(1.0f)
-      .subtype(PROP_FACTOR);
-  b.add_input<decl::Float>(N_("Blue"))
-      .default_value(0.0f)
-      .min(0.0f)
-      .max(1.0f)
-      .subtype(PROP_FACTOR);
-  b.add_input<decl::Float>(N_("Alpha"))
-      .default_value(1.0f)
-      .min(0.0f)
-      .max(1.0f)
-      .subtype(PROP_FACTOR);
-  b.add_output<decl::Color>(N_("Color"));
+  b.add_input<decl::Matrix4x4>(N_("Matrix"));
+  b.add_input<decl::Matrix4x4>(N_("Matrix"), "Matrix_001");
+  b.add_input<decl::Float>(N_("Scale")).default_value(1.0f);
+  b.add_output<decl::Matrix4x4>(N_("Matrix"));
+  b.add_output<decl::Float>(N_("Value"));
 };
 
 static void node_layout(uiLayout *layout, bContext * /*C*/, PointerRNA *ptr)
 {
-  uiItemR(layout, ptr, "mode", 0, "", ICON_NONE);
+  uiItemR(layout, ptr, "operation", UI_ITEM_R_SPLIT_EMPTY_NAME, "", ICON_NONE);
 }
 
-static void node_update(bNodeTree * /*tree*/, bNode *node)
+static void node_update(bNodeTree *tree, bNode *node)
 {
-  const NodeCombSepColor &storage = node_storage(*node);
-  node_combsep_color_label(&node->inputs, (NodeCombSepColorMode)storage.mode);
+  const NodeMatrixMathOperation op = (NodeMatrixMathOperation)node->custom1;
+
+  bNodeSocket *inMatrixA = &node->input_socket(0);
+  bNodeSocket *inMatrixB = &node->input_socket(1);
+  bNodeSocket *inScale = &node->input_socket(2);
+  bNodeSocket *outMatrix = &node->output_socket(3);
+  bNodeSocket *outValue = &node->output_socket(4);
+
+  nodeSetSocketAvailability(tree, inMatrixA, true);
+  nodeSetSocketAvailability(
+      tree,
+      inMatrixB,
+      ELEM(op, NODE_MATRIX_MATH_ADD, NODE_MATRIX_MATH_SUBTRACT, NODE_MATRIX_MATH_MULTIPLY));
+  nodeSetSocketAvailability(tree, inScale, ELEM(op, NODE_MATRIX_MATH_SCALAR_MULTIPLY));
+
+  nodeSetSocketAvailability(tree,
+                            outMatrix,
+                            ELEM(op,
+                                 NODE_MATRIX_MATH_ADD,
+                                 NODE_MATRIX_MATH_SUBTRACT,
+                                 NODE_MATRIX_MATH_SCALAR_MULTIPLY,
+                                 NODE_MATRIX_MATH_MULTIPLY,
+                                 NODE_MATRIX_MATH_TRANSPOSE,
+                                 NODE_MATRIX_MATH_INVERSE));
+  nodeSetSocketAvailability(
+      tree, outValue, ELEM(op, NODE_MATRIX_MATH_DETERMINANT, NODE_MATRIX_MATH_TRACE));
+
+  /* Labels */
+  node_sock_label_clear(inMatrixA);
+  node_sock_label_clear(inMatrixB);
+  node_sock_label_clear(inScale);
+  switch (op) {
+  }
 }
 
 static void node_init(bNodeTree * /*tree*/, bNode *node)
 {
-  NodeCombSepColor *data = MEM_cnew<NodeCombSepColor>(__func__);
-  data->mode = NODE_COMBSEP_COLOR_RGB;
-  node->storage = data;
+  node->custom1 = NODE_MATRIX_MATH_ADD;
 }
 
-static const fn::MultiFunction *get_multi_function(const bNode &bnode)
+static const fn::MultiFunction *get_multi_function(NodeMatrixMathOperation op)
 {
-  const NodeCombSepColor &storage = node_storage(bnode);
+  static auto exec_preset_fast = fn::CustomMF_presets::AllSpanOrSingle();
+  static auto exec_preset_slow = fn::CustomMF_presets::Materialized();
 
-  static fn::CustomMF_SI_SI_SI_SI_SO<float, float, float, float, ColorGeometry4f> rgba_fn{
-      "RGB", [](float r, float g, float b, float a) { return ColorGeometry4f(r, g, b, a); }};
-  static fn::CustomMF_SI_SI_SI_SI_SO<float, float, float, float, ColorGeometry4f> hsva_fn{
-      "HSV", [](float h, float s, float v, float a) {
-        ColorGeometry4f r_color;
-        hsv_to_rgb(h, s, v, &r_color.r, &r_color.g, &r_color.b);
-        r_color.a = a;
-        return r_color;
-      }};
-  static fn::CustomMF_SI_SI_SI_SI_SO<float, float, float, float, ColorGeometry4f> hsla_fn{
-      "HSL", [](float h, float s, float l, float a) {
-        ColorGeometry4f color;
-        hsl_to_rgb(h, s, l, &color.r, &color.g, &color.b);
-        color.a = a;
-        return color;
-      }};
+  const fn::MultiFunction *multi_fn = nullptr;
 
-  switch (storage.mode) {
-    case NODE_COMBSEP_COLOR_RGB:
-      return &rgba_fn;
-    case NODE_COMBSEP_COLOR_HSV:
-      return &hsva_fn;
-    case NODE_COMBSEP_COLOR_HSL:
-      return &hsla_fn;
+  switch (op) {
+    case NODE_MATRIX_MATH_ADD: {
+      static fn::CustomMF_SI_SI_SO<float4x4, float4x4, float4x4> fn{
+          "add",
+          [](const float4x4 &a, const float4x4 &b, float4x4 &r) { r = math::add(a, b); },
+          exec_preset_fast};
+      return &fn;
+    }
   }
 
-  BLI_assert_unreachable();
   return nullptr;
 }
 
 static void node_build_multi_function(NodeMultiFunctionBuilder &builder)
 {
-  const fn::MultiFunction *fn = get_multi_function(builder.node());
+  const NodeMatrixMathOperation op = (NodeMatrixMathOperation)builder.node().custom1;
+  const fn::MultiFunction *fn = get_multi_function(op);
   builder.set_matching_fn(fn);
 }
 
