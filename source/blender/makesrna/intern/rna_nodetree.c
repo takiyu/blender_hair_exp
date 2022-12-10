@@ -294,6 +294,24 @@ const EnumPropertyItem rna_enum_node_vec_math_items[] = {
     {0, NULL, 0, NULL, NULL},
 };
 
+const EnumPropertyItem rna_enum_node_matrix_math_items[] = {
+    {NODE_MATRIX_MATH_ADD, "ADD", 0, "Add", ""},
+    {NODE_MATRIX_MATH_SUBTRACT, "SUBTRACT", 0, "Subtract", ""},
+    {NODE_MATRIX_MATH_SCALAR_MULTIPLY, "SCALAR_MULTIPLY", 0, "Scalar Multiply", ""},
+    {NODE_MATRIX_MATH_MULTIPLY, "MULTIPLY", 0, "Multiply", ""},
+    RNA_ENUM_ITEM_SEPR,
+    {NODE_MATRIX_MATH_TRANSPOSE, "TRANSPOSE", 0, "Transpose", ""},
+    {NODE_MATRIX_MATH_INVERSE, "INVERSE", 0, "Inverse", ""},
+    RNA_ENUM_ITEM_SEPR,
+    {NODE_MATRIX_MATH_DETERMINANT, "DETERMINANT", 0, "Determinant", ""},
+    {NODE_MATRIX_MATH_TRACE, "TRACE", 0, "Trace", ""},
+    RNA_ENUM_ITEM_SEPR,
+    {NODE_MATRIX_MATH_IS_SYMMETRIC, "IS_SYMMETRIC", 0, "Is Symmetric", ""},
+    {NODE_MATRIX_MATH_IS_ANTI_SYMMETRIC, "IS_ANTI_SYMMETRIC", 0, "Is Anti-Symmetric", ""},
+    {NODE_MATRIX_MATH_IS_ORTHOGONAL, "IS_ORTHOGONAL", 0, "Is Orthogonal", ""},
+    {0, NULL, 0, NULL, NULL},
+};
+
 const EnumPropertyItem rna_enum_node_boolean_math_items[] = {
     {NODE_BOOLEAN_MATH_AND, "AND", 0, "And", "True when both inputs are true"},
     {NODE_BOOLEAN_MATH_OR, "OR", 0, "Or", "True when at least one input is true"},
@@ -502,6 +520,13 @@ static const EnumPropertyItem rna_node_combsep_color_items[] = {
     {NODE_COMBSEP_COLOR_RGB, "RGB", ICON_NONE, "RGB", "Use RGB color processing"},
     {NODE_COMBSEP_COLOR_HSV, "HSV", ICON_NONE, "HSV", "Use HSV color processing"},
     {NODE_COMBSEP_COLOR_HSL, "HSL", ICON_NONE, "HSL", "Use HSL color processing"},
+    {0, NULL, 0, NULL, NULL},
+};
+
+static const EnumPropertyItem rna_node_combsep_matrix_items[] = {
+    {NODE_COMBSEP_MATRIX_COLUMNS, "COLUMNS", ICON_NONE, "Columns", "Use vectors as matrix columns"},
+    {NODE_COMBSEP_MATRIX_ROWS, "ROWS", ICON_NONE, "Rows", "Use vectors as matrix rows"},
+    {NODE_COMBSEP_MATRIX_ELEMENTS, "ELEMENTS", ICON_NONE, "Elements", "Use individual matrix elements"},
     {0, NULL, 0, NULL, NULL},
 };
 
@@ -5177,6 +5202,91 @@ static void def_fn_combsep_color(StructRNA *srna)
   RNA_def_property_enum_items(prop, rna_node_combsep_color_items);
   RNA_def_property_ui_text(prop, "Mode", "Mode of color processing");
   RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_Node_socket_update");
+}
+
+static void def_fn_input_matrix_4x4(StructRNA *srna)
+{
+  static const float default_vec0[] = {1.0f, 0.0f, 0.0f};
+  static const float default_vec1[] = {0.0f, 1.0f, 0.0f};
+  static const float default_vec2[] = {0.0f, 0.0f, 1.0f};
+  static const float default_elements[] = {
+      1.0f,
+      0.0f,
+      0.0f,
+      0.0f,
+      0.0f,
+      1.0f,
+      0.0f,
+      0.0f,
+      0.0f,
+      0.0f,
+      1.0f,
+      0.0f,
+      0.0f,
+      0.0f,
+      0.0f,
+      1.0f,
+  };
+  PropertyRNA *prop;
+
+  prop = RNA_def_property(srna, "mode", PROP_ENUM, PROP_NONE);
+  RNA_def_property_enum_sdna(prop, NULL, "custom1");
+  RNA_def_property_enum_items(prop, rna_node_combsep_matrix_items);
+  RNA_def_property_ui_text(prop, "Mode", "Mode of matrix composition");
+  RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_Node_socket_update");
+  RNA_def_struct_sdna_from(srna, "NodeInputInt", "storage");
+
+  RNA_def_struct_sdna_from(srna, "NodeInputMatrix", "storage");
+
+  prop = RNA_def_property(srna, "vec0", PROP_FLOAT, PROP_NONE);
+  RNA_def_property_float_sdna(prop, NULL, "vec0");
+  RNA_def_property_array(prop, 3);
+  RNA_def_property_float_array_default(prop, default_vec0);
+  RNA_def_property_ui_text(prop, "Vector 0", "Row or column vector");
+  RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_Node_update");
+
+  prop = RNA_def_property(srna, "vec1", PROP_FLOAT, PROP_NONE);
+  RNA_def_property_float_sdna(prop, NULL, "vec1");
+  RNA_def_property_array(prop, 3);
+  RNA_def_property_float_array_default(prop, default_vec0);
+  RNA_def_property_ui_text(prop, "Vector 1", "Row or column vector");
+  RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_Node_update");
+
+  prop = RNA_def_property(srna, "vec2", PROP_FLOAT, PROP_NONE);
+  RNA_def_property_float_sdna(prop, NULL, "vec2");
+  RNA_def_property_array(prop, 3);
+  RNA_def_property_float_array_default(prop, default_vec0);
+  RNA_def_property_ui_text(prop, "Vector 2", "Row or column vector");
+  RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_Node_update");
+
+  prop = RNA_def_property(srna, "elements", PROP_FLOAT, PROP_MATRIX);
+  RNA_def_property_float_sdna(prop, NULL, "elements");
+  RNA_def_property_array(prop, 16);
+  RNA_def_property_float_array_default(prop, default_elements);
+  RNA_def_property_ui_text(prop, "Integer", "Input value used for unconnected socket");
+  RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_Node_update");
+}
+
+static void def_fn_combsep_matrix(StructRNA *srna)
+{
+  PropertyRNA *prop;
+
+  prop = RNA_def_property(srna, "mode", PROP_ENUM, PROP_NONE);
+  RNA_def_property_enum_sdna(prop, NULL, "custom1");
+  RNA_def_property_enum_items(prop, rna_node_combsep_matrix_items);
+  RNA_def_property_ui_text(prop, "Mode", "Mode of matrix composition");
+  RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_Node_socket_update");
+}
+
+static void def_fn_matrix_4x4_math(StructRNA *srna)
+{
+  PropertyRNA *prop;
+
+  prop = RNA_def_property(srna, "operation", PROP_ENUM, PROP_NONE);
+  RNA_def_property_enum_sdna(prop, NULL, "custom1");
+  RNA_def_property_enum_items(prop, rna_enum_node_matrix_math_items);
+  RNA_def_property_ui_text(prop, "Operation", "");
+  RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_ShaderNode_socket_update");
 }
 
 /* -- Shader Nodes ---------------------------------------------------------- */

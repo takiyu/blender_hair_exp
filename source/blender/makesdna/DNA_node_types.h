@@ -1599,6 +1599,14 @@ typedef struct NodeShaderMix {
   char _pad[3];
 } NodeShaderMix;
 
+typedef struct NodeInputMatrix {
+  float vec0[3];
+  float vec1[3];
+  float vec2[3];
+  float vec3[3];
+  float elements[4][4];
+} NodeInputMatrix;
+
 /* script node mode */
 #define NODE_SCRIPT_INTERNAL 0
 #define NODE_SCRIPT_EXTERNAL 1
@@ -1872,6 +1880,20 @@ typedef enum NodeVectorMathOperation {
   NODE_VECTOR_MATH_FACEFORWARD = 25,
   NODE_VECTOR_MATH_MULTIPLY_ADD = 26,
 } NodeVectorMathOperation;
+
+typedef enum NodeMatrixMathOperation {
+  NODE_MATRIX_MATH_ADD = 0,
+  NODE_MATRIX_MATH_SUBTRACT = 1,
+  NODE_MATRIX_MATH_SCALAR_MULTIPLY = 2,
+  NODE_MATRIX_MATH_MULTIPLY = 3,
+  NODE_MATRIX_MATH_TRANSPOSE = 4,
+  NODE_MATRIX_MATH_INVERSE = 5,
+  NODE_MATRIX_MATH_DETERMINANT = 6,
+  NODE_MATRIX_MATH_TRACE = 7,
+  NODE_MATRIX_MATH_IS_SYMMETRIC = 8,
+  NODE_MATRIX_MATH_IS_ANTI_SYMMETRIC = 9,
+  NODE_MATRIX_MATH_IS_ORTHOGONAL = 10,
+} NodeMatrixMathOperation;
 
 typedef enum NodeBooleanMathOperation {
   NODE_BOOLEAN_MATH_AND = 0,
@@ -2367,3 +2389,9 @@ typedef enum NodeCombSepColorMode {
   NODE_COMBSEP_COLOR_HSV = 1,
   NODE_COMBSEP_COLOR_HSL = 2,
 } NodeCombSepColorMode;
+
+typedef enum NodeCombSepMatrixMode {
+  NODE_COMBSEP_MATRIX_COLUMNS = 0,
+  NODE_COMBSEP_MATRIX_ROWS = 1,
+  NODE_COMBSEP_MATRIX_ELEMENTS = 2,
+} NodeCombSepMatrixMode;

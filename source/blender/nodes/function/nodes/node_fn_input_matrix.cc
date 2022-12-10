@@ -5,104 +5,106 @@
 #include "UI_interface.h"
 #include "UI_resources.h"
 
-namespace blender::nodes::node_fn_combine_color_cc {
+namespace blender::nodes::node_fn_input_matrix4x4_cc {
 
-NODE_STORAGE_FUNCS(NodeCombSepColor)
+NODE_STORAGE_FUNCS(NodeInputMatrix);
 
 static void node_declare(NodeDeclarationBuilder &b)
 {
-  b.is_function_node();
-  b.add_input<decl::Float>(N_("Red")).default_value(0.0f).min(0.0f).max(1.0f).subtype(PROP_FACTOR);
-  b.add_input<decl::Float>(N_("Green"))
-      .default_value(0.0f)
-      .min(0.0f)
-      .max(1.0f)
-      .subtype(PROP_FACTOR);
-  b.add_input<decl::Float>(N_("Blue"))
-      .default_value(0.0f)
-      .min(0.0f)
-      .max(1.0f)
-      .subtype(PROP_FACTOR);
-  b.add_input<decl::Float>(N_("Alpha"))
-      .default_value(1.0f)
-      .min(0.0f)
-      .max(1.0f)
-      .subtype(PROP_FACTOR);
-  b.add_output<decl::Color>(N_("Color"));
+  b.add_output<decl::Matrix4x4>(N_("Matrix"));
 };
 
 static void node_layout(uiLayout *layout, bContext * /*C*/, PointerRNA *ptr)
 {
-  uiItemR(layout, ptr, "mode", 0, "", ICON_NONE);
-}
+  const bNode *node = (const bNode *)ptr->data;
+  const NodeCombSepMatrixMode mode = (NodeCombSepMatrixMode)node->custom1;
 
-static void node_update(bNodeTree * /*tree*/, bNode *node)
-{
-  const NodeCombSepColor &storage = node_storage(*node);
-  node_combsep_color_label(&node->inputs, (NodeCombSepColorMode)storage.mode);
+  uiItemR(layout, ptr, "mode", 0, "", ICON_NONE);
+
+  switch (mode) {
+    case NODE_COMBSEP_MATRIX_COLUMNS:
+      uiItemR(layout, ptr, "vec0", 0, "Column 0", ICON_NONE);
+      uiItemR(layout, ptr, "vec1", 0, "Column 1", ICON_NONE);
+      uiItemR(layout, ptr, "vec2", 0, "Column 2", ICON_NONE);
+      uiItemR(layout, ptr, "vec3", 0, "Column 3", ICON_NONE);
+      break;
+    case NODE_COMBSEP_MATRIX_ROWS:
+      uiItemR(layout, ptr, "vec0", 0, "Row 0", ICON_NONE);
+      uiItemR(layout, ptr, "vec1", 0, "Row 1", ICON_NONE);
+      uiItemR(layout, ptr, "vec2", 0, "Row 2", ICON_NONE);
+      uiItemR(layout, ptr, "vec3", 0, "Row 3", ICON_NONE);
+      break;
+    case NODE_COMBSEP_MATRIX_ELEMENTS:
+      uiItemR(layout, ptr, "elements", 0, "", ICON_NONE);
+      break;
+  }
 }
 
 static void node_init(bNodeTree * /*tree*/, bNode *node)
 {
-  NodeCombSepColor *data = MEM_cnew<NodeCombSepColor>(__func__);
-  data->mode = NODE_COMBSEP_COLOR_RGB;
+  node->custom1 = NODE_COMBSEP_MATRIX_COLUMNS;
+
+  NodeInputMatrix *data = MEM_new<NodeInputMatrix>(__func__);
+  copy_v3_v3(data->vec0, float3(1.0f, 0.0f, 0.0f));
+  copy_v3_v3(data->vec1, float3(0.0f, 1.0f, 0.0f));
+  copy_v3_v3(data->vec2, float3(0.0f, 0.0f, 1.0f));
+  copy_v3_v3(data->vec3, float3(0.0f, 0.0f, 0.0f));
+  unit_m4(data->elements);
   node->storage = data;
-}
-
-static const fn::MultiFunction *get_multi_function(const bNode &bnode)
-{
-  const NodeCombSepColor &storage = node_storage(bnode);
-
-  static fn::CustomMF_SI_SI_SI_SI_SO<float, float, float, float, ColorGeometry4f> rgba_fn{
-      "RGB", [](float r, float g, float b, float a) { return ColorGeometry4f(r, g, b, a); }};
-  static fn::CustomMF_SI_SI_SI_SI_SO<float, float, float, float, ColorGeometry4f> hsva_fn{
-      "HSV", [](float h, float s, float v, float a) {
-        ColorGeometry4f r_color;
-        hsv_to_rgb(h, s, v, &r_color.r, &r_color.g, &r_color.b);
-        r_color.a = a;
-        return r_color;
-      }};
-  static fn::CustomMF_SI_SI_SI_SI_SO<float, float, float, float, ColorGeometry4f> hsla_fn{
-      "HSL", [](float h, float s, float l, float a) {
-        ColorGeometry4f color;
-        hsl_to_rgb(h, s, l, &color.r, &color.g, &color.b);
-        color.a = a;
-        return color;
-      }};
-
-  switch (storage.mode) {
-    case NODE_COMBSEP_COLOR_RGB:
-      return &rgba_fn;
-    case NODE_COMBSEP_COLOR_HSV:
-      return &hsva_fn;
-    case NODE_COMBSEP_COLOR_HSL:
-      return &hsla_fn;
-  }
-
-  BLI_assert_unreachable();
-  return nullptr;
 }
 
 static void node_build_multi_function(NodeMultiFunctionBuilder &builder)
 {
-  const fn::MultiFunction *fn = get_multi_function(builder.node());
-  builder.set_matching_fn(fn);
+  const NodeInputMatrix &storage = node_storage(builder.node());
+  const NodeCombSepMatrixMode mode = (NodeCombSepMatrixMode)builder.node().custom1;
+  float4x4 matrix;
+  switch (mode) {
+    case NODE_COMBSEP_MATRIX_COLUMNS:
+      copy_v3_v3(matrix[0], storage.vec0);
+      matrix[0][3] = 0.0f;
+      copy_v3_v3(matrix[1], storage.vec1);
+      matrix[1][3] = 0.0f;
+      copy_v3_v3(matrix[2], storage.vec2);
+      matrix[2][3] = 0.0f;
+      copy_v3_v3(matrix[3], storage.vec3);
+      matrix[3][3] = 1.0f;
+      break;
+    case NODE_COMBSEP_MATRIX_ROWS:
+      matrix[0][0] = storage.vec0[0];
+      matrix[0][1] = storage.vec1[0];
+      matrix[0][2] = storage.vec2[0];
+      matrix[0][3] = 0.0f;
+      matrix[1][0] = storage.vec0[1];
+      matrix[1][1] = storage.vec1[1];
+      matrix[1][2] = storage.vec2[1];
+      matrix[1][3] = 0.0f;
+      matrix[2][0] = storage.vec0[2];
+      matrix[2][1] = storage.vec1[2];
+      matrix[2][2] = storage.vec2[2];
+      matrix[2][3] = 0.0f;
+      matrix[3][0] = storage.vec0[3];
+      matrix[3][1] = storage.vec1[3];
+      matrix[3][2] = storage.vec2[3];
+      matrix[3][3] = 1.0f;
+      break;
+    case NODE_COMBSEP_MATRIX_ELEMENTS:
+      matrix = float4x4(storage.elements);
+      break;
+  }
+  builder.construct_and_set_matching_fn<fn::CustomMF_Constant<float4x4>>(matrix);
 }
 
-}  // namespace blender::nodes::node_fn_combine_color_cc
+}  // namespace blender::nodes::node_fn_input_matrix4x4_cc
 
-void register_node_type_fn_combine_color(void)
+void register_node_type_fn_input_matrix_4x4(void)
 {
-  namespace file_ns = blender::nodes::node_fn_combine_color_cc;
+  namespace file_ns = blender::nodes::node_fn_input_matrix4x4_cc;
 
   static bNodeType ntype;
 
-  fn_node_type_base(&ntype, FN_NODE_COMBINE_COLOR, "Combine Color", NODE_CLASS_CONVERTER);
+  fn_node_type_base(&ntype, FN_NODE_INPUT_MATRIX_4X4, "4x4 Matrix", NODE_CLASS_INPUT);
   ntype.declare = file_ns::node_declare;
-  ntype.updatefunc = file_ns::node_update;
   ntype.initfunc = file_ns::node_init;
-  node_type_storage(
-      &ntype, "NodeCombSepColor", node_free_standard_storage, node_copy_standard_storage);
   ntype.build_multi_function = file_ns::node_build_multi_function;
   ntype.draw_buttons = file_ns::node_layout;
 
