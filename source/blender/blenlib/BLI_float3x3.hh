@@ -206,6 +206,16 @@ struct float3x3 {
     return scale;
   }
 
+  uint64_t hash() const
+  {
+    uint64_t h = 435109;
+    for (int i = 0; i < 9; i++) {
+      float value = (static_cast<const float *>(values[0]))[i];
+      h = h * 33 + *reinterpret_cast<const uint32_t *>(&value);
+    }
+    return h;
+  }
+
   friend bool operator==(const float3x3 &a, const float3x3 &b)
   {
     return equals_m3m3(a.values, b.values);
