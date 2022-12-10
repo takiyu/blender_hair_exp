@@ -452,11 +452,11 @@ static eCustomDataType socket_type_to_custom_data_type(const eNodeSocketDatatype
     case SOCK_VECTOR:
       return CD_PROP_FLOAT3;
     case SOCK_MATRIX_2X2:
-      return CD_PROP_FLOAT2x2;
+      return CD_PROP_FLOAT2X2;
     case SOCK_MATRIX_3X3:
-      return CD_PROP_FLOAT3x3;
+      return CD_PROP_FLOAT3X3;
     case SOCK_MATRIX_4X4:
-      return CD_PROP_FLOAT4x4;
+      return CD_PROP_FLOAT4X4;
     case SOCK_BOOLEAN:
       return CD_PROP_BOOL;
     case SOCK_RGBA:

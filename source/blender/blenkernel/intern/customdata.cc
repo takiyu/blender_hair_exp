@@ -20,6 +20,8 @@
 #include "BLI_bitmap.h"
 #include "BLI_color.hh"
 #include "BLI_endian_switch.h"
+#include "BLI_float3x3.hh"
+#include "BLI_float4x4.hh"
 #include "BLI_index_range.hh"
 #include "BLI_math.h"
 #include "BLI_math_color_blend.h"
@@ -1637,6 +1639,165 @@ static void layerInterp_propbool(const void **sources,
   *(bool *)dest = result;
 }
 
+/** \} */
+
+/* -------------------------------------------------------------------- */
+/** \name Callbacks for ('float2x2', #CD_PROP_FLOAT2X2)
+ * \{ */
+
+static void layerInterp_propfloat2x2(const void **sources,
+                                     const float *weights,
+                                     const float * /*sub_weights*/,
+                                     int count,
+                                     void *dest)
+{
+  float result[2][2] = {0.0f, 0.0f};
+  for (int i = 0; i < count; i++) {
+    const float interp_weight = weights[i];
+    const float (*src)[2] = static_cast<const float (*)[2]>(sources[i]);
+    madd_v4_v4fl((float *)result, (const float *)src, interp_weight);
+  }
+  copy_v4_v4((float *)dest, (float *)result);
+}
+
+static void layerMultiply_propfloat2x2(void *data, const float fac)
+{
+  mul_v4_fl((float *)data, fac);
+}
+
+static void layerAdd_propfloat2x2(void *data1, const void *data2)
+{
+  add_v4_v4((float *)data1, (const float *)data2);
+}
+
+static bool layerValidate_propfloat2x2(void *data, const uint totitems, const bool do_fixes)
+{
+  float *values = static_cast<float *>(data);
+  bool has_errors = false;
+  for (int i = 0; i < totitems * 4; i++) {
+    if (!isfinite(values[i])) {
+      if (do_fixes) {
+        values[i] = 0.0f;
+      }
+      has_errors = true;
+    }
+  }
+  return has_errors;
+}
+
+/** \} */
+
+/* -------------------------------------------------------------------- */
+/** \name Callbacks for ('float3x3', #CD_PROP_FLOAT3X3)
+ * \{ */
+
+static void layerInterp_propfloat3x3(const void **sources,
+                                     const float *weights,
+                                     const float * /*sub_weights*/,
+                                     int count,
+                                     void *dest)
+{
+  using blender::float3x3;
+
+  float3x3 result = float3x3::zero();
+  for (int i = 0; i < count; i++) {
+    const float interp_weight = weights[i];
+    const float3x3 *src = static_cast<const float3x3 *>(sources[i]);
+    madd_m3_m3m3fl(result.ptr(), result.ptr(), src->ptr(), interp_weight); 
+  }
+  *static_cast<float3x3 *>(dest) = result.ptr();
+}
+
+static void layerMultiply_propfloat3x3(void *data, const float fac)
+{
+  using blender::float3x3;
+
+  float3x3 *mat = static_cast<float3x3 *>(data);
+  mul_m3_fl(mat->ptr(), fac);
+}
+
+static void layerAdd_propfloat3x3(void *data1, const void *data2)
+{
+  using blender::float3x3;
+
+  float3x3 *mat1 = static_cast<float3x3 *>(data1);
+  const float3x3 *mat2 = static_cast<const float3x3 *>(data2);
+  add_m3_m3m3(mat1->ptr(), mat1->ptr(), mat2->ptr());
+}
+
+static bool layerValidate_propfloat3x3(void *data, const uint totitems, const bool do_fixes)
+{
+  float *values = static_cast<float *>(data);
+  bool has_errors = false;
+  for (int i = 0; i < totitems * 9; i++) {
+    if (!isfinite(values[i])) {
+      if (do_fixes) {
+        values[i] = 0.0f;
+      }
+      has_errors = true;
+    }
+  }
+  return has_errors;
+}
+
+/** \} */
+
+/* -------------------------------------------------------------------- */
+/** \name Callbacks for ('float4x4', #CD_PROP_FLOAT4X4)
+ * \{ */
+
+static void layerInterp_propfloat4x4(const void **sources,
+                                     const float *weights,
+                                     const float * /*sub_weights*/,
+                                     int count,
+                                     void *dest)
+{
+  using blender::float4x4;
+
+  float4x4 result;
+  zero_m4(result.ptr());
+  for (int i = 0; i < count; i++) {
+    const float interp_weight = weights[i];
+    const float4x4 *src = static_cast<const float4x4 *>(sources[i]);
+    madd_m4_m4m4fl(result.ptr(), result.ptr(), src->ptr(), interp_weight);
+  }
+  *static_cast<float4x4 *>(dest) = result.ptr();
+}
+
+static void layerMultiply_propfloat4x4(void *data, const float fac)
+{
+  using blender::float4x4;
+
+  float4x4 *mat = static_cast<float4x4 *>(data);
+  mul_m4_fl(mat->ptr(), fac);
+}
+
+static void layerAdd_propfloat4x4(void *data1, const void *data2)
+{
+  using blender::float4x4;
+
+  float4x4 *mat1 = static_cast<float4x4 *>(data1);
+  const float4x4 *mat2 = static_cast<const float4x4 *>(data2);
+  add_m4_m4m4(mat1->ptr(), mat1->ptr(), mat2->ptr());
+}
+
+static bool layerValidate_propfloat4x4(void *data, const uint totitems, const bool do_fixes)
+{
+  float *values = static_cast<float *>(data);
+  bool has_errors = false;
+  for (int i = 0; i < totitems * 16; i++) {
+    if (!isfinite(values[i])) {
+      if (do_fixes) {
+        values[i] = 0.0f;
+      }
+      has_errors = true;
+    }
+  }
+  return has_errors;
+}
+
+/** \} */
+
 static const LayerTypeInfo LAYERTYPEINFO[CD_NUMTYPES] = {
     /* 0: CD_MVERT */
     {sizeof(MVert), "MVert", 1, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr},
@@ -2046,6 +2207,54 @@ static const LayerTypeInfo LAYERTYPEINFO[CD_NUMTYPES] = {
      nullptr},
     /* 51: CD_HAIRLENGTH */
     {sizeof(float), "float", 1, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr},
+    /* 52: CD_PROP_FLOAT2X2 */
+    {sizeof(float[2][2]),
+     "float2x2",
+     1,
+     N_("Float2x2"),
+     nullptr,
+     nullptr,
+     layerInterp_propfloat2x2,
+     nullptr,
+     nullptr,
+     nullptr,
+     layerValidate_propfloat2x2,
+     nullptr,
+     layerMultiply_propfloat2x2,
+     nullptr,
+     layerAdd_propfloat2x2},
+    /* 53: CD_PROP_FLOAT3X3 */
+    {sizeof(float[3][3]),
+     "float3x3",
+     1,
+     N_("Float3x3"),
+     nullptr,
+     nullptr,
+     layerInterp_propfloat3x3,
+     nullptr,
+     nullptr,
+     nullptr,
+     layerValidate_propfloat3x3,
+     nullptr,
+     layerMultiply_propfloat3x3,
+     nullptr,
+     layerAdd_propfloat3x3},
+    /* 54: CD_PROP_FLOAT4X4 */
+    {sizeof(float[4][4]),
+     "float4x4",
+     1,
+     N_("Float4x4"),
+     nullptr,
+     nullptr,
+     layerInterp_propfloat4x4,
+     nullptr,
+     nullptr,
+     nullptr,
+     layerValidate_propfloat4x4,
+     nullptr,
+     layerMultiply_propfloat4x4,
+     nullptr,
+     layerAdd_propfloat4x4},
 };
 
 static const char *LAYERTYPENAMES[CD_NUMTYPES] = {
@@ -2103,6 +2312,9 @@ static const char *LAYERTYPENAMES[CD_NUMTYPES] = {
     "CDPropFloat2",
     "CDPropBoolean",
     "CDHairLength",
+    "CDPropFloat2x2",
+    "CDPropFloat3x3",
+    "CDPropFloat4x4",
 };
 
 const CustomData_MeshMasks CD_MASK_BAREMESH = {
@@ -5348,6 +5560,10 @@ const blender::CPPType *custom_data_type_to_cpp_type(const eCustomDataType type)
       return &CPPType::get<float2>();
     case CD_PROP_FLOAT3:
       return &CPPType::get<float3>();
+    case CD_PROP_FLOAT3X3:
+      return &CPPType::get<float3x3>();
+    case CD_PROP_FLOAT4X4:
+      return &CPPType::get<float4x4>();
     case CD_PROP_INT32:
       return &CPPType::get<int>();
     case CD_PROP_COLOR:
@@ -5376,6 +5592,12 @@ eCustomDataType cpp_type_to_custom_data_type(const blender::CPPType &type)
   }
   if (type.is<float3>()) {
     return CD_PROP_FLOAT3;
+  }
+  if (type.is<float3x3>()) {
+    return CD_PROP_FLOAT3X3;
+  }
+  if (type.is<float4x4>()) {
+    return CD_PROP_FLOAT4X4;
   }
   if (type.is<int>()) {
     return CD_PROP_INT32;

@@ -68,8 +68,7 @@ typedef struct CustomData {
    * MUST be >= CD_NUMTYPES, but we can't use a define here.
    * Correct size is ensured in CustomData_update_typemap assert().
    */
-  int typemap[52];
-  char _pad[4];
+  int typemap[55];
   /** Number of layers, size of layers array. */
   int totlayer, maxlayer;
   /** In editmode, total size of all data layers. */
@@ -155,7 +154,11 @@ typedef enum eCustomDataType {
 
   CD_HAIRLENGTH = 51,
 
-  CD_NUMTYPES = 52,
+  CD_PROP_FLOAT2X2 = 52,
+  CD_PROP_FLOAT3X3 = 53,
+  CD_PROP_FLOAT4X4 = 54,
+
+  CD_NUMTYPES = 55,
 } eCustomDataType;
 
 /* Bits for eCustomDataMask */
@@ -209,6 +212,10 @@ typedef enum eCustomDataType {
 
 #define CD_MASK_HAIRLENGTH (1ULL << CD_HAIRLENGTH)
 
+#define CD_MASK_FLOAT2X2 (1ULL << CD_PROP_FLOAT2X2)
+#define CD_MASK_FLOAT3X3 (1ULL << CD_PROP_FLOAT3X3)
+#define CD_MASK_FLOAT4X4 (1ULL << CD_PROP_FLOAT4X4)
+
 /** Multi-resolution loop data. */
 #define CD_MASK_MULTIRES_GRIDS (CD_MASK_MDISPS | CD_GRID_PAINT_MASK)
 
@@ -219,7 +226,7 @@ typedef enum eCustomDataType {
 #define CD_MASK_PROP_ALL \
   (CD_MASK_PROP_FLOAT | CD_MASK_PROP_FLOAT2 | CD_MASK_PROP_FLOAT3 | CD_MASK_PROP_INT32 | \
    CD_MASK_PROP_COLOR | CD_MASK_PROP_STRING | CD_MASK_PROP_BYTE_COLOR | CD_MASK_PROP_BOOL | \
-   CD_MASK_PROP_INT8)
+   CD_MASK_PROP_INT8 | CD_MASK_FLOAT2X2 | CD_MASK_FLOAT3X3 | CD_MASK_FLOAT4X4)
 
 /* All color attributes */
 #define CD_MASK_COLOR_ALL (CD_MASK_PROP_COLOR | CD_MASK_PROP_BYTE_COLOR)
