@@ -2,6 +2,8 @@
 
 #include "node_function_util.hh"
 
+#include "BKE_node_runtime.hh"
+
 #include "UI_interface.h"
 #include "UI_resources.h"
 
