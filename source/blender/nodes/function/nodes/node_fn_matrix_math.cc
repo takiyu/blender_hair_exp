@@ -97,7 +97,7 @@ static const fn::MultiFunction *get_multi_function(NodeMatrixMathOperation op)
     case NODE_MATRIX_MATH_ADD: {
       static fn::CustomMF_SI_SI_SO<float4x4, float4x4, float4x4> fn{
           "add",
-          [](const float4x4 &a, const float4x4 &b, float4x4 &r) { r = math::add(a, b); },
+          [](const float4x4 &a, const float4x4 &b) -> float4x4 { return math::add(a, b); },
           exec_preset_fast};
       return &fn;
     }
