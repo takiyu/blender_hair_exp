@@ -2321,7 +2321,7 @@ CustomData CustomData_shallow_copy_remove_non_bmesh_attributes(const CustomData 
   CustomData dst = *src;
   dst.layers = static_cast<CustomDataLayer *>(
       MEM_calloc_arrayN(dst_layers.size(), sizeof(CustomDataLayer), __func__));
-  dst.totlayer = dst_layers.size();
+  dst.maxlayer = dst.totlayer = dst_layers.size();
   memcpy(dst.layers, dst_layers.data(), dst_layers.as_span().size_in_bytes());
 
   CustomData_update_typemap(&dst);
