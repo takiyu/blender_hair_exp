@@ -3,6 +3,7 @@
 #include "BLI_color.hh"
 #include "BLI_cpp_type_make.hh"
 #include "BLI_cpp_types_make.hh"
+#include "BLI_float3x3.hh"
 #include "BLI_float4x4.hh"
 #include "BLI_math_vec_types.hh"
 
@@ -12,6 +13,8 @@
 FN_FIELD_CPP_TYPE_MAKE(float);
 FN_FIELD_CPP_TYPE_MAKE(blender::float2);
 FN_FIELD_CPP_TYPE_MAKE(blender::float3);
+FN_FIELD_CPP_TYPE_MAKE(blender::float3x3);
+FN_FIELD_CPP_TYPE_MAKE(blender::float4x4);
 FN_FIELD_CPP_TYPE_MAKE(blender::ColorGeometry4f);
 FN_FIELD_CPP_TYPE_MAKE(blender::ColorGeometry4b);
 FN_FIELD_CPP_TYPE_MAKE(bool);
@@ -26,6 +29,8 @@ void FN_register_cpp_types()
   FN_FIELD_CPP_TYPE_REGISTER(float);
   FN_FIELD_CPP_TYPE_REGISTER(blender::float2);
   FN_FIELD_CPP_TYPE_REGISTER(blender::float3);
+  FN_FIELD_CPP_TYPE_REGISTER(blender::float3x3);
+  FN_FIELD_CPP_TYPE_REGISTER(blender::float4x4);
   FN_FIELD_CPP_TYPE_REGISTER(blender::ColorGeometry4f);
   FN_FIELD_CPP_TYPE_REGISTER(blender::ColorGeometry4b);
   FN_FIELD_CPP_TYPE_REGISTER(bool);
