@@ -512,6 +512,12 @@ static int customdata_compare(
       }
       /* At this point `l1` and `l2` have the same name and type, so they should be compared. */
 
+      if (StringRef(l1->name) == ".corner_edge") {
+        /* TODO(Hans): This attribute wasn't tested before loops were refactored into separate
+         * corner edges and corner verts arrays. Remove after updating tests. */
+        continue;
+      }
+
       switch (l1->type) {
         /* We're order-agnostic for edges here. */
         case CD_MEDGE: {

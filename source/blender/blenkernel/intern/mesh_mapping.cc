@@ -714,21 +714,20 @@ static void poly_edge_loop_islands_calc(const MEdge *medge,
 
     while (ps_curr_idx != ps_end_idx) {
       const MPoly *mp;
-      int corner_i;
-      int j;
 
       poly = poly_stack[ps_curr_idx++];
       BLI_assert(poly_groups[poly] == poly_group_id);
 
       mp = &mpoly[poly];
-      for (corner_i = mp->loopstart, j = mp->totloop; j--;) {
+      for (const int64_t corner_i : blender::IndexRange(mp->loopstart, mp->totloop)) {
         /* loop over poly users */
         const int me_idx = corner_edges[corner_i];
         const MEdge *me = &medge[me_idx];
         const MeshElemMap *map_ele = &edge_poly_map[me_idx];
         const int *p = map_ele->indices;
         int i = map_ele->count;
-        if (!edge_boundary_check(mp, corner_i, me, i, mpoly, map_ele, edge_boundary_check_data)) {
+        if (!edge_boundary_check(
+                mp, int(corner_i), me, i, mpoly, map_ele, edge_boundary_check_data)) {
           for (; i--; p++) {
             /* if we meet other non initialized its a bug */
             BLI_assert(ELEM(poly_groups[*p], 0, poly_group_id));

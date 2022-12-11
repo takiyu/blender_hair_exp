@@ -125,8 +125,8 @@ static Mesh *hull_from_bullet(const Mesh *mesh, Span<float3> coords)
     face.loopstart = j;
     face.totloop = len;
     for (const int k : IndexRange(len)) {
-      mesh_corner_verts[dst_corner_i] = mesh_corner_verts[loops[k]];
-      mesh_corner_edges[dst_corner_i] = mesh_corner_edges[loops[k]];
+      mesh_corner_verts[dst_corner_i] = corner_verts[loops[k]];
+      mesh_corner_edges[dst_corner_i] = corner_edges[loops[k]];
       dst_corner_i++;
     }
     j += len;

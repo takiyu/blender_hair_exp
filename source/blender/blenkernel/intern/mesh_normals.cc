@@ -315,7 +315,7 @@ static void calculate_normals_poly_and_vert(const Span<float3> positions,
             const float fac = saacos(-dot_v3v3(edvec_prev, edvec_next));
             const float vnor_add[3] = {pnor[0] * fac, pnor[1] * fac, pnor[2] * fac};
 
-            float *vnor = vert_normals[corner_verts[i_curr]];
+            float *vnor = vert_normals[poly_verts[i_curr]];
             add_v3_v3_atomic(vnor, vnor_add);
             v_curr = v_next;
             copy_v3_v3(edvec_prev, edvec_next);

@@ -104,9 +104,9 @@ static void add_polygon_edges_to_hash_maps(Mesh *mesh,
     for (const MPoly &poly : polys) {
       const IndexRange corners(poly.loopstart, poly.totloop);
       int corner_prev = corners.last();
-      for (const int corner : corners) {
+      for (const int next_corner : corners) {
         /* Can only be the same when the mesh data is invalid. */
-        const int vert = corner_verts[corner];
+        const int vert = corner_verts[next_corner];
         const int vert_prev = corner_verts[corner_prev];
         if (vert_prev != vert) {
           OrderedEdge ordered_edge{vert_prev, vert};
@@ -115,7 +115,7 @@ static void add_polygon_edges_to_hash_maps(Mesh *mesh,
             edge_map.lookup_or_add(ordered_edge, {nullptr});
           }
         }
-        corner_prev = corner;
+        corner_prev = next_corner;
       }
     }
   });
@@ -161,17 +161,17 @@ static void update_edge_indices_in_poly_loops(Mesh *mesh,
                                               uint32_t parallel_mask)
 {
   const Span<MPoly> polys = mesh->polys();
-  MutableSpan<int> corner_verts = mesh->corner_verts_for_write();
+  const Span<int> corner_verts = mesh->corner_verts();
   MutableSpan<int> corner_edges = mesh->corner_edges_for_write();
   threading::parallel_for(IndexRange(mesh->totpoly), 100, [&](IndexRange range) {
     for (const int poly_index : range) {
       const MPoly &poly = polys[poly_index];
       const IndexRange corners(poly.loopstart, poly.totloop);
 
-      int corner_prev = corners.last();
-      for (const int corner : corners) {
-        const int vert = corner_verts[corner];
-        const int vert_prev = corner_verts[corner_prev];
+      int prev_corner = corners.last();
+      for (const int next_corner : corners) {
+        const int vert = corner_verts[next_corner];
+        const int vert_prev = corner_verts[prev_corner];
 
         int edge_index;
         if (vert_prev != vert) {
@@ -186,8 +186,8 @@ static void update_edge_indices_in_poly_loops(Mesh *mesh,
            * T76514. */
           edge_index = 0;
         }
-        corner_edges[corner_prev] = edge_index;
-        corner_prev = corner;
+        corner_edges[prev_corner] = edge_index;
+        prev_corner = next_corner;
       }
     }
   });
@@ -239,6 +239,10 @@ void BKE_mesh_calc_edges(Mesh *mesh, bool keep_existing_edges, const bool select
   }
 
   /* Create new edges. */
+  if (!CustomData_get_layer_named(&mesh->ldata, CD_PROP_INT32, ".corner_edge")) {
+    CustomData_add_layer_named(
+        &mesh->ldata, CD_PROP_INT32, CD_CONSTRUCT, nullptr, mesh->totloop, ".corner_edge");
+  }
   MutableSpan<MEdge> new_edges{
       static_cast<MEdge *>(MEM_calloc_arrayN(new_totedge, sizeof(MEdge), __func__)), new_totedge};
   calc_edges::serialize_and_initialize_deduplicated_edges(edge_maps, new_edges);

@@ -325,7 +325,7 @@ static void fill_quad_consistent_direction(const Span<int> other_poly_verts,
 {
   /* Find the loop on the polygon connected to the new quad that uses the duplicate edge. */
   bool start_with_connecting_edge = true;
-  for (const int i : other_poly_verts.index_range()) {
+  for (const int i : other_poly_edges.index_range()) {
     if (other_poly_edges[i] == edge_connected_to_poly) {
       start_with_connecting_edge = other_poly_verts[i] == vert_connected_to_poly_1;
       break;
@@ -464,8 +464,8 @@ static void extrude_mesh_edges(Mesh &mesh,
     /* When there was a single polygon connected to the new polygon, we can use the old one to keep
      * the face direction consistent. When there is more than one connected edge, the new face
      * direction is totally arbitrary and the only goal for the behavior is to be deterministic. */
-    Span<int> connected_poly_verts;
-    Span<int> connected_poly_edges;
+    Span<int> connected_poly_verts = {};
+    Span<int> connected_poly_edges = {};
     if (connected_polys.size() == 1) {
       const MPoly &connected_poly = polys[connected_polys.first()];
       connected_poly_verts = corner_verts.slice(connected_poly.loopstart, connected_poly.totloop);
@@ -568,14 +568,13 @@ static void extrude_mesh_edges(Mesh &mesh,
                * polygons that share an edge with the extruded edge. */
               for (const int i_connected_poly : connected_polys.index_range()) {
                 const MPoly &connected_poly = polys[connected_polys[i_connected_poly]];
-                for (const int corner_i :
+                for (const int i_loop :
                      IndexRange(connected_poly.loopstart, connected_poly.totloop)) {
-                  const int vert_i = corner_verts[corner_i];
-                  if (vert_i == orig_vert_1) {
-                    mixer.mix_in(0, data[corner_i]);
+                  if (corner_verts[i_loop] == orig_vert_1) {
+                    mixer.mix_in(0, data[i_loop]);
                   }
-                  if (vert_i == orig_vert_2) {
-                    mixer.mix_in(1, data[corner_i]);
+                  if (corner_verts[i_loop] == orig_vert_2) {
+                    mixer.mix_in(1, data[i_loop]);
                   }
                 }
               }
@@ -1195,6 +1194,9 @@ static void extrude_individual_mesh_faces(Mesh &mesh,
 
   attributes.for_all([&](const AttributeIDRef &id, const AttributeMetaData meta_data) {
     if (meta_data.data_type == CD_PROP_STRING) {
+      return true;
+    }
+    if (id.is_named() && ELEM(id.name(), ".corner_vert", ".corner_edge")) {
       return true;
     }
     GSpanAttributeWriter attribute = attributes.lookup_or_add_for_write_span(
