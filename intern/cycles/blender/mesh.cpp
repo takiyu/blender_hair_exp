@@ -883,7 +883,7 @@ static void attr_create_random_per_island(Scene *scene,
   else {
     if (polys_num != 0) {
       const MPoly *polys = static_cast<const MPoly *>(b_mesh.polygons[0].ptr.data);
-      std::optional<BL::IntAttribute> corner_verts = find_corner_vert_attribute(b_mesh);
+      BL::IntAttribute corner_verts = *find_corner_vert_attribute(b_mesh);
       for (int i = 0; i < polys_num; i++) {
         const MPoly &b_poly = polys[i];
         const int vert = corner_verts->data[b_poly.loopstart].value();
