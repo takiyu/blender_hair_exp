@@ -40,8 +40,31 @@ static void node_declare(NodeDeclarationBuilder &b)
       .subtype(PROP_XYZ)
       .supports_field()
       .description(N_("Scale of the instances"));
+  b.add_input<decl::Matrix4x4>(N_("Matrix"))
+      .default_value(float4x4::identity())
+      .supports_field()
+      .description(N_("Transform matrix of the instances"));
 
   b.add_output<decl::Geometry>(N_("Instances"));
+}
+
+static void node_layout(uiLayout *layout, bContext * /*C*/, PointerRNA *ptr)
+{
+  uiItemR(layout, ptr, "transform_mode", 0, "", ICON_NONE);
+}
+
+static void node_update(bNodeTree *tree, bNode *node)
+{
+  const GeometryNodeTransformInputMode transform_mode = (GeometryNodeTransformInputMode)
+                                                            node->custom1;
+
+  bNodeSocket *in_rotation = nodeFindSocket(node, SOCK_IN, "Rotation");
+  bNodeSocket *in_scale = nodeFindSocket(node, SOCK_IN, "Scale");
+  bNodeSocket *in_matrix = nodeFindSocket(node, SOCK_IN, "Matrix");
+
+  nodeSetSocketAvailability(tree, in_rotation, transform_mode == GEO_NODE_TRANSFORM_INPUT_LOCROTSCALE);
+  nodeSetSocketAvailability(tree, in_scale, transform_mode == GEO_NODE_TRANSFORM_INPUT_LOCROTSCALE);
+  nodeSetSocketAvailability(tree, in_matrix, transform_mode == GEO_NODE_TRANSFORM_INPUT_MATRIX);
 }
 
 static void add_instances_from_component(
@@ -53,11 +76,14 @@ static void add_instances_from_component(
 {
   const eAttrDomain domain = ATTR_DOMAIN_POINT;
   const int domain_num = src_component.attribute_domain_size(domain);
+  const GeometryNodeTransformInputMode transform_mode =
+      (GeometryNodeTransformInputMode)params.node().custom1;
 
   VArray<bool> pick_instance;
   VArray<int> indices;
   VArray<float3> rotations;
   VArray<float3> scales;
+  VArray<float4x4> matrices;
 
   bke::GeometryFieldContext field_context{src_component, domain};
   const Field<bool> selection_field = params.get_input<Field<bool>>("Selection");
@@ -67,8 +93,15 @@ static void add_instances_from_component(
    * selected indices should be copied. */
   evaluator.add(params.get_input<Field<bool>>("Pick Instance"), &pick_instance);
   evaluator.add(params.get_input<Field<int>>("Instance Index"), &indices);
-  evaluator.add(params.get_input<Field<float3>>("Rotation"), &rotations);
-  evaluator.add(params.get_input<Field<float3>>("Scale"), &scales);
+  switch (transform_mode) {
+    case GEO_NODE_TRANSFORM_INPUT_MATRIX:
+      evaluator.add(params.get_input<Field<float4x4>>("Matrix"), &matrices);
+      break;
+    case GEO_NODE_TRANSFORM_INPUT_LOCROTSCALE:
+      evaluator.add(params.get_input<Field<float3>>("Rotation"), &rotations);
+      evaluator.add(params.get_input<Field<float3>>("Scale"), &scales);
+      break;
+  }
   evaluator.evaluate();
 
   const IndexMask selection = evaluator.get_evaluated_selection_as_mask();
@@ -114,7 +147,14 @@ static void add_instances_from_component(
 
       /* Compute base transform for every instances. */
       float4x4 &dst_transform = dst_transforms[range_i];
-      dst_transform = float4x4::from_loc_eul_scale(positions[i], rotations[i], scales[i]);
+      switch (transform_mode) {
+        case GEO_NODE_TRANSFORM_INPUT_MATRIX:
+          dst_transform = matrices[i];
+          break;
+        case GEO_NODE_TRANSFORM_INPUT_LOCROTSCALE:
+          dst_transform = float4x4::from_loc_eul_scale(positions[i], rotations[i], scales[i]);
+          break;
+      }
 
       /* Reference that will be used by this new instance. */
       int dst_handle = empty_reference_handle;
@@ -236,6 +276,8 @@ void register_node_type_geo_instance_on_points()
   geo_node_type_base(
       &ntype, GEO_NODE_INSTANCE_ON_POINTS, "Instance on Points", NODE_CLASS_GEOMETRY);
   ntype.declare = file_ns::node_declare;
+  ntype.updatefunc = file_ns::node_update;
+  ntype.draw_buttons = file_ns::node_layout;
   ntype.geometry_node_execute = file_ns::node_geo_exec;
   nodeRegisterType(&ntype);
 }

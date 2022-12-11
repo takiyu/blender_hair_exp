@@ -50,21 +50,21 @@ static void node_update(bNodeTree *tree, bNode *node)
 {
   const NodeMatrixMathOperation op = (NodeMatrixMathOperation)node->custom1;
 
-  bNodeSocket *inMatrixA = &node->input_socket(0);
-  bNodeSocket *inMatrixB = &node->input_socket(1);
-  bNodeSocket *inScale = &node->input_socket(2);
-  bNodeSocket *outMatrix = &node->output_socket(3);
-  bNodeSocket *outValue = &node->output_socket(4);
+  bNodeSocket *in_matrix_a = (bNodeSocket *)BLI_findlink(&node->inputs, 0);
+  bNodeSocket *in_matrix_b = (bNodeSocket *)BLI_findlink(&node->inputs, 1);
+  bNodeSocket *in_scale = (bNodeSocket *)BLI_findlink(&node->inputs, 2);
+  bNodeSocket *out_matrix = (bNodeSocket *)BLI_findlink(&node->inputs, 3);
+  bNodeSocket *out_value = (bNodeSocket *)BLI_findlink(&node->inputs, 4);
 
-  nodeSetSocketAvailability(tree, inMatrixA, true);
+  nodeSetSocketAvailability(tree, in_matrix_a, true);
   nodeSetSocketAvailability(
       tree,
-      inMatrixB,
+      in_matrix_b,
       ELEM(op, NODE_MATRIX_MATH_ADD, NODE_MATRIX_MATH_SUBTRACT, NODE_MATRIX_MATH_MULTIPLY));
-  nodeSetSocketAvailability(tree, inScale, ELEM(op, NODE_MATRIX_MATH_SCALAR_MULTIPLY));
+  nodeSetSocketAvailability(tree, in_scale, ELEM(op, NODE_MATRIX_MATH_SCALAR_MULTIPLY));
 
   nodeSetSocketAvailability(tree,
-                            outMatrix,
+                            out_matrix,
                             ELEM(op,
                                  NODE_MATRIX_MATH_ADD,
                                  NODE_MATRIX_MATH_SUBTRACT,
@@ -73,12 +73,12 @@ static void node_update(bNodeTree *tree, bNode *node)
                                  NODE_MATRIX_MATH_TRANSPOSE,
                                  NODE_MATRIX_MATH_INVERSE));
   nodeSetSocketAvailability(
-      tree, outValue, ELEM(op, NODE_MATRIX_MATH_DETERMINANT, NODE_MATRIX_MATH_TRACE));
+      tree, out_value, ELEM(op, NODE_MATRIX_MATH_DETERMINANT, NODE_MATRIX_MATH_TRACE));
 
   /* Labels */
-  node_sock_label_clear(inMatrixA);
-  node_sock_label_clear(inMatrixB);
-  node_sock_label_clear(inScale);
+  node_sock_label_clear(in_matrix_a);
+  node_sock_label_clear(in_matrix_b);
+  node_sock_label_clear(in_scale);
   switch (op) {
   }
 }
