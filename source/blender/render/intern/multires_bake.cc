@@ -475,7 +475,7 @@ static void do_multires_bake(MultiresBakeRender *bkr,
   MVert *mvert = dm->getVertArray(dm);
   MPoly *mpoly = dm->getPolyArray(dm);
   MLoop *mloop = dm->getLoopArray(dm);
-  float(*mloopuv)[2] = static_cast<float (*)[2]>(dm->getLoopDataArray(dm, CD_PROP_FLOAT2));
+  float(*mloopuv)[2] = static_cast<float(*)[2]>(dm->getLoopDataArray(dm, CD_PROP_FLOAT2));
   float *pvtangent = nullptr;
 
   ListBase threads;
@@ -838,7 +838,8 @@ static void apply_heights_callback(DerivedMesh *lores_dm,
   const MLoopTri *lt = lores_dm->getLoopTriArray(lores_dm) + tri_index;
   MLoop *mloop = lores_dm->getLoopArray(lores_dm);
   MPoly *mpoly = lores_dm->getPolyArray(lores_dm) + lt->poly;
-  float(*mloopuv)[2] = static_cast<float (*)[2]>(lores_dm->getLoopDataArray(lores_dm, CD_PROP_FLOAT2));
+  float(*mloopuv)[2] = static_cast<float(*)[2]>(
+      lores_dm->getLoopDataArray(lores_dm, CD_PROP_FLOAT2));
   MHeightBakeData *height_data = (MHeightBakeData *)bake_data;
   MultiresBakeThread *thread_data = (MultiresBakeThread *)thread_data_v;
   float uv[2], *st0, *st1, *st2, *st3;
@@ -952,7 +953,8 @@ static void apply_tangmat_callback(DerivedMesh *lores_dm,
 {
   const MLoopTri *lt = lores_dm->getLoopTriArray(lores_dm) + tri_index;
   MPoly *mpoly = lores_dm->getPolyArray(lores_dm) + lt->poly;
-  float(*mloopuv)[2] = static_cast<float (*)[2]>(lores_dm->getLoopDataArray(lores_dm, CD_PROP_FLOAT2));
+  float(*mloopuv)[2] = static_cast<float(*)[2]>(
+      lores_dm->getLoopDataArray(lores_dm, CD_PROP_FLOAT2));
   MNormalBakeData *normal_data = (MNormalBakeData *)bake_data;
   float uv[2], *st0, *st1, *st2, *st3;
   int pixel = ibuf->x * y + x;

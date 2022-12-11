@@ -356,7 +356,8 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
     const int totuv = CustomData_number_of_layers(&result->ldata, CD_PROP_FLOAT2);
 
     for (a = 0; a < totuv; a++) {
-      float(*dmloopuv)[2] = static_cast<float (*)[2]>(CustomData_get_layer_n(&result->ldata, CD_PROP_FLOAT2, a));
+      float(*dmloopuv)[2] = static_cast<float(*)[2]>(
+          CustomData_get_layer_n(&result->ldata, CD_PROP_FLOAT2, a));
       int j = maxLoops;
       dmloopuv += j; /* second set of loops only */
       for (; j-- > 0; dmloopuv++) {

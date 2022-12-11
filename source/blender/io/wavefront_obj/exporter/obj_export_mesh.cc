@@ -292,7 +292,7 @@ void OBJMesh::store_uv_coords_and_indices()
     tot_uv_vertices_ = 0;
     return;
   }
-    const bke::AttributeAccessor attributes = export_mesh_->attributes();
+  const bke::AttributeAccessor attributes = export_mesh_->attributes();
   const VArraySpan<float2> uv_map = attributes.lookup<float2>(active_uv_name, ATTR_DOMAIN_CORNER);
 
   const float limit[2] = {STD_UV_CONNECT_LIMIT, STD_UV_CONNECT_LIMIT};
