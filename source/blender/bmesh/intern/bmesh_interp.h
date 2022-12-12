@@ -65,7 +65,9 @@ void BM_data_layer_add_named(BMesh *bm, CustomData *data, int type, const char *
 void BM_data_layer_ensure_named(BMesh *bm, CustomData *data, int type, const char *name);
 void BM_data_layer_free(BMesh *bm, CustomData *data, int type);
 
-void BM_uv_map_ensure_selection_and_pin_attributes(BMesh *bm, const char *uv_map_name);
+/* This ensures the dependent bool layers exist for all CD_PROP_FLOAT2 layers */
+void BM_uv_map_ensure_selection_and_pin_attributes(BMesh *bm);
+
 void BM_uv_map_ensure_vert_selection_attribute(BMesh *bm, const char *uv_map_name);
 void BM_uv_map_ensure_edge_selection_attribute(BMesh *bm, const char *uv_map_name);
 void BM_uv_map_ensure_pin_attribute(BMesh *bm, const char *uv_map_name);
