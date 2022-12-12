@@ -876,15 +876,27 @@ void BM_data_layer_ensure_named(BMesh *bm, CustomData *data, int type, const cha
 void BM_uv_map_ensure_selection_and_pin_attributes(BMesh *bm)
 {
   const int nr_uv_layers = CustomData_number_of_layers(&bm->ldata, CD_PROP_FLOAT2);
-  for (int l = 0; l < nr_uv_layers; l++ ) {
-    /* note: you can't re-use the returnvalue of CustomData_get_layer_name() because adding layers can invalidate that. */
+  for (int l = 0; l < nr_uv_layers; l++) {
+    /* note: you can't re-use the returnvalue of CustomData_get_layer_name() because adding layers
+     * can invalidate that. */
     char name[MAX_CUSTOMDATA_LAYER_NAME];
     BM_data_layer_ensure_named(
-        bm, &bm->ldata, CD_PROP_BOOL, BKE_get_uv_map_vert_selection_name(CustomData_get_layer_name(&bm->ldata, CD_PROP_FLOAT2, l), name));
+        bm,
+        &bm->ldata,
+        CD_PROP_BOOL,
+        BKE_get_uv_map_vert_selection_name(
+            CustomData_get_layer_name(&bm->ldata, CD_PROP_FLOAT2, l), name));
     BM_data_layer_ensure_named(
-        bm, &bm->ldata, CD_PROP_BOOL, BKE_get_uv_map_edge_selection_name(CustomData_get_layer_name(&bm->ldata, CD_PROP_FLOAT2, l), name));
+        bm,
+        &bm->ldata,
+        CD_PROP_BOOL,
+        BKE_get_uv_map_edge_selection_name(
+            CustomData_get_layer_name(&bm->ldata, CD_PROP_FLOAT2, l), name));
     BM_data_layer_ensure_named(
-        bm, &bm->ldata, CD_PROP_BOOL, BKE_get_uv_map_pin_name(CustomData_get_layer_name(&bm->ldata, CD_PROP_FLOAT2, l), name));
+        bm,
+        &bm->ldata,
+        CD_PROP_BOOL,
+        BKE_get_uv_map_pin_name(CustomData_get_layer_name(&bm->ldata, CD_PROP_FLOAT2, l), name));
   }
 }
 
