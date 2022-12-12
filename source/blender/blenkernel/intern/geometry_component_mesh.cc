@@ -605,7 +605,7 @@ void adapt_mesh_domain_edge_to_corner_impl(const Mesh &mesh,
 
     /* For every corner, mix the values from the adjacent edges on the face. */
     for (const int loop_index : IndexRange(poly.loopstart, poly.totloop)) {
-      const int loop_index_prev = mesh_topology::previous_poly_loop(poly, loop_index);
+      const int loop_index_prev = mesh_topology::poly_loop_prev(poly, loop_index);
       const int edge_i = corner_edges[loop_index];
       const int edge_i_prev = corner_edges[loop_index_prev];
       mixer.mix_in(loop_index, old_values[edge_i]);
@@ -632,7 +632,7 @@ void adapt_mesh_domain_edge_to_corner_impl(const Mesh &mesh,
     for (const int poly_index : range) {
       const MPoly &poly = polys[poly_index];
       for (const int loop_index : IndexRange(poly.loopstart, poly.totloop)) {
-        const int loop_index_prev = mesh_topology::previous_poly_loop(poly, loop_index);
+        const int loop_index_prev = mesh_topology::poly_loop_prev(poly, loop_index);
         const int edge_i = corner_edges[loop_index];
         const int edge_i_prev = corner_edges[loop_index_prev];
         if (old_values[edge_i] && old_values[edge_i_prev]) {

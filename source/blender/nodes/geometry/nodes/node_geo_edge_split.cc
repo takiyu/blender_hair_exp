@@ -255,8 +255,8 @@ static int adjacent_edge(const Span<int> corner_verts,
                          const int vertex)
 {
   const int adjacent_loop_i = (corner_verts[loop_i] == vertex) ?
-                                  bke::mesh_topology::previous_poly_loop(poly, loop_i) :
-                                  bke::mesh_topology::next_poly_loop(poly, loop_i);
+                                  bke::mesh_topology::poly_loop_prev(poly, loop_i) :
+                                  bke::mesh_topology::poly_loop_next(poly, loop_i);
   return corner_edges[adjacent_loop_i];
 }
 
