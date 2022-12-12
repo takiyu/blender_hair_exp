@@ -291,8 +291,8 @@ static void data_transfer_dtdata_type_preprocess(Mesh *me_src,
                                   num_verts_dst,
                                   edges_dst,
                                   num_edges_dst,
-                                  BKE_mesh_corner_verts(me_dst),
-                                  BKE_mesh_corner_edges(me_dst),
+                                  me_dst->corner_verts().data(),
+                                  me_dst->corner_edges().data(),
                                   loop_nors_dst,
                                   num_loops_dst,
                                   polys_dst,
@@ -346,8 +346,8 @@ static void data_transfer_dtdata_type_postprocess(Object *UNUSED(ob_src),
                                      num_verts_dst,
                                      edges_dst,
                                      num_edges_dst,
-                                     BKE_mesh_corner_verts(me_dst),
-                                     BKE_mesh_corner_edges(me_dst),
+                                     me_dst->corner_verts().data(),
+                                     me_dst->corner_edges().data(),
                                      loop_nors_dst,
                                      num_loops_dst,
                                      polys_dst,
@@ -1513,8 +1513,8 @@ bool BKE_object_data_transfer_ex(struct Depsgraph *depsgraph,
       const int num_edges_dst = me_dst->totedge;
       const MPoly *polys_dst = BKE_mesh_polys(me_dst);
       const int num_polys_dst = me_dst->totpoly;
-      const int *corner_verts_dst = BKE_mesh_corner_verts(me_dst);
-      const int *corner_edges_dst = BKE_mesh_corner_edges(me_dst);
+      const int *corner_verts_dst = me_dst->corner_verts().data();
+      const int *corner_edges_dst = me_dst->corner_edges().data();
       const int num_loops_dst = me_dst->totloop;
       CustomData *ldata_dst = &me_dst->ldata;
 
@@ -1615,7 +1615,7 @@ bool BKE_object_data_transfer_ex(struct Depsgraph *depsgraph,
       const int num_verts_dst = me_dst->totvert;
       const MPoly *polys_dst = BKE_mesh_polys(me_dst);
       const int num_polys_dst = me_dst->totpoly;
-      const int *corner_verts_dst = BKE_mesh_corner_verts(me_dst);
+      const int *corner_verts_dst = me_dst->corner_verts().data();
       const int num_loops_dst = me_dst->totloop;
 
       if (!geom_map_init[PDATA]) {

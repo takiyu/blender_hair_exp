@@ -1558,7 +1558,7 @@ void BKE_mesh_normals_loop_split(const float (*positions)[3],
   common_data.loopnors = {reinterpret_cast<float3 *>(r_loopnors), numLoops};
   common_data.clnors_data = {reinterpret_cast<short2 *>(clnors_data), clnors_data ? numLoops : 0};
   common_data.positions = {reinterpret_cast<const float3 *>(positions), numVerts};
-  common_data.edges = {const_cast<MEdge *>(medges), numEdges};
+  common_data.edges = {medges, numEdges};
   common_data.polys = {mpolys, numPolys};
   common_data.corner_verts = {corner_verts, numLoops};
   common_data.corner_edges = {corner_edges, numLoops};
