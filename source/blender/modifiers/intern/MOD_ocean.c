@@ -288,8 +288,8 @@ static Mesh *generate_ocean_geometry(OceanModifierData *omd, Mesh *mesh_orig, co
 
   /* add uvs */
   if (CustomData_number_of_layers(&result->ldata, CD_PROP_FLOAT2) < MAX_MTFACE) {
-    gogd.mloopuvs = CustomData_add_layer(
-        &result->ldata, CD_PROP_FLOAT2, CD_SET_DEFAULT, NULL, polys_num * 4);
+    gogd.mloopuvs = CustomData_add_layer_named(
+        &result->ldata, CD_PROP_FLOAT2, CD_SET_DEFAULT, NULL, polys_num * 4, "UVMap");
 
     if (gogd.mloopuvs) { /* unlikely to fail */
       gogd.ix = 1.0 / gogd.rx;
