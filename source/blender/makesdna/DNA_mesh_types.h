@@ -13,10 +13,6 @@
 #include "DNA_meshdata_types.h"
 #include "DNA_session_uuid_types.h"
 
-#ifdef __cplusplus
-#  include "BLI_math_vec_types.hh"
-#endif
-
 /** Workaround to forward-declare C++ type in C header. */
 #ifdef __cplusplus
 

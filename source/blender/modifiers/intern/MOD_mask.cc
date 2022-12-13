@@ -368,7 +368,6 @@ static void add_interp_verts_copy_edges_to_new_mesh(const Mesh &src_mesh,
                                                     uint verts_add_num,
                                                     MutableSpan<int> r_edge_map)
 {
-  using namespace blender;
   BLI_assert(src_mesh.totvert == vertex_mask.size());
   BLI_assert(src_mesh.totedge == r_edge_map.size());
   const Span<MEdge> src_edges = src_mesh.edges();

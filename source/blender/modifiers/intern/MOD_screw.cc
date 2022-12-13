@@ -781,22 +781,22 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
 
     /* set location */
     for (j = 0; j < totvert; j++) {
-      const int vert_index_new = int(varray_stride) + int(j);
+      const int vert_new = int(varray_stride) + int(j);
 
-      copy_v3_v3(positions_new[vert_index_new], positions_new[j]);
+      copy_v3_v3(positions_new[vert_new], positions_new[j]);
 
       /* only need to set these if using non cleared memory */
       // mv_new->mat_nr = mv_new->flag = 0;
 
       if (ob_axis != nullptr) {
-        sub_v3_v3(positions_new[vert_index_new], mtx_tx[3]);
+        sub_v3_v3(positions_new[vert_new], mtx_tx[3]);
 
-        mul_m4_v3(mat, positions_new[vert_index_new]);
+        mul_m4_v3(mat, positions_new[vert_new]);
 
-        add_v3_v3(positions_new[vert_index_new], mtx_tx[3]);
+        add_v3_v3(positions_new[vert_new], mtx_tx[3]);
       }
       else {
-        mul_m4_v3(mat, positions_new[vert_index_new]);
+        mul_m4_v3(mat, positions_new[vert_new]);
       }
 
       /* add the new edge */
@@ -875,8 +875,8 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
       /* Polygon */
       if (has_mpoly_orig) {
         CustomData_copy_data(
-            &mesh->pdata, &result->pdata, (int)mpoly_index_orig, (int)mpoly_index, 1);
-        origindex[mpoly_index] = (int)mpoly_index_orig;
+            &mesh->pdata, &result->pdata, int(mpoly_index_orig), int(mpoly_index), 1);
+        origindex[mpoly_index] = int(mpoly_index_orig);
       }
       else {
         origindex[mpoly_index] = ORIGINDEX_NONE;

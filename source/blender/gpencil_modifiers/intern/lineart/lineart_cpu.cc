@@ -1411,7 +1411,7 @@ struct LineartEdgeNeighbor {
   int v1, v2;
 };
 
-typedef struct VertData {
+struct VertData {
   const float (*positions)[3];
   LineartVert *v_arr;
   double (*model_view)[4];

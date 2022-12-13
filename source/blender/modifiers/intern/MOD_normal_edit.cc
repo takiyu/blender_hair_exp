@@ -57,7 +57,7 @@ static void generate_vert_coordinates(Mesh *mesh,
   const Span<float3> positions = mesh->positions();
   for (int i = 0; i < mesh->totvert; i++) {
     copy_v3_v3(r_cos[i], positions[i]);
-    if (r_size != NULL && ob_center == NULL) {
+    if (r_size != nullptr && ob_center == nullptr) {
       minmax_v3v3_v3(min_co, max_co, r_cos[i]);
     }
   }

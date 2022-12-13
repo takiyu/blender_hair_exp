@@ -4806,9 +4806,9 @@ bool BKE_object_shapekey_remove(Main *bmain, Object *ob, KeyBlock *kb)
       switch (ob->type) {
         case OB_MESH: {
           Mesh *mesh = (Mesh *)ob->data;
-          MutableSpan<float3> verts = mesh->positions_for_write();
+          MutableSpan<float3> positions = mesh->positions_for_write();
           BKE_keyblock_convert_to_mesh(
-              key->refkey, reinterpret_cast<float(*)[3]>(verts.data()), mesh->totvert);
+              key->refkey, reinterpret_cast<float(*)[3]>(positions.data()), mesh->totvert);
           break;
         }
         case OB_CURVES_LEGACY:
