@@ -485,7 +485,7 @@ static void do_multires_bake(MultiresBakeRender *bkr,
   Mesh *temp_mesh = BKE_mesh_new_nomain(
       dm->getNumVerts(dm), dm->getNumEdges(dm), 0, dm->getNumLoops(dm), dm->getNumPolys(dm));
   memcpy(
-      BKE_mesh_positions_for_write(temp_mesh), positions, temp_mesh->totvert * sizeof(float[3]));
+      temp_mesh->positions_for_write().data(), positions, temp_mesh->totvert * sizeof(float[3]));
   memcpy(BKE_mesh_edges_for_write(temp_mesh),
          dm->getEdgeArray(dm),
          temp_mesh->totedge * sizeof(MEdge));

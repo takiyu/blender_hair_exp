@@ -92,11 +92,10 @@ struct MeshPrimitive {
  */
 struct MeshData {
  public:
-  const MLoopTri *looptri;
-  const int64_t looptri_len;
-  const int64_t vert_len;
-  const int *corner_verts;
-  const MLoopUV *mloopuv;
+  const Span<MLoopTri> looptris;
+  const int64_t verts_num;
+  const Span<int> corner_verts;
+  const Span<MLoopUV> mloopuv;
 
   Vector<MeshPrimitive> primitives;
   Vector<MeshEdge> edges;
@@ -105,11 +104,10 @@ struct MeshData {
   int64_t uv_island_len;
 
  public:
-  explicit MeshData(const MLoopTri *looptri,
-                    const int64_t looptri_len,
-                    const int64_t vert_len,
-                    const int *corner_verts,
-                    const MLoopUV *mloopuv);
+  explicit MeshData(const Span<MLoopTri> looptris,
+                    const Span<int> corner_verts,
+                    const int verts_num,
+                    const Span<MLoopUV> mloopuv);
 };
 
 struct UVVertex {

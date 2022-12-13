@@ -426,6 +426,28 @@ void multires_flush_sculpt_updates(Object *object)
   }
 
   Mesh *mesh = static_cast<Mesh *>(object->data);
+
+  /* Check that the multires modifier still exists.
+   * Fixes crash when deleting multires modifier
+   * from within sculpt mode.
+   */
+  ModifierData *md;
+  MultiresModifierData *mmd = nullptr;
+  VirtualModifierData virtualModifierData;
+
+  for (md = BKE_modifiers_get_virtual_modifierlist(object, &virtualModifierData); md;
+       md = md->next) {
+    if (md->type == eModifierType_Multires) {
+      if (BKE_modifier_is_enabled(nullptr, md, eModifierMode_Realtime)) {
+        mmd = (MultiresModifierData *)md;
+      }
+    }
+  }
+
+  if (!mmd) {
+    return;
+  }
+
   multiresModifier_reshapeFromCCG(
       sculpt_session->multires.modifier->totlvl, mesh, sculpt_session->subdiv_ccg);
 
@@ -1595,7 +1617,7 @@ int mdisp_rot_face_to_crn(
     float mindist = FLT_MAX;
 
     for (i = 0; i < mpoly->totloop; i++) {
-      float len = len_v3v3(nullptr, positions[corner_verts[mpoly->loopstart + i]].co);
+      float len = len_v3v3(nullptr, positions[corner_verts[mpoly->loopstart + i]]);
       if (len < mindist) {
         mindist = len;
         minS = i;
