@@ -32,7 +32,6 @@ struct bContext;
 struct bNode;
 struct bNodeTree;
 struct wmKeyConfig;
-struct BMUVOffsets;
 
 /* uvedit_ops.c */
 

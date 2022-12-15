@@ -30,7 +30,6 @@
 #include "MEM_guardedalloc.h"
 
 using blender::float2;
-
 using blender::Span;
 
 /* -------------------------------------------------------------------- */

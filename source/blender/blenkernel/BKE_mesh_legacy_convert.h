@@ -10,7 +10,6 @@
 #include "BLI_utildefines.h"
 
 #ifdef __cplusplus
-#  include "BLI_array.hh"
 #  include "BLI_resource_scope.hh"
 #  include "BLI_span.hh"
 #  include "BLI_vector.hh"

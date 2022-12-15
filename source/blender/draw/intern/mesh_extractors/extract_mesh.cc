@@ -143,7 +143,6 @@ void mesh_render_data_loop_edge_flag(const MeshRenderData *mr,
   if (offsets.uv == -1) {
     return;
   }
-
   if (uvedit_edge_select_test_ex(mr->toolsettings, l, offsets)) {
     eattr->v_flag |= VFLAG_EDGE_UV_SELECT;
     eattr->v_flag |= VFLAG_VERT_UV_SELECT;

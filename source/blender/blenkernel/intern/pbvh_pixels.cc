@@ -357,7 +357,6 @@ static void update_pixels(PBVH *pbvh, Mesh *mesh, Image *image, ImageUser *image
 
   const float2 *ldata_uv = static_cast<const float2 *>(
       CustomData_get_layer(&mesh->ldata, CD_PROP_FLOAT2));
-
   if (ldata_uv == nullptr) {
     return;
   }

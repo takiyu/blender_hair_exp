@@ -1520,7 +1520,6 @@ static bool layerEqual_propfloat2(const void *data1, const void *data2)
 {
   const float2 &a = *static_cast<const float2 *>(data1);
   const float2 &b = *static_cast<const float2 *>(data2);
-
   return blender::math::distance_squared(a, b) < 0.00001f;
 }
 
@@ -4170,7 +4169,6 @@ void CustomData_from_bmesh_block(const CustomData *source,
   /* copies a layer at a time */
   int dest_i = 0;
   for (int src_i = 0; src_i < source->totlayer; src_i++) {
-
     if (source->layers[src_i].flag & CD_FLAG_NOCOPY) {
       continue;
     }
@@ -4418,7 +4416,9 @@ static bool CustomData_layer_ensure_data_exists(CustomDataLayer *layer, size_t c
   switch (layer->type) {
     /* When more instances of corrupt files are found, add them here. */
     case CD_PROP_BOOL: /* See T84935. */
-    case CD_MLOOPUV:   /* See T90620. */        /*TODO(@Baardaap) check if this is run before or after versioning. If after we need to add CD_PROP_FLOAT2 to the list? */
+    case CD_MLOOPUV:   /* See T90620. */
+      /* TODO(@Baardaap) check if this is run before or after versioning. If after we need to add
+       * #CD_PROP_FLOAT2 to the list? */
       layer->data = MEM_calloc_arrayN(count, typeInfo->size, layerType_getName(layer->type));
       BLI_assert(layer->data);
       if (typeInfo->set_default_value) {
