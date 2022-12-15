@@ -467,6 +467,33 @@ static const char *cmpcode_to_str(int code)
   }
 }
 
+static bool is_sublayer_name(char const *sublayer_name, char const *name)
+{
+  BLI_assert(strlen(sublayer_name) == 2);
+  if (name[1] != sublayer_name[0]) {
+    return false;
+  }
+  if (name[2] != sublayer_name[1]) {
+    return false;
+  }
+  if (name[3] != '.') {
+    return false;
+  }
+  return true;
+}
+
+static bool is_uv_bool_sublayer(CustomDataLayer const *l)
+{
+  char const *name = l->name;
+
+  if (name[0] != '.') {
+    return false;
+  }
+
+  return is_sublayer_name(UV_VERTSEL_NAME, name) || is_sublayer_name(UV_EDGESEL_NAME, name) ||
+         is_sublayer_name(UV_PINNED_NAME, name);
+}
+
 /** Thresh is threshold for comparing vertices, UV's, vertex colors, weights, etc. */
 static int customdata_compare(
     CustomData *c1, CustomData *c2, const int total_length, Mesh *m1, Mesh *m2, const float thresh)
@@ -479,25 +506,23 @@ static int customdata_compare(
   const Span<MLoop> loops_1 = m1->loops();
   const Span<MLoop> loops_2 = m2->loops();
 
+  /* TODO(@Baardaap) the uv selection / pin layers are ignored in the comparisons because
+   * the original flags they replace were ignored as well. For completeness it would be
+   * better to compare them as well, but some test files would need to be updated. */
+
   for (int i = 0; i < c1->totlayer; i++) {
     l1 = &c1->layers[i];
-    if ((CD_TYPE_AS_MASK(l1->type) & cd_mask_all_attr) && l1->anonymous_id == nullptr) {
-      /* TODO(@Baardaap): This if statement is only added to be able to use the old test files
-       * in the tests. It should be removed once the test file is updated. */
-      if (l1->name[0] != '.') {
-        layer_count1++;
-      }
+    if ((CD_TYPE_AS_MASK(l1->type) & cd_mask_all_attr) && l1->anonymous_id == nullptr &&
+        !is_uv_bool_sublayer(l1)) {
+      layer_count1++;
     }
   }
 
   for (int i = 0; i < c2->totlayer; i++) {
     l2 = &c2->layers[i];
-    if ((CD_TYPE_AS_MASK(l2->type) & cd_mask_all_attr) && l2->anonymous_id == nullptr) {
-      /* TODO(@Baardaap): This if statement is only added to be able to use the old test files
-       * in the tests. It should be removed once the test file is updated. */
-      if (l2->name[0] != '.') {
-        layer_count2++;
-      }
+    if ((CD_TYPE_AS_MASK(l2->type) & cd_mask_all_attr) && l2->anonymous_id == nullptr &&
+        !is_uv_bool_sublayer(l2)) {
+      layer_count2++;
     }
   }
 
@@ -512,7 +537,7 @@ static int customdata_compare(
 
   for (int i1 = 0; i1 < c1->totlayer; i1++) {
     l1 = c1->layers + i1;
-    if (l1->anonymous_id != nullptr) {
+    if (l1->anonymous_id != nullptr || is_uv_bool_sublayer(l1)) {
       continue;
     }
     bool found_corresponding_layer = false;
