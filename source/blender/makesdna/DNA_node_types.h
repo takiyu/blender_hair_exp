@@ -417,7 +417,7 @@ typedef struct bNode {
 /* node is always behind others */
 #define NODE_BACKGROUND (1 << 12)
 /* automatic flag for nodes included in transforms */
-#define NODE_TRANSFORM (1 << 13)
+// #define NODE_TRANSFORM (1 << 13) /* deprecated */
 /* node is active texture */
 
 /* NOTE: take care with this flag since its possible it gets
@@ -634,6 +634,8 @@ typedef struct bNodeTree {
   bool has_undefined_nodes_or_sockets() const;
   /** Get the active group output node. */
   const bNode *group_output_node() const;
+  /** Get all input nodes of the node group. */
+  blender::Span<const bNode *> group_input_nodes() const;
 #endif
 } bNodeTree;
 
@@ -1751,6 +1753,7 @@ enum {
 #define SHD_IMAGE_EXTENSION_REPEAT 0
 #define SHD_IMAGE_EXTENSION_EXTEND 1
 #define SHD_IMAGE_EXTENSION_CLIP 2
+#define SHD_IMAGE_EXTENSION_MIRROR 3
 
 /* image texture */
 #define SHD_PROJ_FLAT 0
