@@ -177,8 +177,6 @@ static void mesh_calc_eigen_matrix(const float (*positions)[3],
   int i;
 
   if (positions) {
-    float(*co)[3];
-
     cos = static_cast<float(*)[3]>(MEM_mallocN(sizeof(*cos) * size_t(numverts), __func__));
     memcpy(cos, positions, sizeof(float[3]) * size_t(numverts));
     /* TODO(sergey): For until we officially drop all compilers which
