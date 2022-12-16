@@ -330,6 +330,9 @@ option(WITH_ALEMBIC             "Enable Alembic Support" ON)
 # Universal Scene Description support
 option(WITH_USD                 "Enable Universal Scene Description (USD) Support" ON)
 
+# MaterialX
+option(WITH_MATERIALX           "Enable MaterialX Support" OFF)
+
 # 3D format support
 # Disable opencollada when we don't have precompiled libs
 option(WITH_OPENCOLLADA   "Enable OpenCollada Support (http://www.opencollada.org)" ON)
@@ -744,11 +747,6 @@ if("${CMAKE_GENERATOR}" MATCHES "Ninja")
          "Enable Ninja pools of jobs, to try to ease building on machines with 16GB of RAM or less (if not yet defined, will try to set best values based on detected machine specifications)."
          OFF)
   mark_as_advanced(WITH_NINJA_POOL_JOBS)
-endif()
-
-if(UNIX AND NOT APPLE)
-  option(WITH_CXX11_ABI "Use native C++11 ABI of compiler" ON)
-  mark_as_advanced(WITH_CXX11_ABI)
 endif()
 
 # Installation process.
@@ -1718,12 +1716,6 @@ if(
   string(APPEND CMAKE_C_FLAGS " -std=gnu11")
 endif()
 
-if(UNIX AND NOT APPLE)
-  if(NOT WITH_CXX11_ABI)
-    string(APPEND PLATFORM_CFLAGS " -D_GLIBCXX_USE_CXX11_ABI=0")
-  endif()
-endif()
-
 if(WITH_COMPILER_SHORT_FILE_MACRO)
   # Use '-fmacro-prefix-map' for Clang and GCC (MSVC doesn't support this).
   add_check_c_compiler_flag(C_PREFIX_MAP_FLAGS C_MACRO_PREFIX_MAP -fmacro-prefix-map=foo=bar)
@@ -1920,6 +1912,7 @@ if(FIRST_RUN)
   info_cfg_option(WITH_QUADRIFLOW)
   info_cfg_option(WITH_TBB)
   info_cfg_option(WITH_USD)
+  info_cfg_option(WITH_MATERIALX)
   info_cfg_option(WITH_XR_OPENXR)
 
   info_cfg_text("Compiler Options:")
@@ -2013,6 +2006,24 @@ endif()
 if(0)
   print_all_vars()
 endif()
+
+set(LIBDIR_STALE)
+
+if(UNIX AND NOT APPLE)
+  # Only search for the path if it's found on the system.
+  if (EXISTS "../lib/linux_centos7_x86_64")
+    set(LIBDIR_STALE "/lib/linux_centos7_x86_64/")
+  endif()
+endif()
+
+if(LIBDIR_STALE)
+  print_cached_vars_containing_value(
+    "${LIBDIR_STALE}"
+    "\nWARNING: found cached references to old library paths!\n"
+    "\nIt is *strongly* recommended to reference updated library paths!\n"
+  )
+endif()
+unset(LIBDIR_STALE)
 
 # Should be the last step of configuration.
 if(POSTCONFIGURE_SCRIPT)
