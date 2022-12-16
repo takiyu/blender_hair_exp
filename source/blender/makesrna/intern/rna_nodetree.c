@@ -562,11 +562,6 @@ static EnumPropertyItem rna_node_geometry_mesh_circle_fill_type_items[] = {
     {GEO_NODE_MESH_CIRCLE_FILL_TRIANGLE_FAN, "TRIANGLE_FAN", 0, "Triangles", ""},
     {0, NULL, 0, NULL, NULL},
 };
-
-static const EnumPropertyItem rna_node_geometry_transform_input_mode_items[] = {
-    {GEO_NODE_TRANSFORM_INPUT_MATRIX, "LEFT", ICON_NONE, "Matrix", "Use instance transforms matrix"},
-    {GEO_NODE_TRANSFORM_INPUT_LOCROTSCALE, "LOCROTSCALE", ICON_NONE, "LocRotScale", "Use instance location, rotation, and scale"},
-    {0, NULL, 0, NULL, NULL}};
 #endif
 
 #ifndef RNA_RUNTIME
@@ -11012,17 +11007,6 @@ static void def_geo_field_at_index(StructRNA *srna)
   RNA_def_property_enum_funcs(
       prop, NULL, NULL, "rna_GeometryNodeAttributeType_type_with_socket_itemf");
   RNA_def_property_ui_text(prop, "Data Type", "");
-  RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_GeometryNode_socket_update");
-}
-
-static void def_geo_instance_on_points(StructRNA *srna)
-{
-  PropertyRNA *prop;
-
-  prop = RNA_def_property(srna, "transform_mode", PROP_ENUM, PROP_NONE);
-  RNA_def_property_enum_sdna(prop, NULL, "custom1");
-  RNA_def_property_enum_items(prop, rna_node_geometry_transform_input_mode_items);
-  RNA_def_property_ui_text(prop, "Transform Mode", "Mode of defining transform for instances");
   RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_GeometryNode_socket_update");
 }
 

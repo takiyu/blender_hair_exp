@@ -356,7 +356,7 @@ DefNode(GeometryNode, GEO_NODE_INPUT_SPLINE_CYCLIC, 0, "INPUT_SPLINE_CYCLIC",Inp
 DefNode(GeometryNode, GEO_NODE_INPUT_SPLINE_LENGTH, 0, "SPLINE_LENGTH", SplineLength, "Spline Length", "Retrieve the total length of each spline, as a distance or as a number of points")
 DefNode(GeometryNode, GEO_NODE_INPUT_SPLINE_RESOLUTION, 0, "INPUT_SPLINE_RESOLUTION", InputSplineResolution, "Spline Resolution", "Retrieve the number of evaluated points that will be generated for every control point on curves")
 DefNode(GeometryNode, GEO_NODE_INPUT_TANGENT, 0, "INPUT_TANGENT", InputTangent, "Curve Tangent", "Retrieve the direction of curves at each control point")
-DefNode(GeometryNode, GEO_NODE_INSTANCE_ON_POINTS, def_geo_instance_on_points, "INSTANCE_ON_POINTS", InstanceOnPoints, "Instance on Points", "Generate a reference to geometry at each of the input points, without duplicating its underlying data")
+DefNode(GeometryNode, GEO_NODE_INSTANCE_ON_POINTS, 0, "INSTANCE_ON_POINTS", InstanceOnPoints, "Instance on Points", "Generate a reference to geometry at each of the input points, without duplicating its underlying data")
 DefNode(GeometryNode, GEO_NODE_INSTANCES_TO_POINTS, 0, "INSTANCES_TO_POINTS",InstancesToPoints, "Instances to Points","Generate points at the origins of instances.\nNote: Nested instances are not affected by this node")
 DefNode(GeometryNode, GEO_NODE_INTERPOLATE_DOMAIN, def_geo_interpolate_domain, "FIELD_ON_DOMAIN", FieldOnDomain, "Interpolate Domain", "Retrieve values from a field on a different domain besides the domain from the context")
 DefNode(GeometryNode, GEO_NODE_IS_VIEWPORT, 0, "IS_VIEWPORT", IsViewport, "Is Viewport", "Retrieve whether the nodes are being evaluated for the viewport rather than the final render")

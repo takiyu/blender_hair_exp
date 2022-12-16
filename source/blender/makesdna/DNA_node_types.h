@@ -2395,8 +2395,3 @@ typedef enum NodeCombSepMatrixMode {
   NODE_COMBSEP_MATRIX_ROWS = 1,
   NODE_COMBSEP_MATRIX_ELEMENTS = 2,
 } NodeCombSepMatrixMode;
-
-typedef enum GeometryNodeTransformInputMode {
-  GEO_NODE_TRANSFORM_INPUT_MATRIX = 0,
-  GEO_NODE_TRANSFORM_INPUT_LOCROTSCALE = 1,
-} GeometryNodeTransformInputMode;
