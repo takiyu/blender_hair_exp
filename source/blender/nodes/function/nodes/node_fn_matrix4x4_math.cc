@@ -93,8 +93,6 @@ static const fn::MultiFunction *get_multi_function(NodeMatrixMathOperation op)
   static auto exec_preset_fast = fn::CustomMF_presets::AllSpanOrSingle();
   static auto exec_preset_slow = fn::CustomMF_presets::Materialized();
 
-  const fn::MultiFunction *multi_fn = nullptr;
-
   switch (op) {
     case NODE_MATRIX_MATH_ADD: {
       static fn::CustomMF_SI_SI_SO<float4x4, float4x4, float4x4> fn{

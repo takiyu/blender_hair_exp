@@ -143,12 +143,13 @@ class NODE_MT_geometry_node_GEO_INPUT(Menu):
         node_add_menu.add_node_type(layout, "FunctionNodeInputInt")
         node_add_menu.add_node_type(layout, "GeometryNodeIsViewport")
         node_add_menu.add_node_type(layout, "GeometryNodeInputMaterial")
+        node_add_menu.add_node_type(layout, "FunctionNodeInputMatrix3x3")
+        node_add_menu.add_node_type(layout, "FunctionNodeInputMatrix4x4")
         node_add_menu.add_node_type(layout, "GeometryNodeObjectInfo")
         node_add_menu.add_node_type(layout, "GeometryNodeSelfObject")
         node_add_menu.add_node_type(layout, "FunctionNodeInputString")
         node_add_menu.add_node_type(layout, "ShaderNodeValue")
         node_add_menu.add_node_type(layout, "FunctionNodeInputVector")
-        node_add_menu.add_node_type(layout, "FunctionNodeInputMatrix4x4")
         layout.separator()
         node_add_menu.add_node_type(layout, "GeometryNodeInputID")
         node_add_menu.add_node_type(layout, "GeometryNodeInputIndex")
@@ -200,8 +201,11 @@ class NODE_MT_category_GEO_MATRIX(Menu):
 
     def draw(self, _context):
         layout = self.layout
+        node_add_menu.add_node_type(layout, "FunctionNodeCombineMatrix3x3")
         node_add_menu.add_node_type(layout, "FunctionNodeCombineMatrix4x4")
+        node_add_menu.add_node_type(layout, "FunctionNodeSeparateMatrix3x3")
         node_add_menu.add_node_type(layout, "FunctionNodeSeparateMatrix4x4")
+        node_add_menu.add_node_type(layout, "FunctionNodeMatrix3x3Math")
         node_add_menu.add_node_type(layout, "FunctionNodeMatrix4x4Math")
         node_add_menu.draw_assets_for_catalog(layout, self.bl_label)
 

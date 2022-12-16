@@ -51,10 +51,12 @@ static void node_update(bNodeTree *tree, bNode *node)
   const bool show_scalar_sockets = ELEM(mode, NODE_COMBSEP_MATRIX_ELEMENTS);
 
   for (const int i : vector_sockets) {
-    nodeSetSocketAvailability(tree, &node->output_socket(i), show_vector_sockets);
+    nodeSetSocketAvailability(
+        tree, (bNodeSocket *)BLI_findlink(&node->outputs, i), show_vector_sockets);
   }
   for (const int i : scalar_sockets) {
-    nodeSetSocketAvailability(tree, &node->output_socket(i), show_scalar_sockets);
+    nodeSetSocketAvailability(
+        tree, (bNodeSocket *)BLI_findlink(&node->outputs, i), show_scalar_sockets);
   }
 
   switch (mode) {

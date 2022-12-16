@@ -5209,12 +5209,33 @@ static void def_fn_combsep_color(StructRNA *srna)
   RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_Node_socket_update");
 }
 
+static void def_fn_input_matrix_3x3(StructRNA *srna)
+{
+  static const float default_elements[] = {
+      1.0f,
+      0.0f,
+      0.0f,
+      0.0f,
+      1.0f,
+      0.0f,
+      0.0f,
+      0.0f,
+      1.0f,
+  };
+  PropertyRNA *prop;
+
+  RNA_def_struct_sdna_from(srna, "NodeInputMatrix3x3", "storage");
+
+  prop = RNA_def_property(srna, "matrix", PROP_FLOAT, PROP_MATRIX);
+  RNA_def_property_float_sdna(prop, NULL, "matrix");
+  RNA_def_property_multi_array(prop, 2, rna_matrix_dimsize_3x3);
+  RNA_def_property_float_array_default(prop, default_elements);
+  RNA_def_property_ui_text(prop, "Matrix", "Input value used for unconnected socket");
+  RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_Node_update");
+}
+
 static void def_fn_input_matrix_4x4(StructRNA *srna)
 {
-  static const float default_vec0[] = {1.0f, 0.0f, 0.0f};
-  static const float default_vec1[] = {0.0f, 1.0f, 0.0f};
-  static const float default_vec2[] = {0.0f, 0.0f, 1.0f};
-  static const float default_vec3[] = {0.0f, 0.0f, 0.0f};
   static const float default_elements[] = {
       1.0f,
       0.0f,
@@ -5235,48 +5256,13 @@ static void def_fn_input_matrix_4x4(StructRNA *srna)
   };
   PropertyRNA *prop;
 
-  prop = RNA_def_property(srna, "mode", PROP_ENUM, PROP_NONE);
-  RNA_def_property_enum_sdna(prop, NULL, "custom1");
-  RNA_def_property_enum_items(prop, rna_node_combsep_matrix_items);
-  RNA_def_property_ui_text(prop, "Mode", "Mode of matrix composition");
-  RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_Node_socket_update");
-  RNA_def_struct_sdna_from(srna, "NodeInputInt", "storage");
+  RNA_def_struct_sdna_from(srna, "NodeInputMatrix4x4", "storage");
 
-  RNA_def_struct_sdna_from(srna, "NodeInputMatrix", "storage");
-
-  prop = RNA_def_property(srna, "vec0", PROP_FLOAT, PROP_NONE);
-  RNA_def_property_float_sdna(prop, NULL, "vec0");
-  RNA_def_property_array(prop, 3);
-  RNA_def_property_float_array_default(prop, default_vec0);
-  RNA_def_property_ui_text(prop, "Vector 0", "Row or column vector");
-  RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_Node_update");
-
-  prop = RNA_def_property(srna, "vec1", PROP_FLOAT, PROP_NONE);
-  RNA_def_property_float_sdna(prop, NULL, "vec1");
-  RNA_def_property_array(prop, 3);
-  RNA_def_property_float_array_default(prop, default_vec1);
-  RNA_def_property_ui_text(prop, "Vector 1", "Row or column vector");
-  RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_Node_update");
-
-  prop = RNA_def_property(srna, "vec2", PROP_FLOAT, PROP_NONE);
-  RNA_def_property_float_sdna(prop, NULL, "vec2");
-  RNA_def_property_array(prop, 3);
-  RNA_def_property_float_array_default(prop, default_vec2);
-  RNA_def_property_ui_text(prop, "Vector 2", "Row or column vector");
-  RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_Node_update");
-
-  prop = RNA_def_property(srna, "vec3", PROP_FLOAT, PROP_NONE);
-  RNA_def_property_float_sdna(prop, NULL, "vec3");
-  RNA_def_property_array(prop, 3);
-  RNA_def_property_float_array_default(prop, default_vec3);
-  RNA_def_property_ui_text(prop, "Vector 3", "Row or column vector");
-  RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_Node_update");
-
-  prop = RNA_def_property(srna, "elements", PROP_FLOAT, PROP_MATRIX);
-  RNA_def_property_float_sdna(prop, NULL, "elements");
-  RNA_def_property_array(prop, 16);
+  prop = RNA_def_property(srna, "matrix", PROP_FLOAT, PROP_MATRIX);
+  RNA_def_property_float_sdna(prop, NULL, "matrix");
+  RNA_def_property_multi_array(prop, 2, rna_matrix_dimsize_4x4);
   RNA_def_property_float_array_default(prop, default_elements);
-  RNA_def_property_ui_text(prop, "Integer", "Input value used for unconnected socket");
+  RNA_def_property_ui_text(prop, "Matrix", "Input value used for unconnected socket");
   RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_Node_update");
 }
 
@@ -5291,6 +5277,17 @@ static void def_fn_combsep_matrix(StructRNA *srna)
   RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_Node_socket_update");
 }
 
+static void def_fn_matrix_3x3_math(StructRNA *srna)
+{
+  PropertyRNA *prop;
+
+  prop = RNA_def_property(srna, "operation", PROP_ENUM, PROP_NONE);
+  RNA_def_property_enum_sdna(prop, NULL, "custom1");
+  RNA_def_property_enum_items(prop, rna_enum_node_matrix_math_items);
+  RNA_def_property_ui_text(prop, "Operation", "");
+  RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_Node_socket_update");
+}
+
 static void def_fn_matrix_4x4_math(StructRNA *srna)
 {
   PropertyRNA *prop;
@@ -5299,7 +5296,7 @@ static void def_fn_matrix_4x4_math(StructRNA *srna)
   RNA_def_property_enum_sdna(prop, NULL, "custom1");
   RNA_def_property_enum_items(prop, rna_enum_node_matrix_math_items);
   RNA_def_property_ui_text(prop, "Operation", "");
-  RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_ShaderNode_socket_update");
+  RNA_def_property_update(prop, NC_NODE | NA_EDITED, "rna_Node_socket_update");
 }
 
 /* -- Shader Nodes ---------------------------------------------------------- */
