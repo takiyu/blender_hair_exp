@@ -376,7 +376,7 @@ static void pointdensity_cache_object(PointDensity *pd, Object *ob)
   }
 #endif
 
-  const float(*positions)[3] = BKE_mesh_positions(mesh); /* local object space */
+  const float(*positions)[3] = BKE_mesh_vert_positions(mesh); /* local object space */
   pd->totpoints = mesh->totvert;
   if (pd->totpoints == 0) {
     return;

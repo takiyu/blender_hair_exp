@@ -1610,7 +1610,7 @@ float *BKE_key_evaluate_object_ex(
     switch (GS(obdata->name)) {
       case ID_ME: {
         Mesh *mesh = (Mesh *)obdata;
-        const float(*positions)[3] = BKE_mesh_positions_for_write(mesh);
+        const float(*positions)[3] = BKE_mesh_vert_positions_for_write(mesh);
         const int totvert = min_ii(tot, mesh->totvert);
         memcpy(out, positions, sizeof(float[3]) * totvert);
         break;
@@ -2196,7 +2196,7 @@ void BKE_keyblock_update_from_mesh(const Mesh *me, KeyBlock *kb)
     return;
   }
 
-  const float(*positions)[3] = BKE_mesh_positions(me);
+  const float(*positions)[3] = BKE_mesh_vert_positions(me);
   memcpy(kb->data, positions, sizeof(float[3]) * tot);
 }
 
@@ -2232,7 +2232,7 @@ void BKE_keyblock_mesh_calc_normals(const KeyBlock *kb,
     return;
   }
 
-  float(*positions)[3] = static_cast<float(*)[3]>(MEM_dupallocN(BKE_mesh_positions(mesh)));
+  float(*positions)[3] = static_cast<float(*)[3]>(MEM_dupallocN(BKE_mesh_vert_positions(mesh)));
   BKE_keyblock_convert_to_mesh(kb, positions, mesh->totvert);
   const MEdge *edges = BKE_mesh_edges(mesh);
   const MPoly *polys = BKE_mesh_polys(mesh);

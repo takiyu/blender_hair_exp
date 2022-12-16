@@ -1288,7 +1288,7 @@ float (*BKE_mesh_orco_verts_get(Object *ob))[3]
 
   /* Get appropriate vertex coordinates */
   float(*vcos)[3] = (float(*)[3])MEM_calloc_arrayN(me->totvert, sizeof(*vcos), "orco mesh");
-  const Span<float3> positions = tme->positions();
+  const Span<float3> positions = tme->vert_positions();
 
   int totvert = min_ii(tme->totvert, me->totvert);
 
@@ -1544,7 +1544,7 @@ bool BKE_mesh_minmax(const Mesh *me, float r_min[3], float r_max[3])
   }
 
   me->runtime->bounds_cache.ensure(
-      [me](Bounds<float3> &r_bounds) { r_bounds = *bounds::min_max(me->positions()); });
+      [me](Bounds<float3> &r_bounds) { r_bounds = *bounds::min_max(me->vert_positions()); });
 
   const Bounds<float3> &bounds = me->runtime->bounds_cache.data();
   copy_v3_v3(r_min, math::min(bounds.min, float3(r_min)));
@@ -1555,7 +1555,7 @@ bool BKE_mesh_minmax(const Mesh *me, float r_min[3], float r_max[3])
 
 void BKE_mesh_transform(Mesh *me, const float mat[4][4], bool do_keys)
 {
-  MutableSpan<float3> positions = me->positions_for_write();
+  MutableSpan<float3> positions = me->vert_positions_for_write();
 
   for (float3 &position : positions) {
     mul_m4_v3(mat, position);
@@ -1589,7 +1589,7 @@ void BKE_mesh_transform(Mesh *me, const float mat[4][4], bool do_keys)
 
 void BKE_mesh_translate(Mesh *me, const float offset[3], const bool do_keys)
 {
-  MutableSpan<float3> positions = me->positions_for_write();
+  MutableSpan<float3> positions = me->vert_positions_for_write();
   for (float3 &position : positions) {
     position += offset;
   }
@@ -1765,7 +1765,7 @@ float (*BKE_mesh_vert_coords_alloc(const Mesh *mesh, int *r_vert_len))[3]
 
 void BKE_mesh_vert_coords_apply(Mesh *mesh, const float (*vert_coords)[3])
 {
-  MutableSpan<float3> positions = mesh->positions_for_write();
+  MutableSpan<float3> positions = mesh->vert_positions_for_write();
   for (const int i : positions.index_range()) {
     copy_v3_v3(positions[i], vert_coords[i]);
   }
@@ -1776,7 +1776,7 @@ void BKE_mesh_vert_coords_apply_with_mat4(Mesh *mesh,
                                           const float (*vert_coords)[3],
                                           const float mat[4][4])
 {
-  MutableSpan<float3> positions = mesh->positions_for_write();
+  MutableSpan<float3> positions = mesh->vert_positions_for_write();
   for (const int i : positions.index_range()) {
     mul_v3_m4v3(positions[i], mat, vert_coords[i]);
   }
@@ -1814,7 +1814,7 @@ void BKE_mesh_calc_normals_split_ex(Mesh *mesh,
   /* may be nullptr */
   clnors = (short(*)[2])CustomData_get_layer(&mesh->ldata, CD_CUSTOMLOOPNORMAL);
 
-  const Span<float3> positions = mesh->positions();
+  const Span<float3> positions = mesh->vert_positions();
   const Span<MEdge> edges = mesh->edges();
   const Span<MPoly> polys = mesh->polys();
   const Span<MLoop> loops = mesh->loops();

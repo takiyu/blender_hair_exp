@@ -175,7 +175,7 @@ Mesh *volume_to_mesh(const openvdb::GridBase &grid,
                               0,
                               0,
                               0,
-                              mesh->positions_for_write(),
+                              mesh->vert_positions_for_write(),
                               mesh->polys_for_write(),
                               mesh->loops_for_write());
 

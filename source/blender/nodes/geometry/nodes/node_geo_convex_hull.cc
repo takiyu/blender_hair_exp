@@ -46,7 +46,7 @@ static Mesh *hull_from_bullet(const Mesh *mesh, Span<float3> coords)
   }
 
   /* Copy vertices. */
-  MutableSpan<float3> dst_positions = result->positions_for_write();
+  MutableSpan<float3> dst_positions = result->vert_positions_for_write();
   for (const int i : IndexRange(verts_num)) {
     int original_index;
     plConvexHullGetVertex(hull, i, dst_positions[i], &original_index);

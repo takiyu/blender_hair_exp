@@ -405,7 +405,7 @@ Mesh *create_cuboid_mesh(const float3 &size,
 
   Mesh *mesh = BKE_mesh_new_nomain(
       config.vertex_count, 0, 0, config.loop_count, config.poly_count);
-  MutableSpan<float3> positions = mesh->positions_for_write();
+  MutableSpan<float3> positions = mesh->vert_positions_for_write();
   MutableSpan<MPoly> polys = mesh->polys_for_write();
   MutableSpan<MLoop> loops = mesh->loops_for_write();
 

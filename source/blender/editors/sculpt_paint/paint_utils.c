@@ -288,7 +288,7 @@ static void imapaint_pick_uv(
   const MLoopTri *lt = BKE_mesh_runtime_looptri_ensure(me_eval);
   const int tottri = BKE_mesh_runtime_looptri_len(me_eval);
 
-  const float(*positions)[3] = BKE_mesh_positions(me_eval);
+  const float(*positions)[3] = BKE_mesh_vert_positions(me_eval);
   const MLoop *mloop = BKE_mesh_loops(me_eval);
   const int *index_mp_to_orig = CustomData_get_layer(&me_eval->pdata, CD_ORIGINDEX);
 

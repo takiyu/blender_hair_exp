@@ -317,7 +317,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
 
   const MPoly *orig_mpoly = BKE_mesh_polys(mesh);
   const MLoop *orig_mloop = BKE_mesh_loops(mesh);
-  float(*positions)[3] = BKE_mesh_positions_for_write(result);
+  float(*positions)[3] = BKE_mesh_vert_positions_for_write(result);
   MEdge *edges = BKE_mesh_edges_for_write(result);
   MPoly *mpoly = BKE_mesh_polys_for_write(result);
   MLoop *mloop = BKE_mesh_loops_for_write(result);

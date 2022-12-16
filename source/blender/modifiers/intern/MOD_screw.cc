@@ -381,12 +381,12 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
   result = BKE_mesh_new_nomain_from_template(
       mesh, int(maxVerts), int(maxEdges), 0, int(maxPolys) * 4, int(maxPolys));
 
-  const float(*positions_orig)[3] = BKE_mesh_positions(mesh);
+  const float(*positions_orig)[3] = BKE_mesh_vert_positions(mesh);
   const MEdge *medge_orig = BKE_mesh_edges(mesh);
   const MPoly *mpoly_orig = BKE_mesh_polys(mesh);
   const MLoop *mloop_orig = BKE_mesh_loops(mesh);
 
-  float(*positions_new)[3] = BKE_mesh_positions_for_write(result);
+  float(*positions_new)[3] = BKE_mesh_vert_positions_for_write(result);
   MEdge *medge_new = BKE_mesh_edges_for_write(result);
   MPoly *mpoly_new = BKE_mesh_polys_for_write(result);
   MLoop *mloop_new = BKE_mesh_loops_for_write(result);

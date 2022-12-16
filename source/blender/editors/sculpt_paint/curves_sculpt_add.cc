@@ -142,7 +142,7 @@ struct AddOperationExecutor {
       report_empty_evaluated_surface(stroke_extension.reports);
       return;
     }
-    surface_positions_eval_ = surface_eval_->positions();
+    surface_positions_eval_ = surface_eval_->vert_positions();
     surface_loops_eval_ = surface_eval_->loops();
     surface_looptris_eval_ = surface_eval_->looptris();
     BKE_bvhtree_from_mesh_get(&surface_bvh_eval_, surface_eval_, BVHTREE_FROM_LOOPTRI, 2);

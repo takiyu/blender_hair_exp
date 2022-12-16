@@ -99,7 +99,7 @@ float BKE_mesh_calc_poly_area(const MPoly *mpoly,
 
 float BKE_mesh_calc_area(const Mesh *me)
 {
-  const Span<float3> positions = me->positions();
+  const Span<float3> positions = me->vert_positions();
   const Span<MPoly> polys = me->polys();
   const Span<MLoop> loops = me->loops();
 
@@ -295,7 +295,7 @@ void BKE_mesh_poly_edgebitmap_insert(uint *edge_bitmap, const MPoly *mp, const M
 
 bool BKE_mesh_center_median(const Mesh *me, float r_cent[3])
 {
-  const Span<float3> positions = me->positions();
+  const Span<float3> positions = me->vert_positions();
   zero_v3(r_cent);
   for (const int i : positions.index_range()) {
     add_v3_v3(r_cent, positions[i]);
@@ -310,7 +310,7 @@ bool BKE_mesh_center_median(const Mesh *me, float r_cent[3])
 bool BKE_mesh_center_median_from_polys(const Mesh *me, float r_cent[3])
 {
   int tot = 0;
-  const Span<float3> positions = me->positions();
+  const Span<float3> positions = me->vert_positions();
   const Span<MPoly> polys = me->polys();
   const Span<MLoop> loops = me->loops();
   zero_v3(r_cent);
@@ -347,7 +347,7 @@ bool BKE_mesh_center_of_surface(const Mesh *me, float r_cent[3])
   float poly_area;
   float total_area = 0.0f;
   float poly_cent[3];
-  const float(*positions)[3] = BKE_mesh_positions(me);
+  const float(*positions)[3] = BKE_mesh_vert_positions(me);
   const MPoly *polys = BKE_mesh_polys(me);
   const MLoop *loops = BKE_mesh_loops(me);
 
@@ -381,7 +381,7 @@ bool BKE_mesh_center_of_volume(const Mesh *me, float r_cent[3])
   float poly_volume;
   float total_volume = 0.0f;
   float poly_cent[3];
-  const Span<float3> positions = me->positions();
+  const Span<float3> positions = me->vert_positions();
   const MPoly *polys = BKE_mesh_polys(me);
   const MLoop *loops = BKE_mesh_loops(me);
 

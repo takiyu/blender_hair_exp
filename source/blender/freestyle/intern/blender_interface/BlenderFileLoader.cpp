@@ -402,7 +402,7 @@ void BlenderFileLoader::insertShapeNode(Object *ob, Mesh *me, int id)
 {
   char *name = ob->id.name + 2;
 
-  const Span<float3> mesh_positions = me->positions();
+  const Span<float3> mesh_positions = me->vert_positions();
   const Span<MPoly> mesh_polys = me->polys();
   const Span<MLoop> mesh_loops = me->loops();
 

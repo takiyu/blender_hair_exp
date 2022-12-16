@@ -304,7 +304,7 @@ void BM_mesh_bm_from_me(BMesh *bm, const Mesh *me, const struct BMeshFromMeshPar
   const int *material_indices = (const int *)CustomData_get_layer_named(
       &me->pdata, CD_PROP_INT32, "material_index");
 
-  const Span<float3> positions = me->positions();
+  const Span<float3> positions = me->vert_positions();
   Array<BMVert *> vtable(me->totvert);
   for (const int i : positions.index_range()) {
     BMVert *v = vtable[i] = BM_vert_create(
@@ -970,7 +970,7 @@ void BM_mesh_bm_to_me(Main *bmain, BMesh *bm, Mesh *me, const struct BMeshToMesh
   CustomData_add_layer(&me->edata, CD_MEDGE, CD_SET_DEFAULT, nullptr, me->totedge);
   CustomData_add_layer(&me->ldata, CD_MLOOP, CD_SET_DEFAULT, nullptr, me->totloop);
   CustomData_add_layer(&me->pdata, CD_MPOLY, CD_SET_DEFAULT, nullptr, me->totpoly);
-  MutableSpan<float3> positions = me->positions_for_write();
+  MutableSpan<float3> positions = me->vert_positions_for_write();
   MutableSpan<MEdge> medge = me->edges_for_write();
   MutableSpan<MPoly> mpoly = me->polys_for_write();
   MutableSpan<MLoop> mloop = me->loops_for_write();
@@ -1232,7 +1232,7 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
   BMVert *eve;
   BMEdge *eed;
   BMFace *efa;
-  MutableSpan<float3> positions = me->positions_for_write();
+  MutableSpan<float3> positions = me->vert_positions_for_write();
   MutableSpan<MEdge> medge = me->edges_for_write();
   MutableSpan<MPoly> mpoly = me->polys_for_write();
   MutableSpan<MLoop> loops = me->loops_for_write();

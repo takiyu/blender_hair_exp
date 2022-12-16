@@ -144,7 +144,7 @@ void Mesh::loose_edges_tag_none() const
 blender::Span<MLoopTri> Mesh::looptris() const
 {
   this->runtime->looptris_cache.ensure([&](blender::Array<MLoopTri> &r_data) {
-    const Span<float3> positions = this->positions();
+    const Span<float3> positions = this->vert_positions();
     const Span<MPoly> polys = this->polys();
     const Span<MLoop> loops = this->loops();
 

@@ -197,7 +197,7 @@ class MeshFairingContext : public FairingContext {
     totvert_ = mesh->totvert;
     totloop_ = mesh->totloop;
 
-    MutableSpan<float3> positions = mesh->positions_for_write();
+    MutableSpan<float3> positions = mesh->vert_positions_for_write();
     medge_ = mesh->edges();
     mpoly_ = mesh->polys();
     mloop_ = mesh->loops();

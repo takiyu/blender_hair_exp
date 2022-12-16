@@ -619,7 +619,7 @@ static ParamHandle *construct_param_handle_subsurfed(const Scene *scene,
 
   Mesh *subdiv_mesh = subdivide_edit_mesh(ob, em, &smd);
 
-  const float(*subsurfedPositions)[3] = BKE_mesh_positions(subdiv_mesh);
+  const float(*subsurfedPositions)[3] = BKE_mesh_vert_positions(subdiv_mesh);
   const MEdge *subsurfedEdges = BKE_mesh_edges(subdiv_mesh);
   const MPoly *subsurfedPolys = BKE_mesh_polys(subdiv_mesh);
   const MLoop *subsurfedLoops = BKE_mesh_loops(subdiv_mesh);

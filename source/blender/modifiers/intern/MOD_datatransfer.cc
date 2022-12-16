@@ -175,9 +175,9 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
     BLI_SPACE_TRANSFORM_SETUP(space_transform, ctx->object, ob_source);
   }
 
-  const float(*me_positions)[3] = BKE_mesh_positions(me);
+  const float(*me_positions)[3] = BKE_mesh_vert_positions(me);
   const MEdge *me_edges = BKE_mesh_edges(me);
-  const float(*result_positions)[3] = BKE_mesh_positions(result);
+  const float(*result_positions)[3] = BKE_mesh_vert_positions(result);
   const MEdge *result_edges = BKE_mesh_edges(result);
 
   if (((result == me) || (me_positions == result_positions) || (me_edges == result_edges)) &&

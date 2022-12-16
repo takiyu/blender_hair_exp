@@ -306,7 +306,7 @@ static IMesh meshes_to_imesh(Span<const Mesh *> meshes,
     bool need_face_flip = r_info->has_negative_transform[mi] != r_info->has_negative_transform[0];
 
     Vector<Vert *> verts(me->totvert);
-    const Span<float3> mesh_positions = me->positions();
+    const Span<float3> mesh_positions = me->vert_positions();
     const Span<MPoly> polys = me->polys();
     const Span<MLoop> loops = me->loops();
 
@@ -552,7 +552,7 @@ static void get_poly2d_cos(const Mesh *me,
                            const float4x4 &trans_mat,
                            float r_axis_mat[3][3])
 {
-  const Span<float3> positions = me->positions();
+  const Span<float3> positions = me->vert_positions();
   const Span<MLoop> loops = me->loops();
   const Span<MLoop> poly_loops = loops.slice(mp->loopstart, mp->totloop);
 
@@ -601,7 +601,7 @@ static void copy_or_interp_loop_attributes(Mesh *dest_mesh,
     get_poly2d_cos(orig_me, orig_mp, cos_2d, mim.to_target_transform[orig_me_index], axis_mat);
   }
   CustomData *target_cd = &dest_mesh->ldata;
-  const Span<float3> dst_positions = dest_mesh->positions();
+  const Span<float3> dst_positions = dest_mesh->vert_positions();
   const Span<MLoop> dst_loops = dest_mesh->loops();
   for (int i = 0; i < mp->totloop; ++i) {
     int loop_index = mp->loopstart + i;
@@ -715,7 +715,7 @@ static Mesh *imesh_to_mesh(IMesh *im, MeshesToIMeshInfo &mim)
 
   merge_vertex_loop_poly_customdata_layers(result, mim);
   /* Set the vertex coordinate values and other data. */
-  MutableSpan<float3> positions = result->positions_for_write();
+  MutableSpan<float3> positions = result->vert_positions_for_write();
   for (int vi : im->vert_index_range()) {
     const Vert *v = im->vert(vi);
     if (v->orig != NO_INDEX) {

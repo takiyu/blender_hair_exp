@@ -65,7 +65,7 @@ void BKE_mesh_foreach_mapped_vert(
     }
   }
   else {
-    const float(*positions)[3] = BKE_mesh_positions(mesh);
+    const float(*positions)[3] = BKE_mesh_vert_positions(mesh);
     const int *index = static_cast<const int *>(CustomData_get_layer(&mesh->vdata, CD_ORIGINDEX));
     const float(*vert_normals)[3] = (flag & MESH_FOREACH_USE_NORMAL) ?
                                         BKE_mesh_vertex_normals_ensure(mesh) :
@@ -120,7 +120,7 @@ void BKE_mesh_foreach_mapped_edge(
     }
   }
   else {
-    const float(*positions)[3] = BKE_mesh_positions(mesh);
+    const float(*positions)[3] = BKE_mesh_vert_positions(mesh);
     const MEdge *med = BKE_mesh_edges(mesh);
     const int *index = static_cast<const int *>(CustomData_get_layer(&mesh->edata, CD_ORIGINDEX));
 
@@ -190,7 +190,7 @@ void BKE_mesh_foreach_mapped_loop(Mesh *mesh,
                                             CustomData_get_layer(&mesh->ldata, CD_NORMAL)) :
                                         nullptr;
 
-    const float(*positions)[3] = BKE_mesh_positions(mesh);
+    const float(*positions)[3] = BKE_mesh_vert_positions(mesh);
     const MLoop *ml = BKE_mesh_loops(mesh);
     const MPoly *mp = BKE_mesh_polys(mesh);
     const int *v_index = static_cast<const int *>(
@@ -265,7 +265,7 @@ void BKE_mesh_foreach_mapped_face_center(
     }
   }
   else {
-    const float(*positions)[3] = BKE_mesh_positions(mesh);
+    const float(*positions)[3] = BKE_mesh_vert_positions(mesh);
     const MPoly *mp = BKE_mesh_polys(mesh);
     const MLoop *loops = BKE_mesh_loops(mesh);
     const MLoop *ml;
@@ -308,7 +308,7 @@ void BKE_mesh_foreach_mapped_subdiv_face_center(
     void *userData,
     MeshForeachFlag flag)
 {
-  const float(*positions)[3] = BKE_mesh_positions(mesh);
+  const float(*positions)[3] = BKE_mesh_vert_positions(mesh);
   const MPoly *mp = BKE_mesh_polys(mesh);
   const MLoop *loops = BKE_mesh_loops(mesh);
   const MLoop *ml;

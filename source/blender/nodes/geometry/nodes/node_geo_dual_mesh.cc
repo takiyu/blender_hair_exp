@@ -608,7 +608,7 @@ static void dissolve_redundant_verts(const Span<MEdge> edges,
  */
 static Mesh *calc_dual_mesh(const Mesh &src_mesh, const bool keep_boundaries)
 {
-  const Span<float3> src_positions = src_mesh.positions();
+  const Span<float3> src_positions = src_mesh.vert_positions();
   const Span<MEdge> src_edges = src_mesh.edges();
   const Span<MPoly> src_polys = src_mesh.polys();
   const Span<MLoop> src_loops = src_mesh.loops();
@@ -891,7 +891,7 @@ static Mesh *calc_dual_mesh(const Mesh &src_mesh, const bool keep_boundaries)
                       src_mesh.attributes(),
                       mesh_out->attributes_for_write());
 
-  mesh_out->positions_for_write().copy_from(vertex_positions);
+  mesh_out->vert_positions_for_write().copy_from(vertex_positions);
   MutableSpan<MEdge> dst_edges = mesh_out->edges_for_write();
   MutableSpan<MPoly> dst_polys = mesh_out->polys_for_write();
   MutableSpan<MLoop> dst_loops = mesh_out->loops_for_write();

@@ -257,7 +257,7 @@ static void data_transfer_dtdata_type_preprocess(Mesh *me_src,
   if (dtdata_type == DT_TYPE_LNOR) {
     /* Compute custom normals into regular loop normals, which will be used for the transfer. */
 
-    const float(*positions_dst)[3] = BKE_mesh_positions(me_dst);
+    const float(*positions_dst)[3] = BKE_mesh_vert_positions(me_dst);
     const int num_verts_dst = me_dst->totvert;
     const MEdge *edges_dst = BKE_mesh_edges(me_dst);
     const int num_edges_dst = me_dst->totedge;
@@ -320,7 +320,7 @@ static void data_transfer_dtdata_type_postprocess(Object *UNUSED(ob_src),
     }
 
     /* Bake edited destination loop normals into custom normals again. */
-    const float(*positions_dst)[3] = BKE_mesh_positions(me_dst);
+    const float(*positions_dst)[3] = BKE_mesh_vert_positions(me_dst);
     const int num_verts_dst = me_dst->totvert;
     MEdge *edges_dst = BKE_mesh_edges_for_write(me_dst);
     const int num_edges_dst = me_dst->totedge;
@@ -1314,7 +1314,7 @@ bool BKE_object_data_transfer_ex(struct Depsgraph *depsgraph,
     }
 
     BKE_mesh_remap_find_best_match_from_mesh(
-        BKE_mesh_positions(me_dst), me_dst->totvert, me_src, space_transform);
+        BKE_mesh_vert_positions(me_dst), me_dst->totvert, me_src, space_transform);
   }
 
   /* Check all possible data types.
@@ -1342,7 +1342,7 @@ bool BKE_object_data_transfer_ex(struct Depsgraph *depsgraph,
     }
 
     if (DT_DATATYPE_IS_VERT(dtdata_type)) {
-      float(*positions_dst)[3] = BKE_mesh_positions_for_write(me_dst);
+      float(*positions_dst)[3] = BKE_mesh_vert_positions_for_write(me_dst);
       const int num_verts_dst = me_dst->totvert;
 
       if (!geom_map_init[VDATA]) {
@@ -1426,7 +1426,7 @@ bool BKE_object_data_transfer_ex(struct Depsgraph *depsgraph,
       }
     }
     if (DT_DATATYPE_IS_EDGE(dtdata_type)) {
-      const float(*positions_dst)[3] = BKE_mesh_positions_for_write(me_dst);
+      const float(*positions_dst)[3] = BKE_mesh_vert_positions_for_write(me_dst);
       const int num_verts_dst = me_dst->totvert;
       const MEdge *edges_dst = BKE_mesh_edges(me_dst);
       const int num_edges_dst = me_dst->totedge;
@@ -1507,7 +1507,7 @@ bool BKE_object_data_transfer_ex(struct Depsgraph *depsgraph,
       }
     }
     if (DT_DATATYPE_IS_LOOP(dtdata_type)) {
-      const float(*positions_dst)[3] = BKE_mesh_positions(me_dst);
+      const float(*positions_dst)[3] = BKE_mesh_vert_positions(me_dst);
       const int num_verts_dst = me_dst->totvert;
       const MEdge *edges_dst = BKE_mesh_edges(me_dst);
       const int num_edges_dst = me_dst->totedge;
@@ -1604,7 +1604,7 @@ bool BKE_object_data_transfer_ex(struct Depsgraph *depsgraph,
       }
     }
     if (DT_DATATYPE_IS_POLY(dtdata_type)) {
-      const float(*positions_dst)[3] = BKE_mesh_positions(me_dst);
+      const float(*positions_dst)[3] = BKE_mesh_vert_positions(me_dst);
       const int num_verts_dst = me_dst->totvert;
       const MPoly *polys_dst = BKE_mesh_polys(me_dst);
       const int num_polys_dst = me_dst->totpoly;

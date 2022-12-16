@@ -120,7 +120,7 @@ void GeometryExporter::operator()(Object *ob)
   if (this->export_settings.get_include_shapekeys()) {
     Key *key = BKE_key_from_object(ob);
     if (key) {
-      blender::MutableSpan<float3> positions = me->positions_for_write();
+      blender::MutableSpan<float3> positions = me->vert_positions_for_write();
       KeyBlock *kb = (KeyBlock *)key->block.first;
       /* skip the basis */
       kb = kb->next;
@@ -438,7 +438,7 @@ void GeometryExporter::create_mesh_primitive_list(short material_index,
 
 void GeometryExporter::createVertsSource(std::string geom_id, Mesh *me)
 {
-  const Span<float3> positions = me->positions();
+  const Span<float3> positions = me->vert_positions();
 
   COLLADASW::FloatSourceF source(mSW);
   source.setId(getIdBySemantics(geom_id, COLLADASW::InputSemantic::POSITION));
@@ -616,7 +616,7 @@ void GeometryExporter::create_normals(std::vector<Normal> &normals,
   std::map<Normal, uint> shared_normal_indices;
   int last_normal_index = -1;
 
-  const Span<float3> positions = me->positions();
+  const Span<float3> positions = me->vert_positions();
   const float(*vert_normals)[3] = BKE_mesh_vertex_normals_ensure(me);
   const Span<MPoly> polys = me->polys();
   const Span<MLoop> loops = me->loops();

@@ -63,7 +63,7 @@ static Mesh *remesh_quadriflow(const Mesh *input_mesh,
                                void (*update_cb)(void *, float progress, int *cancel),
                                void *update_cb_data)
 {
-  const Span<float3> input_positions = input_mesh->positions();
+  const Span<float3> input_positions = input_mesh->vert_positions();
   const Span<MLoop> input_loops = input_mesh->loops();
   const MLoopTri *looptri = BKE_mesh_runtime_looptri_ensure(input_mesh);
 
@@ -125,7 +125,7 @@ static Mesh *remesh_quadriflow(const Mesh *input_mesh,
   MutableSpan<MPoly> polys = mesh->polys_for_write();
   MutableSpan<MLoop> loops = mesh->loops_for_write();
 
-  mesh->positions_for_write().copy_from(
+  mesh->vert_positions_for_write().copy_from(
       Span(reinterpret_cast<float3 *>(qrd.out_verts), qrd.out_totverts));
 
   for (const int i : IndexRange(qrd.out_totfaces)) {
@@ -186,7 +186,7 @@ Mesh *BKE_mesh_remesh_quadriflow(const Mesh *mesh,
 static openvdb::FloatGrid::Ptr remesh_voxel_level_set_create(const Mesh *mesh,
                                                              const float voxel_size)
 {
-  const Span<float3> positions = mesh->positions();
+  const Span<float3> positions = mesh->vert_positions();
   const Span<MLoop> loops = mesh->loops();
   const Span<MLoopTri> looptris = mesh->looptris();
 
@@ -225,7 +225,7 @@ static Mesh *remesh_voxel_volume_to_mesh(const openvdb::FloatGrid::Ptr level_set
 
   Mesh *mesh = BKE_mesh_new_nomain(
       vertices.size(), 0, 0, quads.size() * 4 + tris.size() * 3, quads.size() + tris.size());
-  MutableSpan<float3> mesh_positions = mesh->positions_for_write();
+  MutableSpan<float3> mesh_positions = mesh->vert_positions_for_write();
   MutableSpan<MPoly> mesh_polys = mesh->polys_for_write();
   MutableSpan<MLoop> mesh_loops = mesh->loops_for_write();
 
@@ -281,7 +281,7 @@ void BKE_mesh_remesh_reproject_paint_mask(Mesh *target, const Mesh *source)
 {
   BVHTreeFromMesh bvhtree = {nullptr};
   BKE_bvhtree_from_mesh_get(&bvhtree, source, BVHTREE_FROM_VERTS, 2);
-  const Span<float3> target_positions = target->positions();
+  const Span<float3> target_positions = target->vert_positions();
   const float *source_mask = (const float *)CustomData_get_layer(&source->vdata, CD_PAINT_MASK);
   if (source_mask == nullptr) {
     return;
@@ -317,7 +317,7 @@ void BKE_remesh_reproject_sculpt_face_sets(Mesh *target, const Mesh *source)
   using namespace blender::bke;
   const AttributeAccessor src_attributes = source->attributes();
   MutableAttributeAccessor dst_attributes = target->attributes_for_write();
-  const Span<float3> target_positions = target->positions();
+  const Span<float3> target_positions = target->vert_positions();
   const Span<MPoly> target_polys = target->polys();
   const Span<MLoop> target_loops = target->loops();
 
@@ -397,7 +397,7 @@ void BKE_remesh_reproject_vertex_paint(Mesh *target, const Mesh *source)
     size_t data_size = CustomData_sizeof(layer->type);
     void *target_data = target_cdata->layers[layer_i].data;
     void *source_data = layer->data;
-    const Span<float3> target_positions = target->positions();
+    const Span<float3> target_positions = target->vert_positions();
 
     if (domain == ATTR_DOMAIN_POINT) {
       blender::threading::parallel_for(

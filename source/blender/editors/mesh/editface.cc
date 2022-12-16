@@ -385,7 +385,7 @@ bool paintface_minmax(Object *ob, float r_min[3], float r_max[3])
 
   copy_m3_m4(bmat, ob->object_to_world);
 
-  const Span<float3> positions = me->positions();
+  const Span<float3> positions = me->vert_positions();
   const Span<MPoly> polys = me->polys();
   const Span<MLoop> loops = me->loops();
   bke::AttributeAccessor attributes = me->attributes();

@@ -179,7 +179,7 @@ Mesh *create_line_mesh(const float3 start, const float3 delta, const int count)
 
   Mesh *mesh = BKE_mesh_new_nomain(count, count - 1, 0, 0, 0);
   BKE_id_material_eval_ensure_default_slot(&mesh->id);
-  MutableSpan<float3> positions = mesh->positions_for_write();
+  MutableSpan<float3> positions = mesh->vert_positions_for_write();
   MutableSpan<MEdge> edges = mesh->edges_for_write();
 
   threading::parallel_invoke(

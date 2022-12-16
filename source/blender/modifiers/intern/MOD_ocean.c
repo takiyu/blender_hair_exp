@@ -270,7 +270,7 @@ static Mesh *generate_ocean_geometry(OceanModifierData *omd, Mesh *mesh_orig, co
   result = BKE_mesh_new_nomain(verts_num, 0, 0, polys_num * 4, polys_num);
   BKE_mesh_copy_parameters_for_eval(result, mesh_orig);
 
-  gogd.positions = BKE_mesh_positions_for_write(result);
+  gogd.positions = BKE_mesh_vert_positions_for_write(result);
   gogd.mpolys = BKE_mesh_polys_for_write(result);
   gogd.mloops = BKE_mesh_loops_for_write(result);
 
@@ -363,7 +363,7 @@ static Mesh *doOcean(ModifierData *md, const ModifierEvalContext *ctx, Mesh *mes
   CLAMP(cfra_for_cache, omd->bakestart, omd->bakeend);
   cfra_for_cache -= omd->bakestart; /* shift to 0 based */
 
-  float(*positions)[3] = BKE_mesh_positions_for_write(result);
+  float(*positions)[3] = BKE_mesh_vert_positions_for_write(result);
   const MPoly *polys = BKE_mesh_polys(result);
 
   /* add vcols before displacement - allows lookup based on position */

@@ -600,7 +600,7 @@ bool ED_object_modifier_convert_psys_to_mesh(ReportList * /*reports*/,
   CustomData_add_layer(&me->edata, CD_MEDGE, CD_SET_DEFAULT, nullptr, edges_num);
   CustomData_add_layer(&me->fdata, CD_MFACE, CD_SET_DEFAULT, nullptr, 0);
 
-  blender::MutableSpan<float3> positions = me->positions_for_write();
+  blender::MutableSpan<float3> positions = me->vert_positions_for_write();
   blender::MutableSpan<MEdge> edges = me->edges_for_write();
   MEdge *medge = edges.data();
 
@@ -715,7 +715,7 @@ static Mesh *create_applied_mesh_for_modifier(Depsgraph *depsgraph,
     if (KeyBlock *kb = static_cast<KeyBlock *>(
             BLI_findlink(&me->key->block, ob_eval->shapenr - 1))) {
       BKE_keyblock_convert_to_mesh(
-          kb, reinterpret_cast<float(*)[3]>(me->positions_for_write().data()), me->totvert);
+          kb, reinterpret_cast<float(*)[3]>(me->vert_positions_for_write().data()), me->totvert);
     }
   }
 
@@ -2866,7 +2866,7 @@ static void skin_armature_bone_create(Object *skin_ob,
 static Object *modifier_skin_armature_create(Depsgraph *depsgraph, Main *bmain, Object *skin_ob)
 {
   Mesh *me = static_cast<Mesh *>(skin_ob->data);
-  const Span<float3> me_positions = me->positions();
+  const Span<float3> me_positions = me->vert_positions();
   const Span<MEdge> me_edges = me->edges();
 
   Scene *scene_eval = DEG_get_evaluated_scene(depsgraph);
@@ -2874,7 +2874,7 @@ static Object *modifier_skin_armature_create(Depsgraph *depsgraph, Main *bmain, 
 
   const Mesh *me_eval_deform = mesh_get_eval_deform(
       depsgraph, scene_eval, ob_eval, &CD_MASK_BAREMESH);
-  const Span<float3> positions_eval = me_eval_deform->positions();
+  const Span<float3> positions_eval = me_eval_deform->vert_positions();
 
   /* add vertex weights to original mesh */
   CustomData_add_layer(&me->vdata, CD_MDEFORMVERT, CD_SET_DEFAULT, nullptr, me->totvert);

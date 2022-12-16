@@ -204,9 +204,9 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
 
   /* Subdivision-surface for eg won't have mesh data in the custom-data arrays.
    * Now add position/#MEdge/#MPoly layers. */
-  if (BKE_mesh_positions(mesh) != NULL) {
-    memcpy(BKE_mesh_positions_for_write(result),
-           BKE_mesh_positions(mesh),
+  if (BKE_mesh_vert_positions(mesh) != NULL) {
+    memcpy(BKE_mesh_vert_positions_for_write(result),
+           BKE_mesh_vert_positions(mesh),
            sizeof(float[3]) * mesh->totvert);
   }
   if (!CustomData_has_layer(&mesh->edata, CD_MEDGE)) {
@@ -234,7 +234,7 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
   }
 
   /* mirror vertex coordinates */
-  float(*positions)[3] = BKE_mesh_positions_for_write(result);
+  float(*positions)[3] = BKE_mesh_vert_positions_for_write(result);
   for (i = 0; i < maxVerts; i++) {
     const int vert_index_prev = i;
     const int vert_index = maxVerts + i;
@@ -408,7 +408,7 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
 
     /* calculate custom normals into loop_normals, then mirror first half into second half */
 
-    BKE_mesh_normals_loop_split(BKE_mesh_positions(result),
+    BKE_mesh_normals_loop_split(BKE_mesh_vert_positions(result),
                                 BKE_mesh_vertex_normals_ensure(result),
                                 result->totvert,
                                 BKE_mesh_edges(result),

@@ -1148,7 +1148,7 @@ static void sculpt_gesture_trim_geometry_generate(SculptGestureContext *sgcontex
   const float(*ob_imat)[4] = vc->obact->world_to_object;
 
   /* Write vertices coordinates for the front face. */
-  float(*positions)[3] = BKE_mesh_positions_for_write(trim_operation->mesh);
+  float(*positions)[3] = BKE_mesh_vert_positions_for_write(trim_operation->mesh);
   float depth_point[3];
   madd_v3_v3v3fl(depth_point, shape_origin, shape_normal, depth_front);
   for (int i = 0; i < tot_screen_points; i++) {
@@ -1362,7 +1362,7 @@ static void sculpt_gesture_trim_apply_for_symmetry_pass(bContext *UNUSED(C),
 {
   SculptGestureTrimOperation *trim_operation = (SculptGestureTrimOperation *)sgcontext->operation;
   Mesh *trim_mesh = trim_operation->mesh;
-  float(*positions)[3] = BKE_mesh_positions_for_write(trim_mesh);
+  float(*positions)[3] = BKE_mesh_vert_positions_for_write(trim_mesh);
   for (int i = 0; i < trim_mesh->totvert; i++) {
     flip_v3_v3(positions[i], trim_operation->true_mesh_co[i], sgcontext->symmpass);
   }

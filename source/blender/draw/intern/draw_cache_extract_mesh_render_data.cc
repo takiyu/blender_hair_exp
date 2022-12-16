@@ -542,7 +542,7 @@ MeshRenderData *mesh_render_data_create(Object *object,
     mr->poly_len = mr->me->totpoly;
     mr->tri_len = poly_to_tri_count(mr->poly_len, mr->loop_len);
 
-    mr->positions = mr->me->positions().data();
+    mr->positions = mr->me->vert_positions().data();
     mr->medge = BKE_mesh_edges(mr->me);
     mr->mpoly = BKE_mesh_polys(mr->me);
     mr->mloop = BKE_mesh_loops(mr->me);

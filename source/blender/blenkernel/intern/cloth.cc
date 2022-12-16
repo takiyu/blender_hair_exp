@@ -258,7 +258,7 @@ static int do_step_cloth(
 
   cloth = clmd->clothObject;
   verts = cloth->verts;
-  const Span<float3> positions = result->positions();
+  const Span<float3> positions = result->vert_positions();
   vert_mass_changed = verts->mass != clmd->sim_parms->mass;
 
   /* force any pinned verts to their constrained location. */
@@ -759,7 +759,7 @@ static bool cloth_from_object(
         CustomData_get_layer(&mesh->vdata, CD_CLOTH_ORCO));
   }
 
-  const Span<float3> positions = mesh->positions();
+  const Span<float3> positions = mesh->vert_positions();
 
   verts = clmd->clothObject->verts;
 
@@ -1155,7 +1155,7 @@ static void cloth_update_verts(Object *ob, ClothModifierData *clmd, Mesh *mesh)
 {
   using namespace blender;
   uint i = 0;
-  const Span<float3> positions = mesh->positions();
+  const Span<float3> positions = mesh->vert_positions();
   ClothVertex *verts = clmd->clothObject->verts;
 
   /* vertex count is already ensured to match */
@@ -1171,7 +1171,7 @@ static Mesh *cloth_make_rest_mesh(ClothModifierData *clmd, Mesh *mesh)
   using namespace blender;
   Mesh *new_mesh = BKE_mesh_copy_for_eval(mesh, false);
   ClothVertex *verts = clmd->clothObject->verts;
-  MutableSpan<float3> positions = mesh->positions_for_write();
+  MutableSpan<float3> positions = mesh->vert_positions_for_write();
 
   /* vertex count is already ensured to match */
   for (int i = 0; i < mesh->totvert; i++, verts++) {

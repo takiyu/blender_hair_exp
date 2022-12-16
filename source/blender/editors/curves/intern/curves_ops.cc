@@ -285,7 +285,7 @@ static void try_convert_single_object(Object &curves_ob,
   const bke::CurvesSurfaceTransforms transforms{curves_ob, &surface_ob};
 
   const MFace *mfaces = (const MFace *)CustomData_get_layer(&surface_me.fdata, CD_MFACE);
-  const Span<float3> positions = surface_me.positions();
+  const Span<float3> positions = surface_me.vert_positions();
 
   for (const int new_hair_i : IndexRange(hair_num)) {
     const int curve_i = new_hair_i;
@@ -542,7 +542,7 @@ static void snap_curves_to_surface_exec_object(Object &curves_ob,
   CurvesGeometry &curves = CurvesGeometry::wrap(curves_id.geometry);
 
   const Mesh &surface_mesh = *static_cast<const Mesh *>(surface_ob.data);
-  const Span<float3> surface_positions = surface_mesh.positions();
+  const Span<float3> surface_positions = surface_mesh.vert_positions();
   const Span<MLoop> loops = surface_mesh.loops();
   const Span<MLoopTri> surface_looptris = surface_mesh.looptris();
   VArraySpan<float2> surface_uv_map;

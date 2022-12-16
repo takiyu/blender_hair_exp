@@ -64,7 +64,7 @@ class AngleFieldInput final : public bke::MeshFieldInput {
                                  const eAttrDomain domain,
                                  const IndexMask /*mask*/) const final
   {
-    const Span<float3> positions = mesh.positions();
+    const Span<float3> positions = mesh.vert_positions();
     const Span<MPoly> polys = mesh.polys();
     const Span<MLoop> loops = mesh.loops();
     Array<EdgeMapEntry> edge_map = create_edge_map(polys, loops, mesh.totedge);
@@ -120,7 +120,7 @@ class SignedAngleFieldInput final : public bke::MeshFieldInput {
                                  const eAttrDomain domain,
                                  const IndexMask /*mask*/) const final
   {
-    const Span<float3> positions = mesh.positions();
+    const Span<float3> positions = mesh.vert_positions();
     const Span<MEdge> edges = mesh.edges();
     const Span<MPoly> polys = mesh.polys();
     const Span<MLoop> loops = mesh.loops();

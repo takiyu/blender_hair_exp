@@ -404,7 +404,7 @@ static void manta_set_domain_from_mesh(FluidDomainSettings *fds,
   float min[3] = {FLT_MAX, FLT_MAX, FLT_MAX}, max[3] = {-FLT_MAX, -FLT_MAX, -FLT_MAX};
   float size[3];
 
-  float(*positions)[3] = BKE_mesh_positions_for_write(me);
+  float(*positions)[3] = BKE_mesh_vert_positions_for_write(me);
   float scale = 0.0;
   int res;
 
@@ -1005,7 +1005,7 @@ static void obstacles_from_mesh(Object *coll_ob,
     bool has_velocity = false;
 
     Mesh *me = BKE_mesh_copy_for_eval(fes->mesh, false);
-    float(*positions)[3] = BKE_mesh_positions_for_write(me);
+    float(*positions)[3] = BKE_mesh_vert_positions_for_write(me);
 
     int min[3], max[3], res[3];
 
@@ -2062,7 +2062,7 @@ static void emit_from_mesh(
     /* Copy mesh for thread safety as we modify it.
      * Main issue is its VertArray being modified, then replaced and freed. */
     Mesh *me = BKE_mesh_copy_for_eval(ffs->mesh, false);
-    float(*positions)[3] = BKE_mesh_positions_for_write(me);
+    float(*positions)[3] = BKE_mesh_vert_positions_for_write(me);
 
     const MLoop *mloop = BKE_mesh_loops(me);
     const MLoopTri *mlooptri = BKE_mesh_runtime_looptri_ensure(me);
@@ -3247,7 +3247,7 @@ static Mesh *create_liquid_geometry(FluidDomainSettings *fds,
   if (!me) {
     return NULL;
   }
-  float(*positions)[3] = BKE_mesh_positions_for_write(me);
+  float(*positions)[3] = BKE_mesh_vert_positions_for_write(me);
   mpolys = BKE_mesh_polys_for_write(me);
   mloops = BKE_mesh_loops_for_write(me);
 
@@ -3382,7 +3382,7 @@ static Mesh *create_smoke_geometry(FluidDomainSettings *fds, Mesh *orgmesh, Obje
   }
 
   result = BKE_mesh_new_nomain(num_verts, 0, 0, num_faces * 4, num_faces);
-  float(*positions)[3] = BKE_mesh_positions_for_write(result);
+  float(*positions)[3] = BKE_mesh_vert_positions_for_write(result);
   mpolys = BKE_mesh_polys_for_write(result);
   mloops = BKE_mesh_loops_for_write(result);
 

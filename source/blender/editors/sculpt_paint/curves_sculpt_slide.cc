@@ -197,7 +197,7 @@ struct SlideOperationExecutor {
       return;
     }
     surface_looptris_eval_ = surface_eval_->looptris();
-    surface_positions_eval_ = surface_eval_->positions();
+    surface_positions_eval_ = surface_eval_->vert_positions();
     surface_loops_eval_ = surface_eval_->loops();
     surface_uv_map_eval_ = surface_eval_->attributes().lookup<float2>(uv_map_name,
                                                                       ATTR_DOMAIN_CORNER);
@@ -314,7 +314,7 @@ struct SlideOperationExecutor {
   {
     const float4x4 brush_transform_inv = brush_transform.inverted();
 
-    const Span<float3> positions_orig_su = surface_orig_->positions();
+    const Span<float3> positions_orig_su = surface_orig_->vert_positions();
     const Span<MLoop> loops_orig = surface_orig_->loops();
 
     MutableSpan<float3> positions_orig_cu = curves_orig_->positions_for_write();

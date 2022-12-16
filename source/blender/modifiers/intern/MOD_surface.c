@@ -150,7 +150,7 @@ static void deformVerts(ModifierData *md,
     }
 
     /* convert to global coordinates and calculate velocity */
-    float(*positions)[3] = BKE_mesh_positions_for_write(surmd->mesh);
+    float(*positions)[3] = BKE_mesh_vert_positions_for_write(surmd->mesh);
     for (i = 0; i < mesh_verts_num; i++) {
       float *vec = positions[i];
       mul_m4_v3(ctx->object->object_to_world, vec);

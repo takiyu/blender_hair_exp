@@ -2471,7 +2471,7 @@ static void gpencil_generate_edgeloops(Object *ob,
   if (me->totedge == 0) {
     return;
   }
-  const Span<float3> positions = me->positions();
+  const Span<float3> positions = me->vert_positions();
   const Span<MEdge> edges = me->edges();
   const Span<MDeformVert> dverts = me->deform_verts();
   const float(*vert_normals)[3] = BKE_mesh_vertex_normals_ensure(me);
@@ -2679,7 +2679,7 @@ bool BKE_gpencil_convert_mesh(Main *bmain,
   /* Use evaluated data to get mesh with all modifiers on top. */
   Object *ob_eval = (Object *)DEG_get_evaluated_object(depsgraph, ob_mesh);
   const Mesh *me_eval = BKE_object_get_evaluated_mesh(ob_eval);
-  const Span<float3> positions = me_eval->positions();
+  const Span<float3> positions = me_eval->vert_positions();
   const Span<MPoly> polys = me_eval->polys();
   const Span<MLoop> loops = me_eval->loops();
   int mpoly_len = me_eval->totpoly;

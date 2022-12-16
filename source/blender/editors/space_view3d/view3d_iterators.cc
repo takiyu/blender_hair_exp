@@ -302,7 +302,7 @@ void meshobject_foreachScreenVert(ViewContext *vc,
   data.func = func;
   data.userData = userData;
   data.clip_flag = clip_flag;
-  data.positions = BKE_mesh_positions_for_write((Mesh *)vc->obact->data);
+  data.positions = BKE_mesh_vert_positions_for_write((Mesh *)vc->obact->data);
   data.hide_vert = (const bool *)CustomData_get_layer_named(
       &me->vdata, CD_PROP_BOOL, ".hide_vert");
 

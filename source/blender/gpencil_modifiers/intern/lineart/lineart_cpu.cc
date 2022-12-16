@@ -2025,7 +2025,7 @@ static void lineart_geometry_object_load(LineartObjectInfo *ob_info,
   vert_settings.min_iter_per_thread = 4000;
 
   VertData vert_data;
-  vert_data.positions = BKE_mesh_positions(me);
+  vert_data.positions = BKE_mesh_vert_positions(me);
   vert_data.v_arr = la_v_arr;
   vert_data.model_view = ob_info->model_view;
   vert_data.model_view_proj = ob_info->model_view_proj;
@@ -2042,7 +2042,7 @@ static void lineart_geometry_object_load(LineartObjectInfo *ob_info,
 
   TriData tri_data;
   tri_data.ob_info = ob_info;
-  tri_data.positions = me->positions();
+  tri_data.positions = me->vert_positions();
   tri_data.mlooptri = mlooptri;
   tri_data.loops = me->loops();
   tri_data.material_indices = material_indices;
