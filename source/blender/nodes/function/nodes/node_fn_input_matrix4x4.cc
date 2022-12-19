@@ -43,6 +43,8 @@ void register_node_type_fn_input_matrix_4x4(void)
   static bNodeType ntype;
 
   fn_node_type_base(&ntype, FN_NODE_INPUT_MATRIX_4X4, "4x4 Matrix", NODE_CLASS_INPUT);
+  node_type_storage(
+      &ntype, "NodeInputMatrix4x4", node_free_standard_storage, node_copy_standard_storage);
   ntype.declare = file_ns::node_declare;
   ntype.initfunc = file_ns::node_init;
   ntype.build_multi_function = file_ns::node_build_multi_function;

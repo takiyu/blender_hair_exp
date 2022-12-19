@@ -43,6 +43,8 @@ void register_node_type_fn_input_matrix_3x3(void)
   static bNodeType ntype;
 
   fn_node_type_base(&ntype, FN_NODE_INPUT_MATRIX_3X3, "3x3 Matrix", NODE_CLASS_INPUT);
+  node_type_storage(
+      &ntype, "NodeInputMatrix3x3", node_free_standard_storage, node_copy_standard_storage);
   ntype.declare = file_ns::node_declare;
   ntype.initfunc = file_ns::node_init;
   ntype.build_multi_function = file_ns::node_build_multi_function;
