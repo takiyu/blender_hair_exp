@@ -53,8 +53,8 @@ static void node_update(bNodeTree *tree, bNode *node)
   bNodeSocket *in_matrix_a = (bNodeSocket *)BLI_findlink(&node->inputs, 0);
   bNodeSocket *in_matrix_b = (bNodeSocket *)BLI_findlink(&node->inputs, 1);
   bNodeSocket *in_scale = (bNodeSocket *)BLI_findlink(&node->inputs, 2);
-  bNodeSocket *out_matrix = (bNodeSocket *)BLI_findlink(&node->inputs, 0);
-  bNodeSocket *out_value = (bNodeSocket *)BLI_findlink(&node->inputs, 1);
+  bNodeSocket *out_matrix = (bNodeSocket *)BLI_findlink(&node->outputs, 0);
+  bNodeSocket *out_value = (bNodeSocket *)BLI_findlink(&node->outputs, 1);
 
   nodeSetSocketAvailability(tree, in_matrix_a, true);
   nodeSetSocketAvailability(

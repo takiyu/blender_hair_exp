@@ -16,23 +16,15 @@ static void node_declare(NodeDeclarationBuilder &b)
   b.add_output<decl::Vector>(N_("Vec0"));
   b.add_output<decl::Vector>(N_("Vec1"));
   b.add_output<decl::Vector>(N_("Vec2"));
-  b.add_output<decl::Vector>(N_("Vec3"));
   b.add_output<decl::Float>(N_("Row 0 Col 0"));
   b.add_output<decl::Float>(N_("Row 1 Col 0"));
   b.add_output<decl::Float>(N_("Row 2 Col 0"));
-  b.add_output<decl::Float>(N_("Row 3 Col 0"));
   b.add_output<decl::Float>(N_("Row 0 Col 1"));
   b.add_output<decl::Float>(N_("Row 1 Col 1"));
   b.add_output<decl::Float>(N_("Row 2 Col 1"));
-  b.add_output<decl::Float>(N_("Row 3 Col 1"));
   b.add_output<decl::Float>(N_("Row 0 Col 2"));
   b.add_output<decl::Float>(N_("Row 1 Col 2"));
   b.add_output<decl::Float>(N_("Row 2 Col 2"));
-  b.add_output<decl::Float>(N_("Row 3 Col 2"));
-  b.add_output<decl::Float>(N_("Row 0 Col 3"));
-  b.add_output<decl::Float>(N_("Row 1 Col 3"));
-  b.add_output<decl::Float>(N_("Row 2 Col 3"));
-  b.add_output<decl::Float>(N_("Row 3 Col 3"));
 };
 
 static void node_layout(uiLayout *layout, bContext * /*C*/, PointerRNA *ptr)
@@ -61,14 +53,14 @@ static void node_update(bNodeTree *tree, bNode *node)
 
   switch (mode) {
     case NODE_COMBSEP_MATRIX_COLUMNS:
-      node_sock_label((bNodeSocket *)BLI_findlink(&node->inputs, vector_sockets[0]), "Column 0");
-      node_sock_label((bNodeSocket *)BLI_findlink(&node->inputs, vector_sockets[1]), "Column 1");
-      node_sock_label((bNodeSocket *)BLI_findlink(&node->inputs, vector_sockets[2]), "Column 2");
+      node_sock_label((bNodeSocket *)BLI_findlink(&node->outputs, vector_sockets[0]), "Column 0");
+      node_sock_label((bNodeSocket *)BLI_findlink(&node->outputs, vector_sockets[1]), "Column 1");
+      node_sock_label((bNodeSocket *)BLI_findlink(&node->outputs, vector_sockets[2]), "Column 2");
       break;
     case NODE_COMBSEP_MATRIX_ROWS:
-      node_sock_label((bNodeSocket *)BLI_findlink(&node->inputs, vector_sockets[0]), "Row 0");
-      node_sock_label((bNodeSocket *)BLI_findlink(&node->inputs, vector_sockets[1]), "Row 1");
-      node_sock_label((bNodeSocket *)BLI_findlink(&node->inputs, vector_sockets[2]), "Row 2");
+      node_sock_label((bNodeSocket *)BLI_findlink(&node->outputs, vector_sockets[0]), "Row 0");
+      node_sock_label((bNodeSocket *)BLI_findlink(&node->outputs, vector_sockets[1]), "Row 1");
+      node_sock_label((bNodeSocket *)BLI_findlink(&node->outputs, vector_sockets[2]), "Row 2");
       break;
     case NODE_COMBSEP_MATRIX_ELEMENTS:
       break;
