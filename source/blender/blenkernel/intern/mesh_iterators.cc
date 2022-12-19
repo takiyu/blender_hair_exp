@@ -163,10 +163,10 @@ void BKE_mesh_foreach_mapped_loop(Mesh *mesh,
     const float(*vertexCos)[3] = mesh->runtime->edit_data->vertexCos;
 
     /* XXX: investigate using EditMesh data. */
-    const float(*lnors)[3] = (flag & MESH_FOREACH_USE_NORMAL) ?
-                                 static_cast<const float(*)[3]>(
-                                     CustomData_get_layer(&mesh->ldata, CD_NORMAL)) :
-                                 nullptr;
+    const float(*loop_normals)[3] = (flag & MESH_FOREACH_USE_NORMAL) ?
+                                        static_cast<const float(*)[3]>(
+                                            CustomData_get_layer(&mesh->ldata, CD_NORMAL)) :
+                                        nullptr;
 
     int f_idx;
 
@@ -179,16 +179,16 @@ void BKE_mesh_foreach_mapped_loop(Mesh *mesh,
       do {
         const BMVert *eve = l_iter->v;
         const int v_idx = BM_elem_index_get(eve);
-        const float *no = lnors ? *lnors++ : nullptr;
+        const float *no = loop_normals ? *loop_normals++ : nullptr;
         func(userData, v_idx, f_idx, vertexCos ? vertexCos[v_idx] : eve->co, no);
       } while ((l_iter = l_iter->next) != l_first);
     }
   }
   else {
-    const float(*lnors)[3] = (flag & MESH_FOREACH_USE_NORMAL) ?
-                                 static_cast<const float(*)[3]>(
-                                     CustomData_get_layer(&mesh->ldata, CD_NORMAL)) :
-                                 nullptr;
+    const float(*loop_normals)[3] = (flag & MESH_FOREACH_USE_NORMAL) ?
+                                        static_cast<const float(*)[3]>(
+                                            CustomData_get_layer(&mesh->ldata, CD_NORMAL)) :
+                                        nullptr;
 
     const float(*positions)[3] = BKE_mesh_positions(mesh);
     const Span<int> corner_verts = mesh->corner_verts();
@@ -205,7 +205,7 @@ void BKE_mesh_foreach_mapped_loop(Mesh *mesh,
           const int vert_i = corner_verts[i];
           const int v_idx = v_index ? v_index[vert_i] : vert_i;
           const int f_idx = f_index ? f_index[p_idx] : p_idx;
-          const float *no = lnors ? *lnors++ : nullptr;
+          const float *no = loop_normals ? *loop_normals++ : nullptr;
           if (ELEM(ORIGINDEX_NONE, v_idx, f_idx)) {
             continue;
           }
@@ -218,7 +218,7 @@ void BKE_mesh_foreach_mapped_loop(Mesh *mesh,
         for (i = 0; i < mp->totloop; i++) {
           const int vert_i = corner_verts[i];
           const int f_idx = p_idx;
-          const float *no = lnors ? *lnors++ : nullptr;
+          const float *no = loop_normals ? *loop_normals++ : nullptr;
           func(userData, vert_i, f_idx, positions[vert_i], no);
         }
       }

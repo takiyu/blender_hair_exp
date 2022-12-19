@@ -540,12 +540,14 @@ static void calculate_selection_outputs(const ConeConfig &config,
  * If the mesh is a truncated cone or a cylinder, the side faces are unwrapped into
  * a rectangle that fills the top half of the UV (or the entire UV, if there are no fills).
  */
-static void calculate_cone_uvs(Mesh *mesh, const ConeConfig &config)
+static void calculate_cone_uvs(const ConeConfig &config,
+                               Mesh *mesh,
+                               const AttributeIDRef &uv_map_id)
 {
   MutableAttributeAccessor attributes = mesh->attributes_for_write();
 
   SpanAttributeWriter<float2> uv_attribute = attributes.lookup_or_add_for_write_only_span<float2>(
-      "uv_map", ATTR_DOMAIN_CORNER);
+      uv_map_id, ATTR_DOMAIN_CORNER);
   MutableSpan<float2> uvs = uv_attribute.span;
 
   Array<float2> circle(config.circle_segments);
@@ -702,7 +704,9 @@ Mesh *create_cylinder_or_cone_mesh(const float radius_top,
   calculate_cone_edges(config, edges);
   calculate_cone_faces(
       config, mesh->corner_verts_for_write(), mesh->corner_edges_for_write(), polys);
-  calculate_cone_uvs(mesh, config);
+  if (attribute_outputs.uv_map_id) {
+    calculate_cone_uvs(config, mesh, attribute_outputs.uv_map_id.get());
+  }
   calculate_selection_outputs(config, attribute_outputs, mesh->attributes_for_write());
 
   mesh->loose_edges_tag_none();
@@ -751,6 +755,7 @@ static void node_declare(NodeDeclarationBuilder &b)
   b.add_output<decl::Bool>(N_("Top")).field_source();
   b.add_output<decl::Bool>(N_("Bottom")).field_source();
   b.add_output<decl::Bool>(N_("Side")).field_source();
+  b.add_output<decl::Vector>(N_("UV Map")).field_source();
 }
 
 static void node_init(bNodeTree * /*tree*/, bNode *node)
@@ -822,6 +827,9 @@ static void node_geo_exec(GeoNodeExecParams params)
   if (params.output_is_required("Side")) {
     attribute_outputs.side_id = StrongAnonymousAttributeID("side_selection");
   }
+  if (params.output_is_required("UV Map")) {
+    attribute_outputs.uv_map_id = StrongAnonymousAttributeID("uv_map");
+  }
 
   Mesh *mesh = create_cylinder_or_cone_mesh(radius_top,
                                             radius_bottom,
@@ -850,6 +858,12 @@ static void node_geo_exec(GeoNodeExecParams params)
     params.set_output("Side",
                       AnonymousAttributeFieldInput::Create<bool>(
                           std::move(attribute_outputs.side_id), params.attribute_producer_name()));
+  }
+  if (attribute_outputs.uv_map_id) {
+    params.set_output(
+        "UV Map",
+        AnonymousAttributeFieldInput::Create<float3>(std::move(attribute_outputs.uv_map_id),
+                                                     params.attribute_producer_name()));
   }
 
   params.set_output("Mesh", GeometrySet::create_with_mesh(mesh));
