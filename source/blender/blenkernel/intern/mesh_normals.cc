@@ -1394,10 +1394,6 @@ static void loop_split_generator(TaskPool *pool, LoopSplitTaskDataCommon *common
             data_buff = (LoopSplitTaskData *)MEM_calloc_arrayN(
                 LOOP_SPLIT_TASK_BLOCK_SIZE, sizeof(*data_buff), __func__);
           }
-          for (const int i : blender::IndexRange(LOOP_SPLIT_TASK_BLOCK_SIZE)) {
-            /* Used to tag the end of the buffer. */
-            data_buff[i].ml_curr_index = -1;
-          }
           data = &data_buff[data_idx];
         }
         else {

@@ -353,7 +353,7 @@ static void split_edge_per_poly(const int edge_i,
   edge_to_loop_map[edge_i].resize(1);
 }
 
-static void mesh_edge_split(Mesh &mesh, const IndexMask mask)
+void split_edges(Mesh &mesh, const IndexMask mask)
 {
   /* Flag vertices that need to be split. */
   Array<bool> should_split_vert(mesh.totvert, false);

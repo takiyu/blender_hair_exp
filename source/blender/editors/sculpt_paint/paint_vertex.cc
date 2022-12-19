@@ -4134,7 +4134,7 @@ static void fill_mesh_face_or_corner_attribute(Mesh &mesh,
 
     int j = 0;
     do {
-      const vidx = corner_verts[poly.loopstart + j];
+      const int vidx = corner_verts[poly.loopstart + j];
 
       if (!(use_vert_sel && !(select_vert[vidx]))) {
         if (domain == ATTR_DOMAIN_CORNER) {

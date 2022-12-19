@@ -1459,12 +1459,14 @@ void ED_mesh_split_faces(Mesh *mesh)
   using namespace blender;
   Array<MEdge> edges(mesh->edges());
   const Span<MPoly> polys = mesh->polys();
-  const Span<MLoop> loops = mesh->loops();
+  const Span<int> corner_verts = mesh->corner_verts();
+  const Span<int> corner_edges = mesh->corner_edges();
   const float split_angle = (mesh->flag & ME_AUTOSMOOTH) != 0 ? mesh->smoothresh : float(M_PI);
   BKE_edges_sharp_from_angle_set(edges.data(),
                                  edges.size(),
-                                 loops.data(),
-                                 loops.size(),
+                                 corner_verts.data(),
+                                 corner_edges.data(),
+                                 corner_verts.size(),
                                  polys.data(),
                                  BKE_mesh_poly_normals_ensure(mesh),
                                  polys.size(),
@@ -1474,8 +1476,8 @@ void ED_mesh_split_faces(Mesh *mesh)
     for (const int poly_i : range) {
       const MPoly &poly = polys[poly_i];
       if (!(poly.flag & ME_SMOOTH)) {
-        for (const MLoop &loop : loops.slice(poly.loopstart, poly.totloop)) {
-          edges[loop.e].flag |= ME_SHARP;
+        for (const int edge_i : corner_edges.slice(poly.loopstart, poly.totloop)) {
+          edges[edge_i].flag |= ME_SHARP;
         }
       }
     }
