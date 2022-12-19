@@ -49,6 +49,8 @@ void register_node_type_fn_input_matrix_4x4(void)
   ntype.initfunc = file_ns::node_init;
   ntype.build_multi_function = file_ns::node_build_multi_function;
   ntype.draw_buttons = file_ns::node_layout;
+  /* Matrix columns need more horizontal space */
+  node_type_size_preset(&ntype, NODE_SIZE_LARGE);
 
   nodeRegisterType(&ntype);
 }
