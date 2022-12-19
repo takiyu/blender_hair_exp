@@ -53,8 +53,8 @@ static void node_update(bNodeTree *tree, bNode *node)
   bNodeSocket *inMatrixA = &node->input_socket(0);
   bNodeSocket *inMatrixB = &node->input_socket(1);
   bNodeSocket *inScale = &node->input_socket(2);
-  bNodeSocket *outMatrix = &node->output_socket(3);
-  bNodeSocket *outValue = &node->output_socket(4);
+  bNodeSocket *outMatrix = &node->output_socket(0);
+  bNodeSocket *outValue = &node->output_socket(1);
 
   nodeSetSocketAvailability(tree, inMatrixA, true);
   nodeSetSocketAvailability(
