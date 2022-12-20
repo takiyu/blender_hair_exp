@@ -932,16 +932,17 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
       /* Loop-Data */
       if (!(close && step == step_last)) {
         /* regular segments */
-        corner_verts_new[quad_ord[0]] = int(i1);
-        corner_verts_new[quad_ord[1]] = int(i2);
-        corner_verts_new[quad_ord[2]] = int(i2 + totvert);
-        corner_verts_new[quad_ord[3]] = int(i1 + totvert);
+        corner_verts_new[new_loop_index + quad_ord[0]] = int(i1);
+        corner_verts_new[new_loop_index + quad_ord[1]] = int(i2);
+        corner_verts_new[new_loop_index + quad_ord[2]] = int(i2 + totvert);
+        corner_verts_new[new_loop_index + quad_ord[3]] = int(i1 + totvert);
 
-        corner_edges_new[quad_ord_ofs[0]] = int(
+        corner_edges_new[new_loop_index + quad_ord_ofs[0]] = int(
             step == 0 ? i : (edge_offset + step + (i * (step_tot - 1))) - 1);
-        corner_edges_new[quad_ord_ofs[1]] = int(totedge + i2);
-        corner_edges_new[quad_ord_ofs[2]] = int(edge_offset + step + (i * (step_tot - 1)));
-        corner_edges_new[quad_ord_ofs[3]] = int(totedge + i1);
+        corner_edges_new[new_loop_index + quad_ord_ofs[1]] = int(totedge + i2);
+        corner_edges_new[new_loop_index + quad_ord_ofs[2]] = int(edge_offset + step +
+                                                                 (i * (step_tot - 1)));
+        corner_edges_new[new_loop_index + quad_ord_ofs[3]] = int(totedge + i1);
 
         /* new vertical edge */
         if (step) { /* The first set is already done */
@@ -955,15 +956,16 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
       }
       else {
         /* last segment */
-        corner_verts_new[quad_ord[0]] = int(i1);
-        corner_verts_new[quad_ord[1]] = int(i2);
-        corner_verts_new[quad_ord[2]] = int(med_new_firstloop->v2);
-        corner_verts_new[quad_ord[3]] = int(med_new_firstloop->v1);
+        corner_verts_new[new_loop_index + quad_ord[0]] = int(i1);
+        corner_verts_new[new_loop_index + quad_ord[1]] = int(i2);
+        corner_verts_new[new_loop_index + quad_ord[2]] = int(med_new_firstloop->v2);
+        corner_verts_new[new_loop_index + quad_ord[3]] = int(med_new_firstloop->v1);
 
-        corner_edges_new[quad_ord_ofs[0]] = int((edge_offset + step + (i * (step_tot - 1))) - 1);
-        corner_edges_new[quad_ord_ofs[1]] = int(totedge + i2);
-        corner_edges_new[quad_ord_ofs[2]] = int(i);
-        corner_edges_new[quad_ord_ofs[3]] = int(totedge + i1);
+        corner_edges_new[new_loop_index + quad_ord_ofs[0]] = int(
+            (edge_offset + step + (i * (step_tot - 1))) - 1);
+        corner_edges_new[new_loop_index + quad_ord_ofs[1]] = int(totedge + i2);
+        corner_edges_new[new_loop_index + quad_ord_ofs[2]] = int(i);
+        corner_edges_new[new_loop_index + quad_ord_ofs[3]] = int(totedge + i1);
       }
 
       mp_new++;
