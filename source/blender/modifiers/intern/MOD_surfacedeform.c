@@ -554,8 +554,8 @@ BLI_INLINE SDefBindWeightData *computeBindWeights(SDefBindCalcData *const data,
         }
 
         for (int j = 0; j < poly->totloop; j++) {
-          const int vert_i = data->corner_verts[poly->totloop + j];
-          const int edge_i = data->corner_edges[poly->totloop + j];
+          const int vert_i = data->corner_verts[poly->loopstart + j];
+          const int edge_i = data->corner_edges[poly->loopstart + j];
           copy_v3_v3(bpoly->coords[j], data->targetCos[vert_i]);
 
           /* Find corner and edge indices within poly loop array */

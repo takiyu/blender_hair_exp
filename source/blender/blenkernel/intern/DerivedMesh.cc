@@ -1991,7 +1991,7 @@ static void mesh_init_origspace(Mesh *mesh)
 
       vcos_2d.resize(mp->totloop);
       for (j = 0; j < mp->totloop; j++) {
-        mul_v3_m3v3(co, mat, positions[corner_verts[mp->totloop + j]]);
+        mul_v3_m3v3(co, mat, positions[corner_verts[mp->loopstart + j]]);
         copy_v2_v2(vcos_2d[j], co);
 
         for (k = 0; k < 2; k++) {

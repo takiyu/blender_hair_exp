@@ -1605,7 +1605,7 @@ void BKE_mesh_remap_calc_loops_from_mesh(const int mode,
         BVHTreeFromMesh *tdata = &treedata[tindex];
 
         for (plidx_dst = 0; plidx_dst < mp_dst->totloop; plidx_dst++) {
-          const int vert_dst_i = corner_verts_dst[mp_dst->totloop + plidx_dst];
+          const int vert_dst_i = corner_verts_dst[mp_dst->loopstart + plidx_dst];
           if (use_from_vert) {
             MeshElemMap *vert_to_refelem_map_src = nullptr;
 
