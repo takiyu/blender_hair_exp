@@ -212,8 +212,8 @@ static void rna_ParticleHairKey_location_object_get(PointerRNA *ptr, float *valu
 
   if (pa) {
     Mesh *hair_mesh = (psmd->psys->flag & PSYS_HAIR_DYNAMICS) ? psmd->psys->hair_out_mesh : NULL;
-    const float(*positions)[3] = BKE_mesh_positions(hair_mesh);
     if (hair_mesh) {
+      const float(*positions)[3] = BKE_mesh_positions(hair_mesh);
       copy_v3_v3(values, positions[pa->hair_index + (hkey - pa->hair)]);
     }
     else {
