@@ -345,10 +345,10 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
   }
 
   /* adjust mirrored loop vertex and edge indices */
-  int *corner_verts = BKE_mesh_corner_verts_for_write(result) + maxLoops;
+  int *corner_verts = BKE_mesh_corner_verts_for_write(result);
   for (i = 0; i < maxLoops; i++) {
-    corner_verts[i] += maxVerts;
-    corner_edges[i] += maxEdges;
+    corner_verts[maxLoops + i] += maxVerts;
+    corner_edges[maxLoops + i] += maxEdges;
   }
 
   /* handle uvs,
@@ -490,6 +490,5 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
   if (mesh_bisect != nullptr) {
     BKE_id_free(nullptr, mesh_bisect);
   }
-
   return result;
 }
