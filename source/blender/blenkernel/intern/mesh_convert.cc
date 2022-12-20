@@ -197,7 +197,6 @@ static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispba
 
   MEdge *medge = edges.data();
   MPoly *mpoly = polys.data();
-  int *corner_vert = corner_verts.data();
   MutableAttributeAccessor attributes = mesh->attributes_for_write();
   SpanAttributeWriter<int> material_indices = attributes.lookup_or_add_for_write_only_span<int>(
       "material_index", ATTR_DOMAIN_FACE);
@@ -205,6 +204,7 @@ static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispba
       &mesh->ldata, CD_MLOOPUV, CD_SET_DEFAULT, nullptr, mesh->totloop, DATA_("UVMap")));
 
   /* verts and faces */
+  int dst_corner_i = 0;
   vertcount = 0;
 
   LISTBASE_FOREACH (const DispList *, dl, dispbase) {
@@ -271,16 +271,16 @@ static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispba
       a = dl->parts;
       index = dl->index;
       while (a--) {
-        corner_vert[0] = startvert + index[0];
-        corner_vert[1] = startvert + index[2];
-        corner_vert[2] = startvert + index[1];
-        mpoly->loopstart = int(corner_vert - corner_verts.data());
+        corner_verts[dst_corner_i + 0] = startvert + index[0];
+        corner_verts[dst_corner_i + 1] = startvert + index[2];
+        corner_verts[dst_corner_i + 2] = startvert + index[1];
+        mpoly->loopstart = dst_corner_i;
         mpoly->totloop = 3;
         material_indices.span[mpoly - polys.data()] = dl->col;
 
         if (mloopuv) {
           for (int i = 0; i < 3; i++, mloopuv++) {
-            mloopuv->uv[0] = (corner_vert[i] - startvert) / float(dl->nr - 1);
+            mloopuv->uv[0] = (corner_verts[dst_corner_i + i] - startvert) / float(dl->nr - 1);
             mloopuv->uv[1] = 0.0f;
           }
         }
@@ -289,7 +289,7 @@ static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispba
           mpoly->flag |= ME_SMOOTH;
         }
         mpoly++;
-        corner_vert += 3;
+        dst_corner_i += 3;
         index += 3;
       }
     }
@@ -329,11 +329,11 @@ static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispba
         }
 
         for (; b < dl->nr; b++) {
-          corner_vert[0] = p1;
-          corner_vert[1] = p3;
-          corner_vert[2] = p4;
-          corner_vert[3] = p2;
-          mpoly->loopstart = int(corner_vert - corner_verts.data());
+          corner_verts[dst_corner_i + 0] = p1;
+          corner_verts[dst_corner_i + 1] = p3;
+          corner_verts[dst_corner_i + 2] = p4;
+          corner_verts[dst_corner_i + 3] = p2;
+          mpoly->loopstart = dst_corner_i;
           mpoly->totloop = 4;
           material_indices.span[mpoly - polys.data()] = dl->col;
 
@@ -354,7 +354,7 @@ static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispba
 
             for (int i = 0; i < 4; i++, mloopuv++) {
               /* find uv based on vertex index into grid array */
-              int v = corner_vert[i] - startvert;
+              int v = corner_verts[dst_corner_i + i] - startvert;
 
               mloopuv->uv[0] = (v / dl->nr) / float(orco_sizev);
               mloopuv->uv[1] = (v % dl->nr) / float(orco_sizeu);
@@ -373,7 +373,7 @@ static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispba
             mpoly->flag |= ME_SMOOTH;
           }
           mpoly++;
-          corner_vert += 4;
+          dst_corner_i += 4;
 
           p4 = p3;
           p3++;
