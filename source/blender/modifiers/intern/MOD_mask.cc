@@ -299,10 +299,10 @@ static void compute_interpolated_polys(const Mesh *mesh,
     }
     if (0 < in_count && in_count < poly_src.totloop) {
       /* Ring search starting at a vertex which is not included in the mask. */
-      const int *last_corner_vert = &corner_verts[start];
-      bool v_loop_in_mask_last = vertex_mask[*last_corner_vert];
+      int last_corner_vert = corner_verts[start];
+      bool v_loop_in_mask_last = vertex_mask[last_corner_vert];
       for (const int j : poly_verts_src.index_range()) {
-        const int &corner_vert = corner_verts[(start + 1 + j) % poly_src.totloop];
+        const int corner_vert = corner_verts[(start + 1 + j) % poly_src.totloop];
         const bool v_loop_in_mask = vertex_mask[corner_vert];
         if (v_loop_in_mask && !v_loop_in_mask_last) {
           dst_totloop = 3;
@@ -320,7 +320,7 @@ static void compute_interpolated_polys(const Mesh *mesh,
           BLI_assert(dst_totloop > 2);
           dst_totloop++;
         }
-        last_corner_vert = &corner_vert;
+        last_corner_vert = corner_vert;
         v_loop_in_mask_last = v_loop_in_mask;
       }
     }
@@ -470,9 +470,9 @@ static void copy_masked_polys_to_new_mesh(const Mesh &src_mesh,
 
     mp_dst = mp_src;
     mp_dst.loopstart = i_ml_dst;
-    for (const int i : IndexRange(mp_dst.totloop)) {
-      dst_corner_verts[i_ml_dst + i] = src_corner_verts[vertex_map[i_ml_src + i]];
-      dst_corner_edges[i_ml_dst + i] = src_corner_edges[edge_map[i_ml_src + i]];
+    for (int i : IndexRange(mp_src.totloop)) {
+      dst_corner_verts[i_ml_dst + i] = vertex_map[src_corner_verts[i_ml_src + i]];
+      dst_corner_edges[i_ml_dst + i] = edge_map[src_corner_edges[i_ml_src + i]];
     }
   }
 }
