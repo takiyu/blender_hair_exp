@@ -564,6 +564,9 @@ bool ED_mesh_edge_is_loose(const struct Mesh *mesh, int index);
 void ED_mesh_uv_ensure(struct Mesh *me, const char *name);
 int ED_mesh_uv_add(
     struct Mesh *me, const char *name, bool active_set, bool do_init, struct ReportList *reports);
+bool ED_mesh_uv_remove_index(struct Mesh *me, int n);
+bool ED_mesh_uv_remove_active(struct Mesh *me);
+bool ED_mesh_uv_remove_named(struct Mesh *me, const char *name);
 
 void ED_mesh_uv_loop_reset(struct bContext *C, struct Mesh *me);
 /**
@@ -587,8 +590,8 @@ void ED_mesh_report_mirror_ex(struct wmOperator *op, int totmirr, int totfail, c
 struct Mesh *ED_mesh_context(struct bContext *C);
 
 /**
- * Split all edges that would appear sharp based onface and edge sharpness tags and the auto smooth
- * angle.
+ * Split all edges that would appear sharp based on face and edge sharpness tags and the
+ * auto smooth angle.
  */
 void ED_mesh_split_faces(struct Mesh *mesh);
 

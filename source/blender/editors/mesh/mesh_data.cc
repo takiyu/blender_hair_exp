@@ -18,6 +18,7 @@
 #include "BLI_math.h"
 #include "BLI_utildefines.h"
 
+#include "BKE_attribute.h"
 #include "BKE_attribute.hh"
 #include "BKE_context.h"
 #include "BKE_customdata.h"
@@ -112,6 +113,33 @@ static CustomData *mesh_customdata_get_type(Mesh *me, const char htype, int *r_t
 }
 
 #define GET_CD_DATA(me, data) ((me)->edit_mesh ? &(me)->edit_mesh->bm->data : &(me)->data)
+static void delete_customdata_layer(Mesh *me, CustomDataLayer *layer)
+{
+  const int type = layer->type;
+  CustomData *data;
+  int layer_index, tot, n;
+
+  char htype = BM_FACE;
+  if (ELEM(type, CD_PROP_BYTE_COLOR, CD_MLOOPUV)) {
+    htype = BM_LOOP;
+  }
+  else if (ELEM(type, CD_PROP_COLOR)) {
+    htype = BM_VERT;
+  }
+
+  data = mesh_customdata_get_type(me, htype, &tot);
+  layer_index = CustomData_get_layer_index(data, type);
+  n = (layer - &data->layers[layer_index]);
+  BLI_assert(n >= 0 && (n + layer_index) < data->totlayer);
+
+  if (me->edit_mesh) {
+    BM_data_layer_free_n(me->edit_mesh->bm, data, type, n);
+  }
+  else {
+    CustomData_free_layer(data, type, tot, layer_index + n);
+  }
+}
+
 
 static void mesh_uv_reset_array(float **fuv, const int len)
 {
@@ -384,79 +412,111 @@ void ED_mesh_uv_ensure(Mesh *me, const char *name)
   }
 }
 
-int ED_mesh_color_add(Mesh *me,
-                      const char *name,
-                      const bool active_set,
-                      const bool do_init,
-                      ReportList * /*reports*/)
+bool ED_mesh_uv_remove_index(Mesh *me, const int n)
 {
-  /* NOTE: keep in sync with #ED_mesh_uv_add. */
+  CustomData *ldata = GET_CD_DATA(me, ldata);
+  CustomDataLayer *cdlu;
+  int index;
 
-  BMEditMesh *em;
-  int layernum;
+  index = CustomData_get_layer_index_n(ldata, CD_PROP_FLOAT2, n);
+  cdlu = (index == -1) ? nullptr : &ldata->layers[index];
 
-  if (me->edit_mesh) {
-    em = me->edit_mesh;
+  if (!cdlu) {
+    return false;
+  }
 
-    layernum = CustomData_number_of_layers(&em->bm->ldata, CD_PROP_BYTE_COLOR);
+  delete_customdata_layer(me, cdlu);
 
-    /* CD_PROP_BYTE_COLOR */
-    BM_data_layer_add_named(em->bm, &em->bm->ldata, CD_PROP_BYTE_COLOR, name);
-    /* copy data from active vertex color layer */
-    if (layernum && do_init) {
-      const int layernum_dst = CustomData_get_active_layer(&em->bm->ldata, CD_PROP_BYTE_COLOR);
-      BM_data_layer_copy(em->bm, &em->bm->ldata, CD_PROP_BYTE_COLOR, layernum_dst, layernum);
-    }
-    if (active_set || layernum == 0) {
-      CustomData_set_layer_active(&em->bm->ldata, CD_PROP_BYTE_COLOR, layernum);
+  DEG_id_tag_update(&me->id, 0);
+  WM_main_add_notifier(NC_GEOM | ND_DATA, me);
+
+  return true;
+}
+bool ED_mesh_uv_remove_active(Mesh *me)
+{
+  CustomData *ldata = GET_CD_DATA(me, ldata);
+  const int n = CustomData_get_active_layer(ldata, CD_PROP_FLOAT2);
+
+  if (n != -1) {
+    return ED_mesh_uv_remove_index(me, n);
+  }
+  return false;
+}
+bool ED_mesh_uv_remove_named(Mesh *me, const char *name)
+{
+  CustomData *ldata = GET_CD_DATA(me, ldata);
+  const int n = CustomData_get_named_layer(ldata, CD_PROP_FLOAT2, name);
+  if (n != -1) {
+    return ED_mesh_uv_remove_index(me, n);
+  }
+  return false;
+}
+
+int ED_mesh_color_add(
+    Mesh *me, const char *name, const bool active_set, const bool do_init, ReportList *reports)
+{
+  /* If no name is supplied, provide a backwards compatible default. */
+  if (!name) {
+    name = "Col";
+  }
+
+  if (const CustomDataLayer *layer = BKE_id_attribute_find(
+          &me->id, me->active_color_attribute, CD_PROP_BYTE_COLOR, ATTR_DOMAIN_CORNER)) {
+    int dummy;
+    const CustomData *data = mesh_customdata_get_type(me, BM_LOOP, &dummy);
+    return CustomData_get_named_layer(data, CD_PROP_BYTE_COLOR, layer->name);
+  }
+
+  CustomDataLayer *layer = BKE_id_attribute_new(
+      &me->id, name, CD_PROP_BYTE_COLOR, ATTR_DOMAIN_CORNER, reports);
+
+  if (do_init) {
+    const char *active_name = me->active_color_attribute;
+    if (const CustomDataLayer *active_layer = BKE_id_attributes_color_find(&me->id, active_name)) {
+      if (const BMEditMesh *em = me->edit_mesh) {
+        BMesh &bm = *em->bm;
+        const int src_i = CustomData_get_named_layer(&bm.ldata, CD_PROP_BYTE_COLOR, active_name);
+        const int dst_i = CustomData_get_named_layer(&bm.ldata, CD_PROP_BYTE_COLOR, layer->name);
+        BM_data_layer_copy(&bm, &bm.ldata, CD_PROP_BYTE_COLOR, src_i, dst_i);
+      }
+      else {
+        memcpy(layer->data, active_layer->data, CustomData_get_elem_size(layer) * me->totloop);
+      }
     }
   }
-  else {
-    layernum = CustomData_number_of_layers(&me->ldata, CD_PROP_BYTE_COLOR);
 
-    if (CustomData_get_active_layer(&me->ldata, CD_PROP_BYTE_COLOR) != -1 && do_init) {
-      CustomData_add_layer_named(&me->ldata,
-                                 CD_PROP_BYTE_COLOR,
-                                 CD_DUPLICATE,
-                                 CustomData_get_layer(&me->ldata, CD_PROP_BYTE_COLOR),
-                                 me->totloop,
-                                 name);
-    }
-    else {
-      CustomData_add_layer_named(
-          &me->ldata, CD_PROP_BYTE_COLOR, CD_SET_DEFAULT, nullptr, me->totloop, name);
-    }
-
-    if (active_set || layernum == 0) {
-      CustomData_set_layer_active(&me->ldata, CD_PROP_BYTE_COLOR, layernum);
-    }
-
-    BKE_mesh_tessface_clear(me);
+  if (active_set) {
+    BKE_id_attributes_active_color_set(&me->id, layer->name);
   }
 
   DEG_id_tag_update(&me->id, 0);
   WM_main_add_notifier(NC_GEOM | ND_DATA, me);
 
-  return layernum;
+  int dummy;
+  const CustomData *data = mesh_customdata_get_type(me, BM_LOOP, &dummy);
+  return CustomData_get_named_layer(data, CD_PROP_BYTE_COLOR, layer->name);
 }
 
 bool ED_mesh_color_ensure(Mesh *me, const char *name)
 {
+  using namespace blender;
   BLI_assert(me->edit_mesh == nullptr);
-  CustomDataLayer *layer = BKE_id_attributes_active_color_get(&me->id);
-
-  if (!layer) {
-    CustomData_add_layer_named(
-        &me->ldata, CD_PROP_BYTE_COLOR, CD_SET_DEFAULT, nullptr, me->totloop, name);
-    layer = me->ldata.layers + CustomData_get_layer_index(&me->ldata, CD_PROP_BYTE_COLOR);
-
-    BKE_id_attributes_active_color_set(&me->id, layer);
-    BKE_mesh_tessface_clear(me);
+  if (me->attributes().contains(me->active_color_attribute)) {
+    return true;
   }
 
+  char unique_name[MAX_CUSTOMDATA_LAYER_NAME];
+  BKE_id_attribute_calc_unique_name(&me->id, name, unique_name);
+  if (!me->attributes_for_write().add(
+          unique_name, ATTR_DOMAIN_CORNER, CD_PROP_BYTE_COLOR, bke::AttributeInitDefaultValue())) {
+    return false;
+  }
+
+  BKE_id_attributes_active_color_set(&me->id, unique_name);
+  BKE_mesh_tessface_clear(me);
   DEG_id_tag_update(&me->id, 0);
 
-  return (layer != nullptr);
+  return true;
 }
 
 /*********************** General poll ************************/
@@ -471,57 +531,44 @@ static bool layers_poll(bContext *C)
 
 /*********************** Sculpt Vertex colors operators ************************/
 
-int ED_mesh_sculpt_color_add(Mesh *me,
-                             const char *name,
-                             const bool do_init,
-                             ReportList * /*reports*/)
+int ED_mesh_sculpt_color_add(Mesh *me, const char *name, const bool do_init, ReportList *reports)
 {
-  /* NOTE: keep in sync with #ED_mesh_uv_add. */
-
-  BMEditMesh *em;
-  int layernum;
-
-  if (me->edit_mesh) {
-    em = me->edit_mesh;
-
-    layernum = CustomData_number_of_layers(&em->bm->vdata, CD_PROP_COLOR);
-
-    /* CD_PROP_COLOR */
-    BM_data_layer_add_named(em->bm, &em->bm->vdata, CD_PROP_COLOR, name);
-    /* copy data from active vertex color layer */
-    if (layernum && do_init) {
-      const int layernum_dst = CustomData_get_active_layer(&em->bm->vdata, CD_PROP_COLOR);
-      BM_data_layer_copy(em->bm, &em->bm->vdata, CD_PROP_COLOR, layernum_dst, layernum);
-    }
-    if (layernum == 0) {
-      CustomData_set_layer_active(&em->bm->vdata, CD_PROP_COLOR, layernum);
-    }
+  /* If no name is supplied, provide a backwards compatible default. */
+  if (!name) {
+    name = "Color";
   }
-  else {
-    layernum = CustomData_number_of_layers(&me->vdata, CD_PROP_COLOR);
 
-    if (CustomData_has_layer(&me->vdata, CD_PROP_COLOR) && do_init) {
-      const MPropCol *color_data = (const MPropCol *)CustomData_get_layer(&me->vdata,
-                                                                          CD_PROP_COLOR);
-      CustomData_add_layer_named(
-          &me->vdata, CD_PROP_COLOR, CD_DUPLICATE, (MPropCol *)color_data, me->totvert, name);
-    }
-    else {
-      CustomData_add_layer_named(
-          &me->vdata, CD_PROP_COLOR, CD_SET_DEFAULT, nullptr, me->totvert, name);
-    }
+  if (const CustomDataLayer *layer = BKE_id_attribute_find(
+          &me->id, me->active_color_attribute, CD_PROP_COLOR, ATTR_DOMAIN_POINT)) {
+    int dummy;
+    const CustomData *data = mesh_customdata_get_type(me, BM_LOOP, &dummy);
+    return CustomData_get_named_layer(data, CD_PROP_BYTE_COLOR, layer->name);
+  }
 
-    if (layernum == 0) {
-      CustomData_set_layer_active(&me->vdata, CD_PROP_COLOR, layernum);
-    }
+  CustomDataLayer *layer = BKE_id_attribute_new(
+      &me->id, name, CD_PROP_COLOR, ATTR_DOMAIN_POINT, reports);
 
-    BKE_mesh_tessface_clear(me);
+  if (do_init) {
+    const char *active_name = me->active_color_attribute;
+    if (const CustomDataLayer *active_layer = BKE_id_attributes_color_find(&me->id, active_name)) {
+      if (const BMEditMesh *em = me->edit_mesh) {
+        BMesh &bm = *em->bm;
+        const int src_i = CustomData_get_named_layer(&bm.vdata, CD_PROP_COLOR, active_name);
+        const int dst_i = CustomData_get_named_layer(&bm.vdata, CD_PROP_COLOR, layer->name);
+        BM_data_layer_copy(&bm, &bm.vdata, CD_PROP_COLOR, src_i, dst_i);
+      }
+      else {
+        memcpy(layer->data, active_layer->data, CustomData_get_elem_size(layer) * me->totloop);
+      }
+    }
   }
 
   DEG_id_tag_update(&me->id, 0);
   WM_main_add_notifier(NC_GEOM | ND_DATA, me);
 
-  return layernum;
+  int dummy;
+  const CustomData *data = mesh_customdata_get_type(me, BM_VERT, &dummy);
+  return CustomData_get_named_layer(data, CD_PROP_COLOR, layer->name);
 }
 
 /*********************** UV texture operators ************************/
