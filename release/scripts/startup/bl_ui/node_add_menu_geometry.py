@@ -207,8 +207,13 @@ class NODE_MT_category_GEO_MATRIX(Menu):
         node_add_menu.add_node_type(layout, "FunctionNodeCombineMatrix4x4")
         node_add_menu.add_node_type(layout, "FunctionNodeSeparateMatrix3x3")
         node_add_menu.add_node_type(layout, "FunctionNodeSeparateMatrix4x4")
+        node_add_menu.add_node_type(layout, "FunctionNodeDecomposeMatrix3x3")
+        node_add_menu.add_node_type(layout, "FunctionNodeDecomposeMatrix4x4")
         node_add_menu.add_node_type(layout, "FunctionNodeMatrix3x3Math")
         node_add_menu.add_node_type(layout, "FunctionNodeMatrix4x4Math")
+        node_add_menu.add_node_type(layout, "FunctionNodeRotateMatrix3x3")
+        node_add_menu.add_node_type(layout, "FunctionNodeScaleMatrix3x3")
+        node_add_menu.add_node_type(layout, "FunctionNodeTranslateMatrix4x4")
         node_add_menu.draw_assets_for_catalog(layout, self.bl_label)
 
 

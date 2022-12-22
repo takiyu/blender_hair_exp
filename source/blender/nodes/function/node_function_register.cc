@@ -12,6 +12,8 @@ void register_function_nodes()
   register_node_type_fn_combine_matrix_3x3();
   register_node_type_fn_combine_matrix_4x4();
   register_node_type_fn_compare();
+  register_node_type_fn_decompose_matrix_3x3();
+  register_node_type_fn_decompose_matrix_4x4();
   register_node_type_fn_float_to_int();
   register_node_type_fn_input_bool();
   register_node_type_fn_input_color();
@@ -26,10 +28,13 @@ void register_function_nodes()
   register_node_type_fn_random_value();
   register_node_type_fn_replace_string();
   register_node_type_fn_rotate_euler();
+  register_node_type_fn_rotate_matrix_3x3();
+  register_node_type_fn_scale_matrix_3x3();
   register_node_type_fn_separate_color();
   register_node_type_fn_separate_matrix_3x3();
   register_node_type_fn_separate_matrix_4x4();
   register_node_type_fn_slice_string();
   register_node_type_fn_string_length();
+  register_node_type_fn_translate_matrix_4x4();
   register_node_type_fn_value_to_string();
 }
