@@ -120,7 +120,7 @@ static void delete_customdata_layer(Mesh *me, CustomDataLayer *layer)
   int layer_index, tot, n;
 
   char htype = BM_FACE;
-  if (ELEM(type, CD_PROP_BYTE_COLOR, CD_MLOOPUV)) {
+  if (ELEM(type, CD_PROP_BYTE_COLOR, CD_PROP_FLOAT2)) {
     htype = BM_LOOP;
   }
   else if (ELEM(type, CD_PROP_COLOR)) {
