@@ -2243,7 +2243,7 @@ compile_OIIO() {
   fi
 
   # To be changed each time we make edits that would modify the compiled result!
-  oiio_magic=18
+  oiio_magic=19
   _init_oiio
 
   # Force having own builds for the dependencies.
@@ -2323,7 +2323,7 @@ compile_OIIO() {
     cmake_d="$cmake_d -D USE_OPENVDB=OFF"
     cmake_d="$cmake_d -D BUILD_TESTING=OFF"
     cmake_d="$cmake_d -D OIIO_BUILD_TESTS=OFF"
-    cmake_d="$cmake_d -D OIIO_BUILD_TOOLS=OFF"
+    cmake_d="$cmake_d -D OIIO_BUILD_TOOLS=ON"
     cmake_d="$cmake_d -D TXT2MAN="
     #cmake_d="$cmake_d -D CMAKE_EXPORT_COMPILE_COMMANDS=ON"
     #cmake_d="$cmake_d -D CMAKE_VERBOSE_MAKEFILE=ON"
@@ -3187,7 +3187,6 @@ compile_USD() {
     if [ -d $INST/tbb ]; then
       cmake_d="$cmake_d $cmake_d -D TBB_ROOT_DIR=$INST/tbb"
     fi
-    cmake_d="$cmake_d -DPXR_SET_INTERNAL_NAMESPACE=usdBlender"
     cmake_d="$cmake_d -DPXR_ENABLE_PYTHON_SUPPORT=OFF"
     cmake_d="$cmake_d -DPXR_BUILD_IMAGING=OFF"
     cmake_d="$cmake_d -DPXR_BUILD_TESTS=OFF"
