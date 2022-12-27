@@ -265,6 +265,9 @@ int ED_mesh_uv_add(
     name = DATA_("UVMap");
   }
 
+  char unique_name[MAX_CUSTOMDATA_LAYER_NAME];
+
+  BKE_id_attribute_calc_unique_name(&me->id, name, unique_name);
   bool is_init = false;
 
   if (me->edit_mesh) {
@@ -276,7 +279,7 @@ int ED_mesh_uv_add(
       return -1;
     }
 
-    BM_data_layer_add_named(em->bm, &em->bm->ldata, CD_PROP_FLOAT2, name);
+    BM_data_layer_add_named(em->bm, &em->bm->ldata, CD_PROP_FLOAT2, unique_name);
     BM_uv_map_ensure_selection_and_pin_attributes(em->bm);
     /* copy data from active UV */
     if (layernum_dst && do_init) {
@@ -302,13 +305,13 @@ int ED_mesh_uv_add(
                                  CD_DUPLICATE,
                                  CustomData_get_layer(&me->ldata, CD_PROP_FLOAT2),
                                  me->totloop,
-                                 name);
+                                 unique_name);
 
       is_init = true;
     }
     else {
       CustomData_add_layer_named(
-          &me->ldata, CD_PROP_FLOAT2, CD_SET_DEFAULT, nullptr, me->totloop, name);
+          &me->ldata, CD_PROP_FLOAT2, CD_SET_DEFAULT, nullptr, me->totloop, unique_name);
     }
 
     if (active_set || layernum_dst == 0) {
