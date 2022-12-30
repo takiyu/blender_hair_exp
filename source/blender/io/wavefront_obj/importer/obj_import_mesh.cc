@@ -154,7 +154,7 @@ void MeshFromGeometry::fixup_invalid_faces()
 
 void MeshFromGeometry::create_vertices(Mesh *mesh)
 {
-  MutableSpan<float3> positions = mesh->positions_for_write();
+  MutableSpan<float3> positions = mesh->vert_positions_for_write();
   /* Go through all the global vertex indices from min to max,
    * checking which ones are actually and building a global->local
    * index mapping. Write out the used vertex positions into the Mesh

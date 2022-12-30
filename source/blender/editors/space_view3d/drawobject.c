@@ -69,7 +69,7 @@ void ED_draw_object_facemap(Depsgraph *depsgraph,
   if (facemap_data) {
     GPU_blend(GPU_BLEND_ALPHA);
 
-    const float(*positions)[3] = BKE_mesh_positions(me);
+    const float(*positions)[3] = BKE_mesh_vert_positions(me);
     const MPoly *polys = BKE_mesh_polys(me);
     const int *corner_verts = BKE_mesh_corner_verts(me);
 

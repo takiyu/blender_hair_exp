@@ -37,7 +37,7 @@ static VArray<float3> construct_uv_gvarray(const Mesh &mesh,
                                            const float margin,
                                            const eAttrDomain domain)
 {
-  const Span<float3> positions = mesh.positions();
+  const Span<float3> positions = mesh.vert_positions();
   const Span<MPoly> polys = mesh.polys();
   const Span<int> corner_verts = mesh.corner_verts();
 

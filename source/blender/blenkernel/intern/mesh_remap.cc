@@ -1306,7 +1306,7 @@ void BKE_mesh_remap_calc_loops_from_mesh(const int mode,
     /* Unlike above, those are one-to-one mappings, simpler! */
     int *loop_to_poly_map_src = nullptr;
 
-    const float(*positions_src)[3] = BKE_mesh_positions(me_src);
+    const float(*positions_src)[3] = BKE_mesh_vert_positions(me_src);
     const int num_verts_src = me_src->totvert;
     float(*vcos_src)[3] = nullptr;
     const MEdge *edges_src = BKE_mesh_edges(me_src);

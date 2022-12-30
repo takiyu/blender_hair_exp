@@ -1167,7 +1167,7 @@ static bool surfacedeformBind(Object *ob,
                               Mesh *mesh)
 {
   BVHTreeFromMesh treeData = {NULL};
-  const float(*positions)[3] = BKE_mesh_positions(target);
+  const float(*positions)[3] = BKE_mesh_vert_positions(target);
   const MPoly *mpoly = BKE_mesh_polys(target);
   const MEdge *medge = BKE_mesh_edges(target);
   const int *corner_verts = BKE_mesh_corner_verts(target);

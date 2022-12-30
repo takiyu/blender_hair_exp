@@ -42,7 +42,7 @@ Mesh *BKE_mesh_mirror_bisect_on_mirror_plane_for_modifier(MirrorModifierData *mm
   BMIter viter;
   BMVert *v, *v_next;
 
-  BMeshCreateParams bmesh_create_params{0};
+  BMeshCreateParams bmesh_create_params{false};
 
   BMeshFromMeshParams bmesh_from_mesh_params{};
   bmesh_from_mesh_params.calc_face_normal = true;
@@ -89,7 +89,7 @@ void BKE_mesh_mirror_apply_mirror_on_axis(struct Main *bmain,
                                           const float dist)
 {
   BMeshCreateParams bmesh_create_params{};
-  bmesh_create_params.use_toolflags = 1;
+  bmesh_create_params.use_toolflags = true;
 
   BMeshFromMeshParams bmesh_from_mesh_params{};
   bmesh_from_mesh_params.calc_face_normal = true;
@@ -203,9 +203,9 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
 
   /* Subdivision-surface for eg won't have mesh data in the custom-data arrays.
    * Now add position/#MEdge/#MPoly layers. */
-  if (BKE_mesh_positions(mesh) != NULL) {
-    memcpy(BKE_mesh_positions_for_write(result),
-           BKE_mesh_positions(mesh),
+  if (BKE_mesh_vert_positions(mesh) != NULL) {
+    memcpy(BKE_mesh_vert_positions_for_write(result),
+           BKE_mesh_vert_positions(mesh),
            sizeof(float[3]) * mesh->totvert);
   }
   if (!CustomData_has_layer(&mesh->edata, CD_MEDGE)) {
@@ -238,7 +238,7 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
   }
 
   /* mirror vertex coordinates */
-  float(*positions)[3] = BKE_mesh_positions_for_write(result);
+  float(*positions)[3] = BKE_mesh_vert_positions_for_write(result);
   for (i = 0; i < maxVerts; i++) {
     const int vert_index_prev = i;
     const int vert_index = maxVerts + i;
@@ -411,7 +411,7 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
 
     /* calculate custom normals into loop_normals, then mirror first half into second half */
 
-    BKE_mesh_normals_loop_split(BKE_mesh_positions(result),
+    BKE_mesh_normals_loop_split(BKE_mesh_vert_positions(result),
                                 BKE_mesh_vertex_normals_ensure(result),
                                 result->totvert,
                                 BKE_mesh_edges(result),
@@ -453,27 +453,27 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
   }
 
   /* handle vgroup stuff */
-  if ((mmd->flag & MOD_MIR_VGROUP) && CustomData_has_layer(&result->vdata, CD_MDEFORMVERT)) {
-    MDeformVert *dvert = BKE_mesh_deform_verts_for_write(result) + maxVerts;
-    int *flip_map = nullptr, flip_map_len = 0;
+  if (BKE_object_supports_vertex_groups(ob)) {
+    if ((mmd->flag & MOD_MIR_VGROUP) && CustomData_has_layer(&result->vdata, CD_MDEFORMVERT)) {
+      MDeformVert *dvert = BKE_mesh_deform_verts_for_write(result) + maxVerts;
+      int flip_map_len = 0;
+      int *flip_map = BKE_object_defgroup_flip_map(ob, false, &flip_map_len);
+      if (flip_map) {
+        for (i = 0; i < maxVerts; dvert++, i++) {
+          /* merged vertices get both groups, others get flipped */
+          if (use_correct_order_on_merge && do_vtargetmap && (vtargetmap[i + maxVerts] != -1)) {
+            BKE_defvert_flip_merged(dvert - maxVerts, flip_map, flip_map_len);
+          }
+          else if (!use_correct_order_on_merge && do_vtargetmap && (vtargetmap[i] != -1)) {
+            BKE_defvert_flip_merged(dvert, flip_map, flip_map_len);
+          }
+          else {
+            BKE_defvert_flip(dvert, flip_map, flip_map_len);
+          }
+        }
 
-    flip_map = BKE_object_defgroup_flip_map(ob, false, &flip_map_len);
-
-    if (flip_map) {
-      for (i = 0; i < maxVerts; dvert++, i++) {
-        /* merged vertices get both groups, others get flipped */
-        if (use_correct_order_on_merge && do_vtargetmap && (vtargetmap[i + maxVerts] != -1)) {
-          BKE_defvert_flip_merged(dvert - maxVerts, flip_map, flip_map_len);
-        }
-        else if (!use_correct_order_on_merge && do_vtargetmap && (vtargetmap[i] != -1)) {
-          BKE_defvert_flip_merged(dvert, flip_map, flip_map_len);
-        }
-        else {
-          BKE_defvert_flip(dvert, flip_map, flip_map_len);
-        }
+        MEM_freeN(flip_map);
       }
-
-      MEM_freeN(flip_map);
     }
   }
 

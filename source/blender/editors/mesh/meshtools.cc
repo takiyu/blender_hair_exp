@@ -905,7 +905,7 @@ static bool ed_mesh_mirror_topo_table_update(Object *ob, Mesh *me_eval)
 static int mesh_get_x_mirror_vert_spatial(Object *ob, Mesh *me_eval, int index)
 {
   Mesh *me = static_cast<Mesh *>(ob->data);
-  const Span<float3> positions = me_eval ? me_eval->positions() : me->positions();
+  const Span<float3> positions = me_eval ? me_eval->vert_positions() : me->vert_positions();
 
   float vec[3];
 
@@ -1141,7 +1141,7 @@ int *mesh_get_x_mirror_faces(Object *ob, BMEditMesh *em, Mesh *me_eval)
   mirrorverts = static_cast<int *>(MEM_callocN(sizeof(int) * totvert, "MirrorVerts"));
   mirrorfaces = static_cast<int *>(MEM_callocN(sizeof(int[2]) * totface, "MirrorFaces"));
 
-  const Span<float3> positions = me_eval ? me_eval->positions() : me->positions();
+  const Span<float3> positions = me_eval ? me_eval->vert_positions() : me->vert_positions();
   MFace *mface = (MFace *)CustomData_get_layer(&(me_eval ? me_eval : me)->fdata, CD_MFACE);
 
   ED_mesh_mirror_spatial_table_begin(ob, em, me_eval);
@@ -1271,7 +1271,7 @@ bool ED_mesh_pick_face_vert(
     const float mval_f[2] = {float(mval[0]), float(mval[1])};
     float len_best = FLT_MAX;
 
-    const Span<float3> positions = me_eval->positions();
+    const Span<float3> positions = me_eval->vert_positions();
     const Span<MPoly> polys = me_eval->polys();
     const Span<int> corner_verts = me_eval->corner_verts();
 
@@ -1407,7 +1407,7 @@ bool ED_mesh_pick_vert(
     }
 
     /* setup data */
-    data.positions = me->positions();
+    data.positions = me->vert_positions();
     data.region = region;
     data.mval_f = mval_f;
     data.len_best = FLT_MAX;

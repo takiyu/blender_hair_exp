@@ -366,7 +366,7 @@ static int rna_MeshVertex_index_get(PointerRNA *ptr)
 {
   const Mesh *mesh = rna_mesh(ptr);
   const float(*position)[3] = (const float(*)[3])ptr->data;
-  const int index = (int)(position - BKE_mesh_positions(mesh));
+  const int index = (int)(position - BKE_mesh_vert_positions(mesh));
   BLI_assert(index >= 0);
   BLI_assert(index < mesh->totvert);
   return index;
@@ -652,7 +652,7 @@ static void rna_MeshPolygon_normal_get(PointerRNA *ptr, float *values)
 {
   Mesh *me = rna_mesh(ptr);
   MPoly *mp = (MPoly *)ptr->data;
-  const float(*positions)[3] = BKE_mesh_positions(me);
+  const float(*positions)[3] = BKE_mesh_vert_positions(me);
   const int *corner_verts = BKE_mesh_corner_verts(me);
   BKE_mesh_calc_poly_normal(mp, corner_verts + mp->loopstart, positions, values);
 }
@@ -729,7 +729,7 @@ static void rna_MeshPolygon_center_get(PointerRNA *ptr, float *values)
 {
   Mesh *me = rna_mesh(ptr);
   MPoly *mp = (MPoly *)ptr->data;
-  const float(*positions)[3] = BKE_mesh_positions(me);
+  const float(*positions)[3] = BKE_mesh_vert_positions(me);
   const int *corner_verts = BKE_mesh_corner_verts(me);
   BKE_mesh_calc_poly_center(mp, corner_verts + mp->loopstart, positions, values);
 }
@@ -738,7 +738,7 @@ static float rna_MeshPolygon_area_get(PointerRNA *ptr)
 {
   Mesh *me = (Mesh *)ptr->owner_id;
   MPoly *mp = (MPoly *)ptr->data;
-  const float(*positions)[3] = BKE_mesh_positions(me);
+  const float(*positions)[3] = BKE_mesh_vert_positions(me);
   const int *corner_verts = BKE_mesh_corner_verts(me);
   return BKE_mesh_calc_poly_area(mp, corner_verts + mp->loopstart, positions);
 }
@@ -767,7 +767,7 @@ static void rna_MeshLoopTriangle_normal_get(PointerRNA *ptr, float *values)
 {
   Mesh *me = rna_mesh(ptr);
   MLoopTri *lt = (MLoopTri *)ptr->data;
-  const float(*positions)[3] = BKE_mesh_positions(me);
+  const float(*positions)[3] = BKE_mesh_vert_positions(me);
   const int *corner_verts = BKE_mesh_corner_verts(me);
   const int v1 = corner_verts[lt->tri[0]];
   const int v2 = corner_verts[lt->tri[1]];
@@ -798,7 +798,7 @@ static float rna_MeshLoopTriangle_area_get(PointerRNA *ptr)
 {
   Mesh *me = rna_mesh(ptr);
   MLoopTri *lt = (MLoopTri *)ptr->data;
-  const float(*positions)[3] = BKE_mesh_positions(me);
+  const float(*positions)[3] = BKE_mesh_vert_positions(me);
   const int *corner_verts = BKE_mesh_corner_verts(me);
   const int v1 = corner_verts[lt->tri[0]];
   const int v2 = corner_verts[lt->tri[1]];
@@ -1675,7 +1675,7 @@ static void rna_Mesh_vertices_begin(CollectionPropertyIterator *iter, PointerRNA
 {
   Mesh *mesh = rna_mesh(ptr);
   rna_iterator_array_begin(
-      iter, BKE_mesh_positions_for_write(mesh), sizeof(float[3]), mesh->totvert, false, NULL);
+      iter, BKE_mesh_vert_positions_for_write(mesh), sizeof(float[3]), mesh->totvert, false, NULL);
 }
 static int rna_Mesh_vertices_length(PointerRNA *ptr)
 {
@@ -1690,7 +1690,7 @@ int rna_Mesh_vertices_lookup_int(PointerRNA *ptr, int index, PointerRNA *r_ptr)
   }
   r_ptr->owner_id = &mesh->id;
   r_ptr->type = &RNA_MeshVertex;
-  r_ptr->data = &BKE_mesh_positions_for_write(mesh)[index];
+  r_ptr->data = &BKE_mesh_vert_positions_for_write(mesh)[index];
   return true;
 }
 

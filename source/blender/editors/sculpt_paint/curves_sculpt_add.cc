@@ -142,7 +142,7 @@ struct AddOperationExecutor {
       report_empty_evaluated_surface(stroke_extension.reports);
       return;
     }
-    surface_positions_eval_ = surface_eval_->positions();
+    surface_positions_eval_ = surface_eval_->vert_positions();
     surface_corner_verts_eval_ = surface_eval_->corner_verts();
     surface_looptris_eval_ = surface_eval_->looptris();
     BKE_bvhtree_from_mesh_get(&surface_bvh_eval_, surface_eval_, BVHTREE_FROM_LOOPTRI, 2);
@@ -421,9 +421,12 @@ struct AddOperationExecutor {
           brush_radius_su,
           [&](const int index, const float3 & /*co*/, const float /*dist_sq*/) {
             const MLoopTri &looptri = surface_looptris_eval_[index];
-            const float3 &v0_su = surface_positions_eval_[surface_corner_verts_eval_[looptri.tri[0]]];
-            const float3 &v1_su = surface_positions_eval_[surface_corner_verts_eval_[looptri.tri[1]]];
-            const float3 &v2_su = surface_positions_eval_[surface_corner_verts_eval_[looptri.tri[2]]];
+            const float3 &v0_su =
+                surface_positions_eval_[surface_corner_verts_eval_[looptri.tri[0]]];
+            const float3 &v1_su =
+                surface_positions_eval_[surface_corner_verts_eval_[looptri.tri[1]]];
+            const float3 &v2_su =
+                surface_positions_eval_[surface_corner_verts_eval_[looptri.tri[2]]];
             float3 normal_su;
             normal_tri_v3(normal_su, v0_su, v1_su, v2_su);
             if (math::dot(normal_su, view_direction_su) >= 0.0f) {

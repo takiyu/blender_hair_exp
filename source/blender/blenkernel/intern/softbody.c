@@ -2632,7 +2632,7 @@ static void springs_from_mesh(Object *ob)
   BodyPoint *bp;
   int a;
   float scale = 1.0f;
-  const float(*positions)[3] = BKE_mesh_positions(me);
+  const float(*positions)[3] = BKE_mesh_vert_positions(me);
 
   sb = ob->soft;
   if (me && sb) {
@@ -2755,7 +2755,7 @@ static void mesh_faces_to_scratch(Object *ob)
   MLoopTri *looptri, *lt;
   BodyFace *bodyface;
   int a;
-  const float(*positions)[3] = BKE_mesh_positions(me);
+  const float(*positions)[3] = BKE_mesh_vert_positions(me);
   const MPoly *polys = BKE_mesh_polys(me);
   const int *corner_verts = BKE_mesh_corner_verts(me);
 

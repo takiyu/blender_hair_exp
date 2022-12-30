@@ -5,7 +5,7 @@
  * \ingroup render
  */
 
-#include <string.h>
+#include <cstring>
 
 #include "MEM_guardedalloc.h"
 
@@ -40,26 +40,26 @@
 #include "IMB_imbuf.h"
 #include "IMB_imbuf_types.h"
 
-typedef void (*MPassKnownData)(DerivedMesh *lores_dm,
-                               DerivedMesh *hires_dm,
-                               void *thread_data,
-                               void *bake_data,
-                               ImBuf *ibuf,
-                               const int face_index,
-                               const int lvl,
-                               const float st[2],
-                               float tangmat[3][3],
-                               const int x,
-                               const int y);
+using MPassKnownData = void (*)(DerivedMesh *lores_dm,
+                                DerivedMesh *hires_dm,
+                                void *thread_data,
+                                void *bake_data,
+                                ImBuf *ibuf,
+                                const int face_index,
+                                const int lvl,
+                                const float st[2],
+                                float tangmat[3][3],
+                                const int x,
+                                const int y);
 
-typedef void *(*MInitBakeData)(MultiresBakeRender *bkr, ImBuf *ibuf);
-typedef void (*MFreeBakeData)(void *bake_data);
+using MInitBakeData = void *(*)(MultiresBakeRender *bkr, ImBuf *ibuf);
+using MFreeBakeData = void (*)(void *bake_data);
 
-typedef struct MultiresBakeResult {
+struct MultiresBakeResult {
   float height_min, height_max;
-} MultiresBakeResult;
+};
 
-typedef struct {
+struct MResolvePixelData {
   const float (*positions)[3];
   const float (*vert_normals)[3];
   MPoly *mpoly;
@@ -80,32 +80,32 @@ typedef struct {
   MPassKnownData pass_data;
   /* material aligned UV array */
   Image **image_array;
-} MResolvePixelData;
+};
 
-typedef void (*MFlushPixel)(const MResolvePixelData *data, const int x, const int y);
+using MFlushPixel = void (*)(const MResolvePixelData *data, const int x, const int y);
 
-typedef struct {
+struct MBakeRast {
   int w, h;
   char *texels;
   const MResolvePixelData *data;
   MFlushPixel flush_pixel;
   bool *do_update;
-} MBakeRast;
+};
 
-typedef struct {
+struct MHeightBakeData {
   float *heights;
   DerivedMesh *ssdm;
   const int *orig_index_mp_to_orig;
-} MHeightBakeData;
+};
 
-typedef struct {
+struct MNormalBakeData {
   const int *orig_index_mp_to_orig;
-} MNormalBakeData;
+};
 
-typedef struct BakeImBufuserData {
+struct BakeImBufuserData {
   float *displacement_buffer;
   char *mask_buffer;
-} BakeImBufuserData;
+};
 
 static void multiresbake_get_normal(const MResolvePixelData *data,
                                     const int tri_num,
@@ -334,13 +334,13 @@ static int multiresbake_test_break(MultiresBakeRender *bkr)
 
 /* **** Threading routines **** */
 
-typedef struct MultiresBakeQueue {
+struct MultiresBakeQueue {
   int cur_tri;
   int tot_tri;
   SpinLock spin;
-} MultiresBakeQueue;
+};
 
-typedef struct MultiresBakeThread {
+struct MultiresBakeThread {
   /* this data is actually shared between all the threads */
   MultiresBakeQueue *queue;
   MultiresBakeRender *bkr;
@@ -353,7 +353,7 @@ typedef struct MultiresBakeThread {
 
   /* displacement-specific data */
   float height_min, height_max;
-} MultiresBakeThread;
+};
 
 static int multires_bake_queue_next_tri(MultiresBakeQueue *queue)
 {
@@ -484,8 +484,9 @@ static void do_multires_bake(MultiresBakeRender *bkr,
 
   Mesh *temp_mesh = BKE_mesh_new_nomain(
       dm->getNumVerts(dm), dm->getNumEdges(dm), 0, dm->getNumLoops(dm), dm->getNumPolys(dm));
-  memcpy(
-      temp_mesh->positions_for_write().data(), positions, temp_mesh->totvert * sizeof(float[3]));
+  memcpy(temp_mesh->vert_positions_for_write().data(),
+         positions,
+         temp_mesh->totvert * sizeof(float[3]));
   memcpy(BKE_mesh_edges_for_write(temp_mesh),
          dm->getEdgeArray(dm),
          temp_mesh->totedge * sizeof(MEdge));
@@ -832,7 +833,7 @@ static void apply_heights_callback(DerivedMesh *lores_dm,
                                    const int tri_index,
                                    const int lvl,
                                    const float st[2],
-                                   float UNUSED(tangmat[3][3]),
+                                   float /*tangmat*/[3][3],
                                    const int x,
                                    const int y)
 {
@@ -911,7 +912,7 @@ static void apply_heights_callback(DerivedMesh *lores_dm,
 
 /* **************** Normal Maps Baker **************** */
 
-static void *init_normal_data(MultiresBakeRender *bkr, ImBuf *UNUSED(ibuf))
+static void *init_normal_data(MultiresBakeRender *bkr, ImBuf * /*ibuf*/)
 {
   MNormalBakeData *normal_data;
   DerivedMesh *lodm = bkr->lores_dm;
@@ -941,7 +942,7 @@ static void free_normal_data(void *bake_data)
  */
 static void apply_tangmat_callback(DerivedMesh *lores_dm,
                                    DerivedMesh *hires_dm,
-                                   void *UNUSED(thread_data),
+                                   void * /*thread_data*/,
                                    void *bake_data,
                                    ImBuf *ibuf,
                                    const int tri_index,
@@ -1108,7 +1109,7 @@ static void create_ao_raytree(MultiresBakeRender *bkr, MAOBakeData *ao_data)
   RE_rayobject_done(raytree);
 }
 
-static void *init_ao_data(MultiresBakeRender *bkr, ImBuf *UNUSED(ibuf))
+static void *init_ao_data(MultiresBakeRender *bkr, ImBuf */*ibuf*/)
 {
   MAOBakeData *ao_data;
   DerivedMesh *lodm = bkr->lores_dm;
@@ -1202,13 +1203,13 @@ static int trace_ao_ray(MAOBakeData *ao_data, float ray_start[3], float ray_dire
 
 static void apply_ao_callback(DerivedMesh *lores_dm,
                               DerivedMesh *hires_dm,
-                              void *UNUSED(thread_data),
+                              void */*thread_data*/,
                               void *bake_data,
                               ImBuf *ibuf,
                               const int tri_index,
                               const int lvl,
                               const float st[2],
-                              float UNUSED(tangmat[3][3]),
+                              float /*tangmat[3][3]*/,
                               const int x,
                               const int y)
 {

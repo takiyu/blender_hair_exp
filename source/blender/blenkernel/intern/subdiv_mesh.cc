@@ -86,7 +86,7 @@ static void subdiv_mesh_ctx_cache_uv_layers(SubdivMeshContext *ctx)
 static void subdiv_mesh_ctx_cache_custom_data_layers(SubdivMeshContext *ctx)
 {
   Mesh *subdiv_mesh = ctx->subdiv_mesh;
-  ctx->subdiv_positions = subdiv_mesh->positions_for_write().data();
+  ctx->subdiv_positions = subdiv_mesh->vert_positions_for_write().data();
   ctx->subdiv_edges = BKE_mesh_edges_for_write(subdiv_mesh);
   ctx->subdiv_polys = BKE_mesh_polys_for_write(subdiv_mesh);
   ctx->subdiv_corner_verts = subdiv_mesh->corner_verts_for_write();
@@ -1175,7 +1175,7 @@ Mesh *BKE_subdiv_to_mesh(Subdiv *subdiv,
   subdiv_context.settings = settings;
 
   subdiv_context.coarse_mesh = coarse_mesh;
-  subdiv_context.coarse_positions = BKE_mesh_positions(coarse_mesh);
+  subdiv_context.coarse_positions = BKE_mesh_vert_positions(coarse_mesh);
   subdiv_context.coarse_edges = BKE_mesh_edges(coarse_mesh);
   subdiv_context.coarse_polys = BKE_mesh_polys(coarse_mesh);
   subdiv_context.coarse_corner_verts = coarse_mesh->corner_verts();

@@ -221,7 +221,7 @@ static void extrude_mesh_vertices(Mesh &mesh,
   const IndexRange new_vert_range{orig_vert_size, selection.size()};
   const IndexRange new_edge_range{orig_edge_size, selection.size()};
 
-  MutableSpan<float3> new_positions = mesh.positions_for_write().slice(new_vert_range);
+  MutableSpan<float3> new_positions = mesh.vert_positions_for_write().slice(new_vert_range);
   MutableSpan<MEdge> new_edges = mesh.edges_for_write().slice(new_edge_range);
 
   for (const int i_selection : selection.index_range()) {
@@ -605,7 +605,7 @@ static void extrude_mesh_edges(Mesh &mesh,
     return true;
   });
 
-  MutableSpan<float3> new_positions = mesh.positions_for_write().slice(new_vert_range);
+  MutableSpan<float3> new_positions = mesh.vert_positions_for_write().slice(new_vert_range);
   if (edge_offsets.is_single()) {
     const float3 offset = edge_offsets.get_internal_single();
     threading::parallel_for(new_positions.index_range(), 1024, [&](const IndexRange range) {
@@ -998,7 +998,7 @@ static void extrude_mesh_face_regions(Mesh &mesh,
   /* Translate vertices based on the offset. If the vertex is used by a selected edge, it will
    * have been duplicated and only the new vertex should use the offset. Otherwise the vertex might
    * still need an offset, but it was reused on the inside of a region of extruded faces. */
-  MutableSpan<float3> positions = mesh.positions_for_write();
+  MutableSpan<float3> positions = mesh.vert_positions_for_write();
   if (poly_offsets.is_single()) {
     const float3 offset = poly_offsets.get_internal_single();
     threading::parallel_for(
@@ -1122,7 +1122,7 @@ static void extrude_individual_mesh_faces(Mesh &mesh,
               side_poly_range.size(),
               side_loop_range.size());
 
-  MutableSpan<float3> new_positions = mesh.positions_for_write().slice(new_vert_range);
+  MutableSpan<float3> new_positions = mesh.vert_positions_for_write().slice(new_vert_range);
   MutableSpan<MEdge> edges = mesh.edges_for_write();
   MutableSpan<MEdge> connect_edges = edges.slice(connect_edge_range);
   MutableSpan<MEdge> duplicate_edges = edges.slice(duplicate_edge_range);

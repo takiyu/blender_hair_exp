@@ -156,7 +156,7 @@ Span<float3> MeshAttributeInterpolator::ensure_barycentric_coords()
   }
   bary_coords_.reinitialize(mask_.min_array_size());
 
-  const Span<float3> positions = mesh_->positions();
+  const Span<float3> positions = mesh_->vert_positions();
   const Span<int> corner_verts = mesh_->corner_verts();
   const Span<MLoopTri> looptris = mesh_->looptris();
 
@@ -185,7 +185,7 @@ Span<float3> MeshAttributeInterpolator::ensure_nearest_weights()
   }
   nearest_weights_.reinitialize(mask_.min_array_size());
 
-  const Span<float3> positions = mesh_->positions();
+  const Span<float3> positions = mesh_->vert_positions();
   const Span<int> corner_verts = mesh_->corner_verts();
   const Span<MLoopTri> looptris = mesh_->looptris();
 
@@ -258,7 +258,7 @@ int sample_surface_points_spherical(RandomNumberGenerator &rng,
                                     Vector<int> &r_looptri_indices,
                                     Vector<float3> &r_positions)
 {
-  const Span<float3> positions = mesh.positions();
+  const Span<float3> positions = mesh.vert_positions();
   const Span<int> corner_verts = mesh.corner_verts();
   const Span<MLoopTri> looptris = mesh.looptris();
 
@@ -355,7 +355,7 @@ int sample_surface_points_projected(
     Vector<int> &r_looptri_indices,
     Vector<float3> &r_positions)
 {
-  const Span<float3> positions = mesh.positions();
+  const Span<float3> positions = mesh.vert_positions();
   const Span<int> corner_verts = mesh.corner_verts();
   const Span<MLoopTri> looptris = mesh.looptris();
 

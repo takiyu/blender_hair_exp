@@ -119,7 +119,7 @@ struct PuffOperationExecutor {
         reinterpret_cast<const float3 *>(CustomData_get_layer(&surface_->ldata, CD_NORMAL)),
         surface_->totloop};
 
-    surface_positions_ = surface_->positions();
+    surface_positions_ = surface_->vert_positions();
     surface_corner_verts_ = surface_->corner_verts();
     surface_looptris_ = surface_->looptris();
     BKE_bvhtree_from_mesh_get(&surface_bvh_, surface_, BVHTREE_FROM_LOOPTRI, 2);

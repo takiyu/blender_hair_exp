@@ -2201,7 +2201,7 @@ void DRW_subdivide_loose_geom(DRWSubdivCache *subdiv_cache, MeshBufferCache *cac
   int subd_vert_offset = 0;
 
   /* Subdivide each loose coarse edge. */
-  const Span<float3> coarse_positions = coarse_mesh->positions();
+  const Span<float3> coarse_positions = coarse_mesh->vert_positions();
   const Span<MEdge> coarse_edges = coarse_mesh->edges();
 
   int *vert_to_edge_buffer;

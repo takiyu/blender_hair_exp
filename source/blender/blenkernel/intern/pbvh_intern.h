@@ -189,8 +189,6 @@ struct PBVH {
 
   /* flag are verts/faces deformed */
   bool deformed;
-  bool show_mask;
-  bool show_face_sets;
   bool respect_hide;
 
   /* Dynamic topology */

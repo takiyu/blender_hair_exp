@@ -62,7 +62,7 @@ static VArray<float3> construct_uv_gvarray(const Mesh &mesh,
                                            const GeometryNodeUVUnwrapMethod method,
                                            const eAttrDomain domain)
 {
-  const Span<float3> positions = mesh.positions();
+  const Span<float3> positions = mesh.vert_positions();
   const Span<MEdge> edges = mesh.edges();
   const Span<MPoly> polys = mesh.polys();
   const Span<int> corner_verts = mesh.corner_verts();

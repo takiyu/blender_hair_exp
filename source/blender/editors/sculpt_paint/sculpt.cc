@@ -2908,8 +2908,15 @@ static void calc_brush_local_mat(const MTex *mtex, Object *ob, float local_mat[4
   copy_v3_v3(mat[3], cache->location);
 
   /* Scale by brush radius. */
+  float radius = cache->radius;
+
+  /* Square tips should scale by square root of 2. */
+  if (sculpt_tool_has_cube_tip(cache->brush->sculpt_tool)) {
+    radius += (radius * M_SQRT2 - radius) * (1.0f - cache->brush->tip_roundness);
+  }
+
   normalize_m4(mat);
-  scale_m4_fl(scale, cache->radius);
+  scale_m4_fl(scale, radius);
   mul_m4_m4m4(tmat, mat, scale);
 
   /* Return inverse (for converting from model-space coords to local area coords). */
@@ -3740,7 +3747,7 @@ static void sculpt_combine_proxies_node(Object &object,
   BKE_pbvh_node_get_proxies(&node, &proxies, &proxy_count);
 
   Mesh &mesh = *static_cast<Mesh *>(object.data);
-  MutableSpan<float3> positions = mesh.positions_for_write();
+  MutableSpan<float3> positions = mesh.vert_positions_for_write();
 
   PBVHVertexIter vd;
   BKE_pbvh_vertex_iter_begin (ss->pbvh, &node, vd, PBVH_ITER_UNIQUE) {
@@ -3877,7 +3884,7 @@ void SCULPT_flush_stroke_deform(Sculpt * /*sd*/, Object *ob, bool is_proxy_used)
 
     BKE_pbvh_search_gather(ss->pbvh, nullptr, nullptr, &nodes, &totnode);
 
-    MutableSpan<float3> positions = me->positions_for_write();
+    MutableSpan<float3> positions = me->vert_positions_for_write();
 
     threading::parallel_for(IndexRange(totnode), 1, [&](IndexRange range) {
       for (const int i : range) {

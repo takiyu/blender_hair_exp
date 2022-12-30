@@ -995,11 +995,11 @@ BLI_INLINE int *BKE_mesh_material_indices_for_write(Mesh *mesh)
       &mesh->pdata, CD_PROP_INT32, CD_SET_DEFAULT, NULL, mesh->totpoly, "material_index");
 }
 
-BLI_INLINE const float (*BKE_mesh_positions(const Mesh *mesh))[3]
+BLI_INLINE const float (*BKE_mesh_vert_positions(const Mesh *mesh))[3]
 {
   return (const float(*)[3])CustomData_get_layer_named(&mesh->vdata, CD_PROP_FLOAT3, "position");
 }
-BLI_INLINE float (*BKE_mesh_positions_for_write(Mesh *mesh))[3]
+BLI_INLINE float (*BKE_mesh_vert_positions_for_write(Mesh *mesh))[3]
 {
   return (float(*)[3])CustomData_duplicate_referenced_layer_named(
       &mesh->vdata, CD_PROP_FLOAT3, "position", mesh->totvert);
@@ -1067,13 +1067,13 @@ BLI_INLINE MDeformVert *BKE_mesh_deform_verts_for_write(Mesh *mesh)
 #  include "BLI_math_vec_types.hh"
 #  include "BLI_span.hh"
 
-inline blender::Span<blender::float3> Mesh::positions() const
+inline blender::Span<blender::float3> Mesh::vert_positions() const
 {
-  return {reinterpret_cast<const blender::float3 *>(BKE_mesh_positions(this)), this->totvert};
+  return {reinterpret_cast<const blender::float3 *>(BKE_mesh_vert_positions(this)), this->totvert};
 }
-inline blender::MutableSpan<blender::float3> Mesh::positions_for_write()
+inline blender::MutableSpan<blender::float3> Mesh::vert_positions_for_write()
 {
-  return {reinterpret_cast<blender::float3 *>(BKE_mesh_positions_for_write(this)), this->totvert};
+  return {reinterpret_cast<blender::float3 *>(BKE_mesh_vert_positions_for_write(this)), this->totvert};
 }
 
 inline blender::Span<MEdge> Mesh::edges() const

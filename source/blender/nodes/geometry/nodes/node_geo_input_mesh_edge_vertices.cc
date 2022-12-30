@@ -83,7 +83,7 @@ static VArray<float3> construct_edge_positions_gvarray(const Mesh &mesh,
                                                        const VertNumber vertex,
                                                        const eAttrDomain domain)
 {
-  const Span<float3> positions = mesh.positions();
+  const Span<float3> positions = mesh.vert_positions();
   const Span<MEdge> edges = mesh.edges();
 
   if (vertex == VertNumber::V1) {

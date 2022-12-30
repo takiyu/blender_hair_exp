@@ -551,12 +551,12 @@ static void update_active_fdata_layers(Mesh &mesh, CustomData *fdata, CustomData
   }
 
   if (CustomData_has_layer(ldata, CD_PROP_BYTE_COLOR)) {
-    if (mesh.active_color_attribute != NULL) {
+    if (mesh.active_color_attribute != nullptr) {
       act = CustomData_get_named_layer(ldata, CD_PROP_BYTE_COLOR, mesh.active_color_attribute);
       CustomData_set_layer_active(fdata, CD_MCOL, act);
     }
 
-    if (mesh.default_color_attribute != NULL) {
+    if (mesh.default_color_attribute != nullptr) {
       act = CustomData_get_named_layer(ldata, CD_PROP_BYTE_COLOR, mesh.default_color_attribute);
       CustomData_set_layer_render(fdata, CD_MCOL, act);
     }
@@ -1193,7 +1193,7 @@ void BKE_mesh_tessface_calc(Mesh *mesh)
                                      &mesh->fdata,
                                      &mesh->ldata,
                                      &mesh->pdata,
-                                     BKE_mesh_positions_for_write(mesh),
+                                     BKE_mesh_vert_positions_for_write(mesh),
                                      mesh->totface,
                                      mesh->totloop,
                                      mesh->totpoly);
@@ -1591,7 +1591,7 @@ MVert *BKE_mesh_legacy_convert_positions_to_verts(
 {
   using namespace blender;
 
-  const Span<float3> positions = mesh->positions();
+  const Span<float3> positions = mesh->vert_positions();
 
   CustomDataLayer mvert_layer{};
   mvert_layer.type = CD_MVERT;

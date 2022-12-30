@@ -651,7 +651,7 @@ void heat_bone_weighting(Object *ob,
   int a, tris_num, j, bbone, firstsegment, lastsegment;
   bool use_topology = (me->editflag & ME_EDIT_MIRROR_TOPO) != 0;
 
-  const float(*mesh_positions)[3] = BKE_mesh_positions(me);
+  const float(*mesh_positions)[3] = BKE_mesh_vert_positions(me);
   const MPoly *polys = BKE_mesh_polys(me);
   const int *corner_verts = BKE_mesh_corner_verts(me);
   bool use_vert_sel = (me->editflag & ME_EDIT_PAINT_VERT_SEL) != 0;
@@ -1773,7 +1773,7 @@ void ED_mesh_deform_bind_callback(Object *object,
   mdb.cagecos = MEM_callocN(sizeof(*mdb.cagecos) * mdb.cage_verts_num, "MeshDeformBindCos");
   copy_m4_m4(mdb.cagemat, cagemat);
 
-  const float(*positions)[3] = BKE_mesh_positions(mdb.cagemesh);
+  const float(*positions)[3] = BKE_mesh_vert_positions(mdb.cagemesh);
   for (a = 0; a < mdb.cage_verts_num; a++) {
     copy_v3_v3(mdb.cagecos[a], positions[a]);
   }

@@ -751,7 +751,7 @@ static bool remap_hair_emitter(Depsgraph *depsgraph,
   BKE_mesh_tessface_ensure(mesh);
 
   numverts = mesh->totvert;
-  float(*positions)[3] = BKE_mesh_positions_for_write(mesh);
+  float(*positions)[3] = BKE_mesh_vert_positions_for_write(mesh);
 
   /* convert to global coordinates */
   for (int i = 0; i < numverts; i++) {

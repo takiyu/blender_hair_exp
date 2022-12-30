@@ -155,7 +155,7 @@ static void read_mverts(CDStreamConfig &config, const AbcMeshData &mesh_data)
 
 void read_mverts(Mesh &mesh, const P3fArraySamplePtr positions, const N3fArraySamplePtr normals)
 {
-  MutableSpan<float3> mesh_positions = mesh.positions_for_write();
+  MutableSpan<float3> mesh_positions = mesh.vert_positions_for_write();
   for (int i = 0; i < positions->size(); i++) {
     Imath::V3f pos_in = (*positions)[i];
 
@@ -517,7 +517,7 @@ CDStreamConfig get_config(Mesh *mesh, const bool use_vertex_interpolation)
 {
   CDStreamConfig config;
   config.mesh = mesh;
-  config.positions = mesh->positions_for_write().data();
+  config.positions = mesh->vert_positions_for_write().data();
   config.corner_verts = mesh->corner_verts_for_write().data();
   config.mpoly = mesh->polys_for_write().data();
   config.totvert = mesh->totvert;

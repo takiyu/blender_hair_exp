@@ -144,7 +144,7 @@ void Mesh::loose_edges_tag_none() const
 blender::Span<MLoopTri> Mesh::looptris() const
 {
   this->runtime->looptris_cache.ensure([&](blender::Array<MLoopTri> &r_data) {
-    const Span<float3> positions = this->positions();
+    const Span<float3> positions = this->vert_positions();
     const Span<MPoly> polys = this->polys();
     const Span<int> corner_verts = this->corner_verts();
 
@@ -322,7 +322,7 @@ bool BKE_mesh_runtime_is_valid(Mesh *me_eval)
     printf("MESH: %s\n", me_eval->id.name + 2);
   }
 
-  MutableSpan<float3> positions = me_eval->positions_for_write();
+  MutableSpan<float3> positions = me_eval->vert_positions_for_write();
   MutableSpan<MEdge> edges = me_eval->edges_for_write();
   MutableSpan<MPoly> polys = me_eval->polys_for_write();
 

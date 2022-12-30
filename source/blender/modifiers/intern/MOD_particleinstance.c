@@ -318,7 +318,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
   const MPoly *orig_mpoly = BKE_mesh_polys(mesh);
   const int *orig_corner_verts = BKE_mesh_corner_verts(mesh);
   const int *orig_corner_edges = BKE_mesh_corner_edges(mesh);
-  float(*positions)[3] = BKE_mesh_positions_for_write(result);
+  float(*positions)[3] = BKE_mesh_vert_positions_for_write(result);
   MEdge *edges = BKE_mesh_edges_for_write(result);
   MPoly *mpoly = BKE_mesh_polys_for_write(result);
   int *corner_verts = BKE_mesh_corner_verts_for_write(result);

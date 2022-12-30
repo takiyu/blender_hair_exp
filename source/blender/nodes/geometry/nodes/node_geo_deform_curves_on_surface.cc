@@ -66,11 +66,11 @@ static void deform_curves(const CurvesGeometry &curves,
 
   const float4x4 curves_to_surface = surface_to_curves.inverted();
 
-  const Span<float3> surface_positions_old = surface_mesh_old.positions();
+  const Span<float3> surface_positions_old = surface_mesh_old.vert_positions();
   const Span<int> surface_corner_verts_old = surface_mesh_old.corner_verts();
   const Span<MLoopTri> surface_looptris_old = surface_mesh_old.looptris();
 
-  const Span<float3> surface_positions_new = surface_mesh_new.positions();
+  const Span<float3> surface_positions_new = surface_mesh_new.vert_positions();
   const Span<int> surface_corner_verts_new = surface_mesh_new.corner_verts();
   const Span<MLoopTri> surface_looptris_new = surface_mesh_new.looptris();
 

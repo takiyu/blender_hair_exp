@@ -639,7 +639,7 @@ Mesh *curve_to_mesh_sweep(const CurvesGeometry &main,
       offsets.vert.last(), offsets.edge.last(), 0, offsets.loop.last(), offsets.poly.last());
   mesh->flag |= ME_AUTOSMOOTH;
   mesh->smoothresh = DEG2RADF(180.0f);
-  MutableSpan<float3> positions = mesh->positions_for_write();
+  MutableSpan<float3> positions = mesh->vert_positions_for_write();
   MutableSpan<MEdge> edges = mesh->edges_for_write();
   MutableSpan<MPoly> polys = mesh->polys_for_write();
   MutableSpan<int> corner_verts = mesh->corner_verts_for_write();

@@ -1034,7 +1034,7 @@ static void bake_targets_populate_pixels_color_attributes(BakeTargets *targets,
   const int *corner_verts = BKE_mesh_corner_verts(me_eval);
   BKE_mesh_recalc_looptri(corner_verts,
                           BKE_mesh_polys(me_eval),
-                          BKE_mesh_positions(me_eval),
+                          BKE_mesh_vert_positions(me_eval),
                           me_eval->totloop,
                           me_eval->totpoly,
                           looptri);

@@ -734,7 +734,7 @@ static void make_duplis_verts(const DupliContext *ctx)
     VertexDupliData_Mesh vdd{};
     vdd.params = vdd_params;
     vdd.totvert = me_eval->totvert;
-    vdd.positions = me_eval->positions();
+    vdd.positions = me_eval->vert_positions();
     vdd.vert_normals = BKE_mesh_vertex_normals_ensure(me_eval);
     vdd.orco = (const float(*)[3])CustomData_get_layer(&me_eval->vdata, CD_ORCO);
 
@@ -1321,7 +1321,7 @@ static void make_duplis_faces(const DupliContext *ctx)
     fdd.totface = me_eval->totpoly;
     fdd.mpoly = me_eval->polys().data();
     fdd.corner_verts = me_eval->corner_verts().data();
-    fdd.positions = me_eval->positions();
+    fdd.positions = me_eval->vert_positions();
     fdd.mloopuv = (uv_idx != -1) ? (const MLoopUV *)CustomData_get_layer_n(
                                        &me_eval->ldata, CD_MLOOPUV, uv_idx) :
                                    nullptr;
@@ -1793,10 +1793,8 @@ ListBase *object_duplilist_preview(Depsgraph *depsgraph,
     if (nmd_orig->runtime_eval_log == nullptr) {
       continue;
     }
-    geo_log::GeoModifierLog *log = static_cast<geo_log::GeoModifierLog *>(
-        nmd_orig->runtime_eval_log);
-    if (const geo_log::ViewerNodeLog *viewer_log = log->find_viewer_node_log_for_path(
-            *viewer_path)) {
+    if (const geo_log::ViewerNodeLog *viewer_log =
+            geo_log::GeoModifierLog::find_viewer_node_log_for_path(*viewer_path)) {
       ctx.preview_base_geometry = &viewer_log->geometry;
       make_duplis_geometry_set_impl(
           &ctx, viewer_log->geometry, ob_eval->object_to_world, true, ob_eval->type == OB_CURVES);

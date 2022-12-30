@@ -246,7 +246,7 @@ AddCurvesOnMeshOutputs add_curves_on_mesh(CurvesGeometry &curves,
   Vector<float2> used_uvs;
 
   /* Find faces that the passed in uvs belong to. */
-  const Span<float3> surface_positions = inputs.surface->positions();
+  const Span<float3> surface_positions = inputs.surface->vert_positions();
   const Span<int> surface_corner_verts = inputs.surface->corner_verts();
   for (const int i : inputs.uvs.index_range()) {
     const float2 &uv = inputs.uvs[i];

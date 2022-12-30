@@ -1676,8 +1676,6 @@ static void sculpt_update_object(
   ss->depsgraph = depsgraph;
 
   ss->deform_modifiers_active = sculpt_modifiers_active(scene, sd, ob);
-  ss->show_mask = (sd->flags & SCULPT_HIDE_MASK) == 0;
-  ss->show_face_sets = (sd->flags & SCULPT_HIDE_FACE_SETS) == 0;
 
   ss->building_vp_handle = false;
 
@@ -1697,7 +1695,7 @@ static void sculpt_update_object(
 
     /* These are assigned to the base mesh in Multires. This is needed because Face Sets operators
      * and tools use the Face Sets data from the base mesh when Multires is active. */
-    ss->positions = BKE_mesh_positions_for_write(me);
+    ss->positions = BKE_mesh_vert_positions_for_write(me);
     ss->mpoly = BKE_mesh_polys(me);
     ss->corner_verts = me->corner_verts().data();
   }
@@ -1705,7 +1703,7 @@ static void sculpt_update_object(
     ss->totvert = me->totvert;
     ss->totpoly = me->totpoly;
     ss->totfaces = me->totpoly;
-    ss->positions = BKE_mesh_positions_for_write(me);
+    ss->positions = BKE_mesh_vert_positions_for_write(me);
     ss->mpoly = BKE_mesh_polys(me);
     ss->corner_verts = me->corner_verts().data();
     ss->multires.active = false;
@@ -1775,9 +1773,6 @@ static void sculpt_update_object(
       BKE_pbvh_pmap_set(ss->pbvh, ss->pmap);
     }
   }
-
-  pbvh_show_mask_set(ss->pbvh, ss->show_mask);
-  pbvh_show_face_sets_set(ss->pbvh, ss->show_face_sets);
 
   if (ss->deform_modifiers_active) {
     /* Painting doesn't need crazyspace, use already evaluated mesh coordinates if possible. */
@@ -2174,8 +2169,6 @@ static PBVH *build_pbvh_for_dynamic_topology(Object *ob)
                        ob->sculpt->bm_log,
                        ob->sculpt->attrs.dyntopo_node_id_vertex->bmesh_cd_offset,
                        ob->sculpt->attrs.dyntopo_node_id_face->bmesh_cd_offset);
-  pbvh_show_mask_set(pbvh, ob->sculpt->show_mask);
-  pbvh_show_face_sets_set(pbvh, false);
   return pbvh;
 }
 
@@ -2186,7 +2179,7 @@ static PBVH *build_pbvh_from_regular_mesh(Object *ob, Mesh *me_eval_deform, bool
   PBVH *pbvh = BKE_pbvh_new(PBVH_FACES);
   BKE_pbvh_respect_hide_set(pbvh, respect_hide);
 
-  MutableSpan<float3> positions = me->positions_for_write();
+  MutableSpan<float3> positions = me->vert_positions_for_write();
   const Span<MPoly> polys = me->polys();
   const Span<int> corner_verts = me->corner_verts();
 
@@ -2211,9 +2204,6 @@ static PBVH *build_pbvh_from_regular_mesh(Object *ob, Mesh *me_eval_deform, bool
                       &me->pdata,
                       looptri,
                       looptris_num);
-
-  pbvh_show_mask_set(pbvh, ob->sculpt->show_mask);
-  pbvh_show_face_sets_set(pbvh, ob->sculpt->show_face_sets);
 
   const bool is_deformed = check_sculpt_object_deformed(ob, true);
   if (is_deformed && me_eval_deform != nullptr) {
@@ -2245,8 +2235,6 @@ static PBVH *build_pbvh_from_ccg(Object *ob, SubdivCCG *subdiv_ccg, bool respect
                        subdiv_ccg->grid_hidden,
                        base_mesh,
                        subdiv_ccg);
-  pbvh_show_mask_set(pbvh, ob->sculpt->show_mask);
-  pbvh_show_face_sets_set(pbvh, ob->sculpt->show_face_sets);
   return pbvh;
 }
 

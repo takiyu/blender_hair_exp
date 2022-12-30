@@ -54,7 +54,7 @@ static void generate_vert_coordinates(Mesh *mesh,
 
   INIT_MINMAX(min_co, max_co);
 
-  const Span<float3> positions = mesh->positions();
+  const Span<float3> positions = mesh->vert_positions();
   for (int i = 0; i < mesh->totvert; i++) {
     copy_v3_v3(r_cos[i], positions[i]);
     if (r_size != nullptr && ob_center == nullptr) {
@@ -541,7 +541,7 @@ static Mesh *normalEditModifier_do(NormalEditModifierData *enmd,
   const int edges_num = result->totedge;
   const int loops_num = result->totloop;
   const int polys_num = result->totpoly;
-  const float(*positions)[3] = BKE_mesh_positions(result);
+  const float(*positions)[3] = BKE_mesh_vert_positions(result);
   MEdge *edges = BKE_mesh_edges_for_write(result);
   const MPoly *polys = BKE_mesh_polys(result);
   int *corner_verts = BKE_mesh_corner_verts_for_write(result);

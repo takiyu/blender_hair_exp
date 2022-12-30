@@ -241,7 +241,7 @@ static void snap_object_data_mesh_get(SnapObjectContext *sctx,
                                       bool use_hide,
                                       BVHTreeFromMesh *r_treedata)
 {
-  const Span<float3> positions = me_eval->positions();
+  const Span<float3> positions = me_eval->vert_positions();
   const Span<MPoly> polys = me_eval->polys();
   const Span<int> corner_verts = me_eval->corner_verts();
 
@@ -1715,7 +1715,7 @@ static void nearest2d_data_init_mesh(const Mesh *mesh,
   r_nearest2d->get_tri_verts_index = cb_mlooptri_verts_get;
   r_nearest2d->get_tri_edges_index = cb_mlooptri_edges_get;
 
-  r_nearest2d->positions = BKE_mesh_positions(mesh);
+  r_nearest2d->positions = BKE_mesh_vert_positions(mesh);
   r_nearest2d->vert_normals = BKE_mesh_vertex_normals_ensure(mesh);
   r_nearest2d->edge = mesh->edges().data();
   r_nearest2d->corner_verts = mesh->corner_verts().data();

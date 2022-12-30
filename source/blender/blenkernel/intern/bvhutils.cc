@@ -1213,7 +1213,7 @@ BVHTree *BKE_bvhtree_from_mesh_get(struct BVHTreeFromMesh *data,
     looptri = BKE_mesh_runtime_looptri_ensure(mesh);
     looptri_len = BKE_mesh_runtime_looptri_len(mesh);
   }
-  const float(*positions)[3] = reinterpret_cast<const float(*)[3]>(mesh->positions().data());
+  const float(*positions)[3] = reinterpret_cast<const float(*)[3]>(mesh->vert_positions().data());
   const Span<MEdge> edges = mesh->edges();
   const Span<int> corner_verts = mesh->corner_verts();
 

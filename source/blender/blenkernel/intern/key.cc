@@ -5,9 +5,9 @@
  * \ingroup bke
  */
 
-#include <math.h>
-#include <stddef.h>
-#include <string.h>
+#include <cmath>
+#include <cstddef>
+#include <cstring>
 
 #include "MEM_guardedalloc.h"
 
@@ -51,10 +51,7 @@
 
 #include "BLO_read_write.h"
 
-static void shapekey_copy_data(Main *UNUSED(bmain),
-                               ID *id_dst,
-                               const ID *id_src,
-                               const int UNUSED(flag))
+static void shapekey_copy_data(Main * /*bmain*/, ID *id_dst, const ID *id_src, const int /*flag*/)
 {
   Key *key_dst = (Key *)id_dst;
   const Key *key_src = (const Key *)id_src;
@@ -234,10 +231,10 @@ IDTypeInfo IDType_ID_KE = {
 #define KEY_MODE_BEZTRIPLE 2
 
 /* Internal use only. */
-typedef struct WeightsArrayCache {
+struct WeightsArrayCache {
   int num_defgroup_weights;
   float **defgroup_weights;
-} WeightsArrayCache;
+};
 
 void BKE_key_free_data(Key *key)
 {
@@ -1610,7 +1607,7 @@ float *BKE_key_evaluate_object_ex(
     switch (GS(obdata->name)) {
       case ID_ME: {
         Mesh *mesh = (Mesh *)obdata;
-        const float(*positions)[3] = BKE_mesh_positions_for_write(mesh);
+        const float(*positions)[3] = BKE_mesh_vert_positions_for_write(mesh);
         const int totvert = min_ii(tot, mesh->totvert);
         memcpy(out, positions, sizeof(float[3]) * totvert);
         break;
@@ -2063,7 +2060,7 @@ int BKE_keyblock_curve_element_count(const ListBase *nurb)
   return tot;
 }
 
-void BKE_keyblock_update_from_curve(const Curve *UNUSED(cu), KeyBlock *kb, const ListBase *nurb)
+void BKE_keyblock_update_from_curve(const Curve * /*cu*/, KeyBlock *kb, const ListBase *nurb)
 {
   Nurb *nu;
   BezTriple *bezt;
@@ -2177,7 +2174,7 @@ static void keyblock_data_convert_to_curve(const float *fp, ListBase *nurb, int 
   }
 }
 
-void BKE_keyblock_convert_to_curve(KeyBlock *kb, Curve *UNUSED(cu), ListBase *nurb)
+void BKE_keyblock_convert_to_curve(KeyBlock *kb, Curve * /*cu*/, ListBase *nurb)
 {
   const float *fp = static_cast<const float *>(kb->data);
   const int tot = min_ii(kb->totelem, BKE_keyblock_curve_element_count(nurb));
@@ -2196,7 +2193,7 @@ void BKE_keyblock_update_from_mesh(const Mesh *me, KeyBlock *kb)
     return;
   }
 
-  const float(*positions)[3] = BKE_mesh_positions(me);
+  const float(*positions)[3] = BKE_mesh_vert_positions(me);
   memcpy(kb->data, positions, sizeof(float[3]) * tot);
 }
 
@@ -2232,7 +2229,7 @@ void BKE_keyblock_mesh_calc_normals(const KeyBlock *kb,
     return;
   }
 
-  float(*positions)[3] = static_cast<float(*)[3]>(MEM_dupallocN(BKE_mesh_positions(mesh)));
+  float(*positions)[3] = static_cast<float(*)[3]>(MEM_dupallocN(BKE_mesh_vert_positions(mesh)));
   BKE_keyblock_convert_to_mesh(kb, positions, mesh->totvert);
   const MEdge *edges = BKE_mesh_edges(mesh);
   const MPoly *polys = BKE_mesh_polys(mesh);

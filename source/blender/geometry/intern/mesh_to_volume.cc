@@ -30,7 +30,7 @@ class OpenVDBMeshAdapter {
 };
 
 OpenVDBMeshAdapter::OpenVDBMeshAdapter(const Mesh &mesh, float4x4 transform)
-    : positions_(mesh.positions()),
+    : positions_(mesh.vert_positions()),
       corner_verts_(mesh.corner_verts()),
       looptris_(mesh.looptris()),
       transform_(transform)

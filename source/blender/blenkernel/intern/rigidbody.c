@@ -364,7 +364,7 @@ static rbCollisionShape *rigidbody_get_shape_convexhull_from_mesh(Object *ob,
 
   if (ob->type == OB_MESH && ob->data) {
     mesh = rigidbody_get_mesh(ob);
-    positions = (mesh) ? BKE_mesh_positions_for_write(mesh) : NULL;
+    positions = (mesh) ? BKE_mesh_vert_positions_for_write(mesh) : NULL;
     totvert = (mesh) ? mesh->totvert : 0;
   }
   else {
@@ -402,7 +402,7 @@ static rbCollisionShape *rigidbody_get_shape_trimesh_from_mesh(Object *ob)
       return NULL;
     }
 
-    const float(*positions)[3] = BKE_mesh_positions(mesh);
+    const float(*positions)[3] = BKE_mesh_vert_positions(mesh);
     totvert = mesh->totvert;
     looptri = BKE_mesh_runtime_looptri_ensure(mesh);
     tottri = BKE_mesh_runtime_looptri_len(mesh);
@@ -677,7 +677,7 @@ void BKE_rigidbody_calc_volume(Object *ob, float *r_vol)
           return;
         }
 
-        const float(*positions)[3] = BKE_mesh_positions(mesh);
+        const float(*positions)[3] = BKE_mesh_vert_positions(mesh);
         totvert = mesh->totvert;
         lt = BKE_mesh_runtime_looptri_ensure(mesh);
         tottri = BKE_mesh_runtime_looptri_len(mesh);
@@ -751,7 +751,7 @@ void BKE_rigidbody_calc_center_of_mass(Object *ob, float r_center[3])
           return;
         }
 
-        const float(*positions)[3] = BKE_mesh_positions(mesh);
+        const float(*positions)[3] = BKE_mesh_vert_positions(mesh);
         totvert = mesh->totvert;
         looptri = BKE_mesh_runtime_looptri_ensure(mesh);
         tottri = BKE_mesh_runtime_looptri_len(mesh);
@@ -1674,7 +1674,7 @@ static void rigidbody_update_sim_ob(Depsgraph *depsgraph, Object *ob, RigidBodyO
   if (rbo->shape == RB_SHAPE_TRIMESH && rbo->flag & RBO_FLAG_USE_DEFORM) {
     Mesh *mesh = ob->runtime.mesh_deform_eval;
     if (mesh) {
-      float(*positions)[3] = BKE_mesh_positions_for_write(mesh);
+      float(*positions)[3] = BKE_mesh_vert_positions_for_write(mesh);
       int totvert = mesh->totvert;
       const BoundBox *bb = BKE_object_boundbox_get(ob);
 

@@ -600,7 +600,7 @@ bool ED_object_modifier_convert_psys_to_mesh(ReportList * /*reports*/,
   CustomData_add_layer(&me->edata, CD_MEDGE, CD_SET_DEFAULT, nullptr, edges_num);
   CustomData_add_layer(&me->fdata, CD_MFACE, CD_SET_DEFAULT, nullptr, 0);
 
-  blender::MutableSpan<float3> positions = me->positions_for_write();
+  blender::MutableSpan<float3> positions = me->vert_positions_for_write();
   blender::MutableSpan<MEdge> edges = me->edges_for_write();
   MEdge *medge = edges.data();
 
@@ -715,7 +715,7 @@ static Mesh *create_applied_mesh_for_modifier(Depsgraph *depsgraph,
     if (KeyBlock *kb = static_cast<KeyBlock *>(
             BLI_findlink(&me->key->block, ob_eval->shapenr - 1))) {
       BKE_keyblock_convert_to_mesh(
-          kb, reinterpret_cast<float(*)[3]>(me->positions_for_write().data()), me->totvert);
+          kb, reinterpret_cast<float(*)[3]>(me->vert_positions_for_write().data()), me->totvert);
     }
   }
 
@@ -860,25 +860,35 @@ static bool modifier_apply_shape(Main *bmain,
   return true;
 }
 
+static bool meta_data_matches(const std::optional<blender::bke::AttributeMetaData> meta_data,
+                              const eAttrDomainMask domains,
+                              const eCustomDataMask types)
+{
+  if (!meta_data) {
+    return false;
+  }
+  if (!(ATTR_DOMAIN_AS_MASK(meta_data->domain) & domains)) {
+    return false;
+  }
+  if (!(CD_TYPE_AS_MASK(meta_data->data_type) & types)) {
+    return false;
+  }
+  return true;
+}
+
 static void remove_invalid_attribute_strings(Mesh &mesh)
 {
   using namespace blender;
   bke::AttributeAccessor attributes = mesh.attributes();
-  if (mesh.active_color_attribute) {
-    const std::optional<bke::AttributeMetaData> meta_data = attributes.lookup_meta_data(
-        mesh.active_color_attribute);
-    if (!meta_data || !(meta_data->domain & ATTR_DOMAIN_MASK_COLOR) ||
-        !(meta_data->data_type & CD_MASK_COLOR_ALL)) {
-      MEM_freeN(mesh.active_color_attribute);
-    }
+  if (!meta_data_matches(attributes.lookup_meta_data(mesh.active_color_attribute),
+                         ATTR_DOMAIN_MASK_COLOR,
+                         CD_MASK_COLOR_ALL)) {
+    MEM_SAFE_FREE(mesh.active_color_attribute);
   }
-  if (mesh.default_color_attribute) {
-    const std::optional<bke::AttributeMetaData> meta_data = attributes.lookup_meta_data(
-        mesh.default_color_attribute);
-    if (!meta_data || !(meta_data->domain & ATTR_DOMAIN_MASK_COLOR) ||
-        !(meta_data->data_type & CD_MASK_COLOR_ALL)) {
-      MEM_freeN(mesh.default_color_attribute);
-    }
+  if (!meta_data_matches(attributes.lookup_meta_data(mesh.default_color_attribute),
+                         ATTR_DOMAIN_MASK_COLOR,
+                         CD_MASK_COLOR_ALL)) {
+    MEM_SAFE_FREE(mesh.default_color_attribute);
   }
 }
 
@@ -2866,7 +2876,7 @@ static void skin_armature_bone_create(Object *skin_ob,
 static Object *modifier_skin_armature_create(Depsgraph *depsgraph, Main *bmain, Object *skin_ob)
 {
   Mesh *me = static_cast<Mesh *>(skin_ob->data);
-  const Span<float3> me_positions = me->positions();
+  const Span<float3> me_positions = me->vert_positions();
   const Span<MEdge> me_edges = me->edges();
 
   Scene *scene_eval = DEG_get_evaluated_scene(depsgraph);
@@ -2874,7 +2884,7 @@ static Object *modifier_skin_armature_create(Depsgraph *depsgraph, Main *bmain, 
 
   const Mesh *me_eval_deform = mesh_get_eval_deform(
       depsgraph, scene_eval, ob_eval, &CD_MASK_BAREMESH);
-  const Span<float3> positions_eval = me_eval_deform->positions();
+  const Span<float3> positions_eval = me_eval_deform->vert_positions();
 
   /* add vertex weights to original mesh */
   CustomData_add_layer(&me->vdata, CD_MDEFORMVERT, CD_SET_DEFAULT, nullptr, me->totvert);

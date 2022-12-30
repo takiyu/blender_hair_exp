@@ -81,7 +81,7 @@ static void set_coarse_positions(Subdiv *subdiv,
                                  const Mesh *mesh,
                                  const float (*coarse_vertex_cos)[3])
 {
-  const float(*positions)[3] = BKE_mesh_positions(mesh);
+  const float(*positions)[3] = BKE_mesh_vert_positions(mesh);
   const MPoly *mpoly = BKE_mesh_polys(mesh);
   const int *corner_verts = BKE_mesh_corner_verts(mesh);
   /* Mark vertices which needs new coordinates. */

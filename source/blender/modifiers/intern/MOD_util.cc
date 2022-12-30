@@ -40,8 +40,6 @@
 
 #include "MEM_guardedalloc.h"
 
-#include "bmesh.h"
-
 void MOD_init_texture(MappingInfoModifierData *dmd, const ModifierEvalContext *ctx)
 {
   Tex *tex = dmd->texture;
@@ -132,7 +130,7 @@ void MOD_get_texture_coords(MappingInfoModifierData *dmd,
     texmapping = MOD_DISP_MAP_LOCAL;
   }
 
-  const float(*positions)[3] = BKE_mesh_positions(mesh);
+  const float(*positions)[3] = BKE_mesh_vert_positions(mesh);
   for (i = 0; i < verts_num; i++, r_texco++) {
     switch (texmapping) {
       case MOD_DISP_MAP_LOCAL:
@@ -189,7 +187,7 @@ Mesh *MOD_deform_mesh_eval_get(Object *ob,
                                     &mesh_prior_modifiers->id,
                                     nullptr,
                                     (LIB_ID_COPY_LOCALIZE | LIB_ID_COPY_CD_REFERENCE));
-      mesh->runtime->deformed_only = 1;
+      mesh->runtime->deformed_only = true;
     }
 
     if (em != nullptr) {
