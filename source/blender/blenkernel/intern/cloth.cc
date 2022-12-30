@@ -713,7 +713,7 @@ static float cloth_shrink_factor(ClothModifierData *clmd, ClothVertex *verts, in
 }
 
 static bool cloth_from_object(
-    Object *ob, ClothModifierData *clmd, Mesh *mesh, float UNUSED(framenr), int first)
+    Object *ob, ClothModifierData *clmd, Mesh *mesh, float /*framenr*/, int first)
 {
   using namespace blender;
   int i = 0;
@@ -1174,8 +1174,8 @@ static Mesh *cloth_make_rest_mesh(ClothModifierData *clmd, Mesh *mesh)
   MutableSpan<float3> positions = mesh->vert_positions_for_write();
 
   /* vertex count is already ensured to match */
-  for (int i = 0; i < mesh->totvert; i++, verts++) {
-    copy_v3_v3(positions[i], verts->xrest);
+  for (const int i : positions.index_range()) {
+    positions[i] = verts[i].xrest;
   }
   BKE_mesh_tag_coords_changed(new_mesh);
 
