@@ -93,7 +93,7 @@ static void make_edges_mdata_extend(Mesh &mesh)
   EdgeHash *eh = BLI_edgehash_new_ex(__func__, eh_reserve);
 
   for (const MPoly &poly : polys) {
-    BKE_mesh_poly_edgehash_insert(eh, &poly, &corner_verts[poly.loopstart]);
+    BKE_mesh_poly_edgehash_insert(eh, &poly, corner_verts.data());
   }
 
   const int totedge_new = BLI_edgehash_len(eh);

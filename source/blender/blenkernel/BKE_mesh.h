@@ -705,7 +705,7 @@ void BKE_mesh_calc_poly_angles(const struct MPoly *mpoly,
 
 void BKE_mesh_poly_edgehash_insert(struct EdgeHash *ehash,
                                    const struct MPoly *mp,
-                                   const int *poly_verts);
+                                   const int *corner_verts);
 void BKE_mesh_poly_edgebitmap_insert(unsigned int *edge_bitmap,
                                      const struct MPoly *mp,
                                      const int *poly_edges);

@@ -258,13 +258,19 @@ void BKE_mesh_calc_poly_angles(const MPoly *mpoly,
   }
 }
 
-void BKE_mesh_poly_edgehash_insert(EdgeHash *ehash, const MPoly *mp, const int *poly_verts)
+void BKE_mesh_poly_edgehash_insert(EdgeHash *ehash, const MPoly *mp, const int *corner_verts)
 {
-  using namespace blender;
-  for (const int i : IndexRange(mp->totloop).drop_back(1)) {
-    BLI_edgehash_reinsert(ehash, poly_verts[i], poly_verts[i + 1], nullptr);
+  int i = mp->totloop;
+
+  int corner_next = mp->loopstart;    /* first loop */
+  int corner = corner_next + (i - 1); /* last loop */
+
+  while (i-- != 0) {
+    BLI_edgehash_reinsert(ehash, corner_verts[corner], corner_verts[corner_next], nullptr);
+
+    corner = corner_next;
+    corner_next++;
   }
-  BLI_edgehash_reinsert(ehash, poly_verts[0], poly_verts[mp->totloop - 1], nullptr);
 }
 
 void BKE_mesh_poly_edgebitmap_insert(uint *edge_bitmap, const MPoly *mp, const int *poly_edges)
