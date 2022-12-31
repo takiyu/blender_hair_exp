@@ -145,9 +145,7 @@ static void make_edges_mdata_extend(Mesh &mesh)
 static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispbase)
 {
   using namespace blender::bke;
-  const float *data;
-  int a, b, ofs, vertcount, startvert, totvert = 0, totedge = 0, totloop = 0, totpoly = 0;
-  int p1, p2, p3, p4, *index;
+  int a, b, ofs;
   const bool conv_polys = (
       /* 2D polys are filled with #DispList.type == #DL_INDEX3. */
       (CU_DO_2DFILL(cu) == false) ||
@@ -155,6 +153,10 @@ static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispba
       BKE_curve_type_get(cu) == OB_SURF);
 
   /* count */
+  int totvert = 0;
+  int totedge = 0;
+  int totpoly = 0;
+  int totloop = 0;
   LISTBASE_FOREACH (const DispList *, dl, dispbase) {
     if (dl->type == DL_SEGM) {
       totvert += dl->parts * dl->nr;
@@ -195,112 +197,110 @@ static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispba
   MutableSpan<MPoly> polys = mesh->polys_for_write();
   MutableSpan<int> corner_verts = mesh->corner_verts_for_write();
 
-  MEdge *medge = edges.data();
-  MPoly *mpoly = polys.data();
   MutableAttributeAccessor attributes = mesh->attributes_for_write();
   SpanAttributeWriter<int> material_indices = attributes.lookup_or_add_for_write_only_span<int>(
       "material_index", ATTR_DOMAIN_FACE);
   MLoopUV *mloopuv = static_cast<MLoopUV *>(CustomData_add_layer_named(
       &mesh->ldata, CD_MLOOPUV, CD_SET_DEFAULT, nullptr, mesh->totloop, DATA_("UVMap")));
 
-  /* verts and faces */
-  int dst_corner_i = 0;
-  vertcount = 0;
-
+  int dst_vert = 0;
+  int dst_edge = 0;
+  int dst_poly = 0;
+  int dst_loop = 0;
   LISTBASE_FOREACH (const DispList *, dl, dispbase) {
     const bool is_smooth = (dl->rt & CU_SMOOTH) != 0;
 
     if (dl->type == DL_SEGM) {
-      startvert = vertcount;
+      const int startvert = dst_vert;
       a = dl->parts * dl->nr;
-      data = dl->verts;
+      const float *data = dl->verts;
       while (a--) {
-        copy_v3_v3(positions[vertcount], data);
+        copy_v3_v3(positions[dst_vert], data);
         data += 3;
-        vertcount++;
+        dst_vert++;
       }
 
       for (a = 0; a < dl->parts; a++) {
         ofs = a * dl->nr;
         for (b = 1; b < dl->nr; b++) {
-          medge->v1 = startvert + ofs + b - 1;
-          medge->v2 = startvert + ofs + b;
-          medge->flag = ME_EDGEDRAW;
+          edges[dst_edge].v1 = startvert + ofs + b - 1;
+          edges[dst_edge].v2 = startvert + ofs + b;
+          edges[dst_edge].flag = ME_EDGEDRAW;
 
-          medge++;
+          dst_edge++;
         }
       }
     }
     else if (dl->type == DL_POLY) {
       if (conv_polys) {
-        startvert = vertcount;
+        const int startvert = dst_vert;
         a = dl->parts * dl->nr;
-        data = dl->verts;
+        const float *data = dl->verts;
         while (a--) {
-          copy_v3_v3(positions[vertcount], data);
+          copy_v3_v3(positions[dst_vert], data);
           data += 3;
-          vertcount++;
+          dst_vert++;
         }
 
         for (a = 0; a < dl->parts; a++) {
           ofs = a * dl->nr;
           for (b = 0; b < dl->nr; b++) {
-            medge->v1 = startvert + ofs + b;
+            edges[dst_edge].v1 = startvert + ofs + b;
             if (b == dl->nr - 1) {
-              medge->v2 = startvert + ofs;
+              edges[dst_edge].v2 = startvert + ofs;
             }
             else {
-              medge->v2 = startvert + ofs + b + 1;
+              edges[dst_edge].v2 = startvert + ofs + b + 1;
             }
-            medge->flag = ME_EDGEDRAW;
-            medge++;
+            edges[dst_edge].flag = ME_EDGEDRAW;
+            dst_edge++;
           }
         }
       }
     }
     else if (dl->type == DL_INDEX3) {
-      startvert = vertcount;
+      const int startvert = dst_vert;
       a = dl->nr;
-      data = dl->verts;
+      const float *data = dl->verts;
       while (a--) {
-        copy_v3_v3(positions[vertcount], data);
+        copy_v3_v3(positions[dst_vert], data);
         data += 3;
-        vertcount++;
+        dst_vert++;
       }
 
       a = dl->parts;
-      index = dl->index;
+      const int *index = dl->index;
       while (a--) {
-        corner_verts[dst_corner_i + 0] = startvert + index[0];
-        corner_verts[dst_corner_i + 1] = startvert + index[2];
-        corner_verts[dst_corner_i + 2] = startvert + index[1];
-        mpoly->loopstart = dst_corner_i;
-        mpoly->totloop = 3;
-        material_indices.span[mpoly - polys.data()] = dl->col;
+        corner_verts[dst_loop + 0] = startvert + index[0];
+        corner_verts[dst_loop + 1] = startvert + index[2];
+        corner_verts[dst_loop + 2] = startvert + index[1];
+        polys[dst_poly].loopstart = dst_loop;
+        polys[dst_poly].totloop = 3;
+        material_indices.span[dst_poly] = dl->col;
 
         if (mloopuv) {
           for (int i = 0; i < 3; i++, mloopuv++) {
-            mloopuv->uv[0] = (corner_verts[dst_corner_i + i] - startvert) / float(dl->nr - 1);
+            mloopuv->uv[0] = (corner_verts[dst_loop + i] - startvert) / float(dl->nr - 1);
             mloopuv->uv[1] = 0.0f;
           }
         }
 
         if (is_smooth) {
-          mpoly->flag |= ME_SMOOTH;
+          polys[dst_poly].flag |= ME_SMOOTH;
         }
-        mpoly++;
-        dst_corner_i += 3;
+        dst_poly++;
+        dst_loop += 3;
         index += 3;
       }
     }
     else if (dl->type == DL_SURF) {
-      startvert = vertcount;
+      const int startvert = dst_vert;
       a = dl->parts * dl->nr;
-      data = dl->verts;
+      const float *data = dl->verts;
       while (a--) {
-        copy_v3_v3(positions[vertcount], data);
+        copy_v3_v3(positions[dst_vert], data);
         data += 3;
-        vertcount++;
+        dst_vert++;
       }
 
       for (a = 0; a < dl->parts; a++) {
@@ -309,6 +309,7 @@ static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispba
           break;
         }
 
+        int p1, p2, p3, p4;
         if (dl->flag & DL_CYCL_U) {    /* p2 -> p1 -> */
           p1 = startvert + dl->nr * a; /* p4 -> p3 -> */
           p2 = p1 + dl->nr - 1;        /* -----> next row */
@@ -329,13 +330,13 @@ static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispba
         }
 
         for (; b < dl->nr; b++) {
-          corner_verts[dst_corner_i + 0] = p1;
-          corner_verts[dst_corner_i + 1] = p3;
-          corner_verts[dst_corner_i + 2] = p4;
-          corner_verts[dst_corner_i + 3] = p2;
-          mpoly->loopstart = dst_corner_i;
-          mpoly->totloop = 4;
-          material_indices.span[mpoly - polys.data()] = dl->col;
+          corner_verts[dst_loop + 0] = p1;
+          corner_verts[dst_loop + 1] = p3;
+          corner_verts[dst_loop + 2] = p4;
+          corner_verts[dst_loop + 3] = p2;
+          polys[dst_poly].loopstart = dst_loop;
+          polys[dst_poly].totloop = 4;
+          material_indices.span[dst_poly] = dl->col;
 
           if (mloopuv) {
             int orco_sizeu = dl->nr - 1;
@@ -354,7 +355,7 @@ static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispba
 
             for (int i = 0; i < 4; i++, mloopuv++) {
               /* find uv based on vertex index into grid array */
-              int v = corner_verts[dst_corner_i + i] - startvert;
+              int v = corner_verts[dst_loop + i] - startvert;
 
               mloopuv->uv[0] = (v / dl->nr) / float(orco_sizev);
               mloopuv->uv[1] = (v % dl->nr) / float(orco_sizeu);
@@ -370,10 +371,10 @@ static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispba
           }
 
           if (is_smooth) {
-            mpoly->flag |= ME_SMOOTH;
+            polys[dst_poly].flag |= ME_SMOOTH;
           }
-          mpoly++;
-          dst_corner_i += 4;
+          dst_poly++;
+          dst_loop += 4;
 
           p4 = p3;
           p3++;
