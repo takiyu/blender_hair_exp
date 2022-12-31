@@ -517,9 +517,12 @@ static int customdata_compare(
   const Span<MLoop> loops_1 = m1->loops();
   const Span<MLoop> loops_2 = m2->loops();
 
-  /* TODO(@Baardaap) the uv selection / pin layers are ignored in the comparisons because
-   * the original flags they replace were ignored as well. For completeness it would be
-   * better to compare them as well, but some test files would need to be updated. */
+  /* The uv selection / pin layers are ignored in the comparisons because
+   * the original flags they replace were ignored as well. Because of the
+   * lazy creation of these layers it would need careful handling of the
+   * test files to compare these layers. For now it has been decided to
+   * skip them.
+   */
 
   for (int i = 0; i < c1->totlayer; i++) {
     l1 = &c1->layers[i];
