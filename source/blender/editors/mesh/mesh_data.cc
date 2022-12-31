@@ -140,7 +140,6 @@ static void delete_customdata_layer(Mesh *me, CustomDataLayer *layer)
   }
 }
 
-
 static void mesh_uv_reset_array(float **fuv, const int len)
 {
   if (len == 3) {

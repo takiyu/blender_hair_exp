@@ -4414,9 +4414,9 @@ static bool CustomData_layer_ensure_data_exists(CustomDataLayer *layer, size_t c
 
   switch (layer->type) {
     /* When more instances of corrupt files are found, add them here. */
-    case CD_PROP_BOOL: /* See T84935. */
-    case CD_MLOOPUV:   /* See T90620. */
-    case CD_PROP_FLOAT2:   /* See T90620. */
+    case CD_PROP_BOOL:   /* See T84935. */
+    case CD_MLOOPUV:     /* See T90620. */
+    case CD_PROP_FLOAT2: /* See T90620. */
       layer->data = MEM_calloc_arrayN(count, typeInfo->size, layerType_getName(layer->type));
       BLI_assert(layer->data);
       if (typeInfo->set_default_value) {
