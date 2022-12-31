@@ -702,6 +702,7 @@ void BKE_mesh_convert_mfaces_to_mpolys(Mesh *mesh)
                            &mesh->totpoly);
 
   mesh_ensure_tessellation_customdata(mesh);
+  BKE_mesh_legacy_convert_loops_to_corners(mesh);
 }
 
 /**
