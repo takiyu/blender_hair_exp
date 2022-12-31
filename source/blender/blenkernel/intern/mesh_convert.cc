@@ -86,7 +86,7 @@ static void make_edges_mdata_extend(Mesh &mesh)
   int i;
 
   const Span<MPoly> polys = mesh.polys();
-  const Span<int> corner_verts = mesh.corner_verts_for_write();
+  const Span<int> corner_verts = mesh.corner_verts();
   MutableSpan<int> corner_edges = mesh.corner_edges_for_write();
 
   const int eh_reserve = max_ii(totedge, BLI_EDGEHASH_SIZE_GUESS_FROM_POLYS(mesh.totpoly));
@@ -127,14 +127,14 @@ static void make_edges_mdata_extend(Mesh &mesh)
     BLI_edgehashIterator_free(ehi);
 
     for (i = 0, mp = polys.data(); i < mesh.totpoly; i++, mp++) {
-      int corner_i = mp->loopstart;
-      int corner_i_prev = mp->loopstart + (mp->totloop - 1);
+      int corner = mp->loopstart;
+      int corner_prev = mp->loopstart + (mp->totloop - 1);
       int j;
-      for (j = 0; j < mp->totloop; j++, corner_i++) {
+      for (j = 0; j < mp->totloop; j++, corner++) {
         /* lookup hashed edge index */
-        corner_edges[corner_i_prev] = POINTER_AS_UINT(
-            BLI_edgehash_lookup(eh, corner_verts[corner_i_prev], corner_verts[corner_i]));
-        corner_i_prev = corner_i;
+        corner_edges[corner_prev] = POINTER_AS_UINT(
+            BLI_edgehash_lookup(eh, corner_verts[corner_prev], corner_verts[corner]));
+        corner_prev = corner;
       }
     }
   }
