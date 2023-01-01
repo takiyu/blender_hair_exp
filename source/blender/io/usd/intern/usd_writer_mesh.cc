@@ -129,7 +129,7 @@ void USDGenericMeshWriter::write_uv_maps(const Mesh *mesh, pxr::UsdGeomMesh usd_
     const float2 *mloopuv = static_cast<const float2 *>(layer->data);
     pxr::VtArray<pxr::GfVec2f> uv_coords;
     for (int loop_idx = 0; loop_idx < mesh->totloop; loop_idx++) {
-      uv_coords.push_back(pxr::GfVec2f((const float *)(mloopuv[loop_idx])));
+      uv_coords.push_back(pxr::GfVec2f(mloopuv[loop_idx].x, mloopuv[loop_idx].y));
     }
 
     if (!uv_coords_primvar.HasValue()) {
