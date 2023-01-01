@@ -176,8 +176,8 @@ void BM_mesh_bm_from_me(BMesh *bm, const Mesh *me, const struct BMeshFromMeshPar
   }
 
   BLI_SCOPED_DEFER([&]() {
-    for (auto n : temporary_layers_to_delete) {
-      CustomData_free_layer_named(&mesh_ldata, n.c_str(), me->totloop);
+    for (const std::string &name : temporary_layers_to_delete) {
+      CustomData_free_layer_named(&mesh_ldata, name.c_str(), me->totloop);
     }
 
     MEM_SAFE_FREE(mesh_vdata.layers);
