@@ -176,7 +176,6 @@ typedef enum eCustomDataType {
 #define CD_MASK_ORIGSPACE (1 << CD_ORIGSPACE)
 #define CD_MASK_ORCO (1 << CD_ORCO)
 // #define CD_MASK_MTEXPOLY (1 << CD_MTEXPOLY)  /* DEPRECATED */
-#define CD_MASK_MLOOPUV (1 << CD_MLOOPUV)
 #define CD_MASK_PROP_BYTE_COLOR (1 << CD_PROP_BYTE_COLOR)
 #define CD_MASK_TANGENT (1 << CD_TANGENT)
 #define CD_MASK_MDISPS (1 << CD_MDISPS)
