@@ -265,7 +265,6 @@ int ED_mesh_uv_add(
   }
 
   char unique_name[MAX_CUSTOMDATA_LAYER_NAME];
-
   BKE_id_attribute_calc_unique_name(&me->id, name, unique_name);
   bool is_init = false;
 
