@@ -799,7 +799,7 @@ void BKE_id_attribute_copy_domains_temp(short id_type,
   *((short *)r_id->name) = id_type;
 }
 
-char const *BKE_uv_map_vert_selection_name_get(char const *uv_map_name, char *buffer)
+const char *BKE_uv_map_vert_selection_name_get(const char *uv_map_name, char *buffer)
 {
   BLI_assert(strlen(UV_VERTSEL_NAME) == 2);
   BLI_assert(strlen(uv_map_name) < MAX_CUSTOMDATA_LAYER_NAME - 5);
@@ -807,7 +807,7 @@ char const *BKE_uv_map_vert_selection_name_get(char const *uv_map_name, char *bu
   return buffer;
 }
 
-char const *BKE_uv_map_edge_selection_name_get(char const *uv_map_name, char *buffer)
+const char *BKE_uv_map_edge_selection_name_get(const char *uv_map_name, char *buffer)
 {
   BLI_assert(strlen(UV_EDGESEL_NAME) == 2);
   BLI_assert(strlen(uv_map_name) < MAX_CUSTOMDATA_LAYER_NAME - 5);
@@ -815,7 +815,7 @@ char const *BKE_uv_map_edge_selection_name_get(char const *uv_map_name, char *bu
   return buffer;
 }
 
-char const *BKE_uv_map_pin_name_get(char const *uv_map_name, char *buffer)
+const char *BKE_uv_map_pin_name_get(const char *uv_map_name, char *buffer)
 {
   BLI_assert(strlen(UV_PINNED_NAME) == 2);
   BLI_assert(strlen(uv_map_name) < MAX_CUSTOMDATA_LAYER_NAME - 5);
