@@ -984,9 +984,7 @@ void BM_mesh_bm_to_me(Main *bmain, BMesh *bm, Mesh *me, const struct BMeshToMesh
   me->totface = 0;
   me->act_face = -1;
 
-  /* Mark uv selection layers which are all false as 'nocopy'
-   */
-
+  /* Mark UV selection layers which are all false as 'nocopy'. */
   for (const int l : IndexRange(CustomData_number_of_layers(&bm->ldata, CD_PROP_FLOAT2))) {
     char const *layer_name = CustomData_get_layer_name(&bm->ldata, CD_PROP_FLOAT2, l);
     char sub_layer_name[MAX_CUSTOMDATA_LAYER_NAME];
