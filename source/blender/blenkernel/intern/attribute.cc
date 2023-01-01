@@ -168,7 +168,7 @@ bool BKE_id_attribute_rename(ID *id,
   char result_name[MAX_CUSTOMDATA_LAYER_NAME];
   BKE_id_attribute_calc_unique_name(id, new_name, result_name);
 
-  if (layer->type == CD_PROP_FLOAT2) {
+  if (layer->type == CD_PROP_FLOAT2 && GS(id->name) == ID_ME) {
     /* Rename UV sub-attributes. */
     char buffer_src[MAX_CUSTOMDATA_LAYER_NAME];
     char buffer_dst[MAX_CUSTOMDATA_LAYER_NAME];
