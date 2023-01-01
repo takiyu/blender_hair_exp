@@ -35,11 +35,11 @@ BMUVOffsets BM_uv_map_get_offsets(const BMesh *bm)
   BMUVOffsets offsets;
   offsets.uv = bm->ldata.layers[layer_index].offset;
   offsets.select_vert = CustomData_get_offset_named(
-      &bm->ldata, CD_PROP_BOOL, BKE_get_uv_map_vert_selection_name(name, buffer));
+      &bm->ldata, CD_PROP_BOOL, BKE_uv_map_vert_selection_name_get(name, buffer));
   offsets.select_edge = CustomData_get_offset_named(
-      &bm->ldata, CD_PROP_BOOL, BKE_get_uv_map_edge_selection_name(name, buffer));
+      &bm->ldata, CD_PROP_BOOL, BKE_uv_map_edge_selection_name_get(name, buffer));
   offsets.pin = CustomData_get_offset_named(
-      &bm->ldata, CD_PROP_BOOL, BKE_get_uv_map_pin_name(name, buffer));
+      &bm->ldata, CD_PROP_BOOL, BKE_uv_map_pin_name_get(name, buffer));
 
   return offsets;
 }
