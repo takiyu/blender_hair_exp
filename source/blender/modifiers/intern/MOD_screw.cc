@@ -6,11 +6,10 @@
  */
 
 /* Screw modifier: revolves the edges about an axis */
-#include <limits.h>
+#include <climits>
 
 #include "BLI_utildefines.h"
 
-#include "BLI_alloca.h"
 #include "BLI_bitmap.h"
 #include "BLI_math.h"
 
@@ -53,7 +52,7 @@ static void initData(ModifierData *md)
 }
 
 /** Used for gathering edge connectivity. */
-typedef struct ScrewVertConnect {
+struct ScrewVertConnect {
   /** Distance from the center axis. */
   float dist_sq;
   /** Location relative to the transformed axis. */
@@ -63,14 +62,14 @@ typedef struct ScrewVertConnect {
   /** Edges on either side, a bit of a waste since each edge ref's 2 edges. */
   MEdge *e[2];
   char flag;
-} ScrewVertConnect;
+};
 
-typedef struct ScrewVertIter {
+struct ScrewVertIter {
   ScrewVertConnect *v_array;
   ScrewVertConnect *v_poin;
   uint v, v_other;
   MEdge *e;
-} ScrewVertIter;
+};
 
 #define SV_UNUSED (UINT_MAX)
 #define SV_INVALID ((UINT_MAX)-1)
@@ -336,9 +335,9 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
   }
 
   /* apply the multiplier */
-  angle *= (float)ltmd->iter;
-  screw_ofs *= (float)ltmd->iter;
-  uv_u_scale = 1.0f / (float)(step_tot);
+  angle *= float(ltmd->iter);
+  screw_ofs *= float(ltmd->iter);
+  uv_u_scale = 1.0f / float(step_tot);
 
   /* multiplying the steps is a bit tricky, this works best */
   step_tot = ((step_tot + 1) * ltmd->iter) - (ltmd->iter - 1);
@@ -472,22 +471,6 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
     /* Normal Calculation (for face flipping)
      * Sort edge verts for correct face flipping
      * NOT REALLY NEEDED but face flipping is nice. */
-
-    /* Notice!
-     *
-     * Since we are only ordering the edges here it can avoid mallocing the
-     * extra space by abusing the vert array before its filled with new verts.
-     * The new array for vert_connect must be at least `sizeof(ScrewVertConnect) * totvert`
-     * and the size of our resulting meshes array is `sizeof(MVert) * totvert * 3`
-     * so its safe to use the second 2 thirds of #MVert the array for vert_connect,
-     * just make sure #ScrewVertConnect struct is no more than twice as big as #MVert,
-     * at the moment there is no chance of that being a problem,
-     * unless #MVert becomes half its current size.
-     *
-     * once the edges are ordered, vert_connect is not needed and it can be used for verts
-     *
-     * This makes the modifier faster with one less allocate.
-     */
 
     vert_connect = static_cast<ScrewVertConnect *>(
         MEM_malloc_arrayN(totvert, sizeof(ScrewVertConnect), __func__));
