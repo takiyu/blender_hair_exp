@@ -140,6 +140,19 @@ bool BKE_attribute_allow_procedural_access(const char *attribute_name)
   return blender::bke::allow_procedural_attribute_access(attribute_name);
 }
 
+static bool bke_id_attribute_rename_if_exists(ID *id,
+                             const char *old_name,
+                             const char *new_name,
+                             ReportList *reports)
+{
+  CustomDataLayer *layer = BKE_id_attribute_search(
+      id, old_name, CD_MASK_PROP_ALL, ATTR_DOMAIN_MASK_ALL);
+  if (layer == nullptr) {
+    return false;
+  }
+  return BKE_id_attribute_rename(id, old_name, new_name, reports);
+}
+
 bool BKE_id_attribute_rename(ID *id,
                              const char *old_name,
                              const char *new_name,
@@ -172,15 +185,16 @@ bool BKE_id_attribute_rename(ID *id,
     /* Rename UV sub-attributes. */
     char buffer_src[MAX_CUSTOMDATA_LAYER_NAME];
     char buffer_dst[MAX_CUSTOMDATA_LAYER_NAME];
-    BKE_id_attribute_rename(id,
+
+    bke_id_attribute_rename_if_exists(id,
                             BKE_uv_map_vert_selection_name_get(layer->name, buffer_src),
                             BKE_uv_map_vert_selection_name_get(result_name, buffer_dst),
                             reports);
-    BKE_id_attribute_rename(id,
+    bke_id_attribute_rename_if_exists(id,
                             BKE_uv_map_edge_selection_name_get(layer->name, buffer_src),
                             BKE_uv_map_edge_selection_name_get(result_name, buffer_dst),
                             reports);
-    BKE_id_attribute_rename(id,
+    bke_id_attribute_rename_if_exists(id,
                             BKE_uv_map_pin_name_get(layer->name, buffer_src),
                             BKE_uv_map_pin_name_get(result_name, buffer_dst),
                             reports);
