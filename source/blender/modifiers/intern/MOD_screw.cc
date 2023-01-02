@@ -6,11 +6,10 @@
  */
 
 /* Screw modifier: revolves the edges about an axis */
-#include <limits.h>
+#include <climits>
 
 #include "BLI_utildefines.h"
 
-#include "BLI_alloca.h"
 #include "BLI_bitmap.h"
 #include "BLI_math.h"
 
@@ -53,7 +52,7 @@ static void initData(ModifierData *md)
 }
 
 /** Used for gathering edge connectivity. */
-typedef struct ScrewVertConnect {
+struct ScrewVertConnect {
   /** Distance from the center axis. */
   float dist_sq;
   /** Location relative to the transformed axis. */
@@ -63,14 +62,14 @@ typedef struct ScrewVertConnect {
   /** Edges on either side, a bit of a waste since each edge ref's 2 edges. */
   MEdge *e[2];
   char flag;
-} ScrewVertConnect;
+};
 
-typedef struct ScrewVertIter {
+struct ScrewVertIter {
   ScrewVertConnect *v_array;
   ScrewVertConnect *v_poin;
   uint v, v_other;
   MEdge *e;
-} ScrewVertIter;
+};
 
 #define SV_UNUSED (UINT_MAX)
 #define SV_INVALID ((UINT_MAX)-1)
@@ -337,9 +336,9 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
   }
 
   /* apply the multiplier */
-  angle *= (float)ltmd->iter;
-  screw_ofs *= (float)ltmd->iter;
-  uv_u_scale = 1.0f / (float)(step_tot);
+  angle *= float(ltmd->iter);
+  screw_ofs *= float(ltmd->iter);
+  uv_u_scale = 1.0f / float(step_tot);
 
   /* multiplying the steps is a bit tricky, this works best */
   step_tot = ((step_tot + 1) * ltmd->iter) - (ltmd->iter - 1);
