@@ -471,22 +471,6 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
      * Sort edge verts for correct face flipping
      * NOT REALLY NEEDED but face flipping is nice. */
 
-    /* Notice!
-     *
-     * Since we are only ordering the edges here it can avoid mallocing the
-     * extra space by abusing the vert array before its filled with new verts.
-     * The new array for vert_connect must be at least `sizeof(ScrewVertConnect) * totvert`
-     * and the size of our resulting meshes array is `sizeof(MVert) * totvert * 3`
-     * so its safe to use the second 2 thirds of #MVert the array for vert_connect,
-     * just make sure #ScrewVertConnect struct is no more than twice as big as #MVert,
-     * at the moment there is no chance of that being a problem,
-     * unless #MVert becomes half its current size.
-     *
-     * once the edges are ordered, vert_connect is not needed and it can be used for verts
-     *
-     * This makes the modifier faster with one less allocate.
-     */
-
     vert_connect = static_cast<ScrewVertConnect *>(
         MEM_malloc_arrayN(totvert, sizeof(ScrewVertConnect), __func__));
     /* skip the first slice of verts. */
