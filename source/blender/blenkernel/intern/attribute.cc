@@ -293,6 +293,27 @@ CustomDataLayer *BKE_id_attribute_new(
   return (index == -1) ? nullptr : &(customdata->layers[index]);
 }
 
+
+static void bke_id_attribute_copy_if_exists(ID *id, const char *srcname, const char *dstname)
+{
+  using namespace blender::bke;
+
+  std::optional<MutableAttributeAccessor> attributes = get_attribute_accessor_for_write(*id);
+  if (!attributes) {
+    return;
+  }
+
+  GAttributeReader src = attributes->lookup(srcname);
+  if (!src) {
+    return;
+  }
+
+  const eCustomDataType type = cpp_type_to_custom_data_type(src.varray.type());
+  attributes->add(dstname, src.domain, type, AttributeInitVArray(src.varray));
+
+}
+
+
 CustomDataLayer *BKE_id_attribute_duplicate(ID *id, const char *name, ReportList *reports)
 {
   using namespace blender::bke;
@@ -321,6 +342,23 @@ CustomDataLayer *BKE_id_attribute_duplicate(ID *id, const char *name, ReportList
 
   const eCustomDataType type = cpp_type_to_custom_data_type(src.varray.type());
   attributes->add(uniquename, src.domain, type, AttributeInitVArray(src.varray));
+
+  if (GS(id->name) == ID_ME && type == CD_PROP_FLOAT2) {
+    /* Duplicate UV sub-attributes. */
+    char buffer_src[MAX_CUSTOMDATA_LAYER_NAME];
+    char buffer_dst[MAX_CUSTOMDATA_LAYER_NAME];
+
+    bke_id_attribute_copy_if_exists(id,
+                            BKE_uv_map_vert_selection_name_get(name, buffer_src),
+                            BKE_uv_map_vert_selection_name_get(uniquename, buffer_dst));
+    bke_id_attribute_copy_if_exists(id,
+                            BKE_uv_map_edge_selection_name_get(name, buffer_src),
+                            BKE_uv_map_edge_selection_name_get(uniquename, buffer_dst));
+    bke_id_attribute_copy_if_exists(id,
+                            BKE_uv_map_pin_name_get(name, buffer_src),
+                            BKE_uv_map_pin_name_get(uniquename, buffer_dst));
+  }
+
 
   return BKE_id_attribute_search(id, uniquename, CD_MASK_PROP_ALL, ATTR_DOMAIN_MASK_ALL);
 }
