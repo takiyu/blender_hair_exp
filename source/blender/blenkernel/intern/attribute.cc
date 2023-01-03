@@ -141,9 +141,9 @@ bool BKE_attribute_allow_procedural_access(const char *attribute_name)
 }
 
 static bool bke_id_attribute_rename_if_exists(ID *id,
-                             const char *old_name,
-                             const char *new_name,
-                             ReportList *reports)
+                                              const char *old_name,
+                                              const char *new_name,
+                                              ReportList *reports)
 {
   CustomDataLayer *layer = BKE_id_attribute_search(
       id, old_name, CD_MASK_PROP_ALL, ATTR_DOMAIN_MASK_ALL);
@@ -187,17 +187,17 @@ bool BKE_id_attribute_rename(ID *id,
     char buffer_dst[MAX_CUSTOMDATA_LAYER_NAME];
 
     bke_id_attribute_rename_if_exists(id,
-                            BKE_uv_map_vert_selection_name_get(layer->name, buffer_src),
-                            BKE_uv_map_vert_selection_name_get(result_name, buffer_dst),
-                            reports);
+                                      BKE_uv_map_vert_selection_name_get(layer->name, buffer_src),
+                                      BKE_uv_map_vert_selection_name_get(result_name, buffer_dst),
+                                      reports);
     bke_id_attribute_rename_if_exists(id,
-                            BKE_uv_map_edge_selection_name_get(layer->name, buffer_src),
-                            BKE_uv_map_edge_selection_name_get(result_name, buffer_dst),
-                            reports);
+                                      BKE_uv_map_edge_selection_name_get(layer->name, buffer_src),
+                                      BKE_uv_map_edge_selection_name_get(result_name, buffer_dst),
+                                      reports);
     bke_id_attribute_rename_if_exists(id,
-                            BKE_uv_map_pin_name_get(layer->name, buffer_src),
-                            BKE_uv_map_pin_name_get(result_name, buffer_dst),
-                            reports);
+                                      BKE_uv_map_pin_name_get(layer->name, buffer_src),
+                                      BKE_uv_map_pin_name_get(result_name, buffer_dst),
+                                      reports);
   }
   if (StringRef(old_name) == BKE_id_attributes_active_color_name(id)) {
     BKE_id_attributes_active_color_set(id, result_name);
@@ -293,7 +293,6 @@ CustomDataLayer *BKE_id_attribute_new(
   return (index == -1) ? nullptr : &(customdata->layers[index]);
 }
 
-
 static void bke_id_attribute_copy_if_exists(ID *id, const char *srcname, const char *dstname)
 {
   using namespace blender::bke;
@@ -310,9 +309,7 @@ static void bke_id_attribute_copy_if_exists(ID *id, const char *srcname, const c
 
   const eCustomDataType type = cpp_type_to_custom_data_type(src.varray.type());
   attributes->add(dstname, src.domain, type, AttributeInitVArray(src.varray));
-
 }
-
 
 CustomDataLayer *BKE_id_attribute_duplicate(ID *id, const char *name, ReportList *reports)
 {
@@ -349,16 +346,15 @@ CustomDataLayer *BKE_id_attribute_duplicate(ID *id, const char *name, ReportList
     char buffer_dst[MAX_CUSTOMDATA_LAYER_NAME];
 
     bke_id_attribute_copy_if_exists(id,
-                            BKE_uv_map_vert_selection_name_get(name, buffer_src),
-                            BKE_uv_map_vert_selection_name_get(uniquename, buffer_dst));
+                                    BKE_uv_map_vert_selection_name_get(name, buffer_src),
+                                    BKE_uv_map_vert_selection_name_get(uniquename, buffer_dst));
     bke_id_attribute_copy_if_exists(id,
-                            BKE_uv_map_edge_selection_name_get(name, buffer_src),
-                            BKE_uv_map_edge_selection_name_get(uniquename, buffer_dst));
+                                    BKE_uv_map_edge_selection_name_get(name, buffer_src),
+                                    BKE_uv_map_edge_selection_name_get(uniquename, buffer_dst));
     bke_id_attribute_copy_if_exists(id,
-                            BKE_uv_map_pin_name_get(name, buffer_src),
-                            BKE_uv_map_pin_name_get(uniquename, buffer_dst));
+                                    BKE_uv_map_pin_name_get(name, buffer_src),
+                                    BKE_uv_map_pin_name_get(uniquename, buffer_dst));
   }
-
 
   return BKE_id_attribute_search(id, uniquename, CD_MASK_PROP_ALL, ATTR_DOMAIN_MASK_ALL);
 }
@@ -379,8 +375,6 @@ bool BKE_id_attribute_remove(ID *id, const char *name, ReportList *reports)
   DomainInfo info[ATTR_DOMAIN_NUM];
   get_domains(id, info);
 
-
-
   if (GS(id->name) == ID_ME) {
     Mesh *mesh = reinterpret_cast<Mesh *>(id);
     if (BMEditMesh *em = mesh->edit_mesh) {
@@ -391,8 +385,10 @@ bool BKE_id_attribute_remove(ID *id, const char *name, ReportList *reports)
             if (data->layers[layer_index].type == CD_PROP_FLOAT2) {
               /* free associated UV map bool layers */
               char buffer_src[MAX_CUSTOMDATA_LAYER_NAME];
-              BM_data_layer_free_named(em->bm, data, BKE_uv_map_vert_selection_name_get(name, buffer_src));
-              BM_data_layer_free_named(em->bm, data, BKE_uv_map_edge_selection_name_get(name, buffer_src));
+              BM_data_layer_free_named(
+                  em->bm, data, BKE_uv_map_vert_selection_name_get(name, buffer_src));
+              BM_data_layer_free_named(
+                  em->bm, data, BKE_uv_map_edge_selection_name_get(name, buffer_src));
               BM_data_layer_free_named(em->bm, data, BKE_uv_map_pin_name_get(name, buffer_src));
             }
           }
@@ -420,19 +416,12 @@ bool BKE_id_attribute_remove(ID *id, const char *name, ReportList *reports)
   if (GS(id->name) == ID_ME) {
 
     std::optional<blender::bke::AttributeMetaData> metadata = attributes->lookup_meta_data(name);
-    if (metadata->data_type == CD_PROP_FLOAT2)
-    {
+    if (metadata->data_type == CD_PROP_FLOAT2) {
       /* remove UV sub-attributes. */
       char buffer_src[MAX_CUSTOMDATA_LAYER_NAME];
-      BKE_id_attribute_remove(id,
-                              BKE_uv_map_vert_selection_name_get(name, buffer_src),
-                              reports);
-      BKE_id_attribute_remove(id,
-                              BKE_uv_map_edge_selection_name_get(name, buffer_src),
-                              reports);
-      BKE_id_attribute_remove(id,
-                              BKE_uv_map_pin_name_get(name, buffer_src),
-                              reports);
+      BKE_id_attribute_remove(id, BKE_uv_map_vert_selection_name_get(name, buffer_src), reports);
+      BKE_id_attribute_remove(id, BKE_uv_map_edge_selection_name_get(name, buffer_src), reports);
+      BKE_id_attribute_remove(id, BKE_uv_map_pin_name_get(name, buffer_src), reports);
     }
   }
 

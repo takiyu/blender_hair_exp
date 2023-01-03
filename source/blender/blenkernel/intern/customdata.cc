@@ -2510,13 +2510,12 @@ int CustomData_get_named_layer_index_notype(const CustomData *data, const char *
 {
   for (int i = 0; i < data->totlayer; i++) {
     if (STREQ(data->layers[i].name, name)) {
-        return i;
+      return i;
     }
   }
 
   return -1;
 }
-
 
 int CustomData_get_active_layer_index(const CustomData *data, const int type)
 {
