@@ -2506,6 +2506,18 @@ int CustomData_get_named_layer_index(const CustomData *data, const int type, con
   return -1;
 }
 
+int CustomData_get_named_layer_index_notype(const CustomData *data, const char *name)
+{
+  for (int i = 0; i < data->totlayer; i++) {
+    if (STREQ(data->layers[i].name, name)) {
+        return i;
+    }
+  }
+
+  return -1;
+}
+
+
 int CustomData_get_active_layer_index(const CustomData *data, const int type)
 {
   const int layer_index = data->typemap[type];

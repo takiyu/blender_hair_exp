@@ -440,6 +440,7 @@ int CustomData_get_n_offset(const struct CustomData *data, int type, int n);
 int CustomData_get_layer_index(const struct CustomData *data, int type);
 int CustomData_get_layer_index_n(const struct CustomData *data, int type, int n);
 int CustomData_get_named_layer_index(const struct CustomData *data, int type, const char *name);
+int CustomData_get_named_layer_index_notype(const struct CustomData *data, const char *name);
 int CustomData_get_active_layer_index(const struct CustomData *data, int type);
 int CustomData_get_render_layer_index(const struct CustomData *data, int type);
 int CustomData_get_clone_layer_index(const struct CustomData *data, int type);

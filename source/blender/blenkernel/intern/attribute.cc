@@ -341,11 +341,23 @@ bool BKE_id_attribute_remove(ID *id, const char *name, ReportList *reports)
   DomainInfo info[ATTR_DOMAIN_NUM];
   get_domains(id, info);
 
+
+
   if (GS(id->name) == ID_ME) {
     Mesh *mesh = reinterpret_cast<Mesh *>(id);
     if (BMEditMesh *em = mesh->edit_mesh) {
       for (const int domain : IndexRange(ATTR_DOMAIN_NUM)) {
         if (CustomData *data = info[domain].customdata) {
+          int layer_index = CustomData_get_named_layer_index_notype(data, name);
+          if (layer_index >= 0) {
+            if (data->layers[layer_index].type == CD_PROP_FLOAT2) {
+              /* free associated UV map bool layers */
+              char buffer_src[MAX_CUSTOMDATA_LAYER_NAME];
+              BM_data_layer_free_named(em->bm, data, BKE_uv_map_vert_selection_name_get(name, buffer_src));
+              BM_data_layer_free_named(em->bm, data, BKE_uv_map_edge_selection_name_get(name, buffer_src));
+              BM_data_layer_free_named(em->bm, data, BKE_uv_map_pin_name_get(name, buffer_src));
+            }
+          }
           if (BM_data_layer_free_named(em->bm, data, name)) {
             if (name == StringRef(mesh->active_color_attribute)) {
               MEM_SAFE_FREE(mesh->active_color_attribute);
@@ -362,8 +374,28 @@ bool BKE_id_attribute_remove(ID *id, const char *name, ReportList *reports)
   }
 
   std::optional<MutableAttributeAccessor> attributes = get_attribute_accessor_for_write(*id);
+
   if (!attributes) {
     return false;
+  }
+
+  if (GS(id->name) == ID_ME) {
+
+    std::optional<blender::bke::AttributeMetaData> metadata = attributes->lookup_meta_data(name);
+    if (metadata->data_type == CD_PROP_FLOAT2)
+    {
+      /* remove UV sub-attributes. */
+      char buffer_src[MAX_CUSTOMDATA_LAYER_NAME];
+      BKE_id_attribute_remove(id,
+                              BKE_uv_map_vert_selection_name_get(name, buffer_src),
+                              reports);
+      BKE_id_attribute_remove(id,
+                              BKE_uv_map_edge_selection_name_get(name, buffer_src),
+                              reports);
+      BKE_id_attribute_remove(id,
+                              BKE_uv_map_pin_name_get(name, buffer_src),
+                              reports);
+    }
   }
 
   return attributes->remove(name);
