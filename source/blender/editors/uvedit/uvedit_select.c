@@ -4205,7 +4205,7 @@ static int uv_select_pinned_exec(bContext *C, wmOperator *op)
 
       BM_ITER_ELEM (l, &liter, efa, BM_LOOPS_OF_FACE) {
 
-        if BM_ELEM_CD_GET_BOOL (l, offsets.pin) {
+        if (BM_ELEM_CD_GET_BOOL (l, offsets.pin)) {
           uvedit_uv_select_enable(scene, em->bm, l, false, offsets);
           changed = true;
         }
