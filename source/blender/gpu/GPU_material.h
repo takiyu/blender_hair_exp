@@ -362,8 +362,8 @@ typedef struct GPULayerAttr {
   struct GPULayerAttr *next, *prev;
 
   /* Meaningful part of the attribute set key. */
-  char name[64]; /* MAX_CUSTOMDATA_LAYER_NAME */
-  /** Hash of name[64]. */
+  char name[68]; /* MAX_CUSTOMDATA_LAYER_NAME */
+  /** Hash of name[68]. */
   uint32_t hash_code;
 
   /* Helper fields used by code generation. */
