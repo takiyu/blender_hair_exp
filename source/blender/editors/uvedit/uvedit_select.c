@@ -227,6 +227,8 @@ bool uvedit_face_visible_test(const Scene *scene, BMFace *efa)
 
 bool uvedit_face_select_test_ex(const ToolSettings *ts, BMFace *efa, const BMUVOffsets offsets)
 {
+  BLI_assert(offsets.select_vert >= 0);
+  BLI_assert(offsets.select_edge >= 0);
   if (ts->uv_flag & UV_SYNC_SELECTION) {
     return BM_elem_flag_test(efa, BM_ELEM_SELECT);
   }
@@ -325,7 +327,8 @@ void uvedit_face_select_set(const Scene *scene,
 void uvedit_face_select_enable(
     const Scene *scene, BMesh *bm, BMFace *efa, const bool do_history, const BMUVOffsets offsets)
 {
-  BLI_assert(offsets.uv >= 0);
+  BLI_assert(offsets.select_vert >= 0);
+  BLI_assert(offsets.select_edge >= 0);
   const ToolSettings *ts = scene->toolsettings;
 
   if (ts->uv_flag & UV_SYNC_SELECTION) {
@@ -350,7 +353,8 @@ void uvedit_face_select_disable(const Scene *scene,
                                 BMFace *efa,
                                 const BMUVOffsets offsets)
 {
-  BLI_assert(offsets.uv >= 0);
+  BLI_assert(offsets.select_vert >= 0);
+  BLI_assert(offsets.select_edge >= 0);
   const ToolSettings *ts = scene->toolsettings;
 
   if (ts->uv_flag & UV_SYNC_SELECTION) {
@@ -369,6 +373,8 @@ void uvedit_face_select_disable(const Scene *scene,
 
 bool uvedit_edge_select_test_ex(const ToolSettings *ts, BMLoop *l, const BMUVOffsets offsets)
 {
+  BLI_assert(offsets.select_vert >= 0);
+  BLI_assert(offsets.select_edge >= 0);
   if (ts->uv_flag & UV_SYNC_SELECTION) {
     if (ts->selectmode & SCE_SELECT_FACE) {
       return BM_elem_flag_test(l->f, BM_ELEM_SELECT);
@@ -472,6 +478,8 @@ void uvedit_edge_select_set_noflush(const Scene *scene,
                                     const int sticky_flag,
                                     const BMUVOffsets offsets)
 {
+  BLI_assert(offsets.uv >= 0);
+  BLI_assert(offsets.select_edge >= 0);
   BMLoop *l_iter = l;
   do {
     if (uvedit_face_visible_test(scene, l_iter->f)) {
@@ -503,6 +511,8 @@ void uvedit_edge_select_enable(
 
 {
   const ToolSettings *ts = scene->toolsettings;
+  BLI_assert(offsets.select_vert >= 0);
+  BLI_assert(offsets.select_edge >= 0);
 
   if (ts->uv_flag & UV_SYNC_SELECTION) {
     if (ts->selectmode & SCE_SELECT_FACE) {
@@ -533,6 +543,8 @@ void uvedit_edge_select_disable(const Scene *scene,
                                 const BMUVOffsets offsets)
 {
   const ToolSettings *ts = scene->toolsettings;
+  BLI_assert(offsets.select_vert >= 0);
+  BLI_assert(offsets.select_edge >= 0);
 
   if (ts->uv_flag & UV_SYNC_SELECTION) {
     if (ts->selectmode & SCE_SELECT_FACE) {
@@ -566,6 +578,7 @@ void uvedit_edge_select_disable(const Scene *scene,
 
 bool uvedit_uv_select_test_ex(const ToolSettings *ts, BMLoop *l, const BMUVOffsets offsets)
 {
+  BLI_assert(offsets.select_vert >= 0);
   if (ts->uv_flag & UV_SYNC_SELECTION) {
     if (ts->selectmode & SCE_SELECT_FACE) {
       return BM_elem_flag_test_bool(l->f, BM_ELEM_SELECT);
@@ -641,6 +654,7 @@ void uvedit_uv_select_shared_vert(const Scene *scene,
                                   const BMUVOffsets offsets)
 {
   BLI_assert(ELEM(sticky_flag, SI_STICKY_LOC, SI_STICKY_VERTEX));
+  BLI_assert(offsets.uv >= 0);
 
   BMEdge *e_first, *e_iter;
   e_first = e_iter = l->e;
@@ -688,6 +702,7 @@ void uvedit_uv_select_enable(
     const Scene *scene, BMesh *bm, BMLoop *l, const bool do_history, const BMUVOffsets offsets)
 {
   const ToolSettings *ts = scene->toolsettings;
+  BLI_assert(offsets.select_vert >= 0);
 
   if (ts->selectmode & SCE_SELECT_EDGE) {
     /* Are you looking for `uvedit_edge_select_set(...)` instead? */
@@ -713,6 +728,7 @@ void uvedit_uv_select_enable(
 void uvedit_uv_select_disable(const Scene *scene, BMesh *bm, BMLoop *l, const BMUVOffsets offsets)
 {
   const ToolSettings *ts = scene->toolsettings;
+  BLI_assert(offsets.select_vert >= 0);
 
   if (ts->uv_flag & UV_SYNC_SELECTION) {
     if (ts->selectmode & SCE_SELECT_FACE) {
@@ -731,6 +747,7 @@ static BMLoop *uvedit_loop_find_other_radial_loop_with_visible_face(const Scene 
                                                                     BMLoop *l_src,
                                                                     const BMUVOffsets offsets)
 {
+  BLI_assert(offsets.uv >= 0);
   BMLoop *l_other = NULL;
   BMLoop *l_iter = l_src->radial_next;
   if (l_iter != l_src) {
@@ -798,6 +815,7 @@ bool uv_find_nearest_edge(
   bool found = false;
 
   const BMUVOffsets offsets = BM_uv_map_get_offsets(em->bm);
+  BLI_assert(offsets.uv >= 0);
 
   BM_mesh_elem_index_ensure(em->bm, BM_VERT);
 
@@ -947,6 +965,7 @@ bool uv_find_nearest_vert(
   BM_mesh_elem_index_ensure(em->bm, BM_VERT);
 
   const BMUVOffsets offsets = BM_uv_map_get_offsets(em->bm);
+  BLI_assert(offsets.uv >= 0);
 
   BM_ITER_MESH (efa, &iter, em->bm, BM_FACES_OF_MESH) {
     if (!uvedit_face_visible_test(scene, efa)) {
@@ -1023,6 +1042,7 @@ static bool uvedit_nearest_uv(const Scene *scene,
   const float *uv_best = NULL;
   float dist_best = *dist_sq;
   const BMUVOffsets offsets = BM_uv_map_get_offsets(em->bm);
+  BLI_assert(offsets.uv >= 0);
   BM_ITER_MESH (efa, &iter, em->bm, BM_FACES_OF_MESH) {
     if (!uvedit_face_visible_test(scene, efa)) {
       continue;
@@ -1154,6 +1174,7 @@ BMLoop *uv_find_nearest_loop_from_edge(struct Scene *scene,
 
 bool uvedit_vert_is_edge_select_any_other(const Scene *scene, BMLoop *l, const BMUVOffsets offsets)
 {
+  BLI_assert(offsets.uv >= 0);
   BMEdge *e_iter = l->e;
   do {
     BMLoop *l_radial_iter = e_iter->l, *l_other;
@@ -1175,6 +1196,7 @@ bool uvedit_vert_is_edge_select_any_other(const Scene *scene, BMLoop *l, const B
 
 bool uvedit_vert_is_face_select_any_other(const Scene *scene, BMLoop *l, const BMUVOffsets offsets)
 {
+  BLI_assert(offsets.uv >= 0);
   BMIter liter;
   BMLoop *l_iter;
   BM_ITER_ELEM (l_iter, &liter, l->v, BM_LOOPS_OF_VERT) {
@@ -1193,6 +1215,7 @@ bool uvedit_vert_is_all_other_faces_selected(const Scene *scene,
                                              BMLoop *l,
                                              const BMUVOffsets offsets)
 {
+  BLI_assert(offsets.uv >= 0);
   BMIter liter;
   BMLoop *l_iter;
   BM_ITER_ELEM (l_iter, &liter, l->v, BM_LOOPS_OF_VERT) {
@@ -1274,6 +1297,7 @@ void uvedit_select_flush(const Scene *scene, BMEditMesh *em)
   const ToolSettings *ts = scene->toolsettings;
   const char *active_uv_name = CustomData_get_active_layer_name(&em->bm->ldata, CD_PROP_FLOAT2);
   BM_uv_map_ensure_edge_selection_attribute(em->bm, active_uv_name);
+  BM_uv_map_ensure_vert_selection_attribute(em->bm, active_uv_name);
   const BMUVOffsets offsets = BM_uv_map_get_offsets(em->bm);
 
   BLI_assert((ts->uv_flag & UV_SYNC_SELECTION) == 0);
@@ -1300,6 +1324,7 @@ void uvedit_deselect_flush(const Scene *scene, BMEditMesh *em)
   const ToolSettings *ts = scene->toolsettings;
   const char *active_uv_name = CustomData_get_active_layer_name(&em->bm->ldata, CD_PROP_FLOAT2);
   BM_uv_map_ensure_edge_selection_attribute(em->bm, active_uv_name);
+  BM_uv_map_ensure_vert_selection_attribute(em->bm, active_uv_name);
   const BMUVOffsets offsets = BM_uv_map_get_offsets(em->bm);
 
   BLI_assert((ts->uv_flag & UV_SYNC_SELECTION) == 0);
@@ -1764,6 +1789,7 @@ static void uv_select_linked_multi(Scene *scene,
 
     BMEditMesh *em = BKE_editmesh_from_object(obedit);
     const char *active_uv_name = CustomData_get_active_layer_name(&em->bm->ldata, CD_PROP_FLOAT2);
+    BLI_assert(active_uv_name != NULL);
     BM_uv_map_ensure_vert_selection_attribute(em->bm, active_uv_name);
     BM_uv_map_ensure_edge_selection_attribute(em->bm, active_uv_name);
     const BMUVOffsets offsets = BM_uv_map_get_offsets(em->bm);
@@ -3520,6 +3546,7 @@ static int uv_box_select_exec(bContext *C, wmOperator *op)
     const char *active_uv_name = CustomData_get_active_layer_name(&em->bm->ldata, CD_PROP_FLOAT2);
     BM_uv_map_ensure_vert_selection_attribute(em->bm, active_uv_name);
     BM_uv_map_ensure_edge_selection_attribute(em->bm, active_uv_name);
+    BM_uv_map_ensure_pin_attribute(em->bm, active_uv_name);
     const BMUVOffsets offsets = BM_uv_map_get_offsets(em->bm);
 
     /* do actual selection */
@@ -4168,6 +4195,7 @@ static int uv_select_pinned_exec(bContext *C, wmOperator *op)
     const char *active_uv_name = CustomData_get_active_layer_name(&em->bm->ldata, CD_PROP_FLOAT2);
     BM_uv_map_ensure_vert_selection_attribute(em->bm, active_uv_name);
     BM_uv_map_ensure_edge_selection_attribute(em->bm, active_uv_name);
+    BM_uv_map_ensure_pin_attribute(em->bm, active_uv_name);
     const BMUVOffsets offsets = BM_uv_map_get_offsets(em->bm);
 
     BM_ITER_MESH (efa, &iter, em->bm, BM_FACES_OF_MESH) {
@@ -4494,6 +4522,9 @@ static float get_uv_vert_needle(const eUVSelectSimilar type,
                                 BMLoop *loop,
                                 const BMUVOffsets offsets)
 {
+  BLI_assert(offsets.pin >= 0);
+  BLI_assert(offsets.uv >= 0);
+
   float result = 0.0f;
   switch (type) {
     case UV_SSIM_AREA_UV: {
@@ -4534,6 +4565,8 @@ static float get_uv_edge_needle(const eUVSelectSimilar type,
                                 BMLoop *loop_b,
                                 const BMUVOffsets offsets)
 {
+  BLI_assert(offsets.pin >= 0);
+  BLI_assert(offsets.uv >= 0);
   float result = 0.0f;
   switch (type) {
     case UV_SSIM_AREA_UV: {
@@ -4585,6 +4618,8 @@ static float get_uv_face_needle(const eUVSelectSimilar type,
                                 const float ob_m3[3][3],
                                 const BMUVOffsets offsets)
 {
+  BLI_assert(offsets.pin >= 0);
+  BLI_assert(offsets.uv >= 0);
   float result = 0.0f;
   switch (type) {
     case UV_SSIM_AREA_UV:
@@ -4617,6 +4652,7 @@ static float get_uv_island_needle(const eUVSelectSimilar type,
                                   const BMUVOffsets offsets)
 
 {
+  BLI_assert(offsets.uv >= 0);
   float result = 0.0f;
   switch (type) {
     case UV_SSIM_AREA_UV:
@@ -5226,6 +5262,7 @@ finally:
 BMLoop **ED_uvedit_selected_edges(const Scene *scene, BMesh *bm, int len_max, int *r_edges_len)
 {
   const BMUVOffsets offsets = BM_uv_map_get_offsets(bm);
+  BLI_assert(offsets.uv >= 0);
 
   CLAMP_MAX(len_max, bm->totloop);
   int edges_len = 0;
@@ -5283,6 +5320,8 @@ finally:
 BMLoop **ED_uvedit_selected_verts(const Scene *scene, BMesh *bm, int len_max, int *r_verts_len)
 {
   const BMUVOffsets offsets = BM_uv_map_get_offsets(bm);
+  BLI_assert(offsets.select_vert >= 0);
+  BLI_assert(offsets.uv >= 0);
 
   CLAMP_MAX(len_max, bm->totloop);
   int verts_len = 0;
@@ -5357,6 +5396,8 @@ static void uv_isolate_selected_islands(const Scene *scene,
   if (elementmap == NULL) {
     return;
   }
+  BLI_assert(offsets.select_vert >= 0);
+  BLI_assert(offsets.select_edge >= 0);
 
   int num_islands = elementmap->total_islands;
   /* Boolean array that tells if island with index i is completely selected or not. */
