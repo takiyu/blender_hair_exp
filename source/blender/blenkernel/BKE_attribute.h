@@ -8,9 +8,6 @@
 
 #pragma once
 
-#include <string.h>
-
-#include "BLI_string.h"
 #include "BLI_sys_types.h"
 
 #include "BKE_customdata.h"
