@@ -623,7 +623,6 @@ enum {
   CD_FAKE_SEAM = CD_FAKE | 100, /* UV seam flag for edges. */
 
   /* Multiple types of mesh elements... */
-  CD_FAKE_BWEIGHT = CD_FAKE | CD_BWEIGHT, /* *sigh*. */
   CD_FAKE_UV =
       CD_FAKE |
       CD_PROP_FLOAT2, /* UV flag, because we handle both loop's UVs and poly's textures. */
