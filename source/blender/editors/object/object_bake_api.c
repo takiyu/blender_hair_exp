@@ -2246,7 +2246,7 @@ void OBJECT_OT_bake(wmOperatorType *ot)
   RNA_def_string(ot->srna,
                  "uv_layer",
                  NULL,
-                 MAX_CUSTOMDATA_LAYER_NAME,
+                 MAX_CUSTOMDATA_LAYER_NAME_GUI,
                  "UV Layer",
                  "UV layer to override active");
 }
