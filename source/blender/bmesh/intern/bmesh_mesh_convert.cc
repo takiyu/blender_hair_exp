@@ -302,6 +302,8 @@ void BM_mesh_bm_from_me(BMesh *bm, const Mesh *me, const struct BMeshFromMeshPar
       &me->pdata, CD_PROP_BOOL, ".hide_poly");
   const int *material_indices = (const int *)CustomData_get_layer_named(
       &me->pdata, CD_PROP_INT32, "material_index");
+  const bool *sharp_faces = (const bool *)CustomData_get_layer_named(
+      &me->pdata, CD_PROP_BOOL, "sharp_face");
 
   Span<MVert> mvert = me->verts();
   Array<BMVert *> vtable(me->totvert);
@@ -396,9 +398,11 @@ void BM_mesh_bm_from_me(BMesh *bm, const Mesh *me, const struct BMeshFromMeshPar
     BM_elem_index_set(f, bm->totface - 1); /* set_ok */
 
     /* Transfer flag. */
-    f->head.hflag = BM_face_flag_from_mflag(mpoly[i].flag);
     if (hide_poly && hide_poly[i]) {
       BM_elem_flag_enable(f, BM_ELEM_HIDDEN);
+    }
+    if (!(sharp_faces && sharp_faces[i])) {
+      BM_elem_flag_enable(f, BM_ELEM_SMOOTH);
     }
     if (select_poly && select_poly[i]) {
       BM_face_select_set(bm, f, true);
@@ -978,6 +982,7 @@ void BM_mesh_bm_to_me(Main *bmain, BMesh *bm, Mesh *me, const struct BMeshToMesh
   bool need_hide_edge = false;
   bool need_hide_poly = false;
   bool need_material_index = false;
+  bool need_sharp_face = false;
 
   i = 0;
   BM_ITER_MESH (v, &iter, bm, BM_VERTS_OF_MESH) {
@@ -1033,7 +1038,9 @@ void BM_mesh_bm_to_me(Main *bmain, BMesh *bm, Mesh *me, const struct BMeshToMesh
     if (f->mat_nr != 0) {
       need_material_index = true;
     }
-    mpoly[i].flag = BM_face_flag_to_mflag(f);
+    if (!BM_elem_flag_test(f, BM_ELEM_SMOOTH)) {
+      need_sharp_face = true;
+    }
     if (BM_elem_flag_test(f, BM_ELEM_HIDDEN)) {
       need_hide_poly = true;
     }
@@ -1072,6 +1079,13 @@ void BM_mesh_bm_to_me(Main *bmain, BMesh *bm, Mesh *me, const struct BMeshToMesh
                                "material_index",
                                ATTR_DOMAIN_FACE,
                                [&](const int i) { return int(BM_face_at_index(bm, i)->mat_nr); });
+  }
+  if (need_sharp_face) {
+    BM_mesh_elem_table_ensure(bm, BM_FACE);
+    write_fn_to_attribute<int>(
+        me->attributes_for_write(), "sharp_face", ATTR_DOMAIN_FACE, [&](const int i) {
+          return !BM_elem_flag_test(BM_face_at_index(bm, i), BM_ELEM_SMOOTH);
+        });
   }
 
   /* Patch hook indices and vertex parents. */
@@ -1296,6 +1310,7 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
 
   j = 0;
   bke::SpanAttributeWriter<int> material_index_attribute;
+  bke::SpanAttributeWriter<bool> sharp_face_attribute;
   bke::SpanAttributeWriter<bool> hide_poly_attribute;
   bke::SpanAttributeWriter<bool> select_poly_attribute;
   BM_ITER_MESH_INDEX (efa, &iter, bm, BM_FACES_OF_MESH, i) {
@@ -1306,7 +1321,6 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
     BM_elem_index_set(efa, i); /* set_inline */
 
     mp->totloop = efa->len;
-    mp->flag = BM_face_flag_to_mflag(efa);
     if (BM_elem_flag_test(efa, BM_ELEM_HIDDEN)) {
       if (!hide_poly_attribute) {
         hide_poly_attribute = mesh_attributes.lookup_or_add_for_write_span<bool>(".hide_poly",
@@ -1328,7 +1342,13 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
         material_index_attribute = mesh_attributes.lookup_or_add_for_write_span<int>(
             "material_index", ATTR_DOMAIN_FACE);
       }
-      material_index_attribute.span[i] = efa->mat_nr;
+    }
+    if (!BM_elem_flag_test(efa, BM_ELEM_SMOOTH)) {
+      if (!sharp_face_attribute) {
+        sharp_face_attribute = mesh_attributes.lookup_or_add_for_write_span<bool>(
+            "sharp_face", ATTR_DOMAIN_FACE);
+      }
+      sharp_face_attribute.span[i] = true;
     }
 
     l_iter = l_first = BM_FACE_FIRST_LOOP(efa);

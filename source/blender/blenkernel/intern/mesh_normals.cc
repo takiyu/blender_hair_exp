@@ -838,6 +838,7 @@ static void mesh_edges_sharp_tag(const Span<MEdge> edges,
                                  const Span<MLoop> loops,
                                  const Span<int> loop_to_poly_map,
                                  const Span<float3> poly_normals,
+                                 const Span<bool> sharp_faces,
                                  const bool check_angle,
                                  const float split_angle,
                                  MutableSpan<int2> edge_to_loops,
@@ -845,6 +846,9 @@ static void mesh_edges_sharp_tag(const Span<MEdge> edges,
 {
   using namespace blender;
   const float split_angle_cos = check_angle ? cosf(split_angle) : -1.0f;
+  auto face_is_smooth = [&](const int poly_i) {
+    return sharp_faces.is_empty() || !sharp_faces[poly_i];
+  };
 
   for (const int poly_i : polys.index_range()) {
     const MPoly &poly = polys[poly_i];
@@ -859,7 +863,7 @@ static void mesh_edges_sharp_tag(const Span<MEdge> edges,
         /* 'Empty' edge until now, set e2l[0] (and e2l[1] to INDEX_UNSET to tag it as unset). */
         e2l[0] = loop_index;
         /* We have to check this here too, else we might miss some flat faces!!! */
-        e2l[1] = (poly.flag & ME_SMOOTH) ? INDEX_UNSET : INDEX_INVALID;
+        e2l[1] = (face_is_smooth(poly_i)) ? INDEX_UNSET : INDEX_INVALID;
       }
       else if (e2l[1] == INDEX_UNSET) {
         const bool is_angle_sharp = (check_angle &&
@@ -871,7 +875,7 @@ static void mesh_edges_sharp_tag(const Span<MEdge> edges,
          * or both poly have opposed (flipped) normals, i.e. both loops on the same edge share the
          * same vertex, or angle between both its polys' normals is above split_angle value.
          */
-        if (!(poly.flag & ME_SMOOTH) || (edges[edge_i].flag & ME_SHARP) ||
+        if (!face_is_smooth(poly_i) || (edges[edge_i].flag & ME_SHARP) ||
             vert_i == loops[e2l[0]].v || is_angle_sharp) {
           /* NOTE: we are sure that loop != 0 here ;). */
           e2l[1] = INDEX_INVALID;
@@ -907,6 +911,7 @@ void BKE_edges_sharp_from_angle_set(MEdge *medges,
                                     const int numLoops,
                                     const MPoly *mpolys,
                                     const float (*poly_normals)[3],
+                                    const bool *sharp_faces,
                                     const int numPolys,
                                     const float split_angle)
 {
@@ -930,6 +935,7 @@ void BKE_edges_sharp_from_angle_set(MEdge *medges,
                        {mloops, numLoops},
                        loop_to_poly,
                        {reinterpret_cast<const float3 *>(poly_normals), numPolys},
+                       Span(sharp_faces, sharp_faces ? numPolys : 0),
                        true,
                        split_angle,
                        edge_to_loops,
@@ -1501,6 +1507,7 @@ void BKE_mesh_normals_loop_split(const MVert *mverts,
                                  const int numLoops,
                                  const MPoly *mpolys,
                                  const float (*poly_normals)[3],
+                                 const bool *sharp_faces,
                                  const int numPolys,
                                  const bool use_split_normals,
                                  const float split_angle,
@@ -1527,7 +1534,7 @@ void BKE_mesh_normals_loop_split(const MVert *mverts,
       const MPoly *mp = &mpolys[mp_index];
       int ml_index = mp->loopstart;
       const int ml_index_end = ml_index + mp->totloop;
-      const bool is_poly_flat = ((mp->flag & ME_SMOOTH) == 0);
+      const bool is_poly_flat = sharp_faces && sharp_faces[mp_index];
 
       for (; ml_index < ml_index_end; ml_index++) {
         if (is_poly_flat) {
@@ -1619,6 +1626,7 @@ void BKE_mesh_normals_loop_split(const MVert *mverts,
                        loops,
                        loop_to_poly,
                        {reinterpret_cast<const float3 *>(poly_normals), numPolys},
+                       Span(sharp_faces, sharp_faces ? numPolys : 0),
                        check_angle,
                        split_angle,
                        edge_to_loops,
@@ -1668,6 +1676,7 @@ static void mesh_normals_loop_custom_set(const MVert *mverts,
                                          const int numLoops,
                                          const MPoly *mpolys,
                                          const float (*poly_normals)[3],
+                                         const bool *sharp_faces,
                                          const int numPolys,
                                          short (*r_clnors_data)[2],
                                          const bool use_vertices)
@@ -1704,6 +1713,7 @@ static void mesh_normals_loop_custom_set(const MVert *mverts,
                               numLoops,
                               mpolys,
                               poly_normals,
+                              sharp_faces,
                               numPolys,
                               use_split_normals,
                               split_angle,
@@ -1831,6 +1841,7 @@ static void mesh_normals_loop_custom_set(const MVert *mverts,
                                 numLoops,
                                 mpolys,
                                 poly_normals,
+                                sharp_faces,
                                 numPolys,
                                 use_split_normals,
                                 split_angle,
@@ -1908,6 +1919,7 @@ void BKE_mesh_normals_loop_custom_set(const MVert *mverts,
                                       const int numLoops,
                                       const MPoly *mpolys,
                                       const float (*poly_normals)[3],
+                                      const bool *sharp_faces,
                                       const int numPolys,
                                       short (*r_clnors_data)[2])
 {
@@ -1921,6 +1933,7 @@ void BKE_mesh_normals_loop_custom_set(const MVert *mverts,
                                numLoops,
                                mpolys,
                                poly_normals,
+                               sharp_faces,
                                numPolys,
                                r_clnors_data,
                                false);
@@ -1936,6 +1949,7 @@ void BKE_mesh_normals_loop_custom_from_verts_set(const MVert *mverts,
                                                  const int numLoops,
                                                  const MPoly *mpolys,
                                                  const float (*poly_normals)[3],
+                                                 const bool *sharp_faces,
                                                  const int numPolys,
                                                  short (*r_clnors_data)[2])
 {
@@ -1949,6 +1963,7 @@ void BKE_mesh_normals_loop_custom_from_verts_set(const MVert *mverts,
                                numLoops,
                                mpolys,
                                poly_normals,
+                               sharp_faces,
                                numPolys,
                                r_clnors_data,
                                true);
@@ -1982,6 +1997,8 @@ static void mesh_set_custom_normals(Mesh *mesh, float (*r_custom_nors)[3], const
                                loops.size(),
                                polys.data(),
                                BKE_mesh_poly_normals_ensure(mesh),
+                               static_cast<const bool *>(CustomData_get_layer_named(
+                                   &mesh->pdata, CD_PROP_BOOL, "sharp_face")),
                                polys.size(),
                                clnors,
                                use_vertices);

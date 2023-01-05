@@ -17,6 +17,7 @@
 
 #include "PIL_time.h"
 
+#include "BKE_attribute.hh"
 #include "BKE_camera.h"
 #include "BKE_collection.h"
 #include "BKE_customdata.h"
@@ -1474,6 +1475,7 @@ struct EdgeFeatData {
   Object *ob_eval; /* For evaluated materials. */
   const MLoopTri *mlooptri;
   const int *material_indices;
+  blender::VArray<bool> sharp_faces;
   blender::Span<MEdge> edges;
   blender::Span<MLoop> loops;
   blender::Span<MPoly> polys;
@@ -1645,8 +1647,8 @@ static void lineart_identify_mlooptri_feature_edges(void *__restrict userdata,
     if (ld->conf.use_crease) {
       bool do_crease = true;
       if (!ld->conf.force_crease && !e_feat_data->use_auto_smooth &&
-          (e_feat_data->polys[mlooptri[f1].poly].flag & ME_SMOOTH) &&
-          (e_feat_data->polys[mlooptri[f2].poly].flag & ME_SMOOTH)) {
+          (!e_feat_data->sharp_faces[mlooptri[f1].poly]) &&
+          (!e_feat_data->sharp_faces[mlooptri[f2].poly])) {
         do_crease = false;
       }
       if (do_crease && (dot_v3v3_db(tri1->gn, tri2->gn) < e_feat_data->crease_threshold)) {
@@ -1936,6 +1938,9 @@ static void lineart_geometry_object_load(LineartObjectInfo *ob_info,
   const MLoopTri *mlooptri = BKE_mesh_runtime_looptri_ensure(me);
   const int tot_tri = BKE_mesh_runtime_looptri_len(me);
 
+  const bke::AttributeAccessor attributes = me->attributes();
+  const VArray<bool> sharp_faces = attributes.lookup_or_default<bool>(
+      "sharp_face", ATTR_DOMAIN_FACE, false);
   const int *material_indices = (const int *)CustomData_get_layer_named(
       &me->pdata, CD_PROP_INT32, "material_index");
 
@@ -2075,6 +2080,7 @@ static void lineart_geometry_object_load(LineartObjectInfo *ob_info,
   edge_feat_data.ob_eval = ob_info->original_ob_eval;
   edge_feat_data.mlooptri = mlooptri;
   edge_feat_data.material_indices = material_indices;
+  edge_feat_data.sharp_faces = sharp_faces;
   edge_feat_data.edges = me->edges();
   edge_feat_data.polys = me->polys();
   edge_feat_data.loops = me->loops();

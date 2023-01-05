@@ -64,6 +64,7 @@ struct MResolvePixelData {
   const float (*vert_normals)[3];
   MPoly *mpoly;
   const int *material_indices;
+  const bool *sharp_faces;
   MLoop *mloop;
   MLoopUV *mloopuv;
   float uv_offset[2];
@@ -114,7 +115,7 @@ static void multiresbake_get_normal(const MResolvePixelData *data,
 {
   const int poly_index = data->mlooptri[tri_num].poly;
   const MPoly *mp = &data->mpoly[poly_index];
-  const bool smoothnormal = (mp->flag & ME_SMOOTH) != 0;
+  const bool smoothnormal = !(data->sharp_faces && data->sharp_faces[poly_index]);
 
   if (smoothnormal) {
     const int vi = data->mloop[data->mlooptri[tri_num].tri[vert_index]].v;
@@ -509,6 +510,8 @@ static void do_multires_bake(MultiresBakeRender *bkr,
           dm->getLoopArray(dm),
           dm->getLoopTriArray(dm),
           dm->getNumLoopTri(dm),
+          static_cast<const bool *>(
+              CustomData_get_layer_named(&dm->polyData, CD_PROP_BOOL, "sharp_face")),
           &dm->loopData,
           true,
           nullptr,
@@ -555,6 +558,8 @@ static void do_multires_bake(MultiresBakeRender *bkr,
     handle->data.mpoly = mpoly;
     handle->data.material_indices = static_cast<const int *>(
         CustomData_get_layer_named(&dm->polyData, CD_PROP_INT32, "material_index"));
+    handle->data.sharp_faces = static_cast<const bool *>(
+        CustomData_get_layer_named(&dm->polyData, CD_PROP_BOOL, "sharp_face"));
     handle->data.mvert = mvert;
     handle->data.vert_normals = vert_normals;
     handle->data.mloopuv = mloopuv;

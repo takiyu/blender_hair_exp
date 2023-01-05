@@ -75,7 +75,7 @@ struct Scene;
 /* keep in sync with MFace/MPoly types */
 typedef struct DMFlagMat {
   short mat_nr;
-  char flag;
+  bool sharp;
 } DMFlagMat;
 
 typedef enum DerivedMeshType {

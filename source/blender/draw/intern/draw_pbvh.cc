@@ -336,16 +336,17 @@ struct PBVHBatches {
     float fno[3];
     short no[3];
     int last_poly = -1;
-    bool smooth = false;
+    const bool *sharp_faces = static_cast<const bool *>(
+        CustomData_get_layer_named(args->pdata, CD_PROP_BOOL, "sharp_face"));
 
     foreach_faces([&](int /*buffer_i*/, int /*tri_i*/, int vertex_i, const MLoopTri *tri) {
-      const MPoly *mp = args->mpoly + tri->poly;
-
+      bool smooth = false;
       if (tri->poly != last_poly) {
         last_poly = tri->poly;
 
-        if (!(mp->flag & ME_SMOOTH)) {
+        if (sharp_faces && sharp_faces[tri->poly]) {
           smooth = true;
+          const MPoly *mp = args->mpoly + tri->poly;
           BKE_mesh_calc_poly_normal(mp, args->mloop + mp->loopstart, args->mvert, fno);
           normal_float_to_short_v3(no, fno);
         }
@@ -371,6 +372,8 @@ struct PBVHBatches {
   {
     uint vert_per_grid = square_i(args->ccg_key.grid_size - 1) * 4;
     uint vert_count = args->totprim * vert_per_grid;
+    const bool *sharp_faces = static_cast<const bool *>(
+        CustomData_get_layer_named(args->pdata, CD_PROP_BOOL, "sharp_face"));
 
     int existing_num = GPU_vertbuf_get_vertex_len(vbo.vert_buf);
     void *existing_data = GPU_vertbuf_get_data(vbo.vert_buf);
@@ -1066,6 +1069,8 @@ struct PBVHBatches {
   {
     int *mat_index = static_cast<int *>(
         CustomData_get_layer_named(args->pdata, CD_PROP_INT32, "material_index"));
+    const bool *sharp_faces = static_cast<const bool *>(
+        CustomData_get_layer_named(args->pdata, CD_PROP_BOOL, "sharp_face"));
 
     if (mat_index && args->totprim) {
       int poly_index = BKE_subdiv_ccg_grid_to_face_index(args->subdiv_ccg, args->grid_indices[0]);
