@@ -4319,14 +4319,21 @@ void CustomData_set_layer_unique_name(CustomData *data, const int index)
     return;
   }
 
+  int maxlength = MAX_CUSTOMDATA_LAYER_NAME_GUI;
+
+  if (STREQLEN("." UV_VERTSEL_NAME ".", nlayer->name, 4) ||
+      STREQLEN("." UV_EDGESEL_NAME ".", nlayer->name, 4) ||
+      STREQLEN("." UV_PINNED_NAME ".", nlayer->name, 4)) {
+    maxlength = MAX_CUSTOMDATA_LAYER_NAME;
+  }
+
   /* Set default name if none specified. Note we only call DATA_() when
    * needed to avoid overhead of locale lookups in the depsgraph. */
   if (nlayer->name[0] == '\0') {
     STRNCPY(nlayer->name, DATA_(typeInfo->defaultname));
   }
 
-  BLI_uniquename_cb(
-      customdata_unique_check, &data_arg, nullptr, '.', nlayer->name, sizeof(nlayer->name));
+  BLI_uniquename_cb(customdata_unique_check, &data_arg, nullptr, '.', nlayer->name, maxlength);
 }
 
 void CustomData_validate_layer_name(const CustomData *data,

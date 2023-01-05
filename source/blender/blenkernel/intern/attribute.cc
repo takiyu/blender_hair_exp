@@ -243,18 +243,23 @@ static bool unique_name_cb(void *arg, const char *name)
 bool BKE_id_attribute_calc_unique_name(ID *id, const char *name, char *outname)
 {
   AttrUniqueData data{id};
+  int maxlength = MAX_CUSTOMDATA_LAYER_NAME_GUI;
+
+  if (STREQLEN("." UV_VERTSEL_NAME ".", name, 4) || STREQLEN("." UV_EDGESEL_NAME ".", name, 4) ||
+      STREQLEN("." UV_PINNED_NAME ".", name, 4)) {
+    maxlength = MAX_CUSTOMDATA_LAYER_NAME;
+  }
 
   /* Set default name if none specified.
    * NOTE: We only call IFACE_() if needed to avoid locale lookup overhead. */
   if (!name || name[0] == '\0') {
-    BLI_strncpy(outname, IFACE_("Attribute"), MAX_CUSTOMDATA_LAYER_NAME);
+    BLI_strncpy(outname, IFACE_("Attribute"), maxlength);
   }
   else {
-    BLI_strncpy_utf8(outname, name, MAX_CUSTOMDATA_LAYER_NAME);
+    BLI_strncpy_utf8(outname, name, maxlength);
   }
 
-  return BLI_uniquename_cb(
-      unique_name_cb, &data, nullptr, '.', outname, MAX_CUSTOMDATA_LAYER_NAME);
+  return BLI_uniquename_cb(unique_name_cb, &data, nullptr, '.', outname, maxlength);
 }
 
 CustomDataLayer *BKE_id_attribute_new(
