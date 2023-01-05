@@ -647,6 +647,7 @@ Mesh *curve_to_mesh_sweep(const CurvesGeometry &main,
   MutableSpan<MEdge> edges = mesh->edges_for_write();
   MutableSpan<MPoly> polys = mesh->polys_for_write();
   MutableSpan<MLoop> loops = mesh->loops_for_write();
+  MutableAttributeAccessor mesh_attributes = mesh->attributes_for_write();
 
   foreach_curve_combination(curves_info, offsets, [&](const CombinationInfo &info) {
     fill_mesh_topology(info.vert_range.start(),
@@ -662,6 +663,23 @@ Mesh *curve_to_mesh_sweep(const CurvesGeometry &main,
                        loops,
                        polys);
   });
+
+  if (fill_caps) {
+    /* TODO: This is used to keep the tests passing after refactoring mesh shade smooth flags. It
+     * can be removed if the tests are updated and the final shading results will be the same. */
+    SpanAttributeWriter<bool> sharp_faces = mesh_attributes.lookup_or_add_for_write_span<bool>(
+        "sharp_face", ATTR_DOMAIN_FACE);
+    foreach_curve_combination(curves_info, offsets, [&](const CombinationInfo &info) {
+      const bool has_caps = fill_caps && !info.main_cyclic && info.profile_cyclic;
+      if (has_caps) {
+        const int poly_num = info.main_segment_num * info.profile_segment_num;
+        const int cap_poly_offset = info.poly_range.start() + poly_num;
+        sharp_faces.span[cap_poly_offset] = true;
+        sharp_faces.span[cap_poly_offset + 1] = true;
+      }
+    });
+    sharp_faces.finish();
+  }
 
   const Span<float3> main_positions = main.evaluated_positions();
   const Span<float3> tangents = main.evaluated_tangents();
@@ -713,8 +731,6 @@ Mesh *curve_to_mesh_sweep(const CurvesGeometry &main,
   }
 
   Set<AttributeIDRef> main_attributes_set;
-
-  MutableAttributeAccessor mesh_attributes = mesh->attributes_for_write();
 
   main_attributes.for_all([&](const AttributeIDRef &id, const AttributeMetaData meta_data) {
     if (!should_add_attribute_to_mesh(
