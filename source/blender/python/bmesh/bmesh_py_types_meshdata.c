@@ -40,6 +40,7 @@ typedef struct BPy_BMLoopUV {
   bool *vert_select;
   bool *edge_select;
   bool *pin;
+  BMLoop *loop;
 } BPy_BMLoopUV;
 
 PyDoc_STRVAR(bpy_bmloopuv_uv_doc,
@@ -71,9 +72,11 @@ static PyObject *bpy_bmloopuv_pin_uv_get(BPy_BMLoopUV *self, void *UNUSED(closur
 }
 static int bpy_bmloopuv_pin_uv_set(BPy_BMLoopUV *self, PyObject *value, void *UNUSED(closure))
 {
-  /* TODO: if we add lazy allocation of the associated uv map bool layers to BMesh there needs to be
-   * an BM_uv_map_ensure_pin_attr() call here. But as currently BMesh will always have the
-   * layers and we can't easily get at the layer name here just do an assert */
+  /* TODO: if we add lazy allocation of the associated uv map bool layers to BMesh we need
+   * to add a pin layere and update self->pin in the case of self->pin being NULL.
+   * This isn't easy to do currently as adding CustomData layers to a bmesh invalidates
+   * existing python objects. So for now lazy allocation isn't done and self->pin should
+   * never be NULL. */
   BLI_assert(self->pin);
   if (self->pin) {
     *self->pin = PyC_Long_AsBool(value);
@@ -88,9 +91,7 @@ static PyObject *bpy_bmloopuv_select_get(BPy_BMLoopUV *self, void *UNUSED(closur
 }
 static int bpy_bmloopuv_select_set(BPy_BMLoopUV *self, PyObject *value, void *UNUSED(closure))
 {
-  /* TODO: if we add lazy allocation of the associated uv map bool layers to BMesh there needs to be
-   * an BM_uv_map_ensure_vert_select_attr() call here. But as currently BMesh will always have the
-   * layers and we can't easily get at the layer name here just do an assert */
+  /* TODO: see comment above on bpy_bmloopuv_pin_uv_set(), the same applies here. */
   BLI_assert(self->vert_select);
   if (self->vert_select) {
     *self->vert_select = PyC_Long_AsBool(value);
@@ -105,9 +106,7 @@ static PyObject *bpy_bmloopuv_select_edge_get(BPy_BMLoopUV *self, void *UNUSED(c
 }
 static int bpy_bmloopuv_select_edge_set(BPy_BMLoopUV *self, PyObject *value, void *UNUSED(closure))
 {
-  /* TODO: if we add lazy allocation of the associated uv map bool layers to BMesh there needs to be
-   * an BM_uv_map_ensure_edge_select_attr() call here. But as currently BMesh will always have the
-   * layers and we can't easily get at the layer name here just do an assert */
+  /* TODO: see comment above on bpy_bmloopuv_pin_uv_set(), the same applies here.  */
   BLI_assert(self->edge_select);
   if (self->edge_select) {
     *self->edge_select = PyC_Long_AsBool(value);
@@ -154,7 +153,7 @@ static void bm_init_types_bmloopuv(void)
   PyType_Ready(&BPy_BMLoopUV_Type);
 }
 
-int BPy_BMLoopUV_AssignPyObject(struct BMesh *bm, const int loop_index, PyObject *value)
+int BPy_BMLoopUV_AssignPyObject(struct BMesh *bm, BMLoop *loop, PyObject *value)
 {
   if (UNLIKELY(!BPy_BMLoopUV_Check(value))) {
     PyErr_Format(PyExc_TypeError, "expected BMLoopUV, not a %.200s", Py_TYPE(value)->tp_name);
@@ -164,28 +163,32 @@ int BPy_BMLoopUV_AssignPyObject(struct BMesh *bm, const int loop_index, PyObject
   BPy_BMLoopUV *src = (BPy_BMLoopUV *)value;
   const BMUVOffsets offsets = BM_uv_map_get_offsets(bm);
 
-  BMLoop *l = BM_loop_at_index_find(bm, loop_index);
-  float *luv = BM_ELEM_CD_GET_FLOAT_P(l, offsets.uv);
+  float *luv = BM_ELEM_CD_GET_FLOAT_P(loop, offsets.uv);
   copy_v2_v2(luv, src->uv);
 
-  BM_ELEM_CD_SET_BOOL(l, offsets.select_vert, *src->vert_select);
-  BM_ELEM_CD_SET_BOOL(l, offsets.select_edge, *src->edge_select);
-  BM_ELEM_CD_SET_BOOL(l, offsets.pin, *src->pin);
+  if (src->vert_select) {
+    BM_ELEM_CD_SET_BOOL(loop, offsets.select_vert, *src->vert_select);
+  }
 
+  if (src->edge_select) {
+    BM_ELEM_CD_SET_BOOL(loop, offsets.select_edge, *src->edge_select);
+  }
+  if (src->pin) {
+    BM_ELEM_CD_SET_BOOL(loop, offsets.pin, *src->pin);
+  }
   return 0;
 }
 
-PyObject *BPy_BMLoopUV_CreatePyObject(struct BMesh *bm, const int loop_index)
+PyObject *BPy_BMLoopUV_CreatePyObject(struct BMesh *bm, BMLoop *loop)
 {
   BPy_BMLoopUV *self = PyObject_New(BPy_BMLoopUV, &BPy_BMLoopUV_Type);
 
   const BMUVOffsets offsets = BM_uv_map_get_offsets(bm);
 
-  BMLoop *l = BM_loop_at_index_find(bm, loop_index);
-  self->uv = BM_ELEM_CD_GET_FLOAT_P(l, offsets.uv);
-  self->vert_select = BM_ELEM_CD_GET_BOOL_P(l, offsets.select_vert);
-  self->edge_select = BM_ELEM_CD_GET_BOOL_P(l, offsets.select_edge);
-  self->pin = BM_ELEM_CD_GET_BOOL_P(l, offsets.pin);
+  self->uv = BM_ELEM_CD_GET_FLOAT_P(loop, offsets.uv);
+  self->vert_select = offsets.select_vert >= 0 ? BM_ELEM_CD_GET_BOOL_P(loop, offsets.select_vert) : NULL;
+  self->edge_select = offsets.select_edge >= 0 ? BM_ELEM_CD_GET_BOOL_P(loop, offsets.select_edge) : NULL;
+  self->pin = offsets.pin >=0 ? BM_ELEM_CD_GET_BOOL_P(loop, offsets.pin) : NULL;
 
   return (PyObject *)self;
 }
