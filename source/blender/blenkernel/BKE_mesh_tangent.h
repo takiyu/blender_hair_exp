@@ -47,6 +47,7 @@ void BKE_mesh_calc_loop_tangent_ex(const struct MVert *mvert,
                                    const struct MLoop *mloop,
                                    const struct MLoopTri *looptri,
                                    uint looptri_len,
+                                   const bool *sharp_faces,
 
                                    struct CustomData *loopdata,
                                    bool calc_active_tangent,

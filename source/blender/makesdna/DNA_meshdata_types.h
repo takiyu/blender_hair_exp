@@ -98,8 +98,8 @@ typedef struct MPoly {
 
 /** #MPoly.flag */
 enum {
-  ME_SMOOTH = (1 << 0),
 #ifdef DNA_DEPRECATED_ALLOW
+  ME_SMOOTH = (1 << 0),
   /** Deprecated selection status. Now stored in ".select_poly" attribute. */
   ME_FACE_SEL = (1 << 1),
 #endif

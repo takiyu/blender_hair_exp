@@ -247,8 +247,6 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
 
   ScrewVertConnect *vc, *vc_tmp, *vert_connect = nullptr;
 
-  const char mpoly_flag = (ltmd->flag & MOD_SCREW_SMOOTH_SHADING) ? ME_SMOOTH : 0;
-
   /* don't do anything? */
   if (!totvert) {
     return BKE_mesh_new_nomain_from_template(mesh, 0, 0, 0, 0, 0);
@@ -890,7 +888,6 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
       else {
         origindex[mpoly_index] = ORIGINDEX_NONE;
         dst_material_index[mpoly_index] = mat_nr;
-        mp_new->flag = mpoly_flag;
       }
       mp_new->loopstart = mpoly_index * 4;
       mp_new->totloop = 4;
@@ -1033,6 +1030,8 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
                                          ob_axis != nullptr ? mtx_tx[3] : nullptr,
                                          ltmd->merge_dist);
   }
+
+  BKE_mesh_smooth_flag_set(result, ltmd->flag & MOD_SCREW_SMOOTH_SHADING);
 
   return result;
 }

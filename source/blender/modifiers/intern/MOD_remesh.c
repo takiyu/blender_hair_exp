@@ -198,15 +198,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *UNUSED(ctx)
     MEM_freeN(output);
   }
 
-  if (rmd->flag & MOD_REMESH_SMOOTH_SHADING) {
-    MPoly *mpoly = BKE_mesh_polys_for_write(result);
-    int i, totpoly = result->totpoly;
-
-    /* Apply smooth shading to output faces */
-    for (i = 0; i < totpoly; i++) {
-      mpoly[i].flag |= ME_SMOOTH;
-    }
-  }
+  BKE_mesh_smooth_flag_set(result, (rmd->flag & MOD_REMESH_SMOOTH_SHADING));
 
   BKE_mesh_copy_parameters_for_eval(result, mesh);
   BKE_mesh_calc_edges(result, true, false);

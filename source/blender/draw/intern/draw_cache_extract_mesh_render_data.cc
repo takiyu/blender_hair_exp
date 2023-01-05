@@ -567,6 +567,9 @@ MeshRenderData *mesh_render_data_create(Object *object,
         CustomData_get_layer_named(&me->edata, CD_PROP_BOOL, ".select_edge"));
     mr->select_poly = static_cast<const bool *>(
         CustomData_get_layer_named(&me->pdata, CD_PROP_BOOL, ".select_poly"));
+
+    mr->sharp_faces = static_cast<const bool *>(
+        CustomData_get_layer_named(&me->pdata, CD_PROP_BOOL, "sharp_face"));
   }
   else {
     /* #BMesh */

@@ -1463,16 +1463,28 @@ void ED_mesh_split_faces(Mesh *mesh)
                                  polys.size(),
                                  split_angle);
 
-  threading::parallel_for(polys.index_range(), 1024, [&](const IndexRange range) {
-    for (const int poly_i : range) {
-      const MPoly &poly = polys[poly_i];
-      if (!(poly.flag & ME_SMOOTH)) {
-        for (const MLoop &loop : loops.slice(poly.loopstart, poly.totloop)) {
-          edges[loop.e].flag |= ME_SHARP;
-        }
+  const bke::AttributeAccessor attributes = mesh->attributes();
+  const VArray<bool> sharp_faces = attributes.lookup_or_default<bool>(
+      "sharp_face", ATTR_DOMAIN_FACE, false);
+  if (const std::optional<bool> value = sharp_faces.get_if_single()) {
+    if (value) {
+      for (MEdge &edge : edges) {
+        edge.flag |= ME_SHARP;
       }
     }
-  });
+  }
+  else {
+    threading::parallel_for(polys.index_range(), 1024, [&](const IndexRange range) {
+      for (const int poly_i : range) {
+        const MPoly &poly = polys[poly_i];
+        if (sharp_faces[poly_i]) {
+          for (const MLoop &loop : loops.slice(poly.loopstart, poly.totloop)) {
+            edges[loop.e].flag |= ME_SHARP;
+          }
+        }
+      }
+    });
+  }
 
   Vector<int64_t> split_indices;
   const IndexMask split_mask = index_mask_ops::find_indices_based_on_predicate(

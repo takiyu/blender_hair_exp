@@ -112,7 +112,6 @@ static void fill_mesh_topology(const int vert_offset,
       MPoly &poly = polys[ring_poly_offset + i_profile];
       poly.loopstart = ring_segment_loop_offset;
       poly.totloop = 4;
-      poly.flag = ME_SMOOTH;
 
       MLoop &loop_a = loops[ring_segment_loop_offset];
       loop_a.v = ring_vert_offset + i_profile;

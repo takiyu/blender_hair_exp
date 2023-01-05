@@ -44,6 +44,8 @@ OBJMesh::OBJMesh(Depsgraph *depsgraph, const OBJExportParams &export_params, Obj
     mesh_edges_ = export_mesh_->edges();
     mesh_polys_ = export_mesh_->polys();
     mesh_loops_ = export_mesh_->loops();
+    sharp_faces_ = export_mesh_->attributes().lookup_or_default<bool>(
+        "sharp_face", ATTR_DOMAIN_FACE, false);
   }
   else {
     /* Curves and NURBS surfaces need a new mesh when they're
@@ -76,6 +78,8 @@ void OBJMesh::set_mesh(Mesh *mesh)
   mesh_edges_ = mesh->edges();
   mesh_polys_ = mesh->polys();
   mesh_loops_ = mesh->loops();
+  sharp_faces_ = export_mesh_->attributes().lookup_or_default<bool>(
+      "sharp_face", ATTR_DOMAIN_FACE, false);
 }
 
 void OBJMesh::clear()
@@ -243,7 +247,7 @@ const Material *OBJMesh::get_object_material(const int16_t mat_nr) const
 
 bool OBJMesh::is_ith_poly_smooth(const int poly_index) const
 {
-  return mesh_polys_[poly_index].flag & ME_SMOOTH;
+  return !sharp_faces_[poly_index];
 }
 
 const char *OBJMesh::get_object_name() const
@@ -392,7 +396,7 @@ void OBJMesh::store_normal_coords_and_indices()
       CustomData_get_layer(&export_mesh_->ldata, CD_NORMAL));
   for (int poly_index = 0; poly_index < export_mesh_->totpoly; ++poly_index) {
     const MPoly &mpoly = mesh_polys_[poly_index];
-    bool need_per_loop_normals = lnors != nullptr || (mpoly.flag & ME_SMOOTH);
+    bool need_per_loop_normals = lnors != nullptr || !(sharp_faces_[poly_index]);
     if (need_per_loop_normals) {
       for (int loop_of_poly = 0; loop_of_poly < mpoly.totloop; ++loop_of_poly) {
         float3 loop_normal;

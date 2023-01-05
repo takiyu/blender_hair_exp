@@ -16,34 +16,35 @@ static void node_declare(NodeDeclarationBuilder &b)
 
 static void set_smooth(Mesh &mesh,
                        const Field<bool> &selection_field,
-                       const Field<bool> &shade_field)
+                       const Field<bool> &sharp_field)
 {
   if (mesh.totpoly == 0) {
     return;
   }
 
   MutableAttributeAccessor attributes = mesh.attributes_for_write();
-  AttributeWriter<bool> smooth = attributes.lookup_or_add_for_write<bool>("shade_smooth",
-                                                                          ATTR_DOMAIN_FACE);
+  AttributeWriter<bool> sharp_faces = attributes.lookup_or_add_for_write<bool>("sharp_face",
+                                                                               ATTR_DOMAIN_FACE);
 
   bke::MeshFieldContext field_context{mesh, ATTR_DOMAIN_FACE};
   fn::FieldEvaluator evaluator{field_context, mesh.totpoly};
   evaluator.set_selection(selection_field);
-  evaluator.add_with_destination(shade_field, smooth.varray);
+  evaluator.add_with_destination(sharp_field, sharp_faces.varray);
   evaluator.evaluate();
 
-  smooth.finish();
+  sharp_faces.finish();
 }
 
 static void node_geo_exec(GeoNodeExecParams params)
 {
   GeometrySet geometry_set = params.extract_input<GeometrySet>("Geometry");
   Field<bool> selection_field = params.extract_input<Field<bool>>("Selection");
-  Field<bool> shade_field = params.extract_input<Field<bool>>("Shade Smooth");
+  Field<bool> smooth_field = params.extract_input<Field<bool>>("Shade Smooth");
 
   geometry_set.modify_geometry_sets([&](GeometrySet &geometry_set) {
     if (Mesh *mesh = geometry_set.get_mesh_for_write()) {
-      set_smooth(*mesh, selection_field, shade_field);
+      /* TODO: Do this with nodes instead. */
+      set_smooth(*mesh, selection_field, fn::invert_boolean_field(smooth_field));
     }
   });
   params.set_output("Geometry", std::move(geometry_set));

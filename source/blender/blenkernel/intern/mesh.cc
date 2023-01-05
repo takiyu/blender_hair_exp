@@ -1464,16 +1464,17 @@ void BKE_mesh_material_remap(Mesh *me, const uint *remap, uint remap_len)
 
 void BKE_mesh_smooth_flag_set(Mesh *me, const bool use_smooth)
 {
-  MutableSpan<MPoly> polys = me->polys_for_write();
+  using namespace blender;
+  using namespace blender::bke;
+  MutableAttributeAccessor attributes = me->attributes_for_write();
   if (use_smooth) {
-    for (MPoly &poly : polys) {
-      poly.flag |= ME_SMOOTH;
-    }
+    attributes.remove("sharp_face");
   }
   else {
-    for (MPoly &poly : polys) {
-      poly.flag &= ~ME_SMOOTH;
-    }
+    SpanAttributeWriter<bool> sharp_faces = attributes.lookup_or_add_for_write_only_span<bool>(
+        "sharp_face", ATTR_DOMAIN_FACE);
+    sharp_faces.span.fill(true);
+    sharp_faces.finish();
   }
 }
 
