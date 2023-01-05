@@ -2230,6 +2230,9 @@ static PointerRNA rna_Mesh_uv_layers_new(struct Mesh *me,
 
 static void rna_Mesh_uv_layers_remove(struct Mesh *me, ReportList *reports, CustomDataLayer *layer)
 {
+  if (!BKE_id_attribute_find(&me->id, layer->name, CD_PROP_FLOAT, ATTR_DOMAIN_CORNER)) {
+        BKE_reportf(reports, RPT_ERROR, "Texture layer '%s' not found", layer->name);
+  }
   BKE_id_attribute_remove(&me->id, layer->name, reports);
 }
 
