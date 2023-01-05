@@ -66,11 +66,11 @@ void BM_data_layer_ensure_named(BMesh *bm, CustomData *data, int type, const cha
 void BM_data_layer_free(BMesh *bm, CustomData *data, int type);
 
 /** Ensure the dependent boolean layers exist for all face corner #CD_PROP_FLOAT2 layers. */
-void BM_uv_map_ensure_selection_and_pin_attributes(BMesh *bm);
+void BM_uv_map_ensure_select_and_pin_attrs(BMesh *bm);
 
-void BM_uv_map_ensure_vert_selection_attribute(BMesh *bm, const char *uv_map_name);
-void BM_uv_map_ensure_edge_selection_attribute(BMesh *bm, const char *uv_map_name);
-void BM_uv_map_ensure_pin_attribute(BMesh *bm, const char *uv_map_name);
+void BM_uv_map_ensure_vert_select_attr(BMesh *bm, const char *uv_map_name);
+void BM_uv_map_ensure_edge_select_attr(BMesh *bm, const char *uv_map_name);
+void BM_uv_map_ensure_pin_attr(BMesh *bm, const char *uv_map_name);
 
 /**
  * Remove a named custom data layer, if it existed. Return true if the layer was removed.

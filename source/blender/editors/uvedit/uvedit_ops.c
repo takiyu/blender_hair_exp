@@ -1357,7 +1357,7 @@ static int uv_pin_exec(bContext *C, wmOperator *op)
 
     bool changed = false;
     const char *active_uv_name = CustomData_get_active_layer_name(&em->bm->ldata, CD_PROP_FLOAT2);
-    BM_uv_map_ensure_pin_attribute(em->bm, active_uv_name);
+    BM_uv_map_ensure_pin_attr(em->bm, active_uv_name);
     const BMUVOffsets offsets = BM_uv_map_get_offsets(em->bm);
 
     if (synced_selection && (em->bm->totvertsel == 0)) {
@@ -1454,8 +1454,8 @@ static int uv_hide_exec(bContext *C, wmOperator *op)
     BMIter iter, liter;
 
     const char *active_uv_name = CustomData_get_active_layer_name(&em->bm->ldata, CD_PROP_FLOAT2);
-    BM_uv_map_ensure_vert_selection_attribute(em->bm, active_uv_name);
-    BM_uv_map_ensure_edge_selection_attribute(em->bm, active_uv_name);
+    BM_uv_map_ensure_vert_select_attr(em->bm, active_uv_name);
+    BM_uv_map_ensure_edge_select_attr(em->bm, active_uv_name);
     const BMUVOffsets offsets = BM_uv_map_get_offsets(em->bm);
 
     if (ts->uv_flag & UV_SYNC_SELECTION) {
@@ -1624,8 +1624,8 @@ static int uv_reveal_exec(bContext *C, wmOperator *op)
     BMIter iter, liter;
 
     const char *active_uv_name = CustomData_get_active_layer_name(&em->bm->ldata, CD_PROP_FLOAT2);
-    BM_uv_map_ensure_vert_selection_attribute(em->bm, active_uv_name);
-    BM_uv_map_ensure_edge_selection_attribute(em->bm, active_uv_name);
+    BM_uv_map_ensure_vert_select_attr(em->bm, active_uv_name);
+    BM_uv_map_ensure_edge_select_attr(em->bm, active_uv_name);
     const BMUVOffsets offsets = BM_uv_map_get_offsets(em->bm);
 
     /* NOTE: Selecting faces is delayed so that it doesn't select verts/edges and confuse certain

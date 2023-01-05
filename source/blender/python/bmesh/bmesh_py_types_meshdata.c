@@ -37,9 +37,9 @@
 typedef struct BPy_BMLoopUV {
   PyObject_VAR_HEAD
   float *uv;
-  bool *vertsel;
-  bool *edgesel;
-  bool *pinned;
+  bool *vert_select;
+  bool *edge_select;
+  bool *pin;
 } BPy_BMLoopUV;
 
 PyDoc_STRVAR(bpy_bmloopuv_uv_doc,
@@ -66,39 +66,39 @@ PyDoc_STRVAR(bpy_bmloopuv_select_edge_doc, "UV edge select state.\n\n:type: bool
 
 static PyObject *bpy_bmloopuv_pin_uv_get(BPy_BMLoopUV *self, void *UNUSED(closure))
 {
-  return self->pinned ? PyBool_FromLong(*self->pinned) : false;
+  return self->pin ? PyBool_FromLong(*self->pin) : false;
 }
 static int bpy_bmloopuv_pin_uv_set(BPy_BMLoopUV *self, PyObject *value, void *UNUSED(closure))
 {
-  BLI_assert(self->pinned);
-  if (self->pinned) {
-    *self->pinned = PyC_Long_AsBool(value);
+  BLI_assert(self->pin);
+  if (self->pin) {
+    *self->pin = PyC_Long_AsBool(value);
   }
   return 0;
 }
 
 static PyObject *bpy_bmloopuv_select_get(BPy_BMLoopUV *self, void *UNUSED(closure))
 {
-  return self->vertsel ? PyBool_FromLong(*self->vertsel) : false;
+  return self->vert_select ? PyBool_FromLong(*self->vert_select) : false;
 }
 static int bpy_bmloopuv_select_set(BPy_BMLoopUV *self, PyObject *value, void *UNUSED(closure))
 {
-  BLI_assert(self->vertsel);
-  if (self->vertsel) {
-    *self->vertsel = PyC_Long_AsBool(value);
+  BLI_assert(self->vert_select);
+  if (self->vert_select) {
+    *self->vert_select = PyC_Long_AsBool(value);
   }
   return 0;
 }
 
 static PyObject *bpy_bmloopuv_select_edge_get(BPy_BMLoopUV *self, void *UNUSED(closure))
 {
-  return self->edgesel ? PyBool_FromLong(*self->edgesel) : false;
+  return self->edge_select ? PyBool_FromLong(*self->edge_select) : false;
 }
 static int bpy_bmloopuv_select_edge_set(BPy_BMLoopUV *self, PyObject *value, void *UNUSED(closure))
 {
-  BLI_assert(self->edgesel);
-  if (self->edgesel) {
-    *self->edgesel = PyC_Long_AsBool(value);
+  BLI_assert(self->edge_select);
+  if (self->edge_select) {
+    *self->edge_select = PyC_Long_AsBool(value);
   }
   return 0;
 }
@@ -156,9 +156,9 @@ int BPy_BMLoopUV_AssignPyObject(struct BMesh *bm, const int loop_index, PyObject
   float *luv = BM_ELEM_CD_GET_FLOAT_P(l, offsets.uv);
   copy_v2_v2(luv, src->uv);
 
-  BM_ELEM_CD_SET_BOOL(l, offsets.select_vert, *src->vertsel);
-  BM_ELEM_CD_SET_BOOL(l, offsets.select_edge, *src->edgesel);
-  BM_ELEM_CD_SET_BOOL(l, offsets.pin, *src->pinned);
+  BM_ELEM_CD_SET_BOOL(l, offsets.select_vert, *src->vert_select);
+  BM_ELEM_CD_SET_BOOL(l, offsets.select_edge, *src->edge_select);
+  BM_ELEM_CD_SET_BOOL(l, offsets.pin, *src->pin);
 
   return 0;
 }
@@ -171,9 +171,9 @@ PyObject *BPy_BMLoopUV_CreatePyObject(struct BMesh *bm, const int loop_index)
 
   BMLoop *l = BM_loop_at_index_find(bm, loop_index);
   self->uv = BM_ELEM_CD_GET_FLOAT_P(l, offsets.uv);
-  self->vertsel = BM_ELEM_CD_GET_BOOL_P(l, offsets.select_vert);
-  self->edgesel = BM_ELEM_CD_GET_BOOL_P(l, offsets.select_edge);
-  self->pinned = BM_ELEM_CD_GET_BOOL_P(l, offsets.pin);
+  self->vert_select = BM_ELEM_CD_GET_BOOL_P(l, offsets.select_vert);
+  self->edge_select = BM_ELEM_CD_GET_BOOL_P(l, offsets.select_edge);
+  self->pin = BM_ELEM_CD_GET_BOOL_P(l, offsets.pin);
 
   return (PyObject *)self;
 }

@@ -873,11 +873,11 @@ void BM_data_layer_ensure_named(BMesh *bm, CustomData *data, int type, const cha
   }
 }
 
-void BM_uv_map_ensure_selection_and_pin_attributes(BMesh *bm)
+void BM_uv_map_ensure_select_and_pin_attrs(BMesh *bm)
 {
   const int nr_uv_layers = CustomData_number_of_layers(&bm->ldata, CD_PROP_FLOAT2);
   for (int l = 0; l < nr_uv_layers; l++) {
-    /* note: you can't re-use the returnvalue of CustomData_get_layer_name() because adding layers
+    /* NOTE: you can't re-use the returnvalue of CustomData_get_layer_name() because adding layers
      * can invalidate that. */
     char name[MAX_CUSTOMDATA_LAYER_NAME];
     BM_data_layer_ensure_named(
@@ -900,21 +900,21 @@ void BM_uv_map_ensure_selection_and_pin_attributes(BMesh *bm)
   }
 }
 
-void BM_uv_map_ensure_vert_selection_attribute(BMesh *bm, const char *uv_map_name)
+void BM_uv_map_ensure_vert_select_attr(BMesh *bm, const char *uv_map_name)
 {
   char name[MAX_CUSTOMDATA_LAYER_NAME];
   BM_data_layer_ensure_named(
       bm, &bm->ldata, CD_PROP_BOOL, BKE_uv_map_vert_selection_name_get(uv_map_name, name));
 }
 
-void BM_uv_map_ensure_edge_selection_attribute(BMesh *bm, const char *uv_map_name)
+void BM_uv_map_ensure_edge_select_attr(BMesh *bm, const char *uv_map_name)
 {
   char name[MAX_CUSTOMDATA_LAYER_NAME];
   BM_data_layer_ensure_named(
       bm, &bm->ldata, CD_PROP_BOOL, BKE_uv_map_edge_selection_name_get(uv_map_name, name));
 }
 
-void BM_uv_map_ensure_pin_attribute(BMesh *bm, const char *uv_map_name)
+void BM_uv_map_ensure_pin_attr(BMesh *bm, const char *uv_map_name)
 {
   char name[MAX_CUSTOMDATA_LAYER_NAME];
   BM_data_layer_ensure_named(

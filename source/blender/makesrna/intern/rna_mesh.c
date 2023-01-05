@@ -1799,8 +1799,8 @@ static char *rna_MeshUVLoop_path(const PointerRNA *ptr)
   return rna_LoopCustomData_data_path(ptr, "uv_layers", CD_PROP_FLOAT2);
 }
 
-static void get_uv_index_and_layer(const PointerRNA *ptr,
-                                   int *r_uv_map_index,
+static bool get_uv_index_and_layer(const PointerRNA *ptr,
+                                   int *r_uv_layer_index,
                                    int *r_index_in_attribute)
 {
   const Mesh *mesh = rna_mesh(ptr);
@@ -1813,74 +1813,83 @@ static void get_uv_index_and_layer(const PointerRNA *ptr,
         &mesh->ldata, CD_PROP_FLOAT2, layer_i);
     const ptrdiff_t index = uv_coord - layer_data;
     if (index >= 0 && index < mesh->totloop) {
-      *r_uv_map_index = layer_i;
+      *r_uv_layer_index  = layer_i;
       *r_index_in_attribute = index;
-      return;
+      return true;
     }
   }
-
-  BLI_assert_unreachable();
-  return;
+  /* This can happen if the Customdata arrays were re-allocated between obtaining the
+   * python object and accessing it.*/
+  return false;
 }
 
 static bool rna_MeshUVLoop_select_get(PointerRNA *ptr)
 {
   const Mesh *mesh = rna_mesh(ptr);
   int uv_index;
-  int corner_index;
-  get_uv_index_and_layer(ptr, &uv_index, &corner_index);
-  const bool *select = ED_mesh_uv_map_get_vert_selection(mesh, uv_index);
-  return select ? select[corner_index] : false;
+  int loop_index;
+  const bool *select = NULL;
+  if (get_uv_index_and_layer(ptr, &uv_index, &loop_index)) {
+    select = ED_mesh_uv_map_get_vert_select(mesh, uv_index);
+  }
+  return select ? select[loop_index] : false;
 }
 
 static void rna_MeshUVLoop_select_set(PointerRNA *ptr, const bool value)
 {
   Mesh *mesh = rna_mesh(ptr);
   int uv_index;
-  int corner_index;
-  get_uv_index_and_layer(ptr, &uv_index, &corner_index);
-  bool *select = ED_mesh_uv_map_ensure_vert_selection(mesh, uv_index);
-  select[corner_index] = value;
+  int loop_index;
+  if (get_uv_index_and_layer(ptr, &uv_index, &loop_index)) {
+    bool *select = ED_mesh_uv_map_ensure_vert_select(mesh, uv_index);
+    select[loop_index] = value;
+  }
 }
 
 static bool rna_MeshUVLoop_select_edge_get(PointerRNA *ptr)
 {
   const Mesh *mesh = rna_mesh(ptr);
   int uv_index;
-  int corner_index;
-  get_uv_index_and_layer(ptr, &uv_index, &corner_index);
-  const bool *select_edge = ED_mesh_uv_map_get_edge_selection(mesh, uv_index);
-  return select_edge ? select_edge[corner_index] : false;
+  int loop_index;
+  const bool *select_edge = NULL;
+  if (get_uv_index_and_layer(ptr, &uv_index, &loop_index)) {
+    select_edge = ED_mesh_uv_map_get_edge_select(mesh, uv_index);
+  }
+  return select_edge ? select_edge[loop_index] : false;
 }
 
 static void rna_MeshUVLoop_select_edge_set(PointerRNA *ptr, const bool value)
 {
   Mesh *mesh = rna_mesh(ptr);
   int uv_index;
-  int corner_index;
-  get_uv_index_and_layer(ptr, &uv_index, &corner_index);
-  bool *select_edge = ED_mesh_uv_map_ensure_edge_selection(mesh, uv_index);
-  select_edge[corner_index] = value;
+  int loop_index;
+  if (get_uv_index_and_layer(ptr, &uv_index, &loop_index)) {
+    bool *select_edge = ED_mesh_uv_map_ensure_edge_select(mesh, uv_index);
+    select_edge[loop_index] = value;
+  }
 }
 
 static bool rna_MeshUVLoop_pin_uv_get(PointerRNA *ptr)
 {
   const Mesh *mesh = rna_mesh(ptr);
   int uv_index;
-  int corner_index;
-  get_uv_index_and_layer(ptr, &uv_index, &corner_index);
-  const bool *pin_uv = ED_mesh_uv_map_get_pin(mesh, uv_index);
-  return pin_uv ? pin_uv[corner_index] : false;
+  int loop_index;
+  const bool *pin_uv = NULL;
+  if (get_uv_index_and_layer(ptr, &uv_index, &loop_index)) {
+    pin_uv = ED_mesh_uv_map_get_pin(mesh, uv_index);
+  }
+  return pin_uv ? pin_uv[loop_index] : false;
 }
 
 static void rna_MeshUVLoop_pin_uv_set(PointerRNA *ptr, const bool value)
 {
   Mesh *mesh = rna_mesh(ptr);
   int uv_index;
-  int corner_index;
-  get_uv_index_and_layer(ptr, &uv_index, &corner_index);
-  bool *pin_uv = ED_mesh_uv_map_ensure_pin(mesh, uv_index);
-  pin_uv[corner_index] = value;
+  int loop_index;
+  if (get_uv_index_and_layer(ptr, &uv_index, &loop_index)) {
+    bool *pin_uv = ED_mesh_uv_map_ensure_pin(mesh, uv_index);
+    pin_uv[loop_index] = value;
+  }
 }
 
 static void rna_MeshUVLoop_uv_get(PointerRNA *ptr, float *value)
