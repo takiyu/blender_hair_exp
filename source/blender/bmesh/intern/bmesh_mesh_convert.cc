@@ -1082,7 +1082,7 @@ void BM_mesh_bm_to_me(Main *bmain, BMesh *bm, Mesh *me, const struct BMeshToMesh
   }
   if (need_sharp_face) {
     BM_mesh_elem_table_ensure(bm, BM_FACE);
-    write_fn_to_attribute<int>(
+    write_fn_to_attribute<bool>(
         me->attributes_for_write(), "sharp_face", ATTR_DOMAIN_FACE, [&](const int i) {
           return !BM_elem_flag_test(BM_face_at_index(bm, i), BM_ELEM_SMOOTH);
         });
@@ -1321,6 +1321,13 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
     BM_elem_index_set(efa, i); /* set_inline */
 
     mp->totloop = efa->len;
+    if (!BM_elem_flag_test(efa, BM_ELEM_SMOOTH)) {
+      if (!sharp_face_attribute) {
+        sharp_face_attribute = mesh_attributes.lookup_or_add_for_write_span<bool>(
+            "sharp_face", ATTR_DOMAIN_FACE);
+      }
+      sharp_face_attribute.span[i] = true;
+    }
     if (BM_elem_flag_test(efa, BM_ELEM_HIDDEN)) {
       if (!hide_poly_attribute) {
         hide_poly_attribute = mesh_attributes.lookup_or_add_for_write_span<bool>(".hide_poly",
@@ -1342,13 +1349,7 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
         material_index_attribute = mesh_attributes.lookup_or_add_for_write_span<int>(
             "material_index", ATTR_DOMAIN_FACE);
       }
-    }
-    if (!BM_elem_flag_test(efa, BM_ELEM_SMOOTH)) {
-      if (!sharp_face_attribute) {
-        sharp_face_attribute = mesh_attributes.lookup_or_add_for_write_span<bool>(
-            "sharp_face", ATTR_DOMAIN_FACE);
-      }
-      sharp_face_attribute.span[i] = true;
+      material_index_attribute.span[i] = efa->mat_nr;
     }
 
     l_iter = l_first = BM_FACE_FIRST_LOOP(efa);
@@ -1370,6 +1371,7 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
   assert_bmesh_has_no_mesh_only_attributes(*bm);
 
   material_index_attribute.finish();
+  sharp_face_attribute.finish();
   hide_vert_attribute.finish();
   hide_edge_attribute.finish();
   hide_poly_attribute.finish();
