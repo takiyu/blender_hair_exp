@@ -118,14 +118,18 @@ enable_testing()
 
 if(CMAKE_COMPILER_IS_GNUCC)
   if("${CMAKE_C_COMPILER_VERSION}" VERSION_LESS "11.0.0")
-    message(FATAL_ERROR "The minimum supported version of GCC is 11.0.0")
+    message(FATAL_ERROR "The minimum supported version of GCC is 11.0.0, found ${CMAKE_C_COMPILER_VERSION}")
   endif()
 elseif(CMAKE_C_COMPILER_ID MATCHES "Clang")
   if(CMAKE_COMPILER_IS_GNUCC AND ("${CMAKE_C_COMPILER_VERSION}" VERSION_LESS "8.0"))
-    message(FATAL_ERROR "The minimum supported version of CLANG is 8.0")
+    message(FATAL_ERROR "The minimum supported version of CLANG is 8.0, found ${CMAKE_C_COMPILER_VERSION}")
   endif()
 elseif(CMAKE_CXX_COMPILER_ID MATCHES MSVC)
   if(MSVC_VERSION VERSION_LESS "1928")
+    # MSVC_VERSION is an internal version number, it doesn't map to something
+    # the end user would recognize as a version. Because of this, for MSVC we do
+    # not show the found number. When using our make.bat the actual VS version
+    # will be displayed on the console before starting the build, anyway.
     message(FATAL_ERROR "The minimum supported version of MSVC is 2019 (16.9.16)")
   endif()
 endif()
@@ -837,13 +841,8 @@ set_and_warn_dependency(WITH_BOOST WITH_OPENVDB        OFF)
 set_and_warn_dependency(WITH_BOOST WITH_QUADRIFLOW     OFF)
 set_and_warn_dependency(WITH_BOOST WITH_USD            OFF)
 if(WITH_CYCLES)
+  set_and_warn_dependency(WITH_BOOST   WITH_CYCLES_OSL   OFF)
   set_and_warn_dependency(WITH_PUGIXML WITH_CYCLES_OSL   OFF)
-endif()
-
-if(WITH_BOOST AND NOT (WITH_INTERNATIONAL OR WITH_OPENVDB OR
-                       WITH_QUADRIFOLOW OR WITH_USD))
-  message(STATUS "No dependencies need 'WITH_BOOST' forcing WITH_BOOST=OFF")
-  set(WITH_BOOST OFF)
 endif()
 
 set_and_warn_dependency(WITH_TBB WITH_CYCLES            OFF)
@@ -1075,14 +1074,6 @@ if(WITH_CYCLES)
       "Configure OIIO or disable WITH_CYCLES"
     )
   endif()
-  if(NOT WITH_BOOST)
-    message(
-      FATAL_ERROR
-      "Cycles requires WITH_BOOST, the library may not have been found. "
-      "Configure BOOST or disable WITH_CYCLES"
-    )
-  endif()
-
   if(WITH_CYCLES_OSL)
     if(NOT WITH_LLVM)
       message(
