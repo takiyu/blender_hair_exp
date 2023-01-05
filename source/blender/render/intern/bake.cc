@@ -715,7 +715,7 @@ void RE_bake_pixels_populate(Mesh *me,
                              const char *uv_layer)
 {
   const float(*mloopuv)[2];
-  if ((uv_layer == NULL) || (uv_layer[0] == '\0')) {
+  if ((uv_layer == nullptr) || (uv_layer[0] == '\0')) {
     mloopuv = static_cast<float(*)[2]>(CustomData_get_layer(&me->ldata, CD_PROP_FLOAT2));
   }
   else {
