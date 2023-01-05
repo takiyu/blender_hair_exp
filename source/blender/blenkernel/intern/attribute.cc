@@ -392,11 +392,15 @@ bool BKE_id_attribute_remove(ID *id, const char *name, ReportList *reports)
               BM_data_layer_free_named(em->bm, data, BKE_uv_map_pin_name_get(name, buffer_src));
             }
           }
+          /* Because it's possible that name is owned by the layer and will be freed
+           * when freeing the layer, do these checks before freeing. */
+          const bool is_active_color_attribute = name == StringRef(mesh->active_color_attribute);
+          const bool is_default_color_attribute = name == StringRef(mesh->default_color_attribute);
           if (BM_data_layer_free_named(em->bm, data, name)) {
-            if (name == StringRef(mesh->active_color_attribute)) {
+            if (is_active_color_attribute) {
               MEM_SAFE_FREE(mesh->active_color_attribute);
             }
-            else if (name == StringRef(mesh->default_color_attribute)) {
+            else if (is_default_color_attribute) {
               MEM_SAFE_FREE(mesh->default_color_attribute);
             }
             return true;
