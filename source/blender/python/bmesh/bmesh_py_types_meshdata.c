@@ -186,9 +186,11 @@ PyObject *BPy_BMLoopUV_CreatePyObject(struct BMesh *bm, BMLoop *loop)
   const BMUVOffsets offsets = BM_uv_map_get_offsets(bm);
 
   self->uv = BM_ELEM_CD_GET_FLOAT_P(loop, offsets.uv);
-  self->vert_select = offsets.select_vert >= 0 ? BM_ELEM_CD_GET_BOOL_P(loop, offsets.select_vert) : NULL;
-  self->edge_select = offsets.select_edge >= 0 ? BM_ELEM_CD_GET_BOOL_P(loop, offsets.select_edge) : NULL;
-  self->pin = offsets.pin >=0 ? BM_ELEM_CD_GET_BOOL_P(loop, offsets.pin) : NULL;
+  self->vert_select = offsets.select_vert >= 0 ? BM_ELEM_CD_GET_BOOL_P(loop, offsets.select_vert) :
+                                                 NULL;
+  self->edge_select = offsets.select_edge >= 0 ? BM_ELEM_CD_GET_BOOL_P(loop, offsets.select_edge) :
+                                                 NULL;
+  self->pin = offsets.pin >= 0 ? BM_ELEM_CD_GET_BOOL_P(loop, offsets.pin) : NULL;
 
   return (PyObject *)self;
 }

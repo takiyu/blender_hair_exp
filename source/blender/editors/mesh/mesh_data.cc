@@ -328,11 +328,9 @@ int ED_mesh_uv_add(
   return layernum_dst;
 }
 
-static const bool *mesh_loop_boolean_custom_data_get_by_name(const Mesh &mesh,
-                                                const char *name)
+static const bool *mesh_loop_boolean_custom_data_get_by_name(const Mesh &mesh, const char *name)
 {
-  return static_cast<const bool *>(
-      CustomData_get_layer_named(&mesh.ldata, CD_PROP_BOOL, name));
+  return static_cast<const bool *>(CustomData_get_layer_named(&mesh.ldata, CD_PROP_BOOL, name));
 }
 
 const bool *ED_mesh_uv_map_get_vert_select(const Mesh *mesh, const int uv_index)
@@ -340,7 +338,8 @@ const bool *ED_mesh_uv_map_get_vert_select(const Mesh *mesh, const int uv_index)
   using namespace blender::bke;
   char buffer[MAX_CUSTOMDATA_LAYER_NAME];
   const char *uv_name = CustomData_get_layer_name(&mesh->ldata, CD_PROP_FLOAT2, uv_index);
-  return mesh_loop_boolean_custom_data_get_by_name(*mesh, BKE_uv_map_vert_selection_name_get(uv_name, buffer));
+  return mesh_loop_boolean_custom_data_get_by_name(
+      *mesh, BKE_uv_map_vert_selection_name_get(uv_name, buffer));
 }
 /* UV map edge selections are stored on face corners (loops) and not on edges
  * because we need selections per face edge, even when the edge is split in UV space. */
@@ -349,7 +348,8 @@ const bool *ED_mesh_uv_map_get_edge_select(const Mesh *mesh, const int uv_index)
   using namespace blender::bke;
   char buffer[MAX_CUSTOMDATA_LAYER_NAME];
   const char *uv_name = CustomData_get_layer_name(&mesh->ldata, CD_PROP_FLOAT2, uv_index);
-  return mesh_loop_boolean_custom_data_get_by_name(*mesh, BKE_uv_map_edge_selection_name_get(uv_name, buffer));
+  return mesh_loop_boolean_custom_data_get_by_name(
+      *mesh, BKE_uv_map_edge_selection_name_get(uv_name, buffer));
 }
 
 const bool *ED_mesh_uv_map_get_pin(const Mesh *mesh, const int uv_index)
@@ -357,7 +357,8 @@ const bool *ED_mesh_uv_map_get_pin(const Mesh *mesh, const int uv_index)
   using namespace blender::bke;
   char buffer[MAX_CUSTOMDATA_LAYER_NAME];
   const char *uv_name = CustomData_get_layer_name(&mesh->ldata, CD_PROP_FLOAT2, uv_index);
-  return mesh_loop_boolean_custom_data_get_by_name(*mesh, BKE_uv_map_pin_name_get(uv_name, buffer));
+  return mesh_loop_boolean_custom_data_get_by_name(*mesh,
+                                                   BKE_uv_map_pin_name_get(uv_name, buffer));
 }
 
 static bool *ensure_corner_boolean_attribute(Mesh &mesh, const blender::StringRefNull name)
