@@ -14,11 +14,39 @@ static void node_declare(NodeDeclarationBuilder &b)
   b.add_output<decl::Geometry>(N_("Geometry")).propagate_all();
 }
 
+/**
+ * When the `sharp_face` attribute doesn't exist, all faces are considered smooth. If all faces
+ * are selected and the sharp value is a constant false value, we can remove the attribute instead,
+ * as an optimization to avoid propagating and storing it in the future.
+ */
+static bool try_removing_sharp_attribute(Mesh &mesh,
+                                         const Field<bool> &selection_field,
+                                         const Field<bool> &sharp_field)
+{
+  if (selection_field.node().depends_on_input() || sharp_field.node().depends_on_input()) {
+    return false;
+  }
+  const bool selection = fn::evaluate_constant_field(selection_field);
+  if (!selection) {
+    return true;
+  }
+  const bool sharp = fn::evaluate_constant_field(sharp_field);
+  if (sharp) {
+    return false;
+  }
+  mesh.attributes_for_write().remove("sharp_face");
+  return true;
+}
+
 static void set_smooth(Mesh &mesh,
                        const Field<bool> &selection_field,
                        const Field<bool> &sharp_field)
 {
   if (mesh.totpoly == 0) {
+    return;
+  }
+
+  if (try_removing_sharp_attribute(mesh, selection_field, sharp_field)) {
     return;
   }
 
@@ -43,7 +71,6 @@ static void node_geo_exec(GeoNodeExecParams params)
 
   geometry_set.modify_geometry_sets([&](GeometrySet &geometry_set) {
     if (Mesh *mesh = geometry_set.get_mesh_for_write()) {
-      /* TODO: Do this with nodes instead. */
       set_smooth(*mesh, selection_field, fn::invert_boolean_field(smooth_field));
     }
   });
