@@ -66,10 +66,14 @@ PyDoc_STRVAR(bpy_bmloopuv_select_edge_doc, "UV edge select state.\n\n:type: bool
 
 static PyObject *bpy_bmloopuv_pin_uv_get(BPy_BMLoopUV *self, void *UNUSED(closure))
 {
+  /* A non existing pin layer means nothing is currently pinned */
   return self->pin ? PyBool_FromLong(*self->pin) : false;
 }
 static int bpy_bmloopuv_pin_uv_set(BPy_BMLoopUV *self, PyObject *value, void *UNUSED(closure))
 {
+  /* TODO: if we add lazy allocation of the associated uv map bool layers to BMesh there needs to be
+   * an BM_uv_map_ensure_pin_attr() call here. But as currently BMesh will always have the
+   * layers and we can't easily get at the layer name here just do an assert */
   BLI_assert(self->pin);
   if (self->pin) {
     *self->pin = PyC_Long_AsBool(value);
@@ -79,10 +83,14 @@ static int bpy_bmloopuv_pin_uv_set(BPy_BMLoopUV *self, PyObject *value, void *UN
 
 static PyObject *bpy_bmloopuv_select_get(BPy_BMLoopUV *self, void *UNUSED(closure))
 {
+  /* A non existing vert_select layer means nothing is currently selected */
   return self->vert_select ? PyBool_FromLong(*self->vert_select) : false;
 }
 static int bpy_bmloopuv_select_set(BPy_BMLoopUV *self, PyObject *value, void *UNUSED(closure))
 {
+  /* TODO: if we add lazy allocation of the associated uv map bool layers to BMesh there needs to be
+   * an BM_uv_map_ensure_vert_select_attr() call here. But as currently BMesh will always have the
+   * layers and we can't easily get at the layer name here just do an assert */
   BLI_assert(self->vert_select);
   if (self->vert_select) {
     *self->vert_select = PyC_Long_AsBool(value);
@@ -92,10 +100,14 @@ static int bpy_bmloopuv_select_set(BPy_BMLoopUV *self, PyObject *value, void *UN
 
 static PyObject *bpy_bmloopuv_select_edge_get(BPy_BMLoopUV *self, void *UNUSED(closure))
 {
+  /* A non existing edge_select layer means nothing is currently selected */
   return self->edge_select ? PyBool_FromLong(*self->edge_select) : false;
 }
 static int bpy_bmloopuv_select_edge_set(BPy_BMLoopUV *self, PyObject *value, void *UNUSED(closure))
 {
+  /* TODO: if we add lazy allocation of the associated uv map bool layers to BMesh there needs to be
+   * an BM_uv_map_ensure_edge_select_attr() call here. But as currently BMesh will always have the
+   * layers and we can't easily get at the layer name here just do an assert */
   BLI_assert(self->edge_select);
   if (self->edge_select) {
     *self->edge_select = PyC_Long_AsBool(value);
