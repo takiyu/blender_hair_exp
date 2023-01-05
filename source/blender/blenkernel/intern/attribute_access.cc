@@ -221,7 +221,7 @@ static void *add_generic_custom_data_layer(CustomData &custom_data,
                                            const AttributeIDRef &attribute_id)
 {
   if (!attribute_id.is_anonymous()) {
-    char attribute_name_c[MAX_NAME];
+    char attribute_name_c[MAX_CUSTOMDATA_LAYER_NAME];
     attribute_id.name().copy(attribute_name_c);
     return CustomData_add_layer_named(
         &custom_data, data_type, alloctype, layer_data, domain_num, attribute_name_c);
