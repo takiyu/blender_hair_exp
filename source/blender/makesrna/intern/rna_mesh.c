@@ -1798,7 +1798,14 @@ static char *rna_MeshUVLoop_path(const PointerRNA *ptr)
 {
   return rna_LoopCustomData_data_path(ptr, "uv_layers", CD_PROP_FLOAT2);
 }
-
+/* The rna_MeshUVLoop_*_get/set() functions get passed a pointer to
+ * the (float2) uv attribute. This is for historical reasons because
+ * the api used to wrap MLoopUV, which contained the uv and all the selection
+ * pin states in a single struct. But since that struct no longer exists and
+ * we still can use only a single pointer to access these, we need to look up
+ * the original attribute layer and the index of the uv in it to be able to
+ * find the associated bool layers. So we scan the available foat2 layers
+ * to find into which layer the pointer we got passed points. */
 static bool get_uv_index_and_layer(const PointerRNA *ptr,
                                    int *r_uv_layer_index,
                                    int *r_index_in_attribute)
