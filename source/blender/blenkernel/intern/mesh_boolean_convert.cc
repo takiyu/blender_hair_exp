@@ -402,15 +402,12 @@ static void copy_vert_attributes(Mesh *dest_mesh,
 
 /* Similar to copy_vert_attributes but for poly attributes. */
 static void copy_poly_attributes(Mesh *dest_mesh,
-                                 MPoly *mp,
-                                 const MPoly *orig_mp,
                                  const Mesh *orig_me,
                                  int mp_index,
                                  int index_in_orig_me,
                                  Span<short> material_remap,
                                  MutableSpan<int> dst_material_indices)
 {
-  mp->flag = orig_mp->flag;
   CustomData *target_cd = &dest_mesh->pdata;
   const CustomData *source_cd = &orig_me->pdata;
   for (int source_layer_i = 0; source_layer_i < source_cd->totlayer; ++source_layer_i) {
@@ -760,8 +757,6 @@ static Mesh *imesh_to_mesh(IMesh *im, MeshesToIMeshInfo &mim)
     }
 
     copy_poly_attributes(result,
-                         mp,
-                         orig_mp,
                          orig_me,
                          fi,
                          index_in_orig_me,

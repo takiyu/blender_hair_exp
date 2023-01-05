@@ -372,8 +372,6 @@ struct PBVHBatches {
   {
     uint vert_per_grid = square_i(args->ccg_key.grid_size - 1) * 4;
     uint vert_count = args->totprim * vert_per_grid;
-    const bool *sharp_faces = static_cast<const bool *>(
-        CustomData_get_layer_named(args->pdata, CD_PROP_BOOL, "sharp_face"));
 
     int existing_num = GPU_vertbuf_get_vertex_len(vbo.vert_buf);
     void *existing_data = GPU_vertbuf_get_data(vbo.vert_buf);
@@ -412,7 +410,7 @@ struct PBVHBatches {
         foreach_grids([&](int /*x*/, int /*y*/, int grid_index, CCGElem *elems[4], int /*i*/) {
           float3 no(0.0f, 0.0f, 0.0f);
 
-          const bool smooth = args->grid_flag_mats[grid_index].flag & ME_SMOOTH;
+          const bool smooth = !args->grid_flag_mats[grid_index].sharp;
 
           if (smooth) {
             no = CCG_elem_no(&args->ccg_key, elems[0]);
@@ -1069,8 +1067,6 @@ struct PBVHBatches {
   {
     int *mat_index = static_cast<int *>(
         CustomData_get_layer_named(args->pdata, CD_PROP_INT32, "material_index"));
-    const bool *sharp_faces = static_cast<const bool *>(
-        CustomData_get_layer_named(args->pdata, CD_PROP_BOOL, "sharp_face"));
 
     if (mat_index && args->totprim) {
       int poly_index = BKE_subdiv_ccg_grid_to_face_index(args->subdiv_ccg, args->grid_indices[0]);
@@ -1092,7 +1088,7 @@ struct PBVHBatches {
 
     for (int i : IndexRange(args->totprim)) {
       int grid_index = args->grid_indices[i];
-      bool smooth = args->grid_flag_mats[grid_index].flag & ME_SMOOTH;
+      bool smooth = !args->grid_flag_mats[grid_index].sharp;
       BLI_bitmap *gh = args->grid_hidden[grid_index];
 
       for (int y = 0; y < gridsize - 1; y += skip) {

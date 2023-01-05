@@ -339,6 +339,8 @@ static void normalEditModifier_do_radial(NormalEditModifierData *enmd,
                                    loops_num,
                                    mpoly,
                                    poly_normals,
+                                   static_cast<const bool *>(CustomData_get_layer_named(
+                                       &mesh->pdata, CD_PROP_BOOL, "sharp_face")),
                                    polys_num,
                                    clnors);
 
@@ -455,6 +457,8 @@ static void normalEditModifier_do_directional(NormalEditModifierData *enmd,
                                    loops_num,
                                    mpoly,
                                    poly_normals,
+                                   static_cast<const bool *>(CustomData_get_layer_named(
+                                       &mesh->pdata, CD_PROP_BOOL, "sharp_face")),
                                    polys_num,
                                    clnors);
 
@@ -559,6 +563,8 @@ static Mesh *normalEditModifier_do(NormalEditModifierData *enmd,
                                 loops_num,
                                 polys,
                                 poly_normals,
+                                static_cast<const bool *>(CustomData_get_layer_named(
+                                    &result->pdata, CD_PROP_BOOL, "sharp_face")),
                                 polys_num,
                                 true,
                                 result->smoothresh,

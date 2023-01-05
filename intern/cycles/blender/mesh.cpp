@@ -895,7 +895,7 @@ static std::optional<BL::IntAttribute> find_material_index_attribute(BL::Mesh b_
   return std::nullopt;
 }
 
-static std::optional<BL::IntAttribute> find_sharp_face_attribute(BL::Mesh b_mesh)
+static std::optional<BL::BoolAttribute> find_sharp_face_attribute(BL::Mesh b_mesh)
 {
   for (BL::Attribute &b_attribute : b_mesh.attributes) {
     if (b_attribute.domain() != BL::Attribute::domain_FACE) {
@@ -1011,13 +1011,10 @@ static void create_mesh(Scene *scene,
     return 0;
   };
 
-
   /* create faces */
-  const MPoly *polys = static_cast<const MPoly *>(b_mesh.polygons[0].ptr.data);
   if (!subdivision) {
     for (BL::MeshLoopTriangle &t : b_mesh.loop_triangles) {
       const int poly_index = t.polygon_index();
-      const MPoly &b_poly = polys[poly_index];
       int3 vi = get_int3(t.vertices());
 
       int shader = get_material_index(poly_index);
@@ -1041,13 +1038,14 @@ static void create_mesh(Scene *scene,
   else {
     vector<int> vi;
 
+    const MPoly *polys = static_cast<const MPoly *>(b_mesh.polygons[0].ptr.data);
     const MLoop *loops = static_cast<const MLoop *>(b_mesh.loops[0].ptr.data);
 
     for (int i = 0; i < numfaces; i++) {
       const MPoly &b_poly = polys[i];
       int n = b_poly.totloop;
       int shader = get_material_index(i);
-      bool smooth = !get_face_sharp(poly_index) || use_loop_normals;
+      bool smooth = !get_face_sharp(i) || use_loop_normals;
 
       vi.resize(n);
       for (int i = 0; i < n; i++) {

@@ -1536,14 +1536,13 @@ static int rna_MeshLoopTriangle_material_index_get(PointerRNA *ptr)
 
 static bool rna_MeshLoopTriangle_use_smooth_get(PointerRNA *ptr)
 {
+  const Mesh *me = rna_mesh(ptr);
   const bool *sharp_faces = (const bool *)CustomData_get_layer_named(
-      &mesh->pdata, CD_PROP_BOOL, "sharp_face");
+      &me->pdata, CD_PROP_BOOL, "sharp_face");
   if (!sharp_faces) {
     return true;
   }
-  const Mesh *me = rna_mesh(ptr);
   const MLoopTri *ltri = (MLoopTri *)ptr->data;
-  const MPoly *polys = BKE_mesh_polys(me);
   return sharp_faces[ltri->poly];
 }
 

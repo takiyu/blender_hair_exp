@@ -1081,7 +1081,6 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
       CustomData_copy_data(
           &mesh->pdata, &result->pdata, (int)pidx, (int)((polys_num * stride) + i), 1);
       mp->loopstart = (int)(j + (loops_num * stride));
-      mp->flag = mpoly[pidx].flag;
 
       /* notice we use 'mp->totloop' which is later overwritten,
        * we could lookup the original face but there's no point since this is a copy

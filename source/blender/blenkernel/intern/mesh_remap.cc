@@ -1377,6 +1377,8 @@ void BKE_mesh_remap_calc_loops_from_mesh(const int mode,
                                       numloops_dst,
                                       polys_dst,
                                       poly_nors_dst,
+                                      static_cast<const bool *>(CustomData_get_layer_named(
+                                          &mesh_dst->pdata, CD_PROP_BOOL, "sharp_face")),
                                       numpolys_dst,
                                       use_split_nors_dst,
                                       split_angle_dst,

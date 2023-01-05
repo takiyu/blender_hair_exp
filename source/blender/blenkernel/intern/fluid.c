@@ -3212,18 +3212,8 @@ static Mesh *create_liquid_geometry(FluidDomainSettings *fds,
   float size[3];
   float cell_size_scaled[3];
 
-  /* Assign material + flags to new mesh.
-   * If there are no faces in original mesh, keep materials and flags unchanged. */
-  MPoly *mpoly;
-  MPoly mp_example = {0};
-  mpoly = BKE_mesh_polys_for_write(orgmesh);
-  if (mpoly) {
-    mp_example = *mpoly;
-  }
-
   const int *orig_material_indices = BKE_mesh_material_indices(orgmesh);
   const short mp_mat_nr = orig_material_indices ? orig_material_indices[0] : 0;
-  const char mp_flag = mp_example.flag;
 
   int i;
   int num_verts, num_faces;
@@ -3339,7 +3329,6 @@ static Mesh *create_liquid_geometry(FluidDomainSettings *fds,
   for (i = 0; i < num_faces; i++, mpolys++, mloops += 3) {
     /* Initialize from existing face. */
     material_indices[i] = mp_mat_nr;
-    mpolys->flag = mp_flag;
 
     mpolys->loopstart = i * 3;
     mpolys->totloop = 3;

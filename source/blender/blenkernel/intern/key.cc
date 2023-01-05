@@ -2298,6 +2298,8 @@ void BKE_keyblock_mesh_calc_normals(const KeyBlock *kb,
                                 mesh->totloop,
                                 polys,
                                 poly_normals,
+                                static_cast<const bool *>(CustomData_get_layer_named(
+                                    &mesh->pdata, CD_PROP_BOOL, "sharp_face")),
                                 mesh->totpoly,
                                 (mesh->flag & ME_AUTOSMOOTH) != 0,
                                 mesh->smoothresh,

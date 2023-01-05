@@ -163,7 +163,6 @@ static MPoly new_poly(const int loopstart, const int totloop)
   MPoly poly;
   poly.loopstart = loopstart;
   poly.totloop = totloop;
-  poly.flag = 0;
   return poly;
 }
 

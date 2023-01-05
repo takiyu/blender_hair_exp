@@ -24,6 +24,9 @@ struct MFace;
 
 #ifdef __cplusplus
 
+void BKE_mesh_sharp_faces_to_flags(struct Mesh *mesh);
+void BKE_mesh_sharp_faces_from_flags(struct Mesh *mesh);
+
 /**
  * Move face sets to the legacy type from a generic type.
  */

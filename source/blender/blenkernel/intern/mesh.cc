@@ -254,6 +254,7 @@ static void mesh_blend_write(BlendWriter *writer, ID *id, const void *id_address
       BKE_mesh_legacy_convert_hide_layers_to_flags(mesh);
       BKE_mesh_legacy_convert_selection_layers_to_flags(mesh);
       BKE_mesh_legacy_convert_material_indices_to_mpoly(mesh);
+      BKE_mesh_sharp_faces_to_flags(mesh);
       BKE_mesh_legacy_bevel_weight_from_layers(mesh);
       BKE_mesh_legacy_face_set_from_generic(mesh, poly_layers);
       BKE_mesh_legacy_edge_crease_from_layers(mesh);
@@ -1850,6 +1851,8 @@ void BKE_mesh_calc_normals_split_ex(Mesh *mesh,
                               loops.size(),
                               polys.data(),
                               BKE_mesh_poly_normals_ensure(mesh),
+                              static_cast<const bool *>(CustomData_get_layer_named(
+                                  &mesh->pdata, CD_PROP_BOOL, "sharp_face")),
                               polys.size(),
                               use_split_normals,
                               split_angle,

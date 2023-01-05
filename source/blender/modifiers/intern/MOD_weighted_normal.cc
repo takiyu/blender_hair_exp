@@ -84,6 +84,7 @@ struct WeightedNormalData {
 
   const MPoly *mpoly;
   const float (*poly_normals)[3];
+  const bool *sharp_faces;
   const int *poly_strength;
 
   const MDeformVert *dvert;
@@ -233,6 +234,7 @@ static void apply_weights_vertex_normal(WeightedNormalModifierData *wnmd,
                                 loops_num,
                                 mpoly,
                                 poly_normals,
+                                wn_data->sharp_faces,
                                 polys_num,
                                 true,
                                 split_angle,
@@ -365,6 +367,7 @@ static void apply_weights_vertex_normal(WeightedNormalModifierData *wnmd,
                                      loops_num,
                                      mpoly,
                                      poly_normals,
+                                     wn_data->sharp_faces,
                                      polys_num,
                                      clnors);
   }
@@ -396,6 +399,7 @@ static void apply_weights_vertex_normal(WeightedNormalModifierData *wnmd,
                                                   loops_num,
                                                   mpoly,
                                                   poly_normals,
+                                                  wn_data->sharp_faces,
                                                   polys_num,
                                                   clnors);
 
@@ -415,6 +419,7 @@ static void apply_weights_vertex_normal(WeightedNormalModifierData *wnmd,
                                   loops_num,
                                   mpoly,
                                   poly_normals,
+                                  wn_data->sharp_faces,
                                   polys_num,
                                   true,
                                   split_angle,
@@ -439,6 +444,7 @@ static void apply_weights_vertex_normal(WeightedNormalModifierData *wnmd,
                                        loops_num,
                                        mpoly,
                                        poly_normals,
+                                       wn_data->sharp_faces,
                                        polys_num,
                                        clnors);
     }
@@ -642,6 +648,8 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
 
   wn_data.mpoly = mpoly;
   wn_data.poly_normals = BKE_mesh_poly_normals_ensure(mesh);
+  wn_data.sharp_faces = static_cast<const bool *>(
+      CustomData_get_layer_named(&mesh->pdata, CD_PROP_BOOL, "sharp_face"));
   wn_data.poly_strength = static_cast<const int *>(CustomData_get_layer_named(
       &result->pdata, CD_PROP_INT32, MOD_WEIGHTEDNORMALS_FACEWEIGHT_CDLAYER_ID));
 

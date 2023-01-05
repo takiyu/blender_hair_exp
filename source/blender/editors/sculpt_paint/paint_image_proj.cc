@@ -1728,7 +1728,6 @@ static float project_paint_uvpixel_mask(const ProjPaintState *ps,
   if (ps->do_mask_normal) {
     const MLoopTri *lt = &ps->mlooptri_eval[tri_index];
     const int lt_vtri[3] = {PS_LOOPTRI_AS_VERT_INDEX_3(ps, lt)};
-    const MPoly *mp = &ps->mpoly_eval[lt->poly];
     float no[3], angle_cos;
 
     if (!(ps->sharp_faces_eval && ps->sharp_faces_eval[lt->poly])) {

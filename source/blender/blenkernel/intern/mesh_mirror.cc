@@ -414,6 +414,8 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
                                 totloop,
                                 BKE_mesh_polys(result),
                                 BKE_mesh_poly_normals_ensure(result),
+                                static_cast<const bool *>(CustomData_get_layer_named(
+                                    &result->pdata, CD_PROP_BOOL, "sharp_face")),
                                 totpoly,
                                 true,
                                 mesh->smoothresh,

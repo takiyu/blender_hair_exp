@@ -791,6 +791,8 @@ static int mesh_customdata_custom_splitnormals_add_exec(bContext *C, wmOperator 
                                      loops.size(),
                                      polys.data(),
                                      BKE_mesh_poly_normals_ensure(me),
+                                     static_cast<const bool *>(CustomData_get_layer_named(
+                                         &me->pdata, CD_PROP_BOOL, "sharp_face")),
                                      polys.size(),
                                      me->smoothresh);
     }
@@ -1460,6 +1462,8 @@ void ED_mesh_split_faces(Mesh *mesh)
                                  loops.size(),
                                  polys.data(),
                                  BKE_mesh_poly_normals_ensure(mesh),
+                                 static_cast<const bool *>(CustomData_get_layer_named(
+                                     &mesh->pdata, CD_PROP_BOOL, "sharp_face")),
                                  polys.size(),
                                  split_angle);
 

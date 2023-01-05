@@ -1122,20 +1122,17 @@ static void ccgDM_copyFinalPolyArray(DerivedMesh *dm, MPoly *mpoly)
   int gridSize = ccgSubSurf_getGridSize(ss);
   /* int edgeSize = ccgSubSurf_getEdgeSize(ss); */ /* UNUSED */
   int i = 0, k = 0;
-  DMFlagMat *faceFlags = ccgdm->faceFlags;
 
   totface = ccgSubSurf_getNumFaces(ss);
   for (index = 0; index < totface; index++) {
     CCGFace *f = ccgdm->faceMap[index].face;
     int x, y, S, numVerts = ccgSubSurf_getFaceNumVerts(f);
-    int flag = (faceFlags) ? faceFlags[index].flag : ME_SMOOTH;
 
     for (S = 0; S < numVerts; S++) {
       for (y = 0; y < gridSize - 1; y++) {
         for (x = 0; x < gridSize - 1; x++) {
           MPoly *mp = &mpoly[i];
 
-          mp->flag = flag;
           mp->loopstart = k;
           mp->totloop = 4;
 
@@ -1599,9 +1596,9 @@ static void set_ccgdm_all_geometry(CCGDerivedMesh *ccgdm,
 
   medge = dm->getEdgeArray(dm);
 
-  const MPoly *mpoly = CustomData_get_layer(&dm->polyData, CD_MPOLY);
   const int *material_indices = CustomData_get_layer_named(
       &dm->polyData, CD_MPOLY, "material_index");
+  const bool *sharp_faces = CustomData_get_layer_named(&dm->polyData, CD_PROP_BOOL, "sharp_face");
   const int *base_polyOrigIndex = CustomData_get_layer(&dm->polyData, CD_ORIGINDEX);
 
   int *vertOrigIndex = DM_get_vert_data_layer(&ccgdm->dm, CD_ORIGINDEX);
@@ -1629,7 +1626,7 @@ static void set_ccgdm_all_geometry(CCGDerivedMesh *ccgdm,
     ccgdm->faceMap[index].startEdge = edgeNum;
     ccgdm->faceMap[index].startFace = faceNum;
 
-    faceFlags->flag = mpoly ? mpoly[origIndex].flag : 0;
+    faceFlags->sharp = sharp_faces ? sharp_faces[origIndex] : false;
     faceFlags->mat_nr = material_indices ? material_indices[origIndex] : 0;
     faceFlags++;
 

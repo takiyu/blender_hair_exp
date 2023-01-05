@@ -172,7 +172,7 @@ static bool face_materials_match(const PBVH *pbvh,
 
 static bool grid_materials_match(const DMFlagMat *f1, const DMFlagMat *f2)
 {
-  return ((f1->flag & ME_SMOOTH) == (f2->flag & ME_SMOOTH) && (f1->mat_nr == f2->mat_nr));
+  return (f1->sharp == f2->sharp) && (f1->mat_nr == f2->mat_nr);
 }
 
 /* Adapted from BLI_kdopbvh.c */
