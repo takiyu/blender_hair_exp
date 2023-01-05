@@ -45,6 +45,8 @@ static Mesh *hull_from_bullet(const Mesh *mesh, Span<float3> coords)
     BKE_id_material_eval_ensure_default_slot(&result->id);
   }
 
+  BKE_mesh_smooth_flag_set(result, false);
+
   /* Copy vertices. */
   MutableSpan<MVert> dst_verts = result->verts_for_write();
   for (const int i : IndexRange(verts_num)) {

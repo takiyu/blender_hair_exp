@@ -408,6 +408,7 @@ Mesh *create_cuboid_mesh(const float3 &size,
   MutableSpan<MVert> verts = mesh->verts_for_write();
   MutableSpan<MPoly> polys = mesh->polys_for_write();
   MutableSpan<MLoop> loops = mesh->loops_for_write();
+  BKE_mesh_smooth_flag_set(mesh, false);
 
   calculate_verts(config, verts);
 

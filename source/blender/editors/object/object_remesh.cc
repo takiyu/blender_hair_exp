@@ -179,9 +179,7 @@ static int voxel_remesh_exec(bContext *C, wmOperator *op)
 
   BKE_mesh_nomain_to_mesh(new_mesh, mesh, ob);
 
-  if (smooth_normals) {
-    BKE_mesh_smooth_flag_set(static_cast<Mesh *>(ob->data), true);
-  }
+  BKE_mesh_smooth_flag_set(static_cast<Mesh *>(ob->data), smooth_normals);
 
   if (ob->mode == OB_MODE_SCULPT) {
     ED_sculpt_undo_geometry_end(ob);
@@ -903,9 +901,7 @@ static void quadriflow_start_job(void *customdata, bool *stop, bool *do_update, 
 
   BKE_mesh_nomain_to_mesh(new_mesh, mesh, ob);
 
-  if (qj->smooth_normals) {
-    BKE_mesh_smooth_flag_set(static_cast<Mesh *>(ob->data), true);
-  }
+  BKE_mesh_smooth_flag_set(static_cast<Mesh *>(ob->data), qj->smooth_normals);
 
   if (ob->mode == OB_MODE_SCULPT) {
     ED_sculpt_undo_geometry_end(ob);

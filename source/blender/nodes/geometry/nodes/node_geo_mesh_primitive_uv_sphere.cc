@@ -315,6 +315,7 @@ static Mesh *create_uv_sphere_mesh(const float radius,
                                    0,
                                    sphere_corner_total(segments, rings),
                                    sphere_face_total(segments, rings));
+  BKE_mesh_smooth_flag_set(mesh, false);
   BKE_id_material_eval_ensure_default_slot(&mesh->id);
   MutableSpan<MVert> verts = mesh->verts_for_write();
   MutableSpan<MEdge> edges = mesh->edges_for_write();

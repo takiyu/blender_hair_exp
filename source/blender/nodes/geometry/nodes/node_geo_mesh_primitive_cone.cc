@@ -690,6 +690,7 @@ Mesh *create_cylinder_or_cone_mesh(const float radius_top,
 
   Mesh *mesh = BKE_mesh_new_nomain(
       config.tot_verts, config.tot_edges, 0, config.tot_corners, config.tot_faces);
+  BKE_mesh_smooth_flag_set(mesh, false);
   BKE_id_material_eval_ensure_default_slot(&mesh->id);
 
   MutableSpan<MVert> verts = mesh->verts_for_write();
