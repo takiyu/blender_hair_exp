@@ -1298,6 +1298,9 @@ void ED_uvedit_live_unwrap_end(short cancel)
 #define POLAR_ZX 0
 #define POLAR_ZY 1
 
+#define PINCH 0
+#define FAN 1
+
 static void uv_map_transform_calc_bounds(BMEditMesh *em, float r_min[3], float r_max[3])
 {
   BMFace *efa;
@@ -1437,50 +1440,37 @@ static void uv_map_rotation_matrix_ex(float result[4][4],
   mul_m4_series(result, rotup, rotside, viewmatrix, rotobj);
 }
 
-static void uv_map_rotation_matrix(float result[4][4],
-                                   RegionView3D *rv3d,
-                                   Object *ob,
-                                   float upangledeg,
-                                   float sideangledeg,
-                                   float radius)
+static void uv_map_transform(bContext *C, wmOperator *op, float rotmat[3][3])
 {
-  const float offset[4] = {0};
-  uv_map_rotation_matrix_ex(result, rv3d, ob, upangledeg, sideangledeg, radius, offset);
-}
-
-static void uv_map_transform(bContext *C, wmOperator *op, float rotmat[4][4])
-{
-  /* context checks are messy here, making it work in both 3d view and uv editor */
   Object *obedit = CTX_data_edit_object(C);
   RegionView3D *rv3d = CTX_wm_region_view3d(C);
-  /* common operator properties */
-  int align = RNA_enum_get(op->ptr, "align");
-  int direction = RNA_enum_get(op->ptr, "direction");
-  float radius = RNA_struct_find_property(op->ptr, "radius") ? RNA_float_get(op->ptr, "radius") :
-                                                               1.0f;
-  float upangledeg, sideangledeg;
 
-  if (direction == VIEW_ON_EQUATOR) {
-    upangledeg = 90.0f;
-    sideangledeg = 0.0f;
-  }
-  else {
-    upangledeg = 0.0f;
-    if (align == POLAR_ZY) {
-      sideangledeg = 0.0f;
-    }
-    else {
-      sideangledeg = 90.0f;
-    }
-  }
+  const int align = RNA_enum_get(op->ptr, "align");
+  const int direction = RNA_enum_get(op->ptr, "direction");
+  const float radius = RNA_struct_find_property(op->ptr, "radius") ?
+                           RNA_float_get(op->ptr, "radius") :
+                           1.0f;
 
-  /* be compatible to the "old" sphere/cylinder mode */
+  /* Be compatible to the "old" sphere/cylinder mode. */
   if (direction == ALIGN_TO_OBJECT) {
-    unit_m4(rotmat);
+    unit_m3(rotmat);
+
+    if (align == POLAR_ZY) {
+      rotmat[0][0] = 0.0f;
+      rotmat[0][1] = 1.0f;
+      rotmat[1][0] = -1.0f;
+      rotmat[1][1] = 0.0f;
+    }
+    return;
   }
-  else {
-    uv_map_rotation_matrix(rotmat, rv3d, obedit, upangledeg, sideangledeg, radius);
-  }
+
+  const float up_angle_deg = (direction == VIEW_ON_EQUATOR) ? 90.0f : 0.0f;
+  const float side_angle_deg = (align == POLAR_ZY) == (direction == VIEW_ON_EQUATOR) ? 90.0f :
+                                                                                       0.0f;
+  const float offset[4] = {0};
+  float rotmat4[4][4];
+  uv_map_rotation_matrix_ex(rotmat4, rv3d, obedit, up_angle_deg, side_angle_deg, radius, offset);
+  copy_m3_m4(rotmat, rotmat4);
 }
 
 static void uv_transform_properties(wmOperatorType *ot, int radius)
@@ -1501,6 +1491,12 @@ static void uv_transform_properties(wmOperatorType *ot, int radius)
       {0, NULL, 0, NULL, NULL},
   };
 
+  static const EnumPropertyItem pole_items[] = {
+      {PINCH, "PINCH", 0, "Pinch", "UVs are pinched at the poles"},
+      {FAN, "FAN", 0, "Fan", "UVs are fanned at the poles"},
+      {0, NULL, 0, NULL, NULL},
+  };
+
   RNA_def_enum(ot->srna,
                "direction",
                direction_items,
@@ -1510,9 +1506,10 @@ static void uv_transform_properties(wmOperatorType *ot, int radius)
   RNA_def_enum(ot->srna,
                "align",
                align_items,
-               VIEW_ON_EQUATOR,
+               POLAR_ZX,
                "Align",
                "How to determine rotation around the pole");
+  RNA_def_enum(ot->srna, "pole", pole_items, PINCH, "Pole", "How to handle faces at the poles");
   if (radius) {
     RNA_def_float(ot->srna,
                   "radius",
@@ -2708,54 +2705,120 @@ void UV_OT_reset(wmOperatorType *ot)
 /** \name Sphere UV Project Operator
  * \{ */
 
-static void uv_sphere_project(float target[2],
-                              const float source[3],
-                              const float center[3],
-                              const float rotmat[4][4])
+static void uv_map_mirror(BMFace *efa,
+                          const bool *regular,
+                          const bool fan,
+                          const int cd_loop_uv_offset)
 {
-  float pv[3];
+  /* A heuristic to improve alignment of faces near the seam.
+   * In simple terms, we're looking for faces which span more
+   * than 0.5 units in the *u* coordinate.
+   * If we find such a face, we try and improve the unwrapping
+   * by adding (1.0, 0.0) onto some of the face's UVs.
 
-  sub_v3_v3v3(pv, source, center);
-  mul_m4_v3(rotmat, pv);
+   * Note that this is only a heuristic. The property we're
+   * attempting to maintain is that the winding of the face
+   * in UV space corresponds with the handedness of the face
+   * in 3D space w.r.t to the unwrapping. Even for triangles,
+   * that property is somewhat complicated to evaluate.
+   */
 
-  map_to_sphere(&target[0], &target[1], pv[0], pv[1], pv[2]);
-
-  /* split line is always zero */
-  if (target[0] >= 1.0f) {
-    target[0] -= 1.0f;
-  }
-}
-
-static void uv_map_mirror(BMEditMesh *em, BMFace *efa)
-{
+  float right_u = -1.0e30f;
   BMLoop *l;
   BMIter liter;
   float **uvs = BLI_array_alloca(uvs, efa->len);
-  float dx;
-  int i, mi;
-
-  const int cd_loop_uv_offset = CustomData_get_offset(&em->bm->ldata, CD_PROP_FLOAT2);
-
-  BM_ITER_ELEM_INDEX (l, &liter, efa, BM_LOOPS_OF_FACE, i) {
+  int j;
+  BM_ITER_ELEM_INDEX (l, &liter, efa, BM_LOOPS_OF_FACE, j) {
     float *luv = BM_ELEM_CD_GET_FLOAT_P(l, cd_loop_uv_offset);
-    uvs[i] = luv;
+    uvs[j] = luv;
+    if (luv[0] >= 1.0f) {
+      luv[0] -= 1.0f;
+    }
+    right_u = max_ff(right_u, luv[0]);
   }
 
-  mi = 0;
-  for (i = 1; i < efa->len; i++) {
-    if (uvs[i][0] > uvs[mi][0]) {
-      mi = i;
+  float left_u = 1.0e30f;
+  BM_ITER_ELEM (l, &liter, efa, BM_LOOPS_OF_FACE) {
+    float *luv = BM_ELEM_CD_GET_FLOAT_P(l, cd_loop_uv_offset);
+    if (right_u <= luv[0] + 0.5f) {
+      left_u = min_ff(left_u, luv[0]);
     }
   }
 
-  for (i = 0; i < efa->len; i++) {
-    if (i != mi) {
-      dx = uvs[mi][0] - uvs[i][0];
-      if (dx > 0.5f) {
-        uvs[i][0] += 1.0f;
+  BM_ITER_ELEM (l, &liter, efa, BM_LOOPS_OF_FACE) {
+    float *luv = BM_ELEM_CD_GET_FLOAT_P(l, cd_loop_uv_offset);
+    if (luv[0] + 0.5f < right_u) {
+      if (2 * luv[0] + 1.0f < left_u + right_u) {
+        luv[0] += 1.0f;
       }
     }
   }
+  if (!fan) {
+    return;
+  }
+
+  /* Another heuristic, this time, we attempt to "fan"
+   * the UVs of faces which pass through one of the poles
+   * of the unwrapping. */
+
+  /* Need to recompute min and max. */
+  float minmax_u[2] = {1.0e30f, -1.0e30f};
+  int pole_count = 0;
+  for (int i = 0; i < efa->len; i++) {
+    if (regular[i]) {
+      minmax_u[0] = min_ff(minmax_u[0], uvs[i][0]);
+      minmax_u[1] = max_ff(minmax_u[1], uvs[i][0]);
+    }
+    else {
+      pole_count++;
+    }
+  }
+  if (pole_count == 0 || pole_count == efa->len) {
+    return;
+  }
+  for (int i = 0; i < efa->len; i++) {
+    if (regular[i]) {
+      continue;
+    }
+    float u = 0.0f;
+    float sum = 0.0f;
+    const int i_plus = (i + 1) % efa->len;
+    const int i_minus = (i + efa->len - 1) % efa->len;
+    if (regular[i_plus]) {
+      u += uvs[i_plus][0];
+      sum += 1.0f;
+    }
+    if (regular[i_minus]) {
+      u += uvs[i_minus][0];
+      sum += 1.0f;
+    }
+    if (sum == 0) {
+      u += minmax_u[0] + minmax_u[1];
+      sum += 2.0f;
+    }
+    uvs[i][0] = u / sum;
+  }
+}
+
+static void uv_sphere_project(BMFace *efa,
+                              const float center[3],
+                              const float rotmat[3][3],
+                              const bool fan,
+                              const int cd_loop_uv_offset)
+{
+  bool *regular = BLI_array_alloca(regular, efa->len);
+  int i;
+  BMLoop *l;
+  BMIter iter;
+  BM_ITER_ELEM_INDEX (l, &iter, efa, BM_LOOPS_OF_FACE, i) {
+    float *luv = BM_ELEM_CD_GET_FLOAT_P(l, cd_loop_uv_offset);
+    float pv[3];
+    sub_v3_v3v3(pv, l->v->co, center);
+    mul_m3_v3(rotmat, pv);
+    regular[i] = map_to_sphere(&luv[0], &luv[1], pv[0], pv[1], pv[2]);
+  }
+
+  uv_map_mirror(efa, regular, fan, cd_loop_uv_offset);
 }
 
 static int sphere_project_exec(bContext *C, wmOperator *op)
@@ -2777,8 +2840,7 @@ static int sphere_project_exec(bContext *C, wmOperator *op)
     Object *obedit = objects[ob_index];
     BMEditMesh *em = BKE_editmesh_from_object(obedit);
     BMFace *efa;
-    BMLoop *l;
-    BMIter iter, liter;
+    BMIter iter;
 
     if (em->bm->totfacesel == 0) {
       continue;
@@ -2790,10 +2852,12 @@ static int sphere_project_exec(bContext *C, wmOperator *op)
     }
 
     const BMUVOffsets offsets = BM_uv_map_get_offsets(em->bm);
-    float center[3], rotmat[4][4];
+    float center[3], rotmat[3][3];
 
     uv_map_transform(C, op, rotmat);
     uv_map_transform_center(scene, v3d, obedit, em, center, NULL);
+
+    const bool fan = RNA_enum_get(op->ptr, "pole");
 
     BM_ITER_MESH (efa, &iter, em->bm, BM_FACES_OF_MESH) {
       if (!BM_elem_flag_test(efa, BM_ELEM_SELECT)) {
@@ -2807,12 +2871,7 @@ static int sphere_project_exec(bContext *C, wmOperator *op)
         }
       }
 
-      BM_ITER_ELEM (l, &liter, efa, BM_LOOPS_OF_FACE) {
-        float *luv = BM_ELEM_CD_GET_FLOAT_P(l, offsets.uv);
-        uv_sphere_project(luv, l->v->co, center, rotmat);
-      }
-
-      uv_map_mirror(em, efa);
+      uv_sphere_project(efa, center, rotmat, fan, offsets.uv);
     }
 
     const bool per_face_aspect = true;
@@ -2850,22 +2909,25 @@ void UV_OT_sphere_project(wmOperatorType *ot)
 /** \name Cylinder UV Project Operator
  * \{ */
 
-static void uv_cylinder_project(float target[2],
-                                const float source[3],
+static void uv_cylinder_project(BMFace *efa,
                                 const float center[3],
-                                const float rotmat[4][4])
+                                const float rotmat[3][3],
+                                const bool fan,
+                                const int cd_loop_uv_offset)
 {
-  float pv[3];
-
-  sub_v3_v3v3(pv, source, center);
-  mul_m4_v3(rotmat, pv);
-
-  map_to_tube(&target[0], &target[1], pv[0], pv[1], pv[2]);
-
-  /* split line is always zero */
-  if (target[0] >= 1.0f) {
-    target[0] -= 1.0f;
+  bool *regular = BLI_array_alloca(regular, efa->len);
+  int i;
+  BMLoop *l;
+  BMIter iter;
+  BM_ITER_ELEM_INDEX (l, &iter, efa, BM_LOOPS_OF_FACE, i) {
+    float *luv = BM_ELEM_CD_GET_FLOAT_P(l, cd_loop_uv_offset);
+    float pv[3];
+    sub_v3_v3v3(pv, l->v->co, center);
+    mul_m3_v3(rotmat, pv);
+    regular[i] = map_to_tube(&luv[0], &luv[1], pv[0], pv[1], pv[2]);
   }
+
+  uv_map_mirror(efa, regular, fan, cd_loop_uv_offset);
 }
 
 static int cylinder_project_exec(bContext *C, wmOperator *op)
@@ -2887,8 +2949,7 @@ static int cylinder_project_exec(bContext *C, wmOperator *op)
     Object *obedit = objects[ob_index];
     BMEditMesh *em = BKE_editmesh_from_object(obedit);
     BMFace *efa;
-    BMLoop *l;
-    BMIter iter, liter;
+    BMIter iter;
 
     if (em->bm->totfacesel == 0) {
       continue;
@@ -2900,10 +2961,12 @@ static int cylinder_project_exec(bContext *C, wmOperator *op)
     }
 
     const BMUVOffsets offsets = BM_uv_map_get_offsets(em->bm);
-    float center[3], rotmat[4][4];
+    float center[3], rotmat[3][3];
 
     uv_map_transform(C, op, rotmat);
     uv_map_transform_center(scene, v3d, obedit, em, center, NULL);
+
+    const bool fan = RNA_enum_get(op->ptr, "pole");
 
     BM_ITER_MESH (efa, &iter, em->bm, BM_FACES_OF_MESH) {
       if (!BM_elem_flag_test(efa, BM_ELEM_SELECT)) {
@@ -2915,12 +2978,7 @@ static int cylinder_project_exec(bContext *C, wmOperator *op)
         continue;
       }
 
-      BM_ITER_ELEM (l, &liter, efa, BM_LOOPS_OF_FACE) {
-        float *luv = BM_ELEM_CD_GET_VOID_P(l, offsets.uv);
-        uv_cylinder_project(luv, l->v->co, center, rotmat);
-      }
-
-      uv_map_mirror(em, efa);
+      uv_cylinder_project(efa, center, rotmat, fan, offsets.uv);
     }
 
     const bool per_face_aspect = true;
