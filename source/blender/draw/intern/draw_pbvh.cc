@@ -346,7 +346,7 @@ struct PBVHBatches {
 
         if (!(mp->flag & ME_SMOOTH)) {
           smooth = true;
-          BKE_mesh_calc_poly_normal(mp, args->mloop + mp->loopstart, args->mesh_positions, fno);
+          BKE_mesh_calc_poly_normal(mp, args->mloop + mp->loopstart, args->vert_positions, fno);
           normal_float_to_short_v3(no, fno);
         }
         else {
@@ -588,7 +588,7 @@ struct PBVHBatches {
         foreach_faces(
             [&](int /*buffer_i*/, int /*tri_i*/, int vertex_i, const MLoopTri * /*tri*/) {
               *static_cast<float3 *>(
-                  GPU_vertbuf_raw_step(&access)) = args->mesh_positions[vertex_i];
+                  GPU_vertbuf_raw_step(&access)) = args->vert_positions[vertex_i];
             });
         break;
       case CD_PBVH_NO_TYPE:

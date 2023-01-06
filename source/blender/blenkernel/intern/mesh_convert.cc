@@ -644,11 +644,11 @@ void BKE_pointcloud_from_mesh(Mesh *me, PointCloud *pointcloud)
   bke::AttributeAccessor mesh_attributes = me->attributes();
   bke::MutableAttributeAccessor point_attributes = pointcloud->attributes_for_write();
 
-  const VArray<float3> mesh_positions = mesh_attributes.lookup_or_default<float3>(
+  const VArray<float3> vert_positions = mesh_attributes.lookup_or_default<float3>(
       "position", ATTR_DOMAIN_POINT, float3(0));
   bke::SpanAttributeWriter<float3> point_positions =
       point_attributes.lookup_or_add_for_write_only_span<float3>("position", ATTR_DOMAIN_POINT);
-  mesh_positions.materialize(point_positions.span);
+  vert_positions.materialize(point_positions.span);
   point_positions.finish();
 }
 

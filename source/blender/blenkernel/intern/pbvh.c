@@ -674,7 +674,7 @@ static void pbvh_draw_args_init(PBVH *pbvh, PBVH_GPU_Args *args, PBVHNode *node)
   args->grid_hidden = pbvh->grid_hidden;
   args->face_sets_color_default = pbvh->face_sets_color_default;
   args->face_sets_color_seed = pbvh->face_sets_color_seed;
-  args->mesh_positions = pbvh->mesh_positions;
+  args->vert_positions = pbvh->vert_positions;
   args->mloop = pbvh->mloop;
   args->mpoly = pbvh->mpoly;
   args->mlooptri = pbvh->looptri;
@@ -830,7 +830,7 @@ void BKE_pbvh_build_mesh(PBVH *pbvh,
       &mesh->pdata, CD_PROP_INT32, "material_index");
   pbvh->mloop = mloop;
   pbvh->looptri = looptri;
-  pbvh->mesh_positions = positions;
+  pbvh->vert_positions = positions;
   BKE_mesh_vertex_normals_ensure(mesh);
   pbvh->vert_normals = BKE_mesh_vertex_normals_for_write(mesh);
   pbvh->hide_vert = (bool *)CustomData_get_layer_named(&mesh->vdata, CD_PROP_BOOL, ".hide_vert");
@@ -1024,10 +1024,10 @@ void BKE_pbvh_free(PBVH *pbvh)
   }
 
   if (pbvh->deformed) {
-    if (pbvh->mesh_positions) {
+    if (pbvh->vert_positions) {
       /* if pbvh was deformed, new memory was allocated for verts/faces -- free it */
 
-      MEM_freeN((void *)pbvh->mesh_positions);
+      MEM_freeN((void *)pbvh->vert_positions);
     }
   }
 
@@ -1392,7 +1392,7 @@ static void pbvh_update_normals_accum_task_cb(void *__restrict userdata,
       /* Face normal and mask */
       if (lt->poly != mpoly_prev) {
         const MPoly *mp = &pbvh->mpoly[lt->poly];
-        BKE_mesh_calc_poly_normal(mp, &pbvh->mloop[mp->loopstart], pbvh->mesh_positions, fn);
+        BKE_mesh_calc_poly_normal(mp, &pbvh->mloop[mp->loopstart], pbvh->vert_positions, fn);
         mpoly_prev = lt->poly;
       }
 
@@ -2516,7 +2516,7 @@ static bool pbvh_faces_node_raycast(PBVH *pbvh,
                                     int *r_active_face_index,
                                     float *r_face_normal)
 {
-  const float(*positions)[3] = pbvh->mesh_positions;
+  const float(*positions)[3] = pbvh->vert_positions;
   const MLoop *mloop = pbvh->mloop;
   const int *faces = node->prim_indices;
   int totface = node->totprim;
@@ -2826,7 +2826,7 @@ static bool pbvh_faces_node_nearest_to_ray(PBVH *pbvh,
                                            float *depth,
                                            float *dist_sq)
 {
-  const float(*positions)[3] = pbvh->mesh_positions;
+  const float(*positions)[3] = pbvh->vert_positions;
   const MLoop *mloop = pbvh->mloop;
   const int *faces = node->prim_indices;
   int i, totface = node->totprim;
@@ -3177,9 +3177,9 @@ float (*BKE_pbvh_vert_coords_alloc(PBVH *pbvh))[3]
 {
   float(*vertCos)[3] = NULL;
 
-  if (pbvh->mesh_positions) {
+  if (pbvh->vert_positions) {
     vertCos = MEM_malloc_arrayN(pbvh->totvert, sizeof(float[3]), __func__);
-    memcpy(vertCos, pbvh->mesh_positions, sizeof(float[3]) * pbvh->totvert);
+    memcpy(vertCos, pbvh->vert_positions, sizeof(float[3]) * pbvh->totvert);
   }
 
   return vertCos;
@@ -3193,12 +3193,12 @@ void BKE_pbvh_vert_coords_apply(PBVH *pbvh, const float (*vertCos)[3], const int
   }
 
   if (!pbvh->deformed) {
-    if (pbvh->mesh_positions) {
+    if (pbvh->vert_positions) {
       /* if pbvh is not already deformed, verts/faces points to the */
       /* original data and applying new coords to this arrays would lead to */
       /* unneeded deformation -- duplicate verts/faces to avoid this */
 
-      pbvh->mesh_positions = MEM_dupallocN(pbvh->mesh_positions);
+      pbvh->vert_positions = MEM_dupallocN(pbvh->vert_positions);
       /* No need to dupalloc pbvh->looptri, this one is 'totally owned' by pbvh,
        * it's never some mesh data. */
 
@@ -3206,8 +3206,8 @@ void BKE_pbvh_vert_coords_apply(PBVH *pbvh, const float (*vertCos)[3], const int
     }
   }
 
-  if (pbvh->mesh_positions) {
-    float(*positions)[3] = pbvh->mesh_positions;
+  if (pbvh->vert_positions) {
+    float(*positions)[3] = pbvh->vert_positions;
     /* copy new verts coords */
     for (int a = 0; a < pbvh->totvert; a++) {
       /* no need for float comparison here (memory is exactly equal or not) */
@@ -3323,7 +3323,7 @@ void pbvh_vertex_iter_init(PBVH *pbvh, PBVHNode *node, PBVHVertexIter *vi, int m
   vi->grid = NULL;
   vi->no = NULL;
   vi->fno = NULL;
-  vi->mesh_positions = NULL;
+  vi->vert_positions = NULL;
   vi->vertex.i = 0LL;
 
   vi->respect_hide = pbvh->respect_hide;
@@ -3349,8 +3349,8 @@ void pbvh_vertex_iter_init(PBVH *pbvh, PBVHNode *node, PBVHVertexIter *vi, int m
     vi->totvert = uniq_verts;
   }
   vi->vert_indices = vert_indices;
-  vi->mesh_positions = pbvh->mesh_positions;
-  vi->is_mesh = pbvh->mesh_positions != NULL;
+  vi->vert_positions = pbvh->vert_positions;
+  vi->is_mesh = pbvh->vert_positions != NULL;
 
   if (pbvh->header.type == PBVH_BMESH) {
     BLI_gsetIterator_init(&vi->bm_unique_verts, node->bm_unique_verts);
@@ -3429,7 +3429,7 @@ void BKE_pbvh_parallel_range_settings(TaskParallelSettings *settings,
 float (*BKE_pbvh_get_positions(const PBVH *pbvh))[3]
 {
   BLI_assert(pbvh->header.type == PBVH_FACES);
-  return pbvh->mesh_positions;
+  return pbvh->vert_positions;
 }
 
 const float (*BKE_pbvh_get_vert_normals(const PBVH *pbvh))[3]

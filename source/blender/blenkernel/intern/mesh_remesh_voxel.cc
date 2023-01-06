@@ -225,12 +225,12 @@ static Mesh *remesh_voxel_volume_to_mesh(const openvdb::FloatGrid::Ptr level_set
 
   Mesh *mesh = BKE_mesh_new_nomain(
       vertices.size(), 0, 0, quads.size() * 4 + tris.size() * 3, quads.size() + tris.size());
-  MutableSpan<float3> mesh_positions = mesh->vert_positions_for_write();
+  MutableSpan<float3> vert_positions = mesh->vert_positions_for_write();
   MutableSpan<MPoly> mesh_polys = mesh->polys_for_write();
   MutableSpan<MLoop> mesh_loops = mesh->loops_for_write();
 
-  for (const int i : mesh_positions.index_range()) {
-    mesh_positions[i] = float3(vertices[i].x(), vertices[i].y(), vertices[i].z());
+  for (const int i : vert_positions.index_range()) {
+    vert_positions[i] = float3(vertices[i].x(), vertices[i].y(), vertices[i].z());
   }
 
   for (const int i : IndexRange(quads.size())) {

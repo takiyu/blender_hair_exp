@@ -306,7 +306,7 @@ static IMesh meshes_to_imesh(Span<const Mesh *> meshes,
     bool need_face_flip = r_info->has_negative_transform[mi] != r_info->has_negative_transform[0];
 
     Vector<Vert *> verts(me->totvert);
-    const Span<float3> mesh_positions = me->vert_positions();
+    const Span<float3> vert_positions = me->vert_positions();
     const Span<MPoly> polys = me->polys();
     const Span<MLoop> loops = me->loops();
 
@@ -315,9 +315,9 @@ static IMesh meshes_to_imesh(Span<const Mesh *> meshes,
      * for example when the first mesh is already in the target space. (Note the logic
      * directly above, which uses an identity matrix with a null input transform). */
     if (obmats[mi] == nullptr) {
-      threading::parallel_for(mesh_positions.index_range(), 2048, [&](IndexRange range) {
+      threading::parallel_for(vert_positions.index_range(), 2048, [&](IndexRange range) {
         for (int i : range) {
-          float3 co = mesh_positions[i];
+          float3 co = vert_positions[i];
           mpq3 mco = mpq3(co.x, co.y, co.z);
           double3 dco(mco[0].get_d(), mco[1].get_d(), mco[2].get_d());
           verts[i] = new Vert(mco, dco, NO_INDEX, i);
@@ -325,16 +325,16 @@ static IMesh meshes_to_imesh(Span<const Mesh *> meshes,
       });
     }
     else {
-      threading::parallel_for(mesh_positions.index_range(), 2048, [&](IndexRange range) {
+      threading::parallel_for(vert_positions.index_range(), 2048, [&](IndexRange range) {
         for (int i : range) {
-          float3 co = r_info->to_target_transform[mi] * mesh_positions[i];
+          float3 co = r_info->to_target_transform[mi] * vert_positions[i];
           mpq3 mco = mpq3(co.x, co.y, co.z);
           double3 dco(mco[0].get_d(), mco[1].get_d(), mco[2].get_d());
           verts[i] = new Vert(mco, dco, NO_INDEX, i);
         }
       });
     }
-    for (int i : mesh_positions.index_range()) {
+    for (int i : vert_positions.index_range()) {
       r_info->mesh_to_imesh_vert[v] = arena.add_or_find_vert(verts[i]);
       ++v;
     }

@@ -237,7 +237,7 @@ static void mesh_faces_nearest_point(void *userdata,
                                      BVHTreeNearest *nearest)
 {
   const BVHTreeFromMesh *data = (BVHTreeFromMesh *)userdata;
-  const float(*positions)[3] = data->positions;
+  const float(*positions)[3] = data->vert_positions;
   const MFace *face = data->face + index;
 
   const float *t0, *t1, *t2, *t3;
@@ -272,7 +272,7 @@ static void mesh_looptri_nearest_point(void *userdata,
                                        BVHTreeNearest *nearest)
 {
   const BVHTreeFromMesh *data = (BVHTreeFromMesh *)userdata;
-  const float(*positions)[3] = data->positions;
+  const float(*positions)[3] = data->vert_positions;
   const MLoopTri *lt = &data->looptri[index];
   const float *vtri_co[3] = {
       positions[data->loop[lt->tri[0]].v],
@@ -333,7 +333,7 @@ static void mesh_faces_spherecast(void *userdata,
                                   BVHTreeRayHit *hit)
 {
   const BVHTreeFromMesh *data = (BVHTreeFromMesh *)userdata;
-  const float(*positions)[3] = data->positions;
+  const float(*positions)[3] = data->vert_positions;
   const MFace *face = &data->face[index];
 
   const float *t0, *t1, *t2, *t3;
@@ -372,7 +372,7 @@ static void mesh_looptri_spherecast(void *userdata,
                                     BVHTreeRayHit *hit)
 {
   const BVHTreeFromMesh *data = (BVHTreeFromMesh *)userdata;
-  const float(*positions)[3] = data->positions;
+  const float(*positions)[3] = data->vert_positions;
   const MLoopTri *lt = &data->looptri[index];
   const float *vtri_co[3] = {
       positions[data->loop[lt->tri[0]].v],
@@ -442,7 +442,7 @@ static void mesh_edges_nearest_point(void *userdata,
                                      BVHTreeNearest *nearest)
 {
   const BVHTreeFromMesh *data = (BVHTreeFromMesh *)userdata;
-  const float(*positions)[3] = data->positions;
+  const float(*positions)[3] = data->vert_positions;
   const MEdge *edge = data->edge + index;
   float nearest_tmp[3], dist_sq;
 
@@ -507,7 +507,7 @@ static void mesh_verts_spherecast(void *userdata,
                                   BVHTreeRayHit *hit)
 {
   const BVHTreeFromMesh *data = (BVHTreeFromMesh *)userdata;
-  const float *v = data->positions[index];
+  const float *v = data->vert_positions[index];
 
   mesh_verts_spherecast_do(index, v, ray, hit);
 }
@@ -524,7 +524,7 @@ static void mesh_edges_spherecast(void *userdata,
                                   BVHTreeRayHit *hit)
 {
   const BVHTreeFromMesh *data = (BVHTreeFromMesh *)userdata;
-  const float(*positions)[3] = data->positions;
+  const float(*positions)[3] = data->vert_positions;
   const MEdge *edge = &data->edge[index];
 
   const float radius_sq = square_f(ray->radius);
