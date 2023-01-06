@@ -83,6 +83,7 @@ static PyObject *bpy_bmloopuv_pin_uv_get(BPy_BMLoopUV *self, void *UNUSED(closur
   /* A non existing pin layer means nothing is currently pinned */
   return self->pin ? PyBool_FromLong(*self->pin) : false;
 }
+
 static int bpy_bmloopuv_pin_uv_set(BPy_BMLoopUV *self, PyObject *value, void *UNUSED(closure))
 {
   /* TODO: if we add lazy allocation of the associated uv map bool layers to BMesh we need
@@ -93,6 +94,10 @@ static int bpy_bmloopuv_pin_uv_set(BPy_BMLoopUV *self, PyObject *value, void *UN
   BLI_assert(self->pin);
   if (self->pin) {
     *self->pin = PyC_Long_AsBool(value);
+  }
+  else {
+    PyErr_Format(PyExc_RuntimeError,
+                 "active uv layer has no associated pin layer. This is a bug!");
   }
   return 0;
 }
@@ -109,6 +114,10 @@ static int bpy_bmloopuv_select_set(BPy_BMLoopUV *self, PyObject *value, void *UN
   if (self->vert_select) {
     *self->vert_select = PyC_Long_AsBool(value);
   }
+  else {
+    PyErr_Format(PyExc_RuntimeError,
+                 "active uv layer has no associated vertex selection layer. This is a bug!");
+  }
   return 0;
 }
 
@@ -123,6 +132,10 @@ static int bpy_bmloopuv_select_edge_set(BPy_BMLoopUV *self, PyObject *value, voi
   BLI_assert(self->edge_select);
   if (self->edge_select) {
     *self->edge_select = PyC_Long_AsBool(value);
+  }
+  else {
+    PyErr_Format(PyExc_RuntimeError,
+                 "active uv layer has no associated edge selection layer. This is a bug!");
   }
   return 0;
 }
