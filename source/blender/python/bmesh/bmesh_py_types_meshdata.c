@@ -97,7 +97,8 @@ static int bpy_bmloopuv_pin_uv_set(BPy_BMLoopUV *self, PyObject *value, void *UN
   }
   else {
     PyErr_SetString(PyExc_RuntimeError,
-                 "active uv layer has no associated pin layer. This is a bug!");
+                    "active uv layer has no associated pin layer. This is a bug!");
+    return -1;
   }
   return 0;
 }
@@ -116,7 +117,8 @@ static int bpy_bmloopuv_select_set(BPy_BMLoopUV *self, PyObject *value, void *UN
   }
   else {
     PyErr_SetString(PyExc_RuntimeError,
-                 "active uv layer has no associated vertex selection layer. This is a bug!");
+                    "active uv layer has no associated vertex selection layer. This is a bug!");
+    return -1;
   }
   return 0;
 }
@@ -135,7 +137,8 @@ static int bpy_bmloopuv_select_edge_set(BPy_BMLoopUV *self, PyObject *value, voi
   }
   else {
     PyErr_SetString(PyExc_RuntimeError,
-                 "active uv layer has no associated edge selection layer. This is a bug!");
+                    "active uv layer has no associated edge selection layer. This is a bug!");
+    return -1;
   }
   return 0;
 }
