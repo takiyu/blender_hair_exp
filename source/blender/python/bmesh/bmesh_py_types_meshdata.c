@@ -6,6 +6,13 @@
  *
  * This file defines custom-data types which can't be accessed as primitive
  * python types such as #MDeformVert and the legacy #MLoopUV type.
+ * MLoopUV used to be a struct containing both the UV information and various
+ * selection flags. This has since been split up into a float2 attribute layer
+ * and three bool attribute layers for the selection/pin states.
+ * For backwards compatibility reasons the original #MLoopUV is emulated in the
+ * python API, this comes at a performance penalty  however and the plan is
+ * to provide direct access to the bool layers for faster access. Eventually
+ * (probably in 4.0 ) the MLoopUV should be deprecated on the python side as well.
  */
 
 #include <Python.h>
@@ -37,6 +44,12 @@
 typedef struct BPy_BMLoopUV {
   PyObject_VAR_HEAD
   float *uv;
+  /* vert_select, edge_select and pin could be NULL, signifying those layers don't exist.
+   * Currently those layers are always created on a BMesh because adding layers to an existing
+   * BMesh is slow and invalidates existing python objects having pointers into the original
+   * datablocks (adding a layer re-generates all blocks). But eventually the plan is to lazily
+   * allocate the bool layers 'on demand'. Therefore the code tries to handle all cases where
+   * the layers don't exist. */
   bool *vert_select;
   bool *edge_select;
   bool *pin;
