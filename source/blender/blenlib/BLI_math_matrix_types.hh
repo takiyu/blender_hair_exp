@@ -30,12 +30,14 @@
  * defined outside of the class in the `blender::math` namespace.
  */
 
+#define __BLI_MATH_MATRIX_TYPES_HH__
+
 #include <array>
 #include <cmath>
 #include <iostream>
 #include <type_traits>
 
-#include "BLI_math_vec_types.hh"
+#include "BLI_math_vector_types.hh"
 #include "BLI_utildefines.h"
 #include "BLI_utility_mixins.hh"
 
@@ -70,13 +72,13 @@ template<
     int NumRow,
     /* Alignment in bytes. Do not align matrices whose size is not a multiple of 4 component.
      * This is in order to avoid padding when using arrays of matrices. */
-    int Alignment = (((NumCol * NumRow) % 4) ? 4 : 0) * sizeof(T)>
-struct alignas(Alignment) MatBase : public vec_struct_base<vec_base<T, NumRow>, NumCol> {
+    int Alignment = (((NumCol * NumRow) % 4 == 0) ? 4 : 1) * sizeof(T)>
+struct alignas(Alignment) MatBase : public vec_struct_base<VecBase<T, NumRow>, NumCol> {
 
   using base_type = T;
-  using vec3_type = vec_base<T, 3>;
-  using col_type = vec_base<T, NumRow>;
-  using row_type = vec_base<T, NumCol>;
+  using vec3_type = VecBase<T, 3>;
+  using col_type = VecBase<T, NumRow>;
+  using row_type = VecBase<T, NumCol>;
   static constexpr int min_dim = (NumRow < NumCol) ? NumRow : NumCol;
   static constexpr int col_len = NumCol;
   static constexpr int row_len = NumRow;
@@ -523,8 +525,8 @@ template<typename T,
 struct MatView : NonCopyable, NonMovable {
   using MatT = MatBase<T, NumCol, NumRow>;
   using SrcMatT = MatBase<T, SrcNumCol, SrcNumRow, SrcAlignment>;
-  using col_type = vec_base<T, NumRow>;
-  using row_type = vec_base<T, NumCol>;
+  using col_type = VecBase<T, NumRow>;
+  using row_type = VecBase<T, NumCol>;
 
   const SrcMatT &mat;
 
@@ -605,7 +607,7 @@ struct MatView : NonCopyable, NonMovable {
 
   friend MatT operator-(const MatView &a, const MatT &b)
   {
-    return a - b.template view();
+    return a - b.view();
   }
 
   template<int OtherSrcNumCol,
@@ -630,7 +632,7 @@ struct MatView : NonCopyable, NonMovable {
 
   friend MatT operator-(const MatT &a, const MatView &b)
   {
-    return a.template view() - b;
+    return a.view() - b;
   }
 
   friend MatT operator-(const MatView &a, T b)
@@ -677,7 +679,7 @@ struct MatView : NonCopyable, NonMovable {
 
   MatT operator*(const MatT &b) const
   {
-    return *this * b.template view();
+    return *this * b.view();
   }
 
   /** Multiply each component by a scalar. */
@@ -755,12 +757,12 @@ template<typename T,
 struct MutableMatView
     : MatView<T, NumCol, NumRow, SrcNumCol, SrcNumRow, SrcStartCol, SrcStartRow, SrcAlignment> {
 
-  using MatT = MatBase<T, NumCol, NumRow, SrcAlignment>;
+  using MatT = MatBase<T, NumCol, NumRow>;
   using MatViewT =
       MatView<T, NumCol, NumRow, SrcNumCol, SrcNumRow, SrcStartCol, SrcStartRow, SrcAlignment>;
   using SrcMatT = MatBase<T, SrcNumCol, SrcNumRow, SrcAlignment>;
-  using col_type = vec_base<T, NumRow>;
-  using row_type = vec_base<T, NumCol>;
+  using col_type = VecBase<T, NumRow>;
+  using row_type = VecBase<T, NumCol>;
 
  public:
   MutableMatView() = delete;
@@ -815,7 +817,7 @@ struct MutableMatView
 
   MutableMatView &operator=(const MatT &other)
   {
-    *this = other.template view();
+    *this = other.view();
     return *this;
   }
 
@@ -841,7 +843,7 @@ struct MutableMatView
 
   MutableMatView &operator+=(const MatT &b)
   {
-    return *this += b.template view();
+    return *this += b.view();
   }
 
   MutableMatView &operator+=(T b)
@@ -870,7 +872,7 @@ struct MutableMatView
 
   MutableMatView &operator-=(const MatT &b)
   {
-    return *this -= b.template view();
+    return *this -= b.view();
   }
 
   MutableMatView &operator-=(T b)
@@ -900,7 +902,7 @@ struct MutableMatView
 
   MutableMatView &operator*=(const MatT &b)
   {
-    return *this *= b.template view();
+    return *this *= b.view();
   }
 
   /** Multiply each component by a scalar. */
@@ -923,8 +925,8 @@ using float4x4 = MatBase<float, 4, 4>;
 
 /* These types are reserved to wrap C matrices without copy. Note the un-alignment. */
 /* TODO: It would be preferable to align all C matrices inside DNA structs. */
-using float4x4_view = MatView<float, 4, 4, 4, 4, 0, 0, /* Alignment */ 0>;
-using float4x4_mutableview = MutableMatView<float, 4, 4, 4, 4, 0, 0, /* Alignment */ 0>;
+using float4x4_view = MatView<float, 4, 4, 4, 4, 0, 0, alignof(float)>;
+using float4x4_mutableview = MutableMatView<float, 4, 4, 4, 4, 0, 0, alignof(float)>;
 
 using double2x2 = MatBase<double, 2, 2>;
 using double2x3 = MatBase<double, 2, 3>;
