@@ -78,6 +78,8 @@
 
 #include "particle_private.h"
 
+using blender::float3;
+
 static void fluid_free_settings(SPHFluidSettings *fluid);
 
 static void particle_settings_init(ID *id)
@@ -1272,7 +1274,7 @@ typedef struct ParticleInterpolationData {
   HairKey *hkey[2];
 
   Mesh *mesh;
-  float *positions[2];
+  float3 *positions[2];
 
   int keyed;
   ParticleKey *kkey[2];
@@ -1432,9 +1434,9 @@ static void init_particle_interpolation(Object *ob,
     pind->dietime = (key + pa->totkey - 1)->time;
 
     if (pind->mesh) {
-      float(*positions)[3] = BKE_mesh_vert_positions_for_write(pind->mesh);
-      pind->positions[0] = positions[pa->hair_index];
-      pind->positions[1] = positions[pa->hair_index + 1];
+      blender::MutableSpan<float3> positions = pind->mesh->vert_positions_for_write();
+      pind->positions[0] = &positions[pa->hair_index];
+      pind->positions[1] = pind->positions[0] + 1;
     }
   }
 }
@@ -1452,9 +1454,9 @@ static void hair_to_particle(ParticleKey *key, HairKey *hkey)
   key->time = hkey->time;
 }
 
-static void mvert_to_particle(ParticleKey *key, float position[3], HairKey *hkey)
+static void mvert_to_particle(ParticleKey *key, float3 *position, HairKey *hkey)
 {
-  copy_v3_v3(key->co, position);
+  copy_v3_v3(key->co, *position);
   key->time = hkey->time;
 }
 
