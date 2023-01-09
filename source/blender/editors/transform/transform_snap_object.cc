@@ -620,7 +620,7 @@ static void mesh_looptri_raycast_backface_culling_cb(void *userdata,
                                                      BVHTreeRayHit *hit)
 {
   const BVHTreeFromMesh *data = (BVHTreeFromMesh *)userdata;
-  const float(*positions)[3] = data->positions;
+  const float(*positions)[3] = data->vert_positions;
   const MLoopTri *lt = &data->looptri[index];
   const float *vtri_co[3] = {
       positions[data->loop[lt->tri[0]].v],

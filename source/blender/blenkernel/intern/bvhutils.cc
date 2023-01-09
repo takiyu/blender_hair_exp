@@ -586,7 +586,7 @@ static void bvhtree_from_mesh_setup_data(BVHTree *tree,
 
   r_data->tree = tree;
 
-  r_data->positions = reinterpret_cast<const float(*)[3]>(positions);
+  r_data->vert_positions = positions;
   r_data->edge = edge;
   r_data->face = face;
   r_data->loop = loop;

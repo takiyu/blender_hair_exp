@@ -1695,7 +1695,7 @@ static void sculpt_update_object(
 
     /* These are assigned to the base mesh in Multires. This is needed because Face Sets operators
      * and tools use the Face Sets data from the base mesh when Multires is active. */
-    ss->positions = BKE_mesh_vert_positions_for_write(me);
+    ss->vert_positions = BKE_mesh_vert_positions_for_write(me);
     ss->mpoly = BKE_mesh_polys(me);
     ss->mloop = BKE_mesh_loops(me);
   }
@@ -1703,7 +1703,7 @@ static void sculpt_update_object(
     ss->totvert = me->totvert;
     ss->totpoly = me->totpoly;
     ss->totfaces = me->totpoly;
-    ss->positions = BKE_mesh_vert_positions_for_write(me);
+    ss->vert_positions = BKE_mesh_vert_positions_for_write(me);
     ss->mpoly = BKE_mesh_polys(me);
     ss->mloop = BKE_mesh_loops(me);
     ss->multires.active = false;

@@ -116,7 +116,7 @@ const float *SCULPT_vertex_co_get(SculptSession *ss, PBVHVertRef vertex)
         const float(*positions)[3] = BKE_pbvh_get_positions(ss->pbvh);
         return positions[vertex.i];
       }
-      return ss->positions[vertex.i];
+      return ss->vert_positions[vertex.i];
     }
     case PBVH_BMESH:
       return ((BMVert *)vertex.i)->co;
@@ -207,7 +207,7 @@ const float *SCULPT_vertex_co_for_grab_active_get(SculptSession *ss, PBVHVertRef
     }
 
     /* Sculpting on the base mesh. */
-    return ss->positions[vertex.i];
+    return ss->vert_positions[vertex.i];
   }
 
   /* Everything else, such as sculpting on multires. */
@@ -295,7 +295,7 @@ float (*SCULPT_mesh_deformed_positions_get(SculptSession *ss))[3]
       if (ss->shapekey_active || ss->deform_modifiers_active) {
         return BKE_pbvh_get_positions(ss->pbvh);
       }
-      return ss->positions;
+      return ss->vert_positions;
     case PBVH_BMESH:
     case PBVH_GRIDS:
       return nullptr;

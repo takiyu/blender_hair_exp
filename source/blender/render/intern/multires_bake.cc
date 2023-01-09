@@ -60,7 +60,7 @@ struct MultiresBakeResult {
 };
 
 struct MResolvePixelData {
-  const float (*positions)[3];
+  const float (*vert_positions)[3];
   const float (*vert_normals)[3];
   MPoly *mpoly;
   const int *material_indices;
@@ -125,7 +125,7 @@ static void multiresbake_get_normal(const MResolvePixelData *data,
       copy_v3_v3(r_normal, data->precomputed_normals[poly_index]);
     }
     else {
-      BKE_mesh_calc_poly_normal(mp, &data->mloop[mp->loopstart], data->positions, r_normal);
+      BKE_mesh_calc_poly_normal(mp, &data->mloop[mp->loopstart], data->vert_positions, r_normal);
     }
   }
 }
@@ -555,7 +555,7 @@ static void do_multires_bake(MultiresBakeRender *bkr,
     handle->data.mpoly = mpoly;
     handle->data.material_indices = static_cast<const int *>(
         CustomData_get_layer_named(&dm->polyData, CD_PROP_INT32, "material_index"));
-    handle->data.positions = positions;
+    handle->data.vert_positions = positions;
     handle->data.vert_normals = vert_normals;
     handle->data.mloopuv = mloopuv;
     BKE_image_get_tile_uv(ima, tile->tile_number, handle->data.uv_offset);

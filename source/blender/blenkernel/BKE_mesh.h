@@ -1056,7 +1056,8 @@ inline blender::Span<blender::float3> Mesh::vert_positions() const
 }
 inline blender::MutableSpan<blender::float3> Mesh::vert_positions_for_write()
 {
-  return {reinterpret_cast<blender::float3 *>(BKE_mesh_vert_positions_for_write(this)), this->totvert};
+  return {reinterpret_cast<blender::float3 *>(BKE_mesh_vert_positions_for_write(this)),
+          this->totvert};
 }
 
 inline blender::Span<MEdge> Mesh::edges() const

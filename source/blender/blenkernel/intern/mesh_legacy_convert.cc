@@ -1628,6 +1628,7 @@ void BKE_mesh_legacy_convert_verts_to_positions(Mesh *mesh)
   });
 
   CustomData_free_layers(&mesh->vdata, CD_MVERT, mesh->totvert);
+  mesh->mvert = nullptr;
 }
 
 /** \} */
