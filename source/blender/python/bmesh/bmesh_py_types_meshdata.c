@@ -5,7 +5,7 @@
  * \ingroup pybmesh
  *
  * This file defines custom-data types which can't be accessed as primitive
- * python types such as #MDeformVert, It also exposed UV map data in a way
+ * python types such as #MDeformVert. It also exposed UV map data in a way
  * compatible with the (removed) #MLoopUV type.
  * MLoopUV used to be a struct containing both the UV information and various
  * selection flags. This has since been split up into a float2 attribute layer
