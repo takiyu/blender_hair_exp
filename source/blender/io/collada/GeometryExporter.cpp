@@ -15,7 +15,7 @@
 
 #include "DNA_meshdata_types.h"
 
-#include "BLI_math_vec_types.hh"
+#include "BLI_math_vector_types.hh"
 #include "BLI_utildefines.h"
 
 #include "BKE_attribute.hh"

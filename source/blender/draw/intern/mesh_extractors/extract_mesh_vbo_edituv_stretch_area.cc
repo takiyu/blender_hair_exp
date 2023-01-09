@@ -5,7 +5,7 @@
  * \ingroup draw
  */
 
-#include "BLI_math_vec_types.hh"
+#include "BLI_math_vector_types.hh"
 
 #include "MEM_guardedalloc.h"
 

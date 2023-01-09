@@ -11,7 +11,7 @@
 
 #include <map>
 
-#include "BLI_math_vec_types.hh"
+#include "BLI_math_vector_types.hh"
 
 struct CustomData;
 struct MLoop;
