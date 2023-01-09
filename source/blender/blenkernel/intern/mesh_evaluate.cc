@@ -55,32 +55,35 @@ static void mesh_calc_ngon_center(const MPoly *mpoly,
 
 void BKE_mesh_calc_poly_center(const MPoly *mpoly,
                                const MLoop *loopstart,
-                               const float (*positions)[3],
+                               const float (*vert_positions)[3],
                                float r_cent[3])
 {
   if (mpoly->totloop == 3) {
-    mid_v3_v3v3v3(
-        r_cent, positions[loopstart[0].v], positions[loopstart[1].v], positions[loopstart[2].v]);
+    mid_v3_v3v3v3(r_cent,
+                  vert_positions[loopstart[0].v],
+                  vert_positions[loopstart[1].v],
+                  vert_positions[loopstart[2].v]);
   }
   else if (mpoly->totloop == 4) {
     mid_v3_v3v3v3v3(r_cent,
-                    positions[loopstart[0].v],
-                    positions[loopstart[1].v],
-                    positions[loopstart[2].v],
-                    positions[loopstart[3].v]);
+                    vert_positions[loopstart[0].v],
+                    vert_positions[loopstart[1].v],
+                    vert_positions[loopstart[2].v],
+                    vert_positions[loopstart[3].v]);
   }
   else {
-    mesh_calc_ngon_center(mpoly, loopstart, positions, r_cent);
+    mesh_calc_ngon_center(mpoly, loopstart, vert_positions, r_cent);
   }
 }
 
 float BKE_mesh_calc_poly_area(const MPoly *mpoly,
                               const MLoop *loopstart,
-                              const float (*positions)[3])
+                              const float (*vert_positions)[3])
 {
   if (mpoly->totloop == 3) {
-    return area_tri_v3(
-        positions[loopstart[0].v], positions[loopstart[1].v], positions[loopstart[2].v]);
+    return area_tri_v3(vert_positions[loopstart[0].v],
+                       vert_positions[loopstart[1].v],
+                       vert_positions[loopstart[2].v]);
   }
 
   const MLoop *l_iter = loopstart;
@@ -88,7 +91,7 @@ float BKE_mesh_calc_poly_area(const MPoly *mpoly,
 
   /* pack vertex cos into an array for area_poly_v3 */
   for (int i = 0; i < mpoly->totloop; i++, l_iter++) {
-    copy_v3_v3(vertexcos[i], positions[l_iter->v]);
+    copy_v3_v3(vertexcos[i], vert_positions[l_iter->v]);
   }
 
   /* finally calculate the area */
@@ -234,7 +237,7 @@ static float mesh_calc_poly_area_centroid(const MPoly *mpoly,
 
 void BKE_mesh_calc_poly_angles(const MPoly *mpoly,
                                const MLoop *loopstart,
-                               const float (*positions)[3],
+                               const float (*vert_positions)[3],
                                float angles[])
 {
   float nor_prev[3];
@@ -243,11 +246,13 @@ void BKE_mesh_calc_poly_angles(const MPoly *mpoly,
   int i_this = mpoly->totloop - 1;
   int i_next = 0;
 
-  sub_v3_v3v3(nor_prev, positions[loopstart[i_this - 1].v], positions[loopstart[i_this].v]);
+  sub_v3_v3v3(
+      nor_prev, vert_positions[loopstart[i_this - 1].v], vert_positions[loopstart[i_this].v]);
   normalize_v3(nor_prev);
 
   while (i_next < mpoly->totloop) {
-    sub_v3_v3v3(nor_next, positions[loopstart[i_this].v], positions[loopstart[i_next].v]);
+    sub_v3_v3v3(
+        nor_next, vert_positions[loopstart[i_this].v], vert_positions[loopstart[i_next].v]);
     normalize_v3(nor_next);
     angles[i_this] = angle_normalized_v3v3(nor_prev, nor_next);
 

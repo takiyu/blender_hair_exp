@@ -244,7 +244,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
       sculpt_session->multires.level = mmd->sculptlvl;
       sculpt_session->totvert = mesh->totvert;
       sculpt_session->totpoly = mesh->totpoly;
-      sculpt_session->positions = nullptr;
+      sculpt_session->vert_positions = nullptr;
       sculpt_session->mpoly = nullptr;
       sculpt_session->mloop = nullptr;
     }

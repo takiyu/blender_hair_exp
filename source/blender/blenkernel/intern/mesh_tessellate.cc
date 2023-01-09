@@ -308,24 +308,24 @@ static void mesh_recalc_looptri__multi_threaded(const MLoop *mloop,
 
 void BKE_mesh_recalc_looptri(const MLoop *mloop,
                              const MPoly *mpoly,
-                             const float (*positions)[3],
+                             const float (*vert_positions)[3],
                              int totloop,
                              int totpoly,
                              MLoopTri *mlooptri)
 {
   if (totloop < MESH_FACE_TESSELLATE_THREADED_LIMIT) {
     mesh_recalc_looptri__single_threaded(
-        mloop, mpoly, positions, totloop, totpoly, mlooptri, nullptr);
+        mloop, mpoly, vert_positions, totloop, totpoly, mlooptri, nullptr);
   }
   else {
     mesh_recalc_looptri__multi_threaded(
-        mloop, mpoly, positions, totloop, totpoly, mlooptri, nullptr);
+        mloop, mpoly, vert_positions, totloop, totpoly, mlooptri, nullptr);
   }
 }
 
 void BKE_mesh_recalc_looptri_with_normals(const MLoop *mloop,
                                           const MPoly *mpoly,
-                                          const float (*positions)[3],
+                                          const float (*vert_positions)[3],
                                           int totloop,
                                           int totpoly,
                                           MLoopTri *mlooptri,
@@ -334,11 +334,11 @@ void BKE_mesh_recalc_looptri_with_normals(const MLoop *mloop,
   BLI_assert(poly_normals != nullptr);
   if (totloop < MESH_FACE_TESSELLATE_THREADED_LIMIT) {
     mesh_recalc_looptri__single_threaded(
-        mloop, mpoly, positions, totloop, totpoly, mlooptri, poly_normals);
+        mloop, mpoly, vert_positions, totloop, totpoly, mlooptri, poly_normals);
   }
   else {
     mesh_recalc_looptri__multi_threaded(
-        mloop, mpoly, positions, totloop, totpoly, mlooptri, poly_normals);
+        mloop, mpoly, vert_positions, totloop, totpoly, mlooptri, poly_normals);
   }
 }
 

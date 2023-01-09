@@ -187,22 +187,24 @@ static void mesh_calc_ngon_normal(const MPoly *mpoly,
 
 void BKE_mesh_calc_poly_normal(const MPoly *mpoly,
                                const MLoop *loopstart,
-                               const float (*positions)[3],
+                               const float (*vert_positions)[3],
                                float r_no[3])
 {
   if (mpoly->totloop > 4) {
-    mesh_calc_ngon_normal(mpoly, loopstart, positions, r_no);
+    mesh_calc_ngon_normal(mpoly, loopstart, vert_positions, r_no);
   }
   else if (mpoly->totloop == 3) {
-    normal_tri_v3(
-        r_no, positions[loopstart[0].v], positions[loopstart[1].v], positions[loopstart[2].v]);
+    normal_tri_v3(r_no,
+                  vert_positions[loopstart[0].v],
+                  vert_positions[loopstart[1].v],
+                  vert_positions[loopstart[2].v]);
   }
   else if (mpoly->totloop == 4) {
     normal_quad_v3(r_no,
-                   positions[loopstart[0].v],
-                   positions[loopstart[1].v],
-                   positions[loopstart[2].v],
-                   positions[loopstart[3].v]);
+                   vert_positions[loopstart[0].v],
+                   vert_positions[loopstart[1].v],
+                   vert_positions[loopstart[2].v],
+                   vert_positions[loopstart[3].v]);
   }
   else { /* horrible, two sided face! */
     r_no[0] = 0.0;
@@ -228,7 +230,7 @@ static void calculate_normals_poly(const Span<float3> positions,
   });
 }
 
-void BKE_mesh_calc_normals_poly(const float (*positions)[3],
+void BKE_mesh_calc_normals_poly(const float (*vert_positions)[3],
                                 const int verts_num,
                                 const MLoop *mloop,
                                 const int mloop_len,
@@ -236,7 +238,7 @@ void BKE_mesh_calc_normals_poly(const float (*positions)[3],
                                 int mpoly_len,
                                 float (*r_poly_normals)[3])
 {
-  calculate_normals_poly({reinterpret_cast<const float3 *>(positions), verts_num},
+  calculate_normals_poly({reinterpret_cast<const float3 *>(vert_positions), verts_num},
                          {mpoly, mpoly_len},
                          {mloop, mloop_len},
                          {reinterpret_cast<float3 *>(r_poly_normals), mpoly_len});
@@ -341,7 +343,7 @@ static void calculate_normals_poly_and_vert(const Span<float3> positions,
   }
 }
 
-void BKE_mesh_calc_normals_poly_and_vertex(const float (*positions)[3],
+void BKE_mesh_calc_normals_poly_and_vertex(const float (*vert_positions)[3],
                                            const int mvert_len,
                                            const MLoop *mloop,
                                            const int mloop_len,
@@ -350,7 +352,7 @@ void BKE_mesh_calc_normals_poly_and_vertex(const float (*positions)[3],
                                            float (*r_poly_normals)[3],
                                            float (*r_vert_normals)[3])
 {
-  calculate_normals_poly_and_vert({reinterpret_cast<const float3 *>(positions), mvert_len},
+  calculate_normals_poly_and_vert({reinterpret_cast<const float3 *>(vert_positions), mvert_len},
                                   {mpoly, mpoly_len},
                                   {mloop, mloop_len},
                                   {reinterpret_cast<float3 *>(r_poly_normals), mpoly_len},
@@ -1440,7 +1442,7 @@ static void loop_split_generator(TaskPool *pool, LoopSplitTaskDataCommon *common
   }
 }
 
-void BKE_mesh_normals_loop_split(const float (*positions)[3],
+void BKE_mesh_normals_loop_split(const float (*vert_positions)[3],
                                  const float (*vert_normals)[3],
                                  const int numVerts,
                                  const MEdge *medges,
@@ -1542,7 +1544,7 @@ void BKE_mesh_normals_loop_split(const float (*positions)[3],
   common_data.lnors_spacearr = r_lnors_spacearr;
   common_data.loop_normals = {reinterpret_cast<float3 *>(r_loop_normals), numLoops};
   common_data.clnors_data = {reinterpret_cast<short2 *>(clnors_data), clnors_data ? numLoops : 0};
-  common_data.positions = {reinterpret_cast<const float3 *>(positions), numVerts};
+  common_data.positions = {reinterpret_cast<const float3 *>(vert_positions), numVerts};
   common_data.edges = {medges, numEdges};
   common_data.polys = polys;
   common_data.loops = loops;
@@ -1847,7 +1849,7 @@ static void mesh_normals_loop_custom_set(const float (*positions)[3],
   BKE_lnor_spacearr_free(&lnors_spacearr);
 }
 
-void BKE_mesh_normals_loop_custom_set(const float (*positions)[3],
+void BKE_mesh_normals_loop_custom_set(const float (*vert_positions)[3],
                                       const float (*vert_normals)[3],
                                       const int numVerts,
                                       MEdge *medges,
@@ -1860,7 +1862,7 @@ void BKE_mesh_normals_loop_custom_set(const float (*positions)[3],
                                       const int numPolys,
                                       short (*r_clnors_data)[2])
 {
-  mesh_normals_loop_custom_set(positions,
+  mesh_normals_loop_custom_set(vert_positions,
                                vert_normals,
                                numVerts,
                                medges,
@@ -1875,7 +1877,7 @@ void BKE_mesh_normals_loop_custom_set(const float (*positions)[3],
                                false);
 }
 
-void BKE_mesh_normals_loop_custom_from_verts_set(const float (*positions)[3],
+void BKE_mesh_normals_loop_custom_from_verts_set(const float (*vert_positions)[3],
                                                  const float (*vert_normals)[3],
                                                  float (*r_custom_vert_normals)[3],
                                                  const int numVerts,
@@ -1888,7 +1890,7 @@ void BKE_mesh_normals_loop_custom_from_verts_set(const float (*positions)[3],
                                                  const int numPolys,
                                                  short (*r_clnors_data)[2])
 {
-  mesh_normals_loop_custom_set(positions,
+  mesh_normals_loop_custom_set(vert_positions,
                                vert_normals,
                                numVerts,
                                medges,
