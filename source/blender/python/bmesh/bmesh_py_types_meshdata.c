@@ -5,15 +5,15 @@
  * \ingroup pybmesh
  *
  * This file defines custom-data types which can't be accessed as primitive
- * python types such as #MDeformVert. It also exposed UV map data in a way
+ * Python types such as #MDeformVert. It also exposed UV map data in a way
  * compatible with the (removed) #MLoopUV type.
  * MLoopUV used to be a struct containing both the UV information and various
- * selection flags. This has since been split up into a float2 attribute layer
- * and three bool attribute layers for the selection/pin states.
- * For backwards compatibility reasons the original #MLoopUV is emulated in the
- * python API, this comes at a performance penalty  however and the plan is
- * to provide direct access to the bool layers for faster access. Eventually
- * (probably in 4.0 ) the MLoopUV should be deprecated on the python side as well.
+ * selection flags. This has since been split up into a float2 attribute
+ * and three boolean attributes for the selection/pin states.
+ * For backwards compatibility, the original #MLoopUV is emulated in the
+ * python API. This comes at a performance penalty however, and the plan is
+ * to provide direct access to the boolean layers for faster access. Eventually
+ * (probably in 4.0) #MLoopUV should be removed on the Python side as well.
  */
 
 #include <Python.h>
@@ -89,7 +89,7 @@ static int bpy_bmloopuv_pin_uv_set(BPy_BMLoopUV *self, PyObject *value, void *UN
 {
   /* TODO: if we add lazy allocation of the associated uv map bool layers to BMesh we need
    * to add a pin layer and update self->pin in the case of self->pin being NULL.
-   * This isn't easy to do currently as adding CustomData layers to a bmesh invalidates
+   * This isn't easy to do currently as adding CustomData layers to a BMesh invalidates
    * existing python objects. So for now lazy allocation isn't done and self->pin should
    * never be NULL. */
   BLI_assert(self->pin);
