@@ -4319,7 +4319,7 @@ void CustomData_set_layer_unique_name(CustomData *data, const int index)
     return;
   }
 
-  int maxlength = MAX_CUSTOMDATA_LAYER_NAME_GUI;
+  int maxlength = MAX_CUSTOMDATA_LAYER_NAME_NO_PREFIX;
 
   if (STREQLEN("." UV_VERTSEL_NAME ".", nlayer->name, 4) ||
       STREQLEN("." UV_EDGESEL_NAME ".", nlayer->name, 4) ||

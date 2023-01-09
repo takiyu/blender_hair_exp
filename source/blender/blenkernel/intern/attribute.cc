@@ -187,12 +187,12 @@ bool BKE_id_attribute_rename(ID *id,
     char buffer_dst[MAX_CUSTOMDATA_LAYER_NAME];
 
     bke_id_attribute_rename_if_exists(id,
-                                      BKE_uv_map_vert_selection_name_get(layer->name, buffer_src),
-                                      BKE_uv_map_vert_selection_name_get(result_name, buffer_dst),
+                                      BKE_uv_map_vert_select_name_get(layer->name, buffer_src),
+                                      BKE_uv_map_vert_select_name_get(result_name, buffer_dst),
                                       reports);
     bke_id_attribute_rename_if_exists(id,
-                                      BKE_uv_map_edge_selection_name_get(layer->name, buffer_src),
-                                      BKE_uv_map_edge_selection_name_get(result_name, buffer_dst),
+                                      BKE_uv_map_edge_select_name_get(layer->name, buffer_src),
+                                      BKE_uv_map_edge_select_name_get(result_name, buffer_dst),
                                       reports);
     bke_id_attribute_rename_if_exists(id,
                                       BKE_uv_map_pin_name_get(layer->name, buffer_src),
@@ -243,10 +243,10 @@ static bool unique_name_cb(void *arg, const char *name)
 bool BKE_id_attribute_calc_unique_name(ID *id, const char *name, char *outname)
 {
   AttrUniqueData data{id};
-  int maxlength = MAX_CUSTOMDATA_LAYER_NAME_GUI;
+  int maxlength = MAX_CUSTOMDATA_LAYER_NAME_NO_PREFIX;
 
-  if (STREQLEN("." UV_VERTSEL_NAME ".", name, 4) || STREQLEN("." UV_EDGESEL_NAME ".", name, 4) ||
-      STREQLEN("." UV_PINNED_NAME ".", name, 4)) {
+  if (STRPREFIX(name, "." UV_VERTSEL_NAME ".") || STRPREFIX(name, "." UV_EDGESEL_NAME ".") ||
+      STRPREFIX(name, "." UV_PINNED_NAME ".")) {
     maxlength = MAX_CUSTOMDATA_LAYER_NAME;
   }
 
@@ -351,11 +351,11 @@ CustomDataLayer *BKE_id_attribute_duplicate(ID *id, const char *name, ReportList
     char buffer_dst[MAX_CUSTOMDATA_LAYER_NAME];
 
     bke_id_attribute_copy_if_exists(id,
-                                    BKE_uv_map_vert_selection_name_get(name, buffer_src),
-                                    BKE_uv_map_vert_selection_name_get(uniquename, buffer_dst));
+                                    BKE_uv_map_vert_select_name_get(name, buffer_src),
+                                    BKE_uv_map_vert_select_name_get(uniquename, buffer_dst));
     bke_id_attribute_copy_if_exists(id,
-                                    BKE_uv_map_edge_selection_name_get(name, buffer_src),
-                                    BKE_uv_map_edge_selection_name_get(uniquename, buffer_dst));
+                                    BKE_uv_map_edge_select_name_get(name, buffer_src),
+                                    BKE_uv_map_edge_select_name_get(uniquename, buffer_dst));
     bke_id_attribute_copy_if_exists(id,
                                     BKE_uv_map_pin_name_get(name, buffer_src),
                                     BKE_uv_map_pin_name_get(uniquename, buffer_dst));
@@ -391,9 +391,9 @@ bool BKE_id_attribute_remove(ID *id, const char *name, ReportList *reports)
               /* free associated UV map bool layers */
               char buffer_src[MAX_CUSTOMDATA_LAYER_NAME];
               BM_data_layer_free_named(
-                  em->bm, data, BKE_uv_map_vert_selection_name_get(name, buffer_src));
+                  em->bm, data, BKE_uv_map_vert_select_name_get(name, buffer_src));
               BM_data_layer_free_named(
-                  em->bm, data, BKE_uv_map_edge_selection_name_get(name, buffer_src));
+                  em->bm, data, BKE_uv_map_edge_select_name_get(name, buffer_src));
               BM_data_layer_free_named(em->bm, data, BKE_uv_map_pin_name_get(name, buffer_src));
             }
           }
@@ -428,8 +428,8 @@ bool BKE_id_attribute_remove(ID *id, const char *name, ReportList *reports)
     if (metadata->data_type == CD_PROP_FLOAT2) {
       /* remove UV sub-attributes. */
       char buffer_src[MAX_CUSTOMDATA_LAYER_NAME];
-      BKE_id_attribute_remove(id, BKE_uv_map_vert_selection_name_get(name, buffer_src), reports);
-      BKE_id_attribute_remove(id, BKE_uv_map_edge_selection_name_get(name, buffer_src), reports);
+      BKE_id_attribute_remove(id, BKE_uv_map_vert_select_name_get(name, buffer_src), reports);
+      BKE_id_attribute_remove(id, BKE_uv_map_edge_select_name_get(name, buffer_src), reports);
       BKE_id_attribute_remove(id, BKE_uv_map_pin_name_get(name, buffer_src), reports);
     }
   }
@@ -881,7 +881,7 @@ void BKE_id_attribute_copy_domains_temp(short id_type,
   *((short *)r_id->name) = id_type;
 }
 
-const char *BKE_uv_map_vert_selection_name_get(const char *uv_map_name, char *buffer)
+const char *BKE_uv_map_vert_select_name_get(const char *uv_map_name, char *buffer)
 {
   BLI_assert(strlen(UV_VERTSEL_NAME) == 2);
   BLI_assert(strlen(uv_map_name) < MAX_CUSTOMDATA_LAYER_NAME - 4);
@@ -889,7 +889,7 @@ const char *BKE_uv_map_vert_selection_name_get(const char *uv_map_name, char *bu
   return buffer;
 }
 
-const char *BKE_uv_map_edge_selection_name_get(const char *uv_map_name, char *buffer)
+const char *BKE_uv_map_edge_select_name_get(const char *uv_map_name, char *buffer)
 {
   BLI_assert(strlen(UV_EDGESEL_NAME) == 2);
   BLI_assert(strlen(uv_map_name) < MAX_CUSTOMDATA_LAYER_NAME - 4);

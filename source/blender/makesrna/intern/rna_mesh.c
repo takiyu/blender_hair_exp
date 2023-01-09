@@ -2238,7 +2238,7 @@ static PointerRNA rna_Mesh_uv_layers_new(struct Mesh *me,
 static void rna_Mesh_uv_layers_remove(struct Mesh *me, ReportList *reports, CustomDataLayer *layer)
 {
   if (!BKE_id_attribute_find(&me->id, layer->name, CD_PROP_FLOAT, ATTR_DOMAIN_CORNER)) {
-    BKE_reportf(reports, RPT_ERROR, "Texture layer '%s' not found", layer->name);
+    BKE_reportf(reports, RPT_ERROR, "UV map '%s' not found", layer->name);
   }
   BKE_id_attribute_remove(&me->id, layer->name, reports);
 }
@@ -2739,7 +2739,7 @@ static void rna_def_mloopuv(BlenderRNA *brna)
   prop = RNA_def_property(srna, "name", PROP_STRING, PROP_NONE);
   RNA_def_struct_name_property(srna, prop);
   RNA_def_property_string_funcs(prop, NULL, NULL, "rna_MeshLoopLayer_name_set");
-  RNA_def_property_string_maxlength(prop, MAX_CUSTOMDATA_LAYER_NAME_GUI);
+  RNA_def_property_string_maxlength(prop, MAX_CUSTOMDATA_LAYER_NAME_NO_PREFIX);
   RNA_def_property_ui_text(prop, "Name", "Name of UV map");
   RNA_def_property_update(prop, 0, "rna_Mesh_update_data_legacy_deg_tag_all");
 
@@ -2801,7 +2801,7 @@ static void rna_def_mloopcol(BlenderRNA *brna)
   prop = RNA_def_property(srna, "name", PROP_STRING, PROP_NONE);
   RNA_def_struct_name_property(srna, prop);
   RNA_def_property_string_funcs(prop, NULL, NULL, "rna_MeshLoopLayer_name_set");
-  RNA_def_property_string_maxlength(prop, MAX_CUSTOMDATA_LAYER_NAME_GUI);
+  RNA_def_property_string_maxlength(prop, MAX_CUSTOMDATA_LAYER_NAME_NO_PREFIX);
   RNA_def_property_ui_text(prop, "Name", "Name of Vertex color layer");
   RNA_def_property_update(prop, 0, "rna_Mesh_update_data_legacy_deg_tag_all");
 
@@ -2862,7 +2862,7 @@ static void rna_def_MPropCol(BlenderRNA *brna)
   prop = RNA_def_property(srna, "name", PROP_STRING, PROP_NONE);
   RNA_def_struct_name_property(srna, prop);
   RNA_def_property_string_funcs(prop, NULL, NULL, "rna_MeshVertexLayer_name_set");
-  RNA_def_property_string_maxlength(prop, MAX_CUSTOMDATA_LAYER_NAME_GUI);
+  RNA_def_property_string_maxlength(prop, MAX_CUSTOMDATA_LAYER_NAME_NO_PREFIX);
   RNA_def_property_ui_text(prop, "Name", "Name of Sculpt Vertex color layer");
   RNA_def_property_update(prop, 0, "rna_Mesh_update_data_legacy_deg_tag_all");
 
@@ -2923,7 +2923,7 @@ static void rna_def_mproperties(BlenderRNA *brna)
     prop = RNA_def_property(srna, "name", PROP_STRING, PROP_NONE); \
     RNA_def_struct_name_property(srna, prop); \
     RNA_def_property_string_funcs(prop, NULL, NULL, "rna_MeshAnyLayer_name_set"); \
-    RNA_def_property_string_maxlength(prop, MAX_CUSTOMDATA_LAYER_NAME_GUI); \
+    RNA_def_property_string_maxlength(prop, MAX_CUSTOMDATA_LAYER_NAME_NO_PREFIX); \
     RNA_def_property_ui_text(prop, "Name", ""); \
     RNA_def_property_update(prop, 0, "rna_Mesh_update_data_legacy_deg_tag_all"); \
 \
@@ -2966,7 +2966,7 @@ static void rna_def_mproperties(BlenderRNA *brna)
     prop = RNA_def_property(srna, "name", PROP_STRING, PROP_NONE); \
     RNA_def_struct_name_property(srna, prop); \
     RNA_def_property_string_funcs(prop, NULL, NULL, "rna_MeshAnyLayer_name_set"); \
-    RNA_def_property_string_maxlength(prop, MAX_CUSTOMDATA_LAYER_NAME_GUI); \
+    RNA_def_property_string_maxlength(prop, MAX_CUSTOMDATA_LAYER_NAME_NO_PREFIX); \
     RNA_def_property_ui_text(prop, "Name", ""); \
     RNA_def_property_update(prop, 0, "rna_Mesh_update_data_legacy_deg_tag_all"); \
 \
@@ -3008,7 +3008,7 @@ static void rna_def_mproperties(BlenderRNA *brna)
     prop = RNA_def_property(srna, "name", PROP_STRING, PROP_NONE); \
     RNA_def_struct_name_property(srna, prop); \
     RNA_def_property_string_funcs(prop, NULL, NULL, "rna_MeshAnyLayer_name_set"); \
-    RNA_def_property_string_maxlength(prop, MAX_CUSTOMDATA_LAYER_NAME_GUI); \
+    RNA_def_property_string_maxlength(prop, MAX_CUSTOMDATA_LAYER_NAME_NO_PREFIX); \
     RNA_def_property_ui_text(prop, "Name", ""); \
     RNA_def_property_update(prop, 0, "rna_Mesh_update_data_legacy_deg_tag_all"); \
 \
@@ -3516,7 +3516,7 @@ static void rna_def_skin_vertices(BlenderRNA *brna, PropertyRNA *UNUSED(cprop))
   prop = RNA_def_property(srna, "name", PROP_STRING, PROP_NONE);
   RNA_def_struct_name_property(srna, prop);
   RNA_def_property_string_funcs(prop, NULL, NULL, "rna_MeshVertexLayer_name_set");
-  RNA_def_property_string_maxlength(prop, MAX_CUSTOMDATA_LAYER_NAME_GUI);
+  RNA_def_property_string_maxlength(prop, MAX_CUSTOMDATA_LAYER_NAME_NO_PREFIX);
   RNA_def_property_ui_text(prop, "Name", "Name of skin layer");
   RNA_def_property_update(prop, 0, "rna_Mesh_update_data_legacy_deg_tag_all");
 
@@ -3679,7 +3679,7 @@ static void rna_def_face_map(BlenderRNA *brna)
   prop = RNA_def_property(srna, "name", PROP_STRING, PROP_NONE);
   RNA_def_struct_name_property(srna, prop);
   RNA_def_property_string_funcs(prop, NULL, NULL, "rna_MeshPolyLayer_name_set");
-  RNA_def_property_string_maxlength(prop, MAX_CUSTOMDATA_LAYER_NAME_GUI);
+  RNA_def_property_string_maxlength(prop, MAX_CUSTOMDATA_LAYER_NAME_NO_PREFIX);
   RNA_def_property_ui_text(prop, "Name", "Name of face map layer");
   RNA_def_property_update(prop, 0, "rna_Mesh_update_data_legacy_deg_tag_all");
 
