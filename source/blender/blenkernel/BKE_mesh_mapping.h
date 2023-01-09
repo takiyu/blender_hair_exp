@@ -275,7 +275,7 @@ typedef bool (*MeshRemapIslandsCalc)(const float (*positions)[3],
  * Calculate 'generic' UV islands, i.e. based only on actual geometry data (edge seams),
  * not some UV layers coordinates.
  */
-bool BKE_mesh_calc_islands_loop_poly_edgeseam(const float (*positions)[3],
+bool BKE_mesh_calc_islands_loop_poly_edgeseam(const float (*vert_positions)[3],
                                               int totvert,
                                               const struct MEdge *edges,
                                               int totedge,
@@ -298,7 +298,7 @@ bool BKE_mesh_calc_islands_loop_poly_edgeseam(const float (*positions)[3],
  * Not sure it would be worth the more complex code, though,
  * those loops are supposed to be really quick to do.
  */
-bool BKE_mesh_calc_islands_loop_poly_uvmap(float (*positions)[3],
+bool BKE_mesh_calc_islands_loop_poly_uvmap(float (*vert_positions)[3],
                                            int totvert,
                                            struct MEdge *edges,
                                            int totedge,

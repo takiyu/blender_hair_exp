@@ -811,7 +811,7 @@ void BKE_pbvh_build_mesh(PBVH *pbvh,
                          Mesh *mesh,
                          const MPoly *mpoly,
                          const MLoop *mloop,
-                         float (*positions)[3],
+                         float (*vert_positions)[3],
                          int totvert,
                          struct CustomData *vdata,
                          struct CustomData *ldata,
@@ -830,7 +830,7 @@ void BKE_pbvh_build_mesh(PBVH *pbvh,
       &mesh->pdata, CD_PROP_INT32, "material_index");
   pbvh->mloop = mloop;
   pbvh->looptri = looptri;
-  pbvh->vert_positions = positions;
+  pbvh->vert_positions = vert_positions;
   BKE_mesh_vertex_normals_ensure(mesh);
   pbvh->vert_normals = BKE_mesh_vertex_normals_for_write(mesh);
   pbvh->hide_vert = (bool *)CustomData_get_layer_named(&mesh->vdata, CD_PROP_BOOL, ".hide_vert");
@@ -867,7 +867,7 @@ void BKE_pbvh_build_mesh(PBVH *pbvh,
     BB_reset((BB *)bbc);
 
     for (int j = 0; j < sides; j++) {
-      BB_expand((BB *)bbc, positions[pbvh->mloop[lt->tri[j]].v]);
+      BB_expand((BB *)bbc, vert_positions[pbvh->mloop[lt->tri[j]].v]);
     }
 
     BBC_update_centroid(bbc);
