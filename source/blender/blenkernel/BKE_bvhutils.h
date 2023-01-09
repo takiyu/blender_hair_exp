@@ -58,7 +58,7 @@ typedef struct BVHTreeFromMesh {
   BVHTree_RayCastCallback raycast_callback;
 
   /* Vertex array, so that callbacks have instant access to data. */
-  const float (*positions)[3];
+  const float (*vert_positions)[3];
   const struct MEdge *edge;
   const struct MFace *face;
   const int *corner_verts;

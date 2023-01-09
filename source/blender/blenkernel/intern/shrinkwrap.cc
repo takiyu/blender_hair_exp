@@ -938,7 +938,7 @@ static void target_project_edge(const ShrinkwrapTreeData *tree,
 {
   const BVHTreeFromMesh *data = &tree->treeData;
   const MEdge *edge = &data->edge[eidx];
-  const float *vedge_co[2] = {data->positions[edge->v1], data->positions[edge->v2]};
+  const float *vedge_co[2] = {data->vert_positions[edge->v1], data->vert_positions[edge->v2]};
 
 #ifdef TRACE_TARGET_PROJECT
   printf("EDGE %d (%.3f,%.3f,%.3f) (%.3f,%.3f,%.3f)\n",
@@ -1017,8 +1017,9 @@ static void mesh_looptri_target_project(void *userdata,
   const int tri_verts[3] = {data->corner_verts[lt->tri[0]],
                             data->corner_verts[lt->tri[1]],
                             data->corner_verts[lt->tri[2]]};
-  const float *vtri_co[3] = {
-      data->positions[tri_verts[0]], data->positions[tri_verts[1]], data->positions[tri_verts[2]]};
+  const float *vtri_co[3] = {data->vert_positions[tri_verts[0]],
+                             data->vert_positions[tri_verts[1]],
+                             data->vert_positions[tri_verts[2]]};
   float raw_hit_co[3], hit_co[3], hit_no[3], dist_sq, vtri_no[3][3];
 
   /* First find the closest point and bail out if it's worse than the current solution. */
@@ -1206,9 +1207,9 @@ void BKE_shrinkwrap_compute_smooth_normal(const ShrinkwrapTreeData *tree,
     }
 
     interp_weights_tri_v3(w,
-                          treeData->positions[vert_indices[0]],
-                          treeData->positions[vert_indices[1]],
-                          treeData->positions[vert_indices[2]],
+                          treeData->vert_positions[vert_indices[0]],
+                          treeData->vert_positions[vert_indices[1]],
+                          treeData->vert_positions[vert_indices[2]],
                           tmp_co);
 
     /* Interpolate using weights. */

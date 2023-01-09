@@ -403,7 +403,7 @@ void BlenderFileLoader::insertShapeNode(Object *ob, Mesh *me, int id)
 {
   char *name = ob->id.name + 2;
 
-  const Span<float3> mesh_positions = me->vert_positions();
+  const Span<float3> vert_positions = me->vert_positions();
   const Span<MPoly> mesh_polys = me->polys();
   const Span<int> corner_verts = me->corner_verts();
 
@@ -412,7 +412,7 @@ void BlenderFileLoader::insertShapeNode(Object *ob, Mesh *me, int id)
   MLoopTri *mlooptri = (MLoopTri *)MEM_malloc_arrayN(tottri, sizeof(*mlooptri), __func__);
   BKE_mesh_recalc_looptri(corner_verts.data(),
                           mesh_polys.data(),
-                          reinterpret_cast<const float(*)[3]>(mesh_positions.data()),
+                          reinterpret_cast<const float(*)[3]>(vert_positions.data()),
                           me->totloop,
                           me->totpoly,
                           mlooptri);
@@ -450,9 +450,9 @@ void BlenderFileLoader::insertShapeNode(Object *ob, Mesh *me, int id)
   for (int a = 0; a < tottri; a++) {
     const MLoopTri *lt = &mlooptri[a];
 
-    copy_v3_v3(v1, mesh_positions[corner_verts[lt->tri[0]]]);
-    copy_v3_v3(v2, mesh_positions[corner_verts[lt->tri[1]]]);
-    copy_v3_v3(v3, mesh_positions[corner_verts[lt->tri[2]]]);
+    copy_v3_v3(v1, vert_positions[corner_verts[lt->tri[0]]]);
+    copy_v3_v3(v2, vert_positions[corner_verts[lt->tri[1]]]);
+    copy_v3_v3(v3, vert_positions[corner_verts[lt->tri[2]]]);
 
     mul_m4_v3(obmat, v1);
     mul_m4_v3(obmat, v2);
@@ -523,9 +523,9 @@ void BlenderFileLoader::insertShapeNode(Object *ob, Mesh *me, int id)
     const MPoly *mp = &mesh_polys[lt->poly];
     Material *mat = BKE_object_material_get(ob, material_indices[lt->poly] + 1);
 
-    copy_v3_v3(v1, mesh_positions[corner_verts[lt->tri[0]]]);
-    copy_v3_v3(v2, mesh_positions[corner_verts[lt->tri[1]]]);
-    copy_v3_v3(v3, mesh_positions[corner_verts[lt->tri[2]]]);
+    copy_v3_v3(v1, vert_positions[corner_verts[lt->tri[0]]]);
+    copy_v3_v3(v2, vert_positions[corner_verts[lt->tri[1]]]);
+    copy_v3_v3(v3, vert_positions[corner_verts[lt->tri[2]]]);
 
     mul_m4_v3(obmat, v1);
     mul_m4_v3(obmat, v2);

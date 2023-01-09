@@ -129,7 +129,7 @@ static void palette_undo_preserve(BlendLibReader * /*reader*/, ID *id_new, ID *i
   /* NOTE: We do not swap IDProperties, as dealing with potential ID pointers in those would be
    *       fairly delicate. */
   BKE_lib_id_swap(nullptr, id_new, id_old);
-  SWAP(IDProperty *, id_new->properties, id_old->properties);
+  std::swap(id_new->properties, id_old->properties);
 }
 
 IDTypeInfo IDType_ID_PAL = {
@@ -1081,7 +1081,7 @@ bool BKE_paint_ensure(ToolSettings *ts, Paint **r_paint)
       Paint paint_test = **r_paint;
       BKE_paint_runtime_init(ts, *r_paint);
       /* Swap so debug doesn't hide errors when release fails. */
-      SWAP(Paint, **r_paint, paint_test);
+      std::swap(**r_paint, paint_test);
       BLI_assert(paint_test.runtime.ob_mode == (*r_paint)->runtime.ob_mode);
       BLI_assert(paint_test.runtime.tool_offset == (*r_paint)->runtime.tool_offset);
 #endif
@@ -1695,7 +1695,7 @@ static void sculpt_update_object(
 
     /* These are assigned to the base mesh in Multires. This is needed because Face Sets operators
      * and tools use the Face Sets data from the base mesh when Multires is active. */
-    ss->positions = BKE_mesh_vert_positions_for_write(me);
+    ss->vert_positions = BKE_mesh_vert_positions_for_write(me);
     ss->mpoly = BKE_mesh_polys(me);
     ss->corner_verts = me->corner_verts().data();
   }
@@ -1703,7 +1703,7 @@ static void sculpt_update_object(
     ss->totvert = me->totvert;
     ss->totpoly = me->totpoly;
     ss->totfaces = me->totpoly;
-    ss->positions = BKE_mesh_vert_positions_for_write(me);
+    ss->vert_positions = BKE_mesh_vert_positions_for_write(me);
     ss->mpoly = BKE_mesh_polys(me);
     ss->corner_verts = me->corner_verts().data();
     ss->multires.active = false;

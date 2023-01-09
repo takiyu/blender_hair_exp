@@ -163,7 +163,7 @@ static void get_closest_mesh_corners(const Mesh &mesh,
                                      const MutableSpan<float> r_distances_sq,
                                      const MutableSpan<float3> r_positions)
 {
-  const Span<float3> mesh_positions = mesh.vert_positions();
+  const Span<float3> vert_positions = mesh.vert_positions();
   const Span<MPoly> polys = mesh.polys();
   const Span<int> corner_verts = mesh.corner_verts();
 
@@ -182,7 +182,7 @@ static void get_closest_mesh_corners(const Mesh &mesh,
     int closest_loop_index = 0;
     for (const int loop_index : IndexRange(poly.loopstart, poly.totloop)) {
       const int vertex_index = corner_verts[loop_index];
-      const float distance_sq = math::distance_squared(position, mesh_positions[vertex_index]);
+      const float distance_sq = math::distance_squared(position, vert_positions[vertex_index]);
       if (distance_sq < min_distance_sq) {
         min_distance_sq = distance_sq;
         closest_loop_index = loop_index;
@@ -193,7 +193,7 @@ static void get_closest_mesh_corners(const Mesh &mesh,
       r_corner_indices[i] = closest_loop_index;
     }
     if (!r_positions.is_empty()) {
-      r_positions[i] = mesh_positions[closest_vert_index];
+      r_positions[i] = vert_positions[closest_vert_index];
     }
     if (!r_distances_sq.is_empty()) {
       r_distances_sq[i] = min_distance_sq;
@@ -230,34 +230,28 @@ static const GeometryComponent *find_source_component(const GeometrySet &geometr
   return nullptr;
 }
 
-class SampleNearestFunction : public fn::MultiFunction {
+class SampleNearestFunction : public mf::MultiFunction {
   GeometrySet source_;
   eAttrDomain domain_;
 
   const GeometryComponent *src_component_;
 
-  fn::MFSignature signature_;
+  mf::Signature signature_;
 
  public:
   SampleNearestFunction(GeometrySet geometry, eAttrDomain domain)
       : source_(std::move(geometry)), domain_(domain)
   {
     source_.ensure_owns_direct_data();
-    signature_ = this->create_signature();
-    this->set_signature(&signature_);
-
     this->src_component_ = find_source_component(source_, domain_);
+
+    mf::SignatureBuilder builder{"Sample Nearest", signature_};
+    builder.single_input<float3>("Position");
+    builder.single_output<int>("Index");
+    this->set_signature(&signature_);
   }
 
-  fn::MFSignature create_signature()
-  {
-    fn::MFSignatureBuilder signature{"Sample Nearest"};
-    signature.single_input<float3>("Position");
-    signature.single_output<int>("Index");
-    return signature.build();
-  }
-
-  void call(IndexMask mask, fn::MFParams params, fn::MFContext /*context*/) const override
+  void call(IndexMask mask, mf::MFParams params, mf::Context /*context*/) const override
   {
     const VArray<float3> &positions = params.readonly_single_input<float3>(0, "Position");
     MutableSpan<int> indices = params.uninitialized_single_output<int>(1, "Index");

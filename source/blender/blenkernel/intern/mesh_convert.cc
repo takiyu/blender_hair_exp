@@ -645,11 +645,11 @@ void BKE_pointcloud_from_mesh(Mesh *me, PointCloud *pointcloud)
   bke::AttributeAccessor mesh_attributes = me->attributes();
   bke::MutableAttributeAccessor point_attributes = pointcloud->attributes_for_write();
 
-  const VArray<float3> mesh_positions = mesh_attributes.lookup_or_default<float3>(
+  const VArray<float3> vert_positions = mesh_attributes.lookup_or_default<float3>(
       "position", ATTR_DOMAIN_POINT, float3(0));
   bke::SpanAttributeWriter<float3> point_positions =
       point_attributes.lookup_or_add_for_write_only_span<float3>("position", ATTR_DOMAIN_POINT);
-  mesh_positions.materialize(point_positions.span);
+  vert_positions.materialize(point_positions.span);
   point_positions.finish();
 }
 
@@ -823,7 +823,9 @@ static Mesh *mesh_new_from_evaluated_curve_type_object(const Object *evaluated_o
     return BKE_mesh_copy_for_eval(mesh, false);
   }
   if (const Curves *curves = get_evaluated_curves_from_object(evaluated_object)) {
-    return blender::bke::curve_to_wire_mesh(blender::bke::CurvesGeometry::wrap(curves->geometry));
+    const blender::bke::AnonymousAttributePropagationInfo propagation_info;
+    return blender::bke::curve_to_wire_mesh(blender::bke::CurvesGeometry::wrap(curves->geometry),
+                                            propagation_info);
   }
   return nullptr;
 }

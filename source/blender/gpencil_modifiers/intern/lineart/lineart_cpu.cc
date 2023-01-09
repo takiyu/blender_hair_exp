@@ -1881,7 +1881,7 @@ static void lineart_edge_neighbor_init_task(void *__restrict userdata,
   adj_e->v1 = corner_verts[looptri->tri[i % 3]];
   adj_e->v2 = corner_verts[looptri->tri[(i + 1) % 3]];
   if (adj_e->v1 > adj_e->v2) {
-    SWAP(uint32_t, adj_e->v1, adj_e->v2);
+   std::swap( adj_e->v1, adj_e->v2);
   }
   edge_nabr->e = -1;
 
@@ -2454,9 +2454,10 @@ static void lineart_object_load_single_instance(LineartData *ld,
   }
   if (ob->type == OB_MESH) {
     use_mesh = BKE_object_get_evaluated_mesh(ob);
-    if (use_mesh->edit_mesh) {
+    if ((!use_mesh) || use_mesh->edit_mesh) {
       /* If the object is being edited, then the mesh is not evaluated fully into the final
-       * result, do not load them. */
+       * result, do not load them. This could be caused by incorrect evaluation order due to
+       * the way line art uses depsgraph.See T102612 for explanation of this workaround. */
       return;
     }
   }
@@ -2464,7 +2465,7 @@ static void lineart_object_load_single_instance(LineartData *ld,
     use_mesh = BKE_mesh_new_from_object(depsgraph, ob, true, true);
   }
 
-  /* In case we still can not get any mesh geometry data from the object */
+  /* In case we still can not get any mesh geometry data from the object, same as above. */
   if (!use_mesh) {
     return;
   }
@@ -3270,7 +3271,7 @@ static void lineart_add_isec_thread(LineartIsecThread *th,
   isec_single->tri1 = tri1;
   isec_single->tri2 = tri2;
   if (tri1->target_reference > tri2->target_reference) {
-    SWAP(LineartTriangle *, isec_single->tri1, isec_single->tri2);
+   std::swap( isec_single->tri1, isec_single->tri2);
   }
   th->current++;
 }

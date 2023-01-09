@@ -415,7 +415,7 @@ static bool sculpt_undo_restore_coords(bContext *C, Depsgraph *depsgraph, Sculpt
 
     /* No need for float comparison here (memory is exactly equal or not). */
     index = unode->index;
-    float(*positions)[3] = ss->positions;
+    float(*positions)[3] = ss->vert_positions;
 
     if (ss->shapekey_active) {
       float(*vertCos)[3];

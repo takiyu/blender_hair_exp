@@ -23,7 +23,7 @@
 #include "BLI_index_range.hh"
 #include "BLI_map.hh"
 #include "BLI_math_color.h"
-#include "BLI_math_vec_types.hh"
+#include "BLI_math_vector_types.hh"
 #include "BLI_string_ref.hh"
 #include "BLI_timeit.hh"
 #include "BLI_utildefines.h"
@@ -347,7 +347,7 @@ struct PBVHBatches {
         if (!(mp->flag & ME_SMOOTH)) {
           smooth = true;
           BKE_mesh_calc_poly_normal(
-              mp, &args->corner_verts[mp->loopstart], args->mesh_positions, fno);
+              mp, &args->corner_verts[mp->loopstart], args->vert_positions, fno);
           normal_float_to_short_v3(no, fno);
         }
         else {
@@ -589,7 +589,7 @@ struct PBVHBatches {
         foreach_faces(
             [&](int /*buffer_i*/, int /*tri_i*/, int vertex_i, const MLoopTri * /*tri*/) {
               *static_cast<float3 *>(
-                  GPU_vertbuf_raw_step(&access)) = args->mesh_positions[vertex_i];
+                  GPU_vertbuf_raw_step(&access)) = args->vert_positions[vertex_i];
             });
         break;
       case CD_PBVH_NO_TYPE:

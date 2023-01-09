@@ -1196,7 +1196,7 @@ static bool mesh_calc_islands_loop_poly_uv(const MEdge *edges,
   return true;
 }
 
-bool BKE_mesh_calc_islands_loop_poly_edgeseam(const float (*positions)[3],
+bool BKE_mesh_calc_islands_loop_poly_edgeseam(const float (*vert_positions)[3],
                                               const int totvert,
                                               const MEdge *edges,
                                               const int totedge,
@@ -1207,7 +1207,7 @@ bool BKE_mesh_calc_islands_loop_poly_edgeseam(const float (*positions)[3],
                                               const int totloop,
                                               MeshIslandStore *r_island_store)
 {
-  UNUSED_VARS(positions, totvert);
+  UNUSED_VARS(vert_positions, totvert);
   return mesh_calc_islands_loop_poly_uv(edges,
                                         totedge,
                                         polys,
@@ -1219,7 +1219,7 @@ bool BKE_mesh_calc_islands_loop_poly_edgeseam(const float (*positions)[3],
                                         r_island_store);
 }
 
-bool BKE_mesh_calc_islands_loop_poly_uvmap(float (*positions)[3],
+bool BKE_mesh_calc_islands_loop_poly_uvmap(float (*vert_positions)[3],
                                            const int totvert,
                                            MEdge *edges,
                                            const int totedge,
@@ -1231,7 +1231,7 @@ bool BKE_mesh_calc_islands_loop_poly_uvmap(float (*positions)[3],
                                            const MLoopUV *luvs,
                                            MeshIslandStore *r_island_store)
 {
-  UNUSED_VARS(positions, totvert);
+  UNUSED_VARS(vert_positions, totvert);
   BLI_assert(luvs != nullptr);
   return mesh_calc_islands_loop_poly_uv(
       edges, totedge, polys, totpoly, corner_verts, corner_edges, totloop, luvs, r_island_store);

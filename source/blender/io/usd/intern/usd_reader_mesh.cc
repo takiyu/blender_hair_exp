@@ -15,7 +15,7 @@
 
 #include "BLI_math.h"
 #include "BLI_math_geom.h"
-#include "BLI_math_vec_types.hh"
+#include "BLI_math_vector_types.hh"
 #include "BLI_span.hh"
 #include "BLI_string.h"
 
@@ -695,9 +695,9 @@ void USDMeshReader::read_mesh_sample(ImportSettings *settings,
    * in code that expect this data to be there. */
 
   if (new_mesh || (settings->read_flag & MOD_MESHSEQ_READ_VERT) != 0) {
-    MutableSpan<float3> mesh_positions = mesh->vert_positions_for_write();
+    MutableSpan<float3> vert_positions = mesh->vert_positions_for_write();
     for (int i = 0; i < positions_.size(); i++) {
-      mesh_positions[i] = {positions_[i][0], positions_[i][1], positions_[i][2]};
+      vert_positions[i] = {positions_[i][0], positions_[i][1], positions_[i][2]};
     }
     BKE_mesh_tag_coords_changed(mesh);
 

@@ -2074,7 +2074,7 @@ static void do_wpaint_brush_smear_task_cb_ex(void *__restrict userdata,
         const int v_index = has_grids ? ss->corner_verts[vd.grid_indices[vd.g]] :
                                         vd.vert_indices[vd.i];
         const float grid_alpha = has_grids ? 1.0f / vd.gridsize : 1.0f;
-        const float3 &mv_curr = ss->positions[v_index];
+        const float3 &mv_curr = ss->vert_positions[v_index];
 
         /* If the vertex is selected */
         if (!(use_face_sel || use_vert_sel) || select_vert[v_index]) {
@@ -2101,7 +2101,7 @@ static void do_wpaint_brush_smear_task_cb_ex(void *__restrict userdata,
                 const int other_corner_i = mp->loopstart + k;
                 const int v_other_index = ss->corner_verts[other_corner_i];
                 if (v_other_index != v_index) {
-                  const float3 &mv_other = ss->positions[v_other_index];
+                  const float3 &mv_other = ss->vert_positions[v_other_index];
 
                   /* Get the direction from the selected vert to the neighbor. */
                   float other_dir[3];
@@ -3311,7 +3311,7 @@ static void do_vpaint_brush_smear(bContext *C,
             const int v_index = has_grids ? ss->corner_verts[vd.grid_indices[vd.g]] :
                                             vd.vert_indices[vd.i];
             const float grid_alpha = has_grids ? 1.0f / vd.gridsize : 1.0f;
-            const float3 &mv_curr = &ss->positions[v_index];
+            const float3 &mv_curr = &ss->vert_positions[v_index];
 
             /* if the vertex is selected for painting. */
             if (!use_vert_sel || select_vert[v_index]) {
@@ -3348,7 +3348,7 @@ static void do_vpaint_brush_smear(bContext *C,
                       const int other_corner_i = mp->loopstart + k;
                       const int v_other_index = ss->corner_verts[other_corner_i];
                       if (v_other_index != v_index) {
-                        const float3 &mv_other = &ss->positions[v_other_index];
+                        const float3 &mv_other = &ss->vert_positions[v_other_index];
 
                         /* Get the direction from the
                          * selected vert to the neighbor. */

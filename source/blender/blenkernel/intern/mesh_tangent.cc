@@ -76,7 +76,7 @@ struct BKEMeshToTangent {
   int num_polys;                  /* number of polygons */
 };
 
-void BKE_mesh_calc_loop_tangent_single_ex(const float (*positions)[3],
+void BKE_mesh_calc_loop_tangent_single_ex(const float (*vert_positions)[3],
                                           const int /*numVerts*/,
                                           const int *corner_verts,
                                           float (*r_looptangent)[4],
@@ -91,7 +91,7 @@ void BKE_mesh_calc_loop_tangent_single_ex(const float (*positions)[3],
   BKEMeshToTangent mesh_to_tangent;
   mesh_to_tangent.mpolys = mpolys;
   mesh_to_tangent.corner_verts = corner_verts;
-  mesh_to_tangent.positions = positions;
+  mesh_to_tangent.positions = vert_positions;
   mesh_to_tangent.luvs = loopuvs;
   mesh_to_tangent.loop_normals = loop_normals;
   mesh_to_tangent.tangents = r_looptangent;
@@ -385,7 +385,7 @@ void BKE_mesh_calc_loop_tangent_step_0(const CustomData *loopData,
   }
 }
 
-void BKE_mesh_calc_loop_tangent_ex(const float (*positions)[3],
+void BKE_mesh_calc_loop_tangent_ex(const float (*vert_positions)[3],
                                    const MPoly *mpoly,
                                    const uint mpoly_len,
                                    const int *corner_verts,
@@ -490,7 +490,7 @@ void BKE_mesh_calc_loop_tangent_ex(const float (*positions)[3],
         mesh2tangent->face_as_quad_map = face_as_quad_map;
         mesh2tangent->num_face_as_quad_map = num_face_as_quad_map;
 #endif
-        mesh2tangent->positions = positions;
+        mesh2tangent->positions = vert_positions;
         mesh2tangent->vert_normals = vert_normals;
         mesh2tangent->mpoly = mpoly;
         mesh2tangent->corner_verts = corner_verts;

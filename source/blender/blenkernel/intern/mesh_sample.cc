@@ -408,14 +408,14 @@ int sample_surface_points_projected(
   return point_count;
 }
 
-float3 compute_bary_coord_in_triangle(const Span<float3> positions,
+float3 compute_bary_coord_in_triangle(const Span<float3> vert_positions,
                                       const Span<int> corner_verts,
                                       const MLoopTri &looptri,
                                       const float3 &position)
 {
-  const float3 &v0 = positions[corner_verts[looptri.tri[0]]];
-  const float3 &v1 = positions[corner_verts[looptri.tri[1]]];
-  const float3 &v2 = positions[corner_verts[looptri.tri[2]]];
+  const float3 &v0 = vert_positions[corner_verts[looptri.tri[0]]];
+  const float3 &v1 = vert_positions[corner_verts[looptri.tri[1]]];
+  const float3 &v2 = vert_positions[corner_verts[looptri.tri[2]]];
   float3 bary_coords;
   interp_weights_tri_v3(bary_coords, v0, v1, v2, position);
   return bary_coords;

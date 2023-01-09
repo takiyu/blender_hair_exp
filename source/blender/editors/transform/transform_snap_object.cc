@@ -254,7 +254,7 @@ static void snap_object_data_mesh_get(SnapObjectContext *sctx,
   BKE_bvhtree_from_mesh_get(
       r_treedata, me_eval, use_hide ? BVHTREE_FROM_LOOPTRI_NO_HIDDEN : BVHTREE_FROM_LOOPTRI, 4);
 
-  BLI_assert(reinterpret_cast<const float3 *>(r_treedata->positions) == positions.data());
+  BLI_assert(reinterpret_cast<const float3 *>(r_treedata->vert_positions) == positions.data());
   BLI_assert(r_treedata->corner_verts == corner_verts.data());
   BLI_assert(!polys.data() || r_treedata->looptri);
   BLI_assert(!r_treedata->tree || r_treedata->looptri);
@@ -620,7 +620,7 @@ static void mesh_looptri_raycast_backface_culling_cb(void *userdata,
                                                      BVHTreeRayHit *hit)
 {
   const BVHTreeFromMesh *data = (BVHTreeFromMesh *)userdata;
-  const float(*positions)[3] = data->positions;
+  const float(*positions)[3] = data->vert_positions;
   const MLoopTri *lt = &data->looptri[index];
   const float *vtri_co[3] = {
       positions[data->corner_verts[lt->tri[0]]],

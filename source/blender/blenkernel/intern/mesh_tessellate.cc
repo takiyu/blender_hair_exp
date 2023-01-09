@@ -305,24 +305,24 @@ static void mesh_recalc_looptri__multi_threaded(const int *corner_verts,
 
 void BKE_mesh_recalc_looptri(const int *corner_verts,
                              const MPoly *mpoly,
-                             const float (*positions)[3],
+                             const float (*vert_positions)[3],
                              int totloop,
                              int totpoly,
                              MLoopTri *mlooptri)
 {
   if (totloop < MESH_FACE_TESSELLATE_THREADED_LIMIT) {
     mesh_recalc_looptri__single_threaded(
-        corner_verts, mpoly, positions, totloop, totpoly, mlooptri, nullptr);
+        corner_verts, mpoly, vert_positions, totloop, totpoly, mlooptri, nullptr);
   }
   else {
     mesh_recalc_looptri__multi_threaded(
-        corner_verts, mpoly, positions, totloop, totpoly, mlooptri, nullptr);
+        corner_verts, mpoly, vert_positions, totloop, totpoly, mlooptri, nullptr);
   }
 }
 
 void BKE_mesh_recalc_looptri_with_normals(const int *corner_verts,
                                           const MPoly *mpoly,
-                                          const float (*positions)[3],
+                                          const float (*vert_positions)[3],
                                           int totloop,
                                           int totpoly,
                                           MLoopTri *mlooptri,
@@ -331,11 +331,11 @@ void BKE_mesh_recalc_looptri_with_normals(const int *corner_verts,
   BLI_assert(poly_normals != nullptr);
   if (totloop < MESH_FACE_TESSELLATE_THREADED_LIMIT) {
     mesh_recalc_looptri__single_threaded(
-        corner_verts, mpoly, positions, totloop, totpoly, mlooptri, poly_normals);
+        corner_verts, mpoly, vert_positions, totloop, totpoly, mlooptri, poly_normals);
   }
   else {
     mesh_recalc_looptri__multi_threaded(
-        corner_verts, mpoly, positions, totloop, totpoly, mlooptri, poly_normals);
+        corner_verts, mpoly, vert_positions, totloop, totpoly, mlooptri, poly_normals);
   }
 }
 

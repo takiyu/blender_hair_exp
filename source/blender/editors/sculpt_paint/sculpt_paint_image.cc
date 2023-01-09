@@ -124,7 +124,7 @@ template<typename ImageBuffer> class PaintingKernel {
   SculptSession *ss;
   const Brush *brush;
   const int thread_id;
-  const float (*positions_)[3];
+  const float3 *vert_positions_;
 
   float4 brush_color;
   float brush_strength;
@@ -140,7 +140,10 @@ template<typename ImageBuffer> class PaintingKernel {
                           const Brush *brush,
                           const int thread_id,
                           const float (*positions)[3])
-      : ss(ss), brush(brush), thread_id(thread_id), positions_(positions)
+      : ss(ss),
+        brush(brush),
+        thread_id(thread_id),
+        vert_positions_(reinterpret_cast<const float3 *>(positions))
   {
     init_brush_strength();
     init_brush_test();
@@ -268,9 +271,9 @@ template<typename ImageBuffer> class PaintingKernel {
                              barycentric_weights.y,
                              1.0f - barycentric_weights.x - barycentric_weights.y);
     interp_v3_v3v3v3(result,
-                     positions_[vert_indices[0]],
-                     positions_[vert_indices[1]],
-                     positions_[vert_indices[2]],
+                     vert_positions_[vert_indices[0]],
+                     vert_positions_[vert_indices[1]],
+                     vert_positions_[vert_indices[2]],
                      barycentric);
     return result;
   }

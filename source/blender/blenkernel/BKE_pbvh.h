@@ -265,7 +265,7 @@ void BKE_pbvh_build_mesh(PBVH *pbvh,
                          struct Mesh *mesh,
                          const struct MPoly *mpoly,
                          const int *corner_verts,
-                         float (*positions)[3],
+                         float (*vert_positions)[3],
                          int totvert,
                          struct CustomData *vdata,
                          struct CustomData *ldata,
@@ -582,7 +582,7 @@ typedef struct PBVHVertexIter {
   int gridsize;
 
   /* mesh */
-  float (*mesh_positions)[3];
+  float (*vert_positions)[3];
   float (*vert_normals)[3];
   const bool *hide_vert;
   int totvert;
@@ -642,7 +642,7 @@ void pbvh_vertex_iter_init(PBVH *pbvh, PBVHNode *node, PBVHVertexIter *vi, int m
             } \
           } \
         } \
-        else if (vi.mesh_positions) { \
+        else if (vi.vert_positions) { \
           if (vi.respect_hide) { \
             vi.visible = !(vi.hide_vert && vi.hide_vert[vi.vert_indices[vi.gx]]); \
             if (mode == PBVH_ITER_UNIQUE && !vi.visible) { \
@@ -652,7 +652,7 @@ void pbvh_vertex_iter_init(PBVH *pbvh, PBVHNode *node, PBVHVertexIter *vi, int m
           else { \
             BLI_assert(vi.visible); \
           } \
-          vi.co = vi.mesh_positions[vi.vert_indices[vi.gx]]; \
+          vi.co = vi.vert_positions[vi.vert_indices[vi.gx]]; \
           vi.no = vi.vert_normals[vi.vert_indices[vi.gx]]; \
           vi.index = vi.vertex.i = vi.vert_indices[vi.i]; \
           if (vi.vmask) { \

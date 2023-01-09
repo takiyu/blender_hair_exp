@@ -3408,7 +3408,7 @@ static void mesh_tris_spherecast_dp(void *userdata,
                                     BVHTreeRayHit *hit)
 {
   const BVHTreeFromMesh *data = (BVHTreeFromMesh *)userdata;
-  const float(*positions)[3] = data->positions;
+  const float(*positions)[3] = data->vert_positions;
   const MLoopTri *mlooptri = data->looptri;
   const int *corner_verts = data->corner_verts;
 
@@ -3440,7 +3440,7 @@ static void mesh_tris_nearest_point_dp(void *userdata,
                                        BVHTreeNearest *nearest)
 {
   const BVHTreeFromMesh *data = (BVHTreeFromMesh *)userdata;
-  const float(*positions)[3] = data->positions;
+  const float(*positions)[3] = data->vert_positions;
   const MLoopTri *mlooptri = data->looptri;
   const int *corner_verts = data->corner_verts;
   float nearest_tmp[3], dist_sq;

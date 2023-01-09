@@ -651,7 +651,7 @@ void heat_bone_weighting(Object *ob,
   int a, tris_num, j, bbone, firstsegment, lastsegment;
   bool use_topology = (me->editflag & ME_EDIT_MIRROR_TOPO) != 0;
 
-  const float(*mesh_positions)[3] = BKE_mesh_vert_positions(me);
+  const float(*vert_positions)[3] = BKE_mesh_vert_positions(me);
   const MPoly *polys = BKE_mesh_polys(me);
   const int *corner_verts = BKE_mesh_corner_verts(me);
   bool use_vert_sel = (me->editflag & ME_EDIT_PAINT_VERT_SEL) != 0;
@@ -686,7 +686,7 @@ void heat_bone_weighting(Object *ob,
         for (a = 0, mp = polys; a < me->totpoly; mp++, a++) {
           if (select_poly[a]) {
             for (j = 0; j < mp->totloop; j++) {
-            const int vert_i = corner_verts[mp->loopstart + j];
+              const int vert_i = corner_verts[mp->loopstart + j];
               mask[vert_i] = 1;
             }
           }
@@ -701,7 +701,7 @@ void heat_bone_weighting(Object *ob,
   sys->heat.tris_num = poly_to_tri_count(me->totpoly, me->totloop);
   mlooptri = MEM_mallocN(sizeof(*sys->heat.mlooptri) * sys->heat.tris_num, __func__);
 
-  BKE_mesh_recalc_looptri(corner_verts, polys, mesh_positions, me->totloop, me->totpoly, mlooptri);
+  BKE_mesh_recalc_looptri(corner_verts, polys, vert_positions, me->totloop, me->totpoly, mlooptri);
 
   sys->heat.mlooptri = mlooptri;
   sys->heat.corner_verts = corner_verts;

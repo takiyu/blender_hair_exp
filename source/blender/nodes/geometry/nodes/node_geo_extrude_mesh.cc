@@ -27,7 +27,7 @@ static void node_declare(NodeDeclarationBuilder &b)
   b.add_input<decl::Bool>(N_("Selection")).default_value(true).field_on_all().hide_value();
   b.add_input<decl::Vector>(N_("Offset"))
       .subtype(PROP_TRANSLATION)
-      .implicit_field(implicit_field_inputs::normal)
+      .implicit_field_on_all(implicit_field_inputs::normal)
       .hide_value();
   b.add_input<decl::Float>(N_("Offset Scale")).default_value(1.0f).field_on_all();
   b.add_input<decl::Bool>(N_("Individual")).default_value(true);
@@ -61,8 +61,8 @@ static void node_update(bNodeTree *ntree, bNode *node)
 }
 
 struct AttributeOutputs {
-  StrongAnonymousAttributeID top_id;
-  StrongAnonymousAttributeID side_id;
+  AutoAnonymousAttributeID top_id;
+  AutoAnonymousAttributeID side_id;
 };
 
 static void save_selection_as_attribute(Mesh &mesh,
@@ -234,7 +234,7 @@ static void extrude_mesh_vertices(Mesh &mesh,
     if (!ELEM(meta_data.domain, ATTR_DOMAIN_POINT, ATTR_DOMAIN_EDGE)) {
       return true;
     }
-    if (id.is_named() && ELEM(id.name(), ".corner_vert", ".corner_edge")) {
+    if (ELEM(id.name(), ".corner_vert", ".corner_edge")) {
       return true;
     }
     if (meta_data.data_type == CD_PROP_STRING) {
@@ -497,7 +497,7 @@ static void extrude_mesh_edges(Mesh &mesh,
     if (meta_data.data_type == CD_PROP_STRING) {
       return true;
     }
-    if (id.is_named() && ELEM(id.name(), ".corner_vert", ".corner_edge")) {
+    if (ELEM(id.name(), ".corner_vert", ".corner_edge")) {
       return true;
     }
     GSpanAttributeWriter attribute = attributes.lookup_or_add_for_write_span(
@@ -899,7 +899,7 @@ static void extrude_mesh_face_regions(Mesh &mesh,
     if (meta_data.data_type == CD_PROP_STRING) {
       return true;
     }
-    if (id.is_named() && ELEM(id.name(), ".corner_vert", ".corner_edge")) {
+    if (ELEM(id.name(), ".corner_vert", ".corner_edge")) {
       return true;
     }
     GSpanAttributeWriter attribute = attributes.lookup_or_add_for_write_span(
@@ -1196,7 +1196,7 @@ static void extrude_individual_mesh_faces(Mesh &mesh,
     if (meta_data.data_type == CD_PROP_STRING) {
       return true;
     }
-    if (id.is_named() && ELEM(id.name(), ".corner_vert", ".corner_edge")) {
+    if (ELEM(id.name(), ".corner_vert", ".corner_edge")) {
       return true;
     }
     GSpanAttributeWriter attribute = attributes.lookup_or_add_for_write_span(
@@ -1357,21 +1357,17 @@ static void node_geo_exec(GeoNodeExecParams params)
 
   /* Create a combined field from the offset and the scale so the field evaluator
    * can take care of the multiplication and to simplify each extrude function. */
-  static fn::CustomMF_SI_SI_SO<float3, float, float3> multiply_fn{
+  static auto multiply_fn = mf::build::SI2_SO<float3, float, float3>(
       "Scale",
       [](const float3 &offset, const float scale) { return offset * scale; },
-      fn::CustomMF_presets::AllSpanOrSingle()};
+      mf::build::exec_presets::AllSpanOrSingle());
   std::shared_ptr<FieldOperation> multiply_op = std::make_shared<FieldOperation>(
       FieldOperation(multiply_fn, {std::move(offset_field), std::move(scale_field)}));
   const Field<float3> final_offset{std::move(multiply_op)};
 
   AttributeOutputs attribute_outputs;
-  if (params.output_is_required("Top")) {
-    attribute_outputs.top_id = StrongAnonymousAttributeID("Top");
-  }
-  if (params.output_is_required("Side")) {
-    attribute_outputs.side_id = StrongAnonymousAttributeID("Side");
-  }
+  attribute_outputs.top_id = params.get_output_anonymous_attribute_id_if_needed("Top");
+  attribute_outputs.side_id = params.get_output_anonymous_attribute_id_if_needed("Side");
 
   const bool extrude_individual = mode == GEO_NODE_EXTRUDE_MESH_FACES &&
                                   params.extract_input<bool>("Individual");
