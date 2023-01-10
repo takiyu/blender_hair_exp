@@ -6,14 +6,14 @@
  *
  * This file defines custom-data types which can't be accessed as primitive
  * Python types such as #MDeformVert. It also exposed UV map data in a way
- * compatible with the (removed) #MLoopUV type.
+ * compatible with the (deprecated) #MLoopUV type.
  * MLoopUV used to be a struct containing both the UV information and various
  * selection flags. This has since been split up into a float2 attribute
  * and three boolean attributes for the selection/pin states.
  * For backwards compatibility, the original #MLoopUV is emulated in the
  * python API. This comes at a performance penalty however, and the plan is
  * to provide direct access to the boolean layers for faster access. Eventually
- * (probably in 4.0) #MLoopUV should be removed on the Python side as well.
+ * (probably in 4.0) #BPy_BMLoopUV should be removed on the Python side as well.
  */
 
 #include <Python.h>
