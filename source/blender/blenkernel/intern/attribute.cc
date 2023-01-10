@@ -168,8 +168,18 @@ bool BKE_id_attribute_rename(ID *id,
     BKE_report(reports, RPT_ERROR, "Attribute name can not be empty");
     return false;
   }
-  if (STREQ(old_name, new_name)) {
-    return false;
+
+  /* NOTE: Checking if the new name matches the old name only makes sense when the name
+   * is clamped to it's maximum length, otherwise assigning an over-long name multiple times
+   * will add `.001` suffix unnecessarily. */
+  {
+    const int maxlength = CustomData_name_max_length_calc(new_name);
+    /* NOTE: A function that performs a clamped comparison without copying would be handy here. */
+    char new_name_clamped[MAX_CUSTOMDATA_LAYER_NAME];
+    BLI_strncpy_utf8(new_name_clamped, new_name, maxlength);
+    if (STREQ(old_name, new_name_clamped)) {
+      return false;
+    }
   }
 
   CustomDataLayer *layer = BKE_id_attribute_search(
@@ -244,12 +254,7 @@ static bool unique_name_cb(void *arg, const char *name)
 bool BKE_id_attribute_calc_unique_name(ID *id, const char *name, char *outname)
 {
   AttrUniqueData data{id};
-  int maxlength = MAX_CUSTOMDATA_LAYER_NAME_NO_PREFIX;
-
-  if (STRPREFIX(name, "." UV_VERTSEL_NAME ".") || STRPREFIX(name, "." UV_EDGESEL_NAME ".") ||
-      STRPREFIX(name, "." UV_PINNED_NAME ".")) {
-    maxlength = MAX_CUSTOMDATA_LAYER_NAME;
-  }
+  const int maxlength = CustomData_name_max_length_calc(name);
 
   /* Set default name if none specified.
    * NOTE: We only call IFACE_() if needed to avoid locale lookup overhead. */

@@ -4309,6 +4309,20 @@ static bool customdata_unique_check(void *arg, const char *name)
   return cd_layer_find_dupe(data_arg->data, name, data_arg->type, data_arg->index);
 }
 
+int CustomData_name_max_length_calc(const blender::StringRef name)
+{
+  if (name.startswith(".")) {
+    return MAX_CUSTOMDATA_LAYER_NAME_NO_PREFIX;
+  }
+  for (const blender::StringRef prefix :
+       {"." UV_VERTSEL_NAME, UV_EDGESEL_NAME ".", UV_PINNED_NAME "."}) {
+    if (name.startswith(prefix)) {
+      return MAX_CUSTOMDATA_LAYER_NAME;
+    }
+  }
+  return MAX_CUSTOMDATA_LAYER_NAME_NO_PREFIX;
+}
+
 void CustomData_set_layer_unique_name(CustomData *data, const int index)
 {
   CustomDataLayer *nlayer = &data->layers[index];
@@ -4320,13 +4334,7 @@ void CustomData_set_layer_unique_name(CustomData *data, const int index)
     return;
   }
 
-  int maxlength = MAX_CUSTOMDATA_LAYER_NAME_NO_PREFIX;
-
-  if (STREQLEN("." UV_VERTSEL_NAME ".", nlayer->name, 4) ||
-      STREQLEN("." UV_EDGESEL_NAME ".", nlayer->name, 4) ||
-      STREQLEN("." UV_PINNED_NAME ".", nlayer->name, 4)) {
-    maxlength = MAX_CUSTOMDATA_LAYER_NAME;
-  }
+  const int max_length = CustomData_name_max_length_calc(nlayer->name);
 
   /* Set default name if none specified. Note we only call DATA_() when
    * needed to avoid overhead of locale lookups in the depsgraph. */
@@ -4334,7 +4342,7 @@ void CustomData_set_layer_unique_name(CustomData *data, const int index)
     STRNCPY(nlayer->name, DATA_(typeInfo->defaultname));
   }
 
-  BLI_uniquename_cb(customdata_unique_check, &data_arg, nullptr, '.', nlayer->name, maxlength);
+  BLI_uniquename_cb(customdata_unique_check, &data_arg, nullptr, '.', nlayer->name, max_length);
 }
 
 void CustomData_validate_layer_name(const CustomData *data,

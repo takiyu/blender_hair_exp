@@ -31,7 +31,7 @@ struct CustomData_MeshMasks;
 struct ID;
 typedef uint64_t eCustomDataMask;
 
-/* These names are used as prefixes for UV layer names to find the associated bool
+/* These names are used as prefixes for UV layer names to find the associated boolean
  * layers. They should never be longer than 2 chars, as MAX_CUSTOMDATA_LAYER_NAME
  * has 4 extra bytes above what can be used for the base layer name, and these
  * prefixes are placed between 2 '.'s at the start of the layer name.
@@ -553,6 +553,13 @@ bool CustomData_layertype_is_dynamic(int type);
  * \return Maximum number of layers of given \a type, -1 means 'no limit'.
  */
 int CustomData_layertype_layers_max(int type);
+
+#ifdef __cplusplus
+
+/** \return The maximum length for a layer name with the given prefix. */
+int CustomData_name_max_length_calc(blender::StringRef name);
+
+#endif
 
 /**
  * Make sure the name of layer at index is unique.
