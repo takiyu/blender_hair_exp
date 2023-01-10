@@ -290,6 +290,8 @@ static void data_transfer_dtdata_type_preprocess(Mesh *me_src,
     if (dirty_nors_dst || do_loop_nors_dst) {
       const bool *sharp_edges = static_cast<const bool *>(
           CustomData_get_layer_named(&me_dst->edata, CD_PROP_BOOL, "sharp_edge"));
+      const bool *sharp_faces = static_cast<const bool *>(
+          CustomData_get_layer_named(&me_dst->pdata, CD_PROP_BOOL, "sharp_face"));
       BKE_mesh_normals_loop_split(positions_dst,
                                   BKE_mesh_vertex_normals_ensure(me_dst),
                                   num_verts_dst,
@@ -300,12 +302,11 @@ static void data_transfer_dtdata_type_preprocess(Mesh *me_src,
                                   num_loops_dst,
                                   polys_dst,
                                   BKE_mesh_poly_normals_ensure(me_dst),
-                                  static_cast<const bool *>(CustomData_get_layer_named(
-                                      &me_dst->pdata, CD_PROP_BOOL, "sharp_face")),
                                   num_polys_dst,
                                   use_split_nors_dst,
                                   split_angle_dst,
                                   sharp_edges,
+                                  sharp_faces,
                                   nullptr,
                                   nullptr,
                                   custom_nors_dst);

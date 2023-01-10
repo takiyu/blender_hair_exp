@@ -563,7 +563,8 @@ static Mesh *normalEditModifier_do(NormalEditModifierData *enmd,
         CustomData_duplicate_referenced_layer(ldata, CD_CUSTOMLOOPNORMAL, loops_num));
     loop_normals = static_cast<float(*)[3]>(
         MEM_malloc_arrayN(size_t(loops_num), sizeof(*loop_normals), __func__));
-
+    const bool *sharp_faces = static_cast<const bool *>(
+        CustomData_get_layer_named(&result->pdata, CD_PROP_BOOL, "sharp_face"));
     BKE_mesh_normals_loop_split(positions,
                                 vert_normals,
                                 verts_num,
@@ -574,12 +575,11 @@ static Mesh *normalEditModifier_do(NormalEditModifierData *enmd,
                                 loops_num,
                                 polys,
                                 poly_normals,
-                                static_cast<const bool *>(CustomData_get_layer_named(
-                                    &result->pdata, CD_PROP_BOOL, "sharp_face")),
                                 polys_num,
                                 true,
                                 result->smoothresh,
                                 sharp_edges.span.data(),
+                                sharp_faces,
                                 nullptr,
                                 nullptr,
                                 clnors);

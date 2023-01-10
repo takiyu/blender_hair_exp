@@ -1844,7 +1844,8 @@ void BKE_mesh_calc_normals_split_ex(Mesh *mesh,
   short(*clnors)[2] = (short(*)[2])CustomData_get_layer(&mesh->ldata, CD_CUSTOMLOOPNORMAL);
   const bool *sharp_edges = static_cast<const bool *>(
       CustomData_get_layer_named(&mesh->edata, CD_PROP_BOOL, "sharp_edge"));
-
+  const bool *sharp_faces = static_cast<const bool *>(
+      CustomData_get_layer_named(&mesh->pdata, CD_PROP_BOOL, "sharp_face"));
   const Span<float3> positions = mesh->vert_positions();
   const Span<MEdge> edges = mesh->edges();
   const Span<MPoly> polys = mesh->polys();
@@ -1860,12 +1861,11 @@ void BKE_mesh_calc_normals_split_ex(Mesh *mesh,
                               loops.size(),
                               polys.data(),
                               BKE_mesh_poly_normals_ensure(mesh),
-                              static_cast<const bool *>(CustomData_get_layer_named(
-                                  &mesh->pdata, CD_PROP_BOOL, "sharp_face")),
                               polys.size(),
                               use_split_normals,
                               split_angle,
                               sharp_edges,
+                              sharp_faces,
                               nullptr,
                               r_lnors_spacearr,
                               clnors);
