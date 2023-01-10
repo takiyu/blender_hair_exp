@@ -467,13 +467,13 @@ static void prefair_and_fair_verts(FairingContext *fairing_context,
 }
 
 void BKE_mesh_prefair_and_fair_verts(struct Mesh *mesh,
-                                     float (*deform_positions)[3],
+                                     float (*deform_vert_positions)[3],
                                      bool *affect_verts,
                                      const eMeshFairingDepth depth)
 {
   MutableSpan<float3> deform_positions_span;
-  if (deform_positions) {
-    deform_positions_span = {reinterpret_cast<float3 *>(deform_positions), mesh->totvert};
+  if (deform_vert_positions) {
+    deform_positions_span = {reinterpret_cast<float3 *>(deform_vert_positions), mesh->totvert};
   }
   MeshFairingContext *fairing_context = new MeshFairingContext(mesh, deform_positions_span);
   prefair_and_fair_verts(fairing_context, affect_verts, depth);

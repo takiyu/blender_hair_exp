@@ -726,7 +726,7 @@ bool BKE_mesh_center_of_volume(const struct Mesh *me, float r_cent[3]);
  * \param r_volume: Volume (unsigned).
  * \param r_center: Center of mass.
  */
-void BKE_mesh_calc_volume(const float (*positions)[3],
+void BKE_mesh_calc_volume(const float (*vert_positions)[3],
                           int mverts_num,
                           const struct MLoopTri *mlooptri,
                           int looptri_num,

@@ -122,7 +122,7 @@ BVHTree *bvhtree_from_editmesh_verts_ex(BVHTreeFromEditMesh *data,
  * (else will be computed from mask).
  */
 BVHTree *bvhtree_from_mesh_verts_ex(struct BVHTreeFromMesh *data,
-                                    const float (*positions)[3],
+                                    const float (*vert_positions)[3],
                                     int verts_num,
                                     const blender::BitVector<> &verts_mask,
                                     int verts_num_active,
@@ -153,7 +153,7 @@ BVHTree *bvhtree_from_editmesh_edges_ex(BVHTreeFromEditMesh *data,
  * (else will be computed from mask).
  */
 BVHTree *bvhtree_from_mesh_edges_ex(struct BVHTreeFromMesh *data,
-                                    const float (*positions)[3],
+                                    const float (*vert_positions)[3],
                                     const struct MEdge *edge,
                                     int edges_num,
                                     const blender::BitVector<> &edges_mask,
@@ -180,7 +180,7 @@ BVHTree *bvhtree_from_editmesh_looptri_ex(BVHTreeFromEditMesh *data,
  * Builds a BVH-tree where nodes are the looptri faces of the given mesh.
  */
 BVHTree *bvhtree_from_mesh_looptri_ex(struct BVHTreeFromMesh *data,
-                                      const float (*positions)[3],
+                                      const float (*vert_positions)[3],
                                       const struct MLoop *mloop,
                                       const struct MLoopTri *looptri,
                                       int looptri_num,

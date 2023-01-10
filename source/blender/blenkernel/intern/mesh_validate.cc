@@ -207,7 +207,7 @@ static int search_polyloop_cmp(const void *v1, const void *v2)
 
 /* NOLINTNEXTLINE: readability-function-size */
 bool BKE_mesh_validate_arrays(Mesh *mesh,
-                              float (*positions)[3],
+                              float (*vert_positions)[3],
                               uint totvert,
                               MEdge *medges,
                               uint totedge,
@@ -306,11 +306,11 @@ bool BKE_mesh_validate_arrays(Mesh *mesh,
     bool fix_normal = true;
 
     for (j = 0; j < 3; j++) {
-      if (!isfinite(positions[i][j])) {
+      if (!isfinite(vert_positions[i][j])) {
         PRINT_ERR("\tVertex %u: has invalid coordinate", i);
 
         if (do_fixes) {
-          zero_v3(positions[i]);
+          zero_v3(vert_positions[i]);
 
           fix_flag.verts = true;
         }
@@ -332,7 +332,7 @@ bool BKE_mesh_validate_arrays(Mesh *mesh,
        * although it's also possible degenerate/opposite faces accumulate to a zero vector.
        * To detect this a full normal recalculation would be needed, which is out of scope
        * for a basic validity check (see "Vertex Normal" in the doc-string). */
-      if (!is_zero_v3(positions[i])) {
+      if (!is_zero_v3(vert_positions[i])) {
         PRINT_ERR("\tVertex %u: has zero normal, assuming Z-up normal", i);
         if (do_fixes) {
           float *normal = (float *)vert_normals[i];

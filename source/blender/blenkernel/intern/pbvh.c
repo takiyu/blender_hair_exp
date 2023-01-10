@@ -3426,7 +3426,7 @@ void BKE_pbvh_parallel_range_settings(TaskParallelSettings *settings,
   settings->use_threading = use_threading && totnode > 1;
 }
 
-float (*BKE_pbvh_get_positions(const PBVH *pbvh))[3]
+float (*BKE_pbvh_get_vert_positions(const PBVH *pbvh))[3]
 {
   BLI_assert(pbvh->header.type == PBVH_FACES);
   return pbvh->vert_positions;

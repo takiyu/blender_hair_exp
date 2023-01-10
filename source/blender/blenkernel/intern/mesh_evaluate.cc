@@ -466,7 +466,7 @@ static bool mesh_calc_center_centroid_ex(const float (*positions)[3],
   return true;
 }
 
-void BKE_mesh_calc_volume(const float (*positions)[3],
+void BKE_mesh_calc_volume(const float (*vert_positions)[3],
                           const int mverts_num,
                           const MLoopTri *looptri,
                           const int looptri_num,
@@ -490,16 +490,17 @@ void BKE_mesh_calc_volume(const float (*positions)[3],
     return;
   }
 
-  if (!mesh_calc_center_centroid_ex(positions, mverts_num, looptri, looptri_num, mloop, center)) {
+  if (!mesh_calc_center_centroid_ex(
+          vert_positions, mverts_num, looptri, looptri_num, mloop, center)) {
     return;
   }
 
   totvol = 0.0f;
 
   for (i = 0, lt = looptri; i < looptri_num; i++, lt++) {
-    const float *v1 = positions[mloop[lt->tri[0]].v];
-    const float *v2 = positions[mloop[lt->tri[1]].v];
-    const float *v3 = positions[mloop[lt->tri[2]].v];
+    const float *v1 = vert_positions[mloop[lt->tri[0]].v];
+    const float *v2 = vert_positions[mloop[lt->tri[1]].v];
+    const float *v3 = vert_positions[mloop[lt->tri[2]].v];
     float vol;
 
     vol = volume_tetrahedron_signed_v3(center, v1, v2, v3);

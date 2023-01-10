@@ -2471,7 +2471,7 @@ static void gpencil_generate_edgeloops(Object *ob,
   if (me->totedge == 0) {
     return;
   }
-  const Span<float3> positions = me->vert_positions();
+  const Span<float3> vert_positions = me->vert_positions();
   const Span<MEdge> edges = me->edges();
   const Span<MDeformVert> dverts = me->deform_verts();
   const float(*vert_normals)[3] = BKE_mesh_vertex_normals_ensure(me);
@@ -2491,13 +2491,13 @@ static void gpencil_generate_edgeloops(Object *ob,
     copy_v3_v3(gped->n1, vert_normals[ed->v1]);
 
     gped->v1 = ed->v1;
-    copy_v3_v3(gped->v1_co, positions[ed->v1]);
+    copy_v3_v3(gped->v1_co, vert_positions[ed->v1]);
 
     copy_v3_v3(gped->n2, vert_normals[ed->v2]);
     gped->v2 = ed->v2;
-    copy_v3_v3(gped->v2_co, positions[ed->v2]);
+    copy_v3_v3(gped->v2_co, vert_positions[ed->v2]);
 
-    sub_v3_v3v3(gped->vec, positions[ed->v1], positions[ed->v2]);
+    sub_v3_v3v3(gped->vec, vert_positions[ed->v1], vert_positions[ed->v2]);
 
     /* If use seams, mark as done if not a seam. */
     if ((use_seams) && ((ed->flag & ME_SEAM) == 0)) {
@@ -2561,7 +2561,7 @@ static void gpencil_generate_edgeloops(Object *ob,
       bGPDspoint *pt = &gps_stroke->points[i];
       copy_v3_v3(fpt, vert_normals[vertex_index]);
       mul_v3_v3fl(fpt, fpt, offset);
-      add_v3_v3v3(&pt->x, positions[vertex_index], fpt);
+      add_v3_v3v3(&pt->x, vert_positions[vertex_index], fpt);
       mul_m4_v3(matrix, &pt->x);
 
       pt->pressure = 1.0f;

@@ -222,7 +222,7 @@ static void normalEditModifier_do_radial(NormalEditModifierData *enmd,
                                          const MDeformVert *dvert,
                                          const int defgrp_index,
                                          const bool use_invert_vgroup,
-                                         const float (*positions)[3],
+                                         const float (*vert_positions)[3],
                                          const int verts_num,
                                          MEdge *medge,
                                          const int edges_num,
@@ -330,7 +330,7 @@ static void normalEditModifier_do_radial(NormalEditModifierData *enmd,
     BKE_mesh_normals_tag_dirty(mesh);
   }
 
-  BKE_mesh_normals_loop_custom_set(positions,
+  BKE_mesh_normals_loop_custom_set(vert_positions,
                                    BKE_mesh_vertex_normals_ensure(mesh),
                                    verts_num,
                                    medge,

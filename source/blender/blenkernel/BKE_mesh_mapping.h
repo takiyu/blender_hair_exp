@@ -258,7 +258,7 @@ void BKE_mesh_loop_islands_add(MeshIslandStore *island_store,
                                int num_innercut_items,
                                int *innercut_item_indices);
 
-typedef bool (*MeshRemapIslandsCalc)(const float (*positions)[3],
+typedef bool (*MeshRemapIslandsCalc)(const float (*vert_positions)[3],
                                      int totvert,
                                      const struct MEdge *edges,
                                      int totedge,

@@ -68,7 +68,7 @@ static void partialvis_update_mesh(Object *ob,
                                    float planes[4][4])
 {
   Mesh *me = ob->data;
-  const float(*positions)[3] = BKE_pbvh_get_positions(pbvh);
+  const float(*positions)[3] = BKE_pbvh_get_vert_positions(pbvh);
   const float *paint_mask;
   int totvert, i;
   bool any_changed = false, any_visible = false;

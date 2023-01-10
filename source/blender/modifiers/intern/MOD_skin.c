@@ -520,7 +520,7 @@ static float half_v2(const float v[2])
 
 static void end_node_frames(int v,
                             SkinNode *skin_nodes,
-                            const float (*positions)[3],
+                            const float (*vert_positions)[3],
                             const MVertSkin *nodes,
                             const MeshElemMap *emap,
                             EMat *emat)
@@ -540,8 +540,8 @@ static void end_node_frames(int v,
     mat[0][2] = mat[1][0] = mat[2][1] = 1;
 
     /* Caps */
-    create_frame(&skin_nodes[v].frames[0], positions[v], rad, mat, avg);
-    create_frame(&skin_nodes[v].frames[1], positions[v], rad, mat, -avg);
+    create_frame(&skin_nodes[v].frames[0], vert_positions[v], rad, mat, avg);
+    create_frame(&skin_nodes[v].frames[1], vert_positions[v], rad, mat, -avg);
   }
   else {
     /* For nodes with an incoming edge, create a single (capped) frame */
@@ -557,7 +557,7 @@ static void end_node_frames(int v,
     Frame *frame = &skin_nodes[v].frames[0];
 
     /* End frame */
-    create_frame(frame, positions[v], rad, mat, 0);
+    create_frame(frame, vert_positions[v], rad, mat, 0);
 
     /* The caps might need to have their normals inverted. So check if they
      * need to be flipped when creating faces. */
@@ -605,7 +605,7 @@ static int connection_node_mat(float mat[3][3], int v, const MeshElemMap *emap, 
 
 static void connection_node_frames(int v,
                                    SkinNode *skin_nodes,
-                                   const float (*positions)[3],
+                                   const float (*vert_positions)[3],
                                    const MVertSkin *nodes,
                                    const MeshElemMap *emap,
                                    EMat *emat)
@@ -630,14 +630,14 @@ static void connection_node_frames(int v,
     if (e1->origin != v) {
       negate_v3(mat[0]);
     }
-    create_frame(&skin_nodes[v].frames[0], positions[v], rad, mat, avg);
+    create_frame(&skin_nodes[v].frames[0], vert_positions[v], rad, mat, avg);
     skin_nodes[v].seam_edges[0] = emap[v].indices[0];
 
     copy_m3_m3(mat, e2->mat);
     if (e2->origin != v) {
       negate_v3(mat[0]);
     }
-    create_frame(&skin_nodes[v].frames[1], positions[v], rad, mat, avg);
+    create_frame(&skin_nodes[v].frames[1], vert_positions[v], rad, mat, avg);
     skin_nodes[v].seam_edges[1] = emap[v].indices[1];
 
     return;
@@ -645,10 +645,10 @@ static void connection_node_frames(int v,
 
   /* Build regular frame */
   node_frames_init(&skin_nodes[v], 1);
-  create_frame(&skin_nodes[v].frames[0], positions[v], rad, mat, 0);
+  create_frame(&skin_nodes[v].frames[0], vert_positions[v], rad, mat, 0);
 }
 
-static SkinNode *build_frames(const float (*positions)[3],
+static SkinNode *build_frames(const float (*vert_positions)[3],
                               int verts_num,
                               const MVertSkin *nodes,
                               const MeshElemMap *emap,
@@ -661,10 +661,10 @@ static SkinNode *build_frames(const float (*positions)[3],
 
   for (v = 0; v < verts_num; v++) {
     if (emap[v].count <= 1) {
-      end_node_frames(v, skin_nodes, positions, nodes, emap, emat);
+      end_node_frames(v, skin_nodes, vert_positions, nodes, emap, emat);
     }
     else if (emap[v].count == 2) {
-      connection_node_frames(v, skin_nodes, positions, nodes, emap, emat);
+      connection_node_frames(v, skin_nodes, vert_positions, nodes, emap, emat);
     }
     else {
       /* Branch node generates no frames */
@@ -717,7 +717,7 @@ static void build_emats_stack(BLI_Stack *stack,
                               const MeshElemMap *emap,
                               const MEdge *medge,
                               const MVertSkin *vs,
-                              const float (*positions)[3])
+                              const float (*vert_positions)[3])
 {
   EdgeStackElem stack_elem;
   float axis[3], angle;
@@ -744,11 +744,11 @@ static void build_emats_stack(BLI_Stack *stack,
 
   /* If parent is a branch node, start a new edge chain */
   if (parent_is_branch) {
-    calc_edge_mat(emat[e].mat, positions[parent_v], positions[v]);
+    calc_edge_mat(emat[e].mat, vert_positions[parent_v], vert_positions[v]);
   }
   else {
     /* Build edge matrix guided by parent matrix */
-    sub_v3_v3v3(emat[e].mat[0], positions[v], positions[parent_v]);
+    sub_v3_v3v3(emat[e].mat[0], vert_positions[v], vert_positions[parent_v]);
     normalize_v3(emat[e].mat[0]);
     angle = angle_normalized_v3v3(stack_elem.mat[0], emat[e].mat[0]);
     cross_v3_v3v3(axis, stack_elem.mat[0], emat[e].mat[0]);
@@ -768,7 +768,7 @@ static void build_emats_stack(BLI_Stack *stack,
 }
 
 static EMat *build_edge_mats(const MVertSkin *vs,
-                             const float (*positions)[3],
+                             const float (*vert_positions)[3],
                              const int verts_num,
                              const MEdge *medge,
                              const MeshElemMap *emap,
@@ -792,7 +792,8 @@ static EMat *build_edge_mats(const MVertSkin *vs,
     if (vs[v].flag & MVERT_SKIN_ROOT) {
       if (emap[v].count >= 1) {
         const MEdge *e = &medge[emap[v].indices[0]];
-        calc_edge_mat(stack_elem.mat, positions[v], positions[BKE_mesh_edge_other_vert(e, v)]);
+        calc_edge_mat(
+            stack_elem.mat, vert_positions[v], vert_positions[BKE_mesh_edge_other_vert(e, v)]);
         stack_elem.parent_v = v;
 
         /* Add adjacent edges to stack */
@@ -812,7 +813,7 @@ static EMat *build_edge_mats(const MVertSkin *vs,
   }
 
   while (!BLI_stack_is_empty(stack)) {
-    build_emats_stack(stack, visited_e, emat, emap, medge, vs, positions);
+    build_emats_stack(stack, visited_e, emat, emap, medge, vs, vert_positions);
   }
 
   MEM_freeN(visited_e);
@@ -828,7 +829,7 @@ static EMat *build_edge_mats(const MVertSkin *vs,
  * nodes, at least two intermediate frames are required. (This avoids
  * having any special cases for dealing with sharing a frame between
  * two hulls.) */
-static int calc_edge_subdivisions(const float (*positions)[3],
+static int calc_edge_subdivisions(const float (*vert_positions)[3],
                                   const MVertSkin *nodes,
                                   const MEdge *e,
                                   const int *degree)
@@ -858,7 +859,7 @@ static int calc_edge_subdivisions(const float (*positions)[3],
   if (avg_radius != 0.0f) {
     /* possible (but unlikely) that we overflow INT_MAX */
     float subdivisions_num_fl;
-    const float edge_len = len_v3v3(positions[e->v1], positions[e->v2]);
+    const float edge_len = len_v3v3(vert_positions[e->v1], vert_positions[e->v2]);
     subdivisions_num_fl = (edge_len / avg_radius);
     if (subdivisions_num_fl < NUM_SUBDIVISIONS_MAX) {
       subdivisions_num = (int)subdivisions_num_fl;
@@ -892,7 +893,7 @@ static Mesh *subdivide_base(const Mesh *orig)
   float radrat;
 
   const MVertSkin *orignode = CustomData_get_layer(&orig->vdata, CD_MVERT_SKIN);
-  const float(*orig_positions)[3] = BKE_mesh_vert_positions(orig);
+  const float(*orig_vert_positions)[3] = BKE_mesh_vert_positions(orig);
   const MEdge *origedge = BKE_mesh_edges(orig);
   const MDeformVert *origdvert = BKE_mesh_deform_verts(orig);
   int orig_vert_num = orig->totvert;
@@ -908,7 +909,7 @@ static Mesh *subdivide_base(const Mesh *orig)
   /* Per edge, store how many subdivisions are needed */
   int *edge_subd = MEM_calloc_arrayN((uint)orig_edge_num, sizeof(int), "edge_subd");
   for (i = 0, subd_num = 0; i < orig_edge_num; i++) {
-    edge_subd[i] += calc_edge_subdivisions(orig_positions, orignode, &origedge[i], degree);
+    edge_subd[i] += calc_edge_subdivisions(orig_vert_positions, orignode, &origedge[i], degree);
     BLI_assert(edge_subd[i] >= 0);
     subd_num += edge_subd[i];
   }
@@ -919,7 +920,7 @@ static Mesh *subdivide_base(const Mesh *orig)
   Mesh *result = BKE_mesh_new_nomain_from_template(
       orig, orig_vert_num + subd_num, orig_edge_num + subd_num, 0, 0, 0);
 
-  float(*out_positions)[3] = BKE_mesh_vert_positions_for_write(result);
+  float(*out_vert_positions)[3] = BKE_mesh_vert_positions_for_write(result);
   MEdge *outedge = BKE_mesh_edges_for_write(result);
   MVertSkin *outnode = CustomData_get_layer(&result->vdata, CD_MVERT_SKIN);
   MDeformVert *outdvert = NULL;
@@ -981,7 +982,8 @@ static Mesh *subdivide_base(const Mesh *orig)
       float t = powf(r, radrat);
 
       /* Interpolate vertex coord */
-      interp_v3_v3v3(out_positions[v], out_positions[e->v1], out_positions[e->v2], t);
+      interp_v3_v3v3(
+          out_vert_positions[v], out_vert_positions[e->v1], out_vert_positions[e->v2], t);
 
       /* Interpolate skin radii */
       interp_v3_v3v3(outnode[v].radius, orignode[e->v1].radius, orignode[e->v2].radius, t);
@@ -1920,7 +1922,7 @@ static Mesh *base_skin(Mesh *origmesh, SkinModifierData *smd, eSkinErrorFlag *r_
 
   nodes = CustomData_get_layer(&origmesh->vdata, CD_MVERT_SKIN);
 
-  const float(*positions)[3] = BKE_mesh_vert_positions(origmesh);
+  const float(*vert_positions)[3] = BKE_mesh_vert_positions(origmesh);
   dvert = BKE_mesh_deform_verts(origmesh);
   medge = BKE_mesh_edges(origmesh);
   verts_num = origmesh->totvert;
@@ -1928,8 +1930,9 @@ static Mesh *base_skin(Mesh *origmesh, SkinModifierData *smd, eSkinErrorFlag *r_
 
   BKE_mesh_vert_edge_map_create(&emap, &emapmem, medge, verts_num, edges_num);
 
-  emat = build_edge_mats(nodes, positions, verts_num, medge, emap, edges_num, &has_valid_root);
-  skin_nodes = build_frames(positions, verts_num, nodes, emap, emat);
+  emat = build_edge_mats(
+      nodes, vert_positions, verts_num, medge, emap, edges_num, &has_valid_root);
+  skin_nodes = build_frames(vert_positions, verts_num, nodes, emap, emat);
   MEM_freeN(emat);
   emat = NULL;
 

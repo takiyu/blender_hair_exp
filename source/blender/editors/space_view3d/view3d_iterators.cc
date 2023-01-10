@@ -206,7 +206,6 @@ struct foreachScreenObjectVert_userData {
   void (*func)(void *userData, const float screen_co[2], int index);
   void *userData;
   ViewContext vc;
-  float (*positions)[3];
   const bool *hide_vert;
   eV3DProjTest clip_flag;
 };
@@ -302,7 +301,6 @@ void meshobject_foreachScreenVert(ViewContext *vc,
   data.func = func;
   data.userData = userData;
   data.clip_flag = clip_flag;
-  data.positions = BKE_mesh_vert_positions_for_write((Mesh *)vc->obact->data);
   data.hide_vert = (const bool *)CustomData_get_layer_named(
       &me->vdata, CD_PROP_BOOL, ".hide_vert");
 

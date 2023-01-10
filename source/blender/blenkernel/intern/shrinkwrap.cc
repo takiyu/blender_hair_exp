@@ -59,7 +59,7 @@ struct ShrinkwrapCalcData {
 
   Object *ob; /* object we are applying shrinkwrap to */
 
-  float (*positions)[3]; /* Array of verts being projected. */
+  float (*vert_positions)[3]; /* Array of verts being projected. */
   const float (*vert_normals)[3];
   /* Vertices being shrink-wrapped. */
   float (*vertexCos)[3];
@@ -355,8 +355,8 @@ static void shrinkwrap_calc_nearest_vertex_cb_ex(void *__restrict userdata,
   }
 
   /* Convert the vertex to tree coordinates */
-  if (calc->positions) {
-    copy_v3_v3(tmp_co, calc->positions[i]);
+  if (calc->vert_positions) {
+    copy_v3_v3(tmp_co, calc->vert_positions[i]);
   }
   else {
     copy_v3_v3(tmp_co, co);
@@ -517,12 +517,13 @@ static void shrinkwrap_calc_normal_projection_cb_ex(void *__restrict userdata,
     return;
   }
 
-  if (calc->positions != nullptr && calc->smd->projAxis == MOD_SHRINKWRAP_PROJECT_OVER_NORMAL) {
-    /* calc->positions contains verts from evaluated mesh. */
+  if (calc->vert_positions != nullptr &&
+      calc->smd->projAxis == MOD_SHRINKWRAP_PROJECT_OVER_NORMAL) {
+    /* calc->vert_positions contains verts from evaluated mesh. */
     /* These coordinates are deformed by vertexCos only for normal projection
      * (to get correct normals) for other cases calc->verts contains undeformed coordinates and
      * vertexCos should be used */
-    copy_v3_v3(tmp_co, calc->positions[i]);
+    copy_v3_v3(tmp_co, calc->vert_positions[i]);
     copy_v3_v3(tmp_no, calc->vert_normals[i]);
   }
   else {
@@ -638,7 +639,7 @@ static void shrinkwrap_calc_normal_projection(ShrinkwrapCalcData *calc)
 
   /* Prepare data to retrieve the direction in which we should project each vertex */
   if (calc->smd->projAxis == MOD_SHRINKWRAP_PROJECT_OVER_NORMAL) {
-    if (calc->positions == nullptr) {
+    if (calc->vert_positions == nullptr) {
       return;
     }
   }
@@ -1116,8 +1117,8 @@ static void shrinkwrap_calc_nearest_surface_point_cb_ex(void *__restrict userdat
   }
 
   /* Convert the vertex to tree coordinates */
-  if (calc->positions) {
-    copy_v3_v3(tmp_co, calc->positions[i]);
+  if (calc->vert_positions) {
+    copy_v3_v3(tmp_co, calc->vert_positions[i]);
   }
   else {
     copy_v3_v3(tmp_co, co);
@@ -1406,7 +1407,7 @@ void shrinkwrapModifier_deform(ShrinkwrapModifierData *smd,
 
   if (mesh != nullptr && smd->shrinkType == MOD_SHRINKWRAP_PROJECT) {
     /* Setup arrays to get vertexs positions, normals and deform weights */
-    calc.positions = BKE_mesh_vert_positions_for_write(mesh);
+    calc.vert_positions = BKE_mesh_vert_positions_for_write(mesh);
     calc.vert_normals = BKE_mesh_vertex_normals_ensure(mesh);
 
     /* Using vertices positions/normals as if a subsurface was applied */
@@ -1426,11 +1427,12 @@ void shrinkwrapModifier_deform(ShrinkwrapModifierData *smd,
           (ob->mode & OB_MODE_EDIT) ? SUBSURF_IN_EDIT_MODE : SubsurfFlags(0));
 
       if (ss_mesh) {
-        calc.positions = reinterpret_cast<float(*)[3]>(ss_mesh->getVertArray(ss_mesh));
-        if (calc.positions) {
+        calc.vert_positions = reinterpret_cast<float(*)[3]>(ss_mesh->getVertArray(ss_mesh));
+        if (calc.vert_positions) {
           /* TRICKY: this code assumes subsurface will have the transformed original vertices
            * in their original order at the end of the vert array. */
-          calc.positions = calc.positions + ss_mesh->getNumVerts(ss_mesh) - dm->getNumVerts(dm);
+          calc.vert_positions = calc.vert_positions + ss_mesh->getNumVerts(ss_mesh) -
+                                dm->getNumVerts(dm);
         }
       }
 
@@ -1571,7 +1573,7 @@ void BKE_shrinkwrap_remesh_target_project(Mesh *src_me, Mesh *target_me, Object 
   calc.vgroup = -1;
   calc.target = target_me;
   calc.keepDist = ssmd.keepDist;
-  calc.positions = BKE_mesh_vert_positions_for_write(src_me);
+  calc.vert_positions = BKE_mesh_vert_positions_for_write(src_me);
   BLI_SPACE_TRANSFORM_SETUP(&calc.local2target, ob_target, ob_target);
 
   ShrinkwrapTreeData tree;

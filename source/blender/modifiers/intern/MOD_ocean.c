@@ -154,7 +154,7 @@ static bool dependsOnNormals(ModifierData *md)
 #ifdef WITH_OCEANSIM
 
 typedef struct GenerateOceanGeometryData {
-  float (*positions)[3];
+  float (*vert_positions)[3];
   MPoly *mpolys;
   MLoop *mloops;
   MLoopUV *mloopuvs;
@@ -175,7 +175,7 @@ static void generate_ocean_geometry_verts(void *__restrict userdata,
 
   for (x = 0; x <= gogd->res_x; x++) {
     const int i = y * (gogd->res_x + 1) + x;
-    float *co = gogd->positions[i];
+    float *co = gogd->vert_positions[i];
     co[0] = gogd->ox + (x * gogd->sx);
     co[1] = gogd->oy + (y * gogd->sy);
     co[2] = 0.0f;
@@ -270,7 +270,7 @@ static Mesh *generate_ocean_geometry(OceanModifierData *omd, Mesh *mesh_orig, co
   result = BKE_mesh_new_nomain(verts_num, 0, 0, polys_num * 4, polys_num);
   BKE_mesh_copy_parameters_for_eval(result, mesh_orig);
 
-  gogd.positions = BKE_mesh_vert_positions_for_write(result);
+  gogd.vert_positions = BKE_mesh_vert_positions_for_write(result);
   gogd.mpolys = BKE_mesh_polys_for_write(result);
   gogd.mloops = BKE_mesh_loops_for_write(result);
 

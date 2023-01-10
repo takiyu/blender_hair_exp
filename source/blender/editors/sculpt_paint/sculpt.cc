@@ -113,7 +113,7 @@ const float *SCULPT_vertex_co_get(SculptSession *ss, PBVHVertRef vertex)
   switch (BKE_pbvh_type(ss->pbvh)) {
     case PBVH_FACES: {
       if (ss->shapekey_active || ss->deform_modifiers_active) {
-        const float(*positions)[3] = BKE_pbvh_get_positions(ss->pbvh);
+        const float(*positions)[3] = BKE_pbvh_get_vert_positions(ss->pbvh);
         return positions[vertex.i];
       }
       return ss->vert_positions[vertex.i];
@@ -202,7 +202,7 @@ const float *SCULPT_vertex_co_for_grab_active_get(SculptSession *ss, PBVHVertRef
   if (BKE_pbvh_type(ss->pbvh) == PBVH_FACES) {
     /* Always grab active shape key if the sculpt happens on shapekey. */
     if (ss->shapekey_active) {
-      const float(*positions)[3] = BKE_pbvh_get_positions(ss->pbvh);
+      const float(*positions)[3] = BKE_pbvh_get_vert_positions(ss->pbvh);
       return positions[vertex.i];
     }
 
@@ -293,7 +293,7 @@ float (*SCULPT_mesh_deformed_positions_get(SculptSession *ss))[3]
   switch (BKE_pbvh_type(ss->pbvh)) {
     case PBVH_FACES:
       if (ss->shapekey_active || ss->deform_modifiers_active) {
-        return BKE_pbvh_get_positions(ss->pbvh);
+        return BKE_pbvh_get_vert_positions(ss->pbvh);
       }
       return ss->vert_positions;
     case PBVH_BMESH:

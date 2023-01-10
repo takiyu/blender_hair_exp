@@ -215,7 +215,7 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
 
   MOD_get_vgroup(ctx->object, mesh, smd->defgrp_name, &dvert, &defgrp_index);
 
-  const float(*orig_positions)[3] = BKE_mesh_vert_positions(mesh);
+  const float(*orig_vert_positions)[3] = BKE_mesh_vert_positions(mesh);
   const MEdge *orig_medge = BKE_mesh_edges(mesh);
   const MPoly *orig_mpoly = BKE_mesh_polys(mesh);
   const MLoop *orig_mloop = BKE_mesh_loops(mesh);
@@ -335,7 +335,7 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
                                              (int)((loops_num * stride) + newLoops),
                                              (int)((polys_num * stride) + newPolys));
 
-  float(*positions)[3] = BKE_mesh_vert_positions_for_write(result);
+  float(*vert_positions)[3] = BKE_mesh_vert_positions_for_write(result);
   MEdge *medge = BKE_mesh_edges_for_write(result);
   MPoly *mpoly = BKE_mesh_polys_for_write(result);
   MLoop *mloop = BKE_mesh_loops_for_write(result);
@@ -495,7 +495,8 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
       vert_lens = MEM_malloc_arrayN(verts_num, sizeof(float), "vert_lens");
       copy_vn_fl(vert_lens, (int)verts_num, FLT_MAX);
       for (uint i = 0; i < edges_num; i++) {
-        const float ed_len_sq = len_squared_v3v3(positions[medge[i].v1], positions[medge[i].v2]);
+        const float ed_len_sq = len_squared_v3v3(vert_positions[medge[i].v1],
+                                                 vert_positions[medge[i].v2]);
         vert_lens[medge[i].v1] = min_ff(vert_lens[medge[i].v1], ed_len_sq);
         vert_lens[medge[i].v2] = min_ff(vert_lens[medge[i].v2], ed_len_sq);
       }
@@ -547,7 +548,7 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
             !ELEM(edge_user_pairs[i][1], INVALID_UNUSED, INVALID_PAIR)) {
           const float *n0 = poly_nors[edge_user_pairs[i][0]];
           const float *n1 = poly_nors[edge_user_pairs[i][1]];
-          sub_v3_v3v3(e, orig_positions[ed->v1], orig_positions[ed->v2]);
+          sub_v3_v3v3(e, orig_vert_positions[ed->v1], orig_vert_positions[ed->v2]);
           normalize_v3(e);
           const float angle = angle_signed_on_axis_v3v3_v3(n0, n1, e);
           if (do_angle_clamp) {
@@ -608,10 +609,10 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
           }
         }
         if (vert_nors) {
-          madd_v3_v3fl(positions[vert_index], vert_nors[i], ofs_new_vgroup);
+          madd_v3_v3fl(vert_positions[vert_index], vert_nors[i], ofs_new_vgroup);
         }
         else {
-          madd_v3_v3fl(positions[vert_index], mesh_vert_normals[i], ofs_new_vgroup);
+          madd_v3_v3fl(vert_positions[vert_index], mesh_vert_normals[i], ofs_new_vgroup);
         }
       }
     }
@@ -660,10 +661,10 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
           }
         }
         if (vert_nors) {
-          madd_v3_v3fl(positions[vert_index], vert_nors[i], ofs_new_vgroup);
+          madd_v3_v3fl(vert_positions[vert_index], vert_nors[i], ofs_new_vgroup);
         }
         else {
-          madd_v3_v3fl(positions[vert_index], mesh_vert_normals[i], ofs_new_vgroup);
+          madd_v3_v3fl(vert_positions[vert_index], mesh_vert_normals[i], ofs_new_vgroup);
         }
       }
     }
@@ -729,12 +730,12 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
 
       const MLoop *ml = &mloop[mp->loopstart];
 
-      sub_v3_v3v3(nor_prev, positions[ml[i_curr - 1].v], positions[ml[i_curr].v]);
+      sub_v3_v3v3(nor_prev, vert_positions[ml[i_curr - 1].v], vert_positions[ml[i_curr].v]);
       normalize_v3(nor_prev);
 
       while (i_next < mp->totloop) {
         float angle;
-        sub_v3_v3v3(nor_next, positions[ml[i_curr].v], positions[ml[i_next].v]);
+        sub_v3_v3v3(nor_next, vert_positions[ml[i_curr].v], vert_positions[ml[i_next].v]);
         normalize_v3(nor_next);
         angle = angle_normalized_v3v3(nor_prev, nor_next);
 
@@ -846,7 +847,7 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
             vert_angs[ed->v2] = max_ff(vert_angs[ed->v2], angle);
           }
           if (do_bevel_convex) {
-            sub_v3_v3v3(e, orig_positions[ed->v1], orig_positions[ed->v2]);
+            sub_v3_v3v3(e, orig_vert_positions[ed->v1], orig_vert_positions[ed->v2]);
             normalize_v3(e);
             edge_angs[i] = angle_signed_on_axis_v3v3_v3(n0, n1, e);
             if (!do_rim) {
@@ -866,7 +867,8 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
         const float offset_sq = offset * offset;
         copy_vn_fl(vert_lens_sq, (int)verts_num, FLT_MAX);
         for (i = 0; i < edges_num; i++) {
-          const float ed_len = len_squared_v3v3(positions[medge[i].v1], positions[medge[i].v2]);
+          const float ed_len = len_squared_v3v3(vert_positions[medge[i].v1],
+                                                vert_positions[medge[i].v2]);
           vert_lens_sq[medge[i].v1] = min_ff(vert_lens_sq[medge[i].v1], ed_len);
           vert_lens_sq[medge[i].v2] = min_ff(vert_lens_sq[medge[i].v2], ed_len);
         }
@@ -931,7 +933,7 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
       for (i_orig = 0; i_orig < i_end; i_orig++, vert_index++) {
         const uint i_other = do_shell_align ? i_orig : new_vert_arr[i_orig];
         if (vert_accum[i_other]) { /* zero if unselected */
-          madd_v3_v3fl(positions[vert_index],
+          madd_v3_v3fl(vert_positions[vert_index],
                        vert_nors[i_other],
                        ofs_new * (vert_angles[i_other] / vert_accum[i_other]));
         }
@@ -949,7 +951,7 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
       for (i_orig = 0; i_orig < i_end; i_orig++, vert_index++) {
         const uint i_other = do_shell_align ? i_orig : new_vert_arr[i_orig];
         if (vert_accum[i_other]) { /* zero if unselected */
-          madd_v3_v3fl(positions[vert_index],
+          madd_v3_v3fl(vert_positions[vert_index],
                        vert_nors[i_other],
                        ofs_orig * (vert_angles[i_other] / vert_accum[i_other]));
         }
@@ -1158,10 +1160,10 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
 #ifdef SOLIDIFY_SIDE_NORMALS
       if (do_side_normals) {
         normal_quad_v3(nor,
-                       positions[ml[j - 4].v],
-                       positions[ml[j - 3].v],
-                       positions[ml[j - 2].v],
-                       positions[ml[j - 1].v]);
+                       vert_positions[ml[j - 4].v],
+                       vert_positions[ml[j - 3].v],
+                       vert_positions[ml[j - 2].v],
+                       vert_positions[ml[j - 1].v]);
 
         add_v3_v3(edge_vert_nos[ed->v1], nor);
         add_v3_v3(edge_vert_nos[ed->v2], nor);
