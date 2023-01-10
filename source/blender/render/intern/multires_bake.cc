@@ -60,7 +60,7 @@ struct MultiresBakeResult {
 };
 
 struct MResolvePixelData {
-  MVert *mvert;
+  const float (*vert_positions)[3];
   const float (*vert_normals)[3];
   MPoly *mpoly;
   const int *material_indices;
@@ -125,7 +125,7 @@ static void multiresbake_get_normal(const MResolvePixelData *data,
       copy_v3_v3(r_normal, data->precomputed_normals[poly_index]);
     }
     else {
-      BKE_mesh_calc_poly_normal(mp, &data->mloop[mp->loopstart], data->mvert, r_normal);
+      BKE_mesh_calc_poly_normal(mp, &data->mloop[mp->loopstart], data->vert_positions, r_normal);
     }
   }
 }
@@ -259,7 +259,7 @@ static void rasterize_half(const MBakeRast *bake_rast,
     float x_r = l_stable != 0 ? (s0_l + (((s1_l - s0_l) * (y - t0_l)) / (t1_l - t0_l))) : s0_l;
 
     if (is_mid_right != 0) {
-      SWAP(float, x_l, x_r);
+      std::swap(x_l, x_r);
     }
 
     iXl = int(ceilf(x_l));
@@ -298,17 +298,17 @@ static void bake_rasterize(const MBakeRast *bake_rast,
 
   /* sort by T */
   if (tlo > tmi && tlo > thi) {
-    SWAP(float, shi, slo);
-    SWAP(float, thi, tlo);
+    std::swap(shi, slo);
+    std::swap(thi, tlo);
   }
   else if (tmi > thi) {
-    SWAP(float, shi, smi);
-    SWAP(float, thi, tmi);
+    std::swap(shi, smi);
+    std::swap(thi, tmi);
   }
 
   if (tlo > tmi) {
-    SWAP(float, slo, smi);
-    SWAP(float, tlo, tmi);
+    std::swap(slo, smi);
+    std::swap(tlo, tmi);
   }
 
   /* check if mid point is to the left or to the right of the lo-hi edge */
@@ -472,7 +472,7 @@ static void do_multires_bake(MultiresBakeRender *bkr,
   MultiresBakeThread *handles;
   MultiresBakeQueue queue;
 
-  MVert *mvert = dm->getVertArray(dm);
+  const float(*positions)[3] = (float(*)[3])dm->getVertArray(dm);
   MPoly *mpoly = dm->getPolyArray(dm);
   MLoop *mloop = dm->getLoopArray(dm);
   float(*mloopuv)[2] = static_cast<float(*)[2]>(dm->getLoopDataArray(dm, CD_PROP_FLOAT2));
@@ -485,9 +485,9 @@ static void do_multires_bake(MultiresBakeRender *bkr,
 
   Mesh *temp_mesh = BKE_mesh_new_nomain(
       dm->getNumVerts(dm), dm->getNumEdges(dm), 0, dm->getNumLoops(dm), dm->getNumPolys(dm));
-  memcpy(BKE_mesh_verts_for_write(temp_mesh),
-         dm->getVertArray(dm),
-         temp_mesh->totvert * sizeof(MVert));
+  memcpy(temp_mesh->vert_positions_for_write().data(),
+         positions,
+         temp_mesh->totvert * sizeof(float[3]));
   memcpy(BKE_mesh_edges_for_write(temp_mesh),
          dm->getEdgeArray(dm),
          temp_mesh->totedge * sizeof(MEdge));
@@ -503,7 +503,7 @@ static void do_multires_bake(MultiresBakeRender *bkr,
   if (require_tangent) {
     if (CustomData_get_layer_index(&dm->loopData, CD_TANGENT) == -1) {
       BKE_mesh_calc_loop_tangent_ex(
-          dm->getVertArray(dm),
+          positions,
           dm->getPolyArray(dm),
           dm->getNumPolys(dm),
           dm->getLoopArray(dm),
@@ -555,7 +555,7 @@ static void do_multires_bake(MultiresBakeRender *bkr,
     handle->data.mpoly = mpoly;
     handle->data.material_indices = static_cast<const int *>(
         CustomData_get_layer_named(&dm->polyData, CD_PROP_INT32, "material_index"));
-    handle->data.mvert = mvert;
+    handle->data.vert_positions = positions;
     handle->data.vert_normals = vert_normals;
     handle->data.mloopuv = mloopuv;
     BKE_image_get_tile_uv(ima, tile->tile_number, handle->data.uv_offset);

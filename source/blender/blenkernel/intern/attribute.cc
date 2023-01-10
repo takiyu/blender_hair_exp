@@ -31,6 +31,7 @@
 #include "BKE_curves.hh"
 #include "BKE_customdata.h"
 #include "BKE_editmesh.h"
+#include "BKE_mesh.h"
 #include "BKE_pointcloud.h"
 #include "BKE_report.h"
 
@@ -577,6 +578,8 @@ bool BKE_id_attribute_required(const ID *id, const char *name)
       return BKE_pointcloud_attribute_required((const PointCloud *)id, name);
     case ID_CV:
       return BKE_curves_attribute_required((const Curves *)id, name);
+    case ID_ME:
+      return BKE_mesh_attribute_required(name);
     default:
       return false;
   }
@@ -711,7 +714,7 @@ static void get_domains_types(eAttrDomain domains[ATTR_DOMAIN_NUM])
   }
 
   /* Swap corner and face. */
-  SWAP(eAttrDomain, domains[ATTR_DOMAIN_FACE], domains[ATTR_DOMAIN_CORNER]);
+  std::swap(domains[ATTR_DOMAIN_FACE], domains[ATTR_DOMAIN_CORNER]);
 }
 
 int BKE_id_attribute_to_index(const ID *id,

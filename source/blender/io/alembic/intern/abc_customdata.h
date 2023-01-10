@@ -6,6 +6,8 @@
  * \ingroup balembic
  */
 
+#include "BLI_math_vector_types.hh"
+
 #include <Alembic/Abc/All.h>
 #include <Alembic/AbcGeom/All.h>
 
@@ -16,7 +18,6 @@
 struct CustomData;
 struct MLoop;
 struct MPoly;
-struct MVert;
 struct Mesh;
 
 using Alembic::Abc::ICompoundProperty;
@@ -35,7 +36,7 @@ struct CDStreamConfig {
   MPoly *mpoly;
   int totpoly;
 
-  MVert *mvert;
+  float3 *positions;
   int totvert;
 
   float2 *mloopuv;
