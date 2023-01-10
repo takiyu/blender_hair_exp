@@ -203,11 +203,11 @@ void OBJMesh::calc_smooth_groups(const bool use_bitflags)
   poly_smooth_groups_ = BKE_mesh_calc_smoothgroups(mesh_edges_.data(),
                                                    mesh_edges_.size(),
                                                    mesh_polys_.data(),
-                                                   sharp_faces,
                                                    mesh_polys_.size(),
                                                    mesh_loops_.data(),
                                                    mesh_loops_.size(),
                                                    sharp_edges,
+                                                   sharp_faces,
                                                    &tot_smooth_groups_,
                                                    use_bitflags);
 }

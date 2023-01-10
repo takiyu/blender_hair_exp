@@ -450,7 +450,7 @@ static void convert_mfaces_to_mpolys(ID *id,
   }
   bool *sharp_faces = static_cast<bool *>(
       CustomData_get_layer_named(pdata, CD_PROP_BOOL, "sharp_face"));
-  if (sharp_faces == nullptr) {
+  if (!sharp_faces) {
     sharp_faces = static_cast<bool *>(CustomData_add_layer_named(
         pdata, CD_PROP_BOOL, CD_SET_DEFAULT, nullptr, totpoly, "sharp_face"));
   }

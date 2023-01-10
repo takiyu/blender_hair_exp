@@ -871,11 +871,11 @@ static bool poly_is_island_boundary_smooth_cb(const int poly_index,
 int *BKE_mesh_calc_smoothgroups(const MEdge *medge,
                                 const int totedge,
                                 const MPoly *mpoly,
-                                const bool *sharp_faces,
                                 const int totpoly,
                                 const MLoop *mloop,
                                 const int totloop,
                                 const bool *sharp_edges,
+                                const bool *sharp_faces,
                                 int *r_totgroup,
                                 const bool use_bitflags)
 {

@@ -319,11 +319,11 @@ bool BKE_mesh_calc_islands_loop_poly_uvmap(float (*vert_positions)[3],
 int *BKE_mesh_calc_smoothgroups(const struct MEdge *medge,
                                 int totedge,
                                 const struct MPoly *mpoly,
-                                const bool *sharp_faces,
                                 int totpoly,
                                 const struct MLoop *mloop,
                                 int totloop,
                                 const bool *sharp_edges,
+                                const bool *sharp_faces,
                                 int *r_totgroup,
                                 bool use_bitflags);
 

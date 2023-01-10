@@ -99,10 +99,10 @@ static void rna_Mesh_calc_smooth_groups(
                                              mesh->totedge,
                                              BKE_mesh_polys(mesh),
                                              mesh->totpoly,
-                                             sharp_faces,
                                              BKE_mesh_loops(mesh),
                                              mesh->totloop,
                                              sharp_edges,
+                                             sharp_faces,
                                              r_group_total,
                                              use_bitflags);
 }

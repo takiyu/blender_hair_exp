@@ -868,13 +868,14 @@ static int mesh_customdata_custom_splitnormals_add_exec(bContext *C, wmOperator 
       bke::MutableAttributeAccessor attributes = me->attributes_for_write();
       bke::SpanAttributeWriter<bool> sharp_edges = attributes.lookup_or_add_for_write_span<bool>(
           "sharp_edge", ATTR_DOMAIN_EDGE);
+      const bool *sharp_faces = static_cast<const bool *>(
+          CustomData_get_layer_named(&me->pdata, CD_PROP_BOOL, "sharp_face"));
       BKE_edges_sharp_from_angle_set(me->totedge,
                                      loops.data(),
                                      loops.size(),
                                      polys.data(),
                                      BKE_mesh_poly_normals_ensure(me),
-                                     static_cast<const bool *>(CustomData_get_layer_named(
-                                         &me->pdata, CD_PROP_BOOL, "sharp_face")),
+                                     sharp_faces,
                                      polys.size(),
                                      me->smoothresh,
                                      sharp_edges.span.data());
@@ -1542,13 +1543,14 @@ void ED_mesh_split_faces(Mesh *mesh)
   const float split_angle = (mesh->flag & ME_AUTOSMOOTH) != 0 ? mesh->smoothresh : float(M_PI);
 
   Array<bool> sharp_edges(mesh->totedge, false);
+  const bool *sharp_faces_ptr = static_cast<const bool *>(
+      CustomData_get_layer_named(&mesh->pdata, CD_PROP_BOOL, "sharp_face"));
   BKE_edges_sharp_from_angle_set(mesh->totedge,
                                  loops.data(),
                                  loops.size(),
                                  polys.data(),
                                  BKE_mesh_poly_normals_ensure(mesh),
-                                 static_cast<const bool *>(CustomData_get_layer_named(
-                                     &mesh->pdata, CD_PROP_BOOL, "sharp_face")),
+                                 sharp_faces_ptr,
                                  polys.size(),
                                  split_angle,
                                  sharp_edges.data());
