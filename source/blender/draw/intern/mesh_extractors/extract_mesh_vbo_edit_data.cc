@@ -138,7 +138,7 @@ static void extract_edit_data_iter_poly_bm(const MeshRenderData *mr,
 
     EditLoopData *data = vbo_data + l_index;
     memset(data, 0x0, sizeof(*data));
-    mesh_render_data_face_flag(mr, f, -1, data);
+    mesh_render_data_face_flag(mr, f, {-1, -1, -1, -1}, data);
     mesh_render_data_edge_flag(mr, l_iter->e, data);
     mesh_render_data_vert_flag(mr, l_iter->v, data);
   } while ((l_iter = l_iter->next) != l_first);
@@ -159,7 +159,7 @@ static void extract_edit_data_iter_poly_mesh(const MeshRenderData *mr,
     BMVert *eve = bm_original_vert_get(mr, mr->corner_verts[ml_index]);
     BMEdge *eed = bm_original_edge_get(mr, mr->corner_edges[ml_index]);
     if (efa) {
-      mesh_render_data_face_flag(mr, efa, -1, data);
+      mesh_render_data_face_flag(mr, efa, {-1, -1, -1, -1}, data);
     }
     if (eed) {
       mesh_render_data_edge_flag(mr, eed, data);
@@ -286,7 +286,7 @@ static void extract_edit_data_iter_subdiv_bm(const DRWSubdivCache *subdiv_cache,
     /* coarse_quad can be null when called by the mesh iteration below. */
     if (coarse_quad) {
       /* The -1 parameter is for edit_uvs, which we don't do here. */
-      mesh_render_data_face_flag(mr, coarse_quad, -1, edit_loop_data);
+      mesh_render_data_face_flag(mr, coarse_quad, {-1, -1, -1, -1}, edit_loop_data);
     }
   }
 }

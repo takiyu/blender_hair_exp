@@ -1034,8 +1034,7 @@ static void split_loop_nor_fan_do(LoopSplitTaskDataCommon *common_data,
    * same as the vertex normal, but I do not see any easy way to detect that (would need to count
    * number of sharp edges per vertex, I doubt the additional memory usage would be worth it,
    * especially as it should not be a common case in real-life meshes anyway). */
-  const uint mv_pivot_index =
-      corner_verts[ml_curr_index]; /* The vertex we are "fanning" around! */
+  const int mv_pivot_index = corner_verts[ml_curr_index]; /* The vertex we are "fanning" around! */
 
   /* `ml_curr_index` would be mlfan_prev if we needed that one. */
   const MEdge *me_org = &edges[corner_edges[ml_curr_index]];

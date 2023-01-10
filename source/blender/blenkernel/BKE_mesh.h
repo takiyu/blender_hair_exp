@@ -35,7 +35,6 @@ struct MDisps;
 struct MEdge;
 struct MFace;
 struct MLoopTri;
-struct MLoopUV;
 struct MPoly;
 struct Main;
 struct MemArena;
@@ -697,7 +696,6 @@ float BKE_mesh_calc_poly_area(const struct MPoly *mpoly,
                               const int *poly_verts,
                               const float (*vert_positions)[3]);
 float BKE_mesh_calc_area(const struct Mesh *me);
-float BKE_mesh_calc_poly_uv_area(const struct MPoly *mpoly, const struct MLoopUV *uv_array);
 void BKE_mesh_calc_poly_angles(const struct MPoly *mpoly,
                                const int *poly_verts,
                                const float (*vert_positions)[3],

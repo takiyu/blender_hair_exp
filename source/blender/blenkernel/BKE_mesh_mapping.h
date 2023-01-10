@@ -16,7 +16,6 @@ extern "C" {
 
 struct MEdge;
 struct MLoopTri;
-struct MLoopUV;
 struct MPoly;
 
 /* UvVertMap */
@@ -104,7 +103,7 @@ UvVertMap *BKE_mesh_uv_vert_map_create(const struct MPoly *mpoly,
                                        const bool *hide_poly,
                                        const bool *select_poly,
                                        const int *corner_verts,
-                                       const struct MLoopUV *mloopuv,
+                                       const float (*mloopuv)[2],
                                        unsigned int totpoly,
                                        unsigned int totvert,
                                        const float limit[2],
@@ -289,7 +288,7 @@ bool BKE_mesh_calc_islands_loop_poly_edgeseam(const float (*vert_positions)[3],
 /**
  * Calculate UV islands.
  *
- * \note If no MLoopUV layer is passed, we only consider edges tagged as seams as UV boundaries.
+ * \note If no UV layer is passed, we only consider edges tagged as seams as UV boundaries.
  * This has the advantages of simplicity, and being valid/common to all UV maps.
  * However, it means actual UV islands without matching UV seams will not be handled correctly.
  * If a valid UV layer is passed as \a luvs parameter,
@@ -308,7 +307,7 @@ bool BKE_mesh_calc_islands_loop_poly_uvmap(float (*vert_positions)[3],
                                            const int *corner_verts,
                                            const int *corner_edges,
                                            int totloop,
-                                           const struct MLoopUV *luvs,
+                                           const float (*luvs)[2],
                                            MeshIslandStore *r_island_store);
 
 /**

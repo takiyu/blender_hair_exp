@@ -114,12 +114,9 @@ static void sample_mesh_surface(const Mesh &mesh,
     const int v0_loop = looptri.tri[0];
     const int v1_loop = looptri.tri[1];
     const int v2_loop = looptri.tri[2];
-    const int v0_index = corner_verts[v0_loop];
-    const int v1_index = corner_verts[v1_loop];
-    const int v2_index = corner_verts[v2_loop];
-    const float3 v0_pos = positions[v0_index];
-    const float3 v1_pos = positions[v1_index];
-    const float3 v2_pos = positions[v2_index];
+    const float3 &v0_pos = positions[corner_verts[v0_loop]];
+    const float3 &v1_pos = positions[corner_verts[v1_loop]];
+    const float3 &v2_pos = positions[corner_verts[v2_loop]];
 
     float looptri_density_factor = 1.0f;
     if (!density_factors.is_empty()) {
@@ -356,13 +353,9 @@ BLI_NOINLINE static void compute_attribute_outputs(const Mesh &mesh,
     const int looptri_index = looptri_indices[i];
     const MLoopTri &looptri = looptris[looptri_index];
     const float3 &bary_coord = bary_coords[i];
-
-    const int v0_index = corner_verts[looptri.tri[0]];
-    const int v1_index = corner_verts[looptri.tri[1]];
-    const int v2_index = corner_verts[looptri.tri[2]];
-    const float3 v0_pos = positions[v0_index];
-    const float3 v1_pos = positions[v1_index];
-    const float3 v2_pos = positions[v2_index];
+    const float3 &v0_pos = positions[corner_verts[looptri.tri[0]]];
+    const float3 &v1_pos = positions[corner_verts[looptri.tri[1]]];
+    const float3 &v2_pos = positions[corner_verts[looptri.tri[2]]];
 
     ids.span[i] = noise::hash(noise::hash_float(bary_coord), looptri_index);
 

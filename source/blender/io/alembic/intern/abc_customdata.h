@@ -13,8 +13,9 @@
 
 #include <map>
 
+#include "BLI_math_vector_types.hh"
+
 struct CustomData;
-struct MLoopUV;
 struct MPoly;
 struct Mesh;
 
@@ -37,7 +38,7 @@ struct CDStreamConfig {
   float3 *positions;
   int totvert;
 
-  MLoopUV *mloopuv;
+  float2 *mloopuv;
 
   CustomData *loopdata;
 

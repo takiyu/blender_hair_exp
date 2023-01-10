@@ -128,8 +128,8 @@ class SignedAngleFieldInput final : public bke::MeshFieldInput {
     const Span<int> corner_edges = mesh.corner_edges();
     Array<EdgeMapEntry> edge_map = create_edge_map(polys, corner_edges, mesh.totedge);
 
-    auto angle_fn =
-        [edge_map = std::move(edge_map), positions, edges, polys, corner_verts](const int i) -> float {
+    auto angle_fn = [edge_map = std::move(edge_map), positions, edges, polys, corner_verts](
+                        const int i) -> float {
       if (edge_map[i].face_count != 2) {
         return 0.0f;
       }
