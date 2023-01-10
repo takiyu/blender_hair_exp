@@ -131,7 +131,9 @@ void BKE_keyblock_update_from_mesh(const struct Mesh *me, struct KeyBlock *kb);
 void BKE_keyblock_convert_from_mesh(const struct Mesh *me,
                                     const struct Key *key,
                                     struct KeyBlock *kb);
-void BKE_keyblock_convert_to_mesh(const struct KeyBlock *kb, float (*positions)[3], int totvert);
+void BKE_keyblock_convert_to_mesh(const struct KeyBlock *kb,
+                                  float (*vert_positions)[3],
+                                  int totvert);
 
 /**
  * Computes normals (vertices, polygons and/or loops ones) of given mesh for given shape key.

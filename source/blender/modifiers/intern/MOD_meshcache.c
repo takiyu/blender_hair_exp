@@ -177,19 +177,16 @@ static void meshcache_do(MeshCacheModifierData *mcmd,
     }
     else {
       float(*vertexCos_New)[3] = MEM_malloc_arrayN(verts_num, sizeof(*vertexCos_New), __func__);
-      const float(*positions)[3] = BKE_mesh_vert_positions(me);
 
       BKE_mesh_calc_relative_deform(
           BKE_mesh_polys(me),
           me->totpoly,
           BKE_mesh_corner_verts(me),
           me->totvert,
-
-          (const float(*)[3])positions,      /* From the original Mesh. */
+          BKE_mesh_vert_positions(me),       /* From the original Mesh. */
           (const float(*)[3])vertexCos_Real, /* the input we've been given (shape keys!) */
-
-          (const float(*)[3])vertexCos, /* The result of this modifier. */
-          vertexCos_New                 /* The result of this function. */
+          (const float(*)[3])vertexCos,      /* The result of this modifier. */
+          vertexCos_New                      /* The result of this function. */
       );
 
       /* write the corrected locations back into the result */

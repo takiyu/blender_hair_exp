@@ -764,7 +764,7 @@ void BKE_pbvh_parallel_range_settings(struct TaskParallelSettings *settings,
                                       bool use_threading,
                                       int totnode);
 
-float (*BKE_pbvh_get_positions(const PBVH *pbvh))[3];
+float (*BKE_pbvh_get_vert_positions(const PBVH *pbvh))[3];
 const float (*BKE_pbvh_get_vert_normals(const PBVH *pbvh))[3];
 const bool *BKE_pbvh_get_vert_hide(const PBVH *pbvh);
 bool *BKE_pbvh_get_vert_hide_for_write(PBVH *pbvh);

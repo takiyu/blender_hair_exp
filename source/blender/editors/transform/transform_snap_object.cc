@@ -241,7 +241,7 @@ static void snap_object_data_mesh_get(SnapObjectContext *sctx,
                                       bool use_hide,
                                       BVHTreeFromMesh *r_treedata)
 {
-  const Span<float3> positions = me_eval->vert_positions();
+  const Span<float3> vert_positions = me_eval->vert_positions();
   const Span<MPoly> polys = me_eval->polys();
   const Span<int> corner_verts = me_eval->corner_verts();
 
@@ -259,7 +259,7 @@ static void snap_object_data_mesh_get(SnapObjectContext *sctx,
   BLI_assert(!polys.data() || r_treedata->looptri);
   BLI_assert(!r_treedata->tree || r_treedata->looptri);
 
-  UNUSED_VARS_NDEBUG(positions, polys, corner_verts);
+  UNUSED_VARS_NDEBUG(vert_positions, polys, corner_verts);
 }
 
 /* Searches for the #Mesh_Runtime associated with the object that is most likely to be updated due
@@ -620,12 +620,12 @@ static void mesh_looptri_raycast_backface_culling_cb(void *userdata,
                                                      BVHTreeRayHit *hit)
 {
   const BVHTreeFromMesh *data = (BVHTreeFromMesh *)userdata;
-  const float(*positions)[3] = data->vert_positions;
+  const float(*vert_positions)[3] = data->vert_positions;
   const MLoopTri *lt = &data->looptri[index];
   const float *vtri_co[3] = {
-      positions[data->corner_verts[lt->tri[0]]],
-      positions[data->corner_verts[lt->tri[1]]],
-      positions[data->corner_verts[lt->tri[2]]],
+      vert_positions[data->corner_verts[lt->tri[0]]],
+      vert_positions[data->corner_verts[lt->tri[1]]],
+      vert_positions[data->corner_verts[lt->tri[2]]],
   };
   float dist = bvhtree_ray_tri_intersection(ray, hit->dist, UNPACK3(vtri_co));
 
@@ -1424,7 +1424,7 @@ struct Nearest2dUserData {
       BMesh *bm;
     };
     struct {
-      const float (*positions)[3];
+      const float (*vert_positions)[3];
       const float (*vert_normals)[3];
       const MEdge *edge; /* only used for #BVHTreeFromMeshEdges */
       const int *corner_verts;
@@ -1439,7 +1439,7 @@ struct Nearest2dUserData {
 
 static void cb_mvert_co_get(const int index, const Nearest2dUserData *data, const float **r_co)
 {
-  *r_co = data->positions[index];
+  *r_co = data->vert_positions[index];
 }
 
 static void cb_bvert_co_get(const int index, const Nearest2dUserData *data, const float **r_co)
@@ -1715,7 +1715,7 @@ static void nearest2d_data_init_mesh(const Mesh *mesh,
   r_nearest2d->get_tri_verts_index = cb_mlooptri_verts_get;
   r_nearest2d->get_tri_edges_index = cb_mlooptri_edges_get;
 
-  r_nearest2d->positions = BKE_mesh_vert_positions(mesh);
+  r_nearest2d->vert_positions = BKE_mesh_vert_positions(mesh);
   r_nearest2d->vert_normals = BKE_mesh_vertex_normals_ensure(mesh);
   r_nearest2d->edge = mesh->edges().data();
   r_nearest2d->corner_verts = mesh->corner_verts().data();

@@ -38,7 +38,7 @@ typedef struct {
 
   /* these point to data in the DerivedMesh custom data layers,
    * they are only here for efficiency and convenience */
-  float (*positions)[3];
+  float (*vert_positions)[3];
   const float (*vert_normals)[3];
   MEdge *medge;
   MFace *mface;
@@ -79,7 +79,7 @@ static int cdDM_getNumPolys(DerivedMesh *dm)
 static void cdDM_copyVertArray(DerivedMesh *dm, float (*r_positions)[3])
 {
   CDDerivedMesh *cddm = (CDDerivedMesh *)dm;
-  memcpy(r_positions, cddm->positions, sizeof(float[3]) * dm->numVertData);
+  memcpy(r_positions, cddm->vert_positions, sizeof(float[3]) * dm->numVertData);
 }
 
 static void cdDM_copyEdgeArray(DerivedMesh *dm, MEdge *r_edge)
@@ -110,7 +110,7 @@ static void cdDM_getVertCo(DerivedMesh *dm, int index, float r_co[3])
 {
   CDDerivedMesh *cddm = (CDDerivedMesh *)dm;
 
-  copy_v3_v3(r_co, cddm->positions[index]);
+  copy_v3_v3(r_co, cddm->vert_positions[index]);
 }
 
 static void cdDM_getVertNo(DerivedMesh *dm, int index, float r_no[3])
@@ -130,7 +130,7 @@ static void cdDM_recalc_looptri(DerivedMesh *dm)
 
   BKE_mesh_recalc_looptri(cddm->corner_verts,
                           cddm->mpoly,
-                          cddm->positions,
+                          cddm->vert_positions,
                           totloop,
                           totpoly,
                           cddm->dm.looptris.array_wip);
@@ -229,7 +229,7 @@ static DerivedMesh *cdDM_from_mesh_ex(Mesh *mesh,
   CustomData_merge(&mesh->ldata, &dm->loopData, cddata_masks.lmask, alloctype, mesh->totloop);
   CustomData_merge(&mesh->pdata, &dm->polyData, cddata_masks.pmask, alloctype, mesh->totpoly);
 
-  cddm->positions = CustomData_get_layer_named(&dm->vertData, CD_PROP_FLOAT3, "position");
+  cddm->vert_positions = CustomData_get_layer_named(&dm->vertData, CD_PROP_FLOAT3, "position");
   /* Though this may be an unnecessary calculation, simply retrieving the layer may return nothing
    * or dirty normals. */
   cddm->vert_normals = BKE_mesh_vertex_normals_ensure(mesh);

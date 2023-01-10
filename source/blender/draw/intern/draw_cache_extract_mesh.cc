@@ -404,7 +404,7 @@ BLI_INLINE void extract_task_range_run_iter(const MeshRenderData *mr,
       break;
     case MR_ITER_LVERT:
       range_data.loose_elems = mr->lverts;
-      range_data.elems = is_mesh ? mr->positions : (void *)mr->bm->vtable;
+      range_data.elems = is_mesh ? mr->vert_positions : (void *)mr->bm->vtable;
       func = is_mesh ? extract_range_iter_lvert_mesh : extract_range_iter_lvert_bm;
       stop = mr->vert_loose_len;
       break;

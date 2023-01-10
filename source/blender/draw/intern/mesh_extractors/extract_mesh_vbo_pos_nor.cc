@@ -95,7 +95,7 @@ static void extract_pos_nor_iter_poly_mesh(const MeshRenderData *mr,
 
     PosNorLoop *vert = &data->vbo_data[ml_index];
     const bool vert_hidden = mr->hide_vert && mr->hide_vert[vert_i];
-    copy_v3_v3(vert->pos, mr->positions[vert_i]);
+    copy_v3_v3(vert->pos, mr->vert_positions[vert_i]);
     vert->nor = data->normals[vert_i].low;
     /* Flag for paint mode overlay. */
     if (poly_hidden || vert_hidden ||
@@ -134,8 +134,8 @@ static void extract_pos_nor_iter_ledge_mesh(const MeshRenderData *mr,
   MeshExtract_PosNor_Data *data = static_cast<MeshExtract_PosNor_Data *>(_data);
   const int ml_index = mr->loop_len + ledge_index * 2;
   PosNorLoop *vert = &data->vbo_data[ml_index];
-  copy_v3_v3(vert[0].pos, mr->positions[med->v1]);
-  copy_v3_v3(vert[1].pos, mr->positions[med->v2]);
+  copy_v3_v3(vert[0].pos, mr->vert_positions[med->v1]);
+  copy_v3_v3(vert[1].pos, mr->vert_positions[med->v2]);
   vert[0].nor = data->normals[med->v1].low;
   vert[1].nor = data->normals[med->v2].low;
 }
@@ -164,7 +164,7 @@ static void extract_pos_nor_iter_lvert_mesh(const MeshRenderData *mr,
   const int ml_index = offset + lvert_index;
   const int v_index = mr->lverts[lvert_index];
   PosNorLoop *vert = &data->vbo_data[ml_index];
-  copy_v3_v3(vert->pos, mr->positions[v_index]);
+  copy_v3_v3(vert->pos, mr->vert_positions[v_index]);
   vert->nor = data->normals[v_index].low;
 }
 
@@ -470,7 +470,7 @@ static void extract_pos_nor_hq_iter_poly_mesh(const MeshRenderData *mr,
 
     const bool vert_hidden = mr->hide_vert && mr->hide_vert[vert_i];
     PosNorHQLoop *vert = &data->vbo_data[ml_index];
-    copy_v3_v3(vert->pos, mr->positions[vert_i]);
+    copy_v3_v3(vert->pos, mr->vert_positions[vert_i]);
     copy_v3_v3_short(vert->nor, data->normals[vert_i].high);
 
     /* Flag for paint mode overlay. */
@@ -511,8 +511,8 @@ static void extract_pos_nor_hq_iter_ledge_mesh(const MeshRenderData *mr,
   MeshExtract_PosNorHQ_Data *data = static_cast<MeshExtract_PosNorHQ_Data *>(_data);
   const int ml_index = mr->loop_len + ledge_index * 2;
   PosNorHQLoop *vert = &data->vbo_data[ml_index];
-  copy_v3_v3(vert[0].pos, mr->positions[med->v1]);
-  copy_v3_v3(vert[1].pos, mr->positions[med->v2]);
+  copy_v3_v3(vert[0].pos, mr->vert_positions[med->v1]);
+  copy_v3_v3(vert[1].pos, mr->vert_positions[med->v2]);
   copy_v3_v3_short(vert[0].nor, data->normals[med->v1].high);
   vert[0].nor[3] = 0;
   copy_v3_v3_short(vert[1].nor, data->normals[med->v2].high);
@@ -544,7 +544,7 @@ static void extract_pos_nor_hq_iter_lvert_mesh(const MeshRenderData *mr,
   const int ml_index = offset + lvert_index;
   const int v_index = mr->lverts[lvert_index];
   PosNorHQLoop *vert = &data->vbo_data[ml_index];
-  copy_v3_v3(vert->pos, mr->positions[v_index]);
+  copy_v3_v3(vert->pos, mr->vert_positions[v_index]);
   copy_v3_v3_short(vert->nor, data->normals[v_index].high);
   vert->nor[3] = 0;
 }

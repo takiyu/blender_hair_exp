@@ -72,7 +72,7 @@ static void join_mesh_single(Depsgraph *depsgraph,
                              Object *ob_dst,
                              Object *ob_src,
                              const float imat[4][4],
-                             float3 **positions_pp,
+                             float3 **vert_positions_pp,
                              MEdge **medge_pp,
                              int **corner_verts_pp,
                              int **corner_edges_pp,
@@ -98,7 +98,7 @@ static void join_mesh_single(Depsgraph *depsgraph,
   int a, b;
 
   Mesh *me = static_cast<Mesh *>(ob_src->data);
-  float3 *positions = *positions_pp;
+  float3 *vert_positions = *vert_positions_pp;
   MEdge *medge = *medge_pp;
   int *corner_verts = *corner_verts_pp;
   int *corner_edges = *corner_edges_pp;
@@ -139,7 +139,7 @@ static void join_mesh_single(Depsgraph *depsgraph,
 
       /* transform vertex coordinates into new space */
       for (a = 0; a < me->totvert; a++) {
-        mul_m4_v3(cmat, positions[a]);
+        mul_m4_v3(cmat, vert_positions[a]);
       }
 
       /* For each shape-key in destination mesh:
@@ -168,7 +168,7 @@ static void join_mesh_single(Depsgraph *depsgraph,
           else {
             /* Copy this mesh's vertex coordinates to the destination shape-key. */
             for (a = 0; a < me->totvert; a++, cos++) {
-              copy_v3_v3(*cos, positions[a]);
+              copy_v3_v3(*cos, vert_positions[a]);
             }
           }
         }
@@ -196,7 +196,7 @@ static void join_mesh_single(Depsgraph *depsgraph,
           else {
             /* Copy base-coordinates to the destination shape-key. */
             for (a = 0; a < me->totvert; a++, cos++) {
-              copy_v3_v3(*cos, positions[a]);
+              copy_v3_v3(*cos, vert_positions[a]);
             }
           }
         }
@@ -290,7 +290,7 @@ static void join_mesh_single(Depsgraph *depsgraph,
 
   /* these are used for relinking (cannot be set earlier, or else reattaching goes wrong) */
   *vertofs += me->totvert;
-  *positions_pp += me->totvert;
+  *vert_positions_pp += me->totvert;
   *edgeofs += me->totedge;
   *medge_pp += me->totedge;
   *loopofs += me->totloop;
@@ -583,7 +583,7 @@ int ED_mesh_join_objects_exec(bContext *C, wmOperator *op)
   CustomData_reset(&ldata);
   CustomData_reset(&pdata);
 
-  float3 *positions = (float3 *)CustomData_add_layer_named(
+  float3 *vert_positions = (float3 *)CustomData_add_layer_named(
       &vdata, CD_PROP_FLOAT3, CD_SET_DEFAULT, nullptr, totvert, "position");
   medge = (MEdge *)CustomData_add_layer(&edata, CD_MEDGE, CD_SET_DEFAULT, nullptr, totedge);
   int *corner_verts = (int *)CustomData_add_layer_named(
@@ -612,7 +612,7 @@ int ED_mesh_join_objects_exec(bContext *C, wmOperator *op)
                    ob,
                    ob,
                    imat,
-                   &positions,
+                   &vert_positions,
                    &medge,
                    &corner_verts,
                    &corner_edges,
@@ -647,7 +647,7 @@ int ED_mesh_join_objects_exec(bContext *C, wmOperator *op)
                        ob,
                        ob_iter,
                        imat,
-                       &positions,
+                       &vert_positions,
                        &medge,
                        &corner_verts,
                        &corner_edges,
@@ -1141,12 +1141,12 @@ int *mesh_get_x_mirror_faces(Object *ob, BMEditMesh *em, Mesh *me_eval)
   mirrorverts = static_cast<int *>(MEM_callocN(sizeof(int) * totvert, "MirrorVerts"));
   mirrorfaces = static_cast<int *>(MEM_callocN(sizeof(int[2]) * totface, "MirrorFaces"));
 
-  const Span<float3> positions = me_eval ? me_eval->vert_positions() : me->vert_positions();
+  const Span<float3> vert_positions = me_eval ? me_eval->vert_positions() : me->vert_positions();
   MFace *mface = (MFace *)CustomData_get_layer(&(me_eval ? me_eval : me)->fdata, CD_MFACE);
 
   ED_mesh_mirror_spatial_table_begin(ob, em, me_eval);
 
-  for (const int i : positions.index_range()) {
+  for (const int i : vert_positions.index_range()) {
     mirrorverts[i] = mesh_get_x_mirror_vert(ob, me_eval, i, use_topology);
   }
 
@@ -1228,7 +1228,7 @@ static void ed_mesh_pick_face_vert__mpoly_find(
     const float mval[2],
     /* mesh data (evaluated) */
     const MPoly *mp,
-    const Span<float3> positions,
+    const Span<float3> vert_positions,
     const int *corner_verts,
     /* return values */
     float *r_len_best,
@@ -1237,7 +1237,7 @@ static void ed_mesh_pick_face_vert__mpoly_find(
   for (int j = mp->totloop; j--;) {
     float sco[2];
     const int v_idx = corner_verts[mp->loopstart + j];
-    if (ED_view3d_project_float_object(region, positions[v_idx], sco, V3D_PROJ_TEST_NOP) ==
+    if (ED_view3d_project_float_object(region, vert_positions[v_idx], sco, V3D_PROJ_TEST_NOP) ==
         V3D_PROJ_RET_OK) {
       const float len_test = len_manhattan_v2v2(mval, sco);
       if (len_test < *r_len_best) {
@@ -1271,7 +1271,7 @@ bool ED_mesh_pick_face_vert(
     const float mval_f[2] = {float(mval[0]), float(mval[1])};
     float len_best = FLT_MAX;
 
-    const Span<float3> positions = me_eval->vert_positions();
+    const Span<float3> vert_positions = me_eval->vert_positions();
     const Span<MPoly> polys = me_eval->polys();
     const Span<int> corner_verts = me_eval->corner_verts();
 
@@ -1281,8 +1281,13 @@ bool ED_mesh_pick_face_vert(
     if (index_mp_to_orig) {
       for (const int i : polys.index_range()) {
         if (index_mp_to_orig[i] == poly_index) {
-          ed_mesh_pick_face_vert__mpoly_find(
-              region, mval_f, &polys[i], positions, corner_verts.data(), &len_best, &v_idx_best);
+          ed_mesh_pick_face_vert__mpoly_find(region,
+                                             mval_f,
+                                             &polys[i],
+                                             vert_positions,
+                                             corner_verts.data(),
+                                             &len_best,
+                                             &v_idx_best);
         }
       }
     }
@@ -1291,7 +1296,7 @@ bool ED_mesh_pick_face_vert(
         ed_mesh_pick_face_vert__mpoly_find(region,
                                            mval_f,
                                            &polys[poly_index],
-                                           positions,
+                                           vert_positions,
                                            corner_verts.data(),
                                            &len_best,
                                            &v_idx_best);
@@ -1323,7 +1328,6 @@ bool ED_mesh_pick_face_vert(
  * \return boolean true == Found
  */
 struct VertPickData {
-  Span<float3> positions;
   const bool *hide_vert;
   const float *mval_f; /* [2] */
   ARegion *region;
@@ -1407,7 +1411,6 @@ bool ED_mesh_pick_vert(
     }
 
     /* setup data */
-    data.positions = me->vert_positions();
     data.region = region;
     data.mval_f = mval_f;
     data.len_best = FLT_MAX;

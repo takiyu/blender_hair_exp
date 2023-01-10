@@ -113,12 +113,12 @@ void fill_mesh_from_openvdb_data(const Span<openvdb::Vec3s> vdb_verts,
                                  const int vert_offset,
                                  const int poly_offset,
                                  const int loop_offset,
-                                 MutableSpan<float3> positions,
+                                 MutableSpan<float3> vert_positions,
                                  MutableSpan<MPoly> polys,
                                  MutableSpan<int> corner_verts)
 {
   /* Write vertices. */
-  positions.slice(vert_offset, vdb_verts.size()).copy_from(vdb_verts.cast<float3>());
+  vert_positions.slice(vert_offset, vdb_verts.size()).copy_from(vdb_verts.cast<float3>());
 
   /* Write triangles. */
   for (const int i : vdb_tris.index_range()) {

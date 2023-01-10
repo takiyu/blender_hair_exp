@@ -368,7 +368,7 @@ void mesh_render_data_update_normals(MeshRenderData *mr, const eMRDataType data_
           MEM_mallocN(sizeof(*mr->loop_normals) * mr->loop_len, __func__));
       short(*clnors)[2] = static_cast<short(*)[2]>(
           CustomData_get_layer(&mr->me->ldata, CD_CUSTOMLOOPNORMAL));
-      BKE_mesh_normals_loop_split(reinterpret_cast<const float(*)[3]>(mr->positions),
+      BKE_mesh_normals_loop_split(reinterpret_cast<const float(*)[3]>(mr->vert_positions),
                                   mr->vert_normals,
                                   mr->vert_len,
                                   mr->medge,
@@ -543,7 +543,7 @@ MeshRenderData *mesh_render_data_create(Object *object,
     mr->poly_len = mr->me->totpoly;
     mr->tri_len = poly_to_tri_count(mr->poly_len, mr->loop_len);
 
-    mr->positions = mr->me->vert_positions().data();
+    mr->vert_positions = mr->me->vert_positions().data();
     mr->medge = BKE_mesh_edges(mr->me);
     mr->mpoly = BKE_mesh_polys(mr->me);
     mr->corner_verts = BKE_mesh_corner_verts(mr->me);

@@ -217,9 +217,9 @@ static void statvis_calc_thickness(const MeshRenderData *mr, float *r_thickness)
     const MLoopTri *mlooptri = mr->mlooptri;
     for (int i = 0; i < mr->tri_len; i++, mlooptri++) {
       const int index = mlooptri->poly;
-      const float *cos[3] = {mr->positions[mr->corner_verts[mlooptri->tri[0]]],
-                             mr->positions[mr->corner_verts[mlooptri->tri[1]]],
-                             mr->positions[mr->corner_verts[mlooptri->tri[2]]]};
+      const float *cos[3] = {mr->vert_positions[mr->corner_verts[mlooptri->tri[0]]],
+                             mr->vert_positions[mr->corner_verts[mlooptri->tri[1]]],
+                             mr->vert_positions[mr->corner_verts[mlooptri->tri[2]]]};
       float ray_co[3];
       float ray_no[3];
 
@@ -342,7 +342,7 @@ static void statvis_calc_intersect(const MeshRenderData *mr, float *r_intersect)
     BVHTree *tree = BKE_bvhtree_from_mesh_get(&treeData, mr->me, BVHTREE_FROM_LOOPTRI, 4);
 
     struct BVHTree_OverlapData data = {nullptr};
-    data.positions = mr->positions;
+    data.positions = mr->vert_positions;
     data.corner_verts = mr->corner_verts;
     data.mlooptri = mr->mlooptri;
     data.epsilon = BLI_bvhtree_get_epsilon(tree);
@@ -454,9 +454,9 @@ static void statvis_calc_distort(const MeshRenderData *mr, float *r_distort)
           const int corner_next = mp->loopstart + (i + 1) % mp->totloop;
           float no_corner[3];
           normal_tri_v3(no_corner,
-                        mr->positions[mr->corner_verts[corner_prev]],
-                        mr->positions[mr->corner_verts[corner_curr]],
-                        mr->positions[mr->corner_verts[corner_next]]);
+                        mr->vert_positions[mr->corner_verts[corner_prev]],
+                        mr->vert_positions[mr->corner_verts[corner_curr]],
+                        mr->vert_positions[mr->corner_verts[corner_next]]);
           /* simple way to detect (what is most likely) concave */
           if (dot_v3v3(f_no, no_corner) < 0.0f) {
             negate_v3(no_corner);
@@ -547,7 +547,7 @@ static void statvis_calc_sharp(const MeshRenderData *mr, float *r_sharp)
           const float *f2_no = static_cast<const float *>(*pval);
           angle = angle_normalized_v3v3(f1_no, f2_no);
           angle = is_edge_convex_v3(
-                      mr->positions[vert_curr], mr->positions[vert_next], f1_no, f2_no) ?
+                      mr->vert_positions[vert_curr], mr->vert_positions[vert_next], f1_no, f2_no) ?
                       angle :
                       -angle;
           /* Tag as manifold. */

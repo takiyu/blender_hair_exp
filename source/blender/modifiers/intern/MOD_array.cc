@@ -125,15 +125,15 @@ static int svert_sum_cmp(const void *e1, const void *e2)
 }
 
 static void svert_from_mvert(SortVertsElem *sv,
-                             const float (*positions)[3],
+                             const float (*vert_positions)[3],
                              const int i_begin,
                              const int i_end)
 {
   int i;
   for (i = i_begin; i < i_end; i++, sv++) {
     sv->vertex_num = i;
-    copy_v3_v3(sv->co, positions[i]);
-    sv->sum_co = sum_v3(positions[i]);
+    copy_v3_v3(sv->co, vert_positions[i]);
+    sv->sum_co = sum_v3(vert_positions[i]);
   }
 }
 
@@ -145,7 +145,7 @@ static void svert_from_mvert(SortVertsElem *sv,
  * The `int doubles_map[verts_source_num]` array must have been allocated by caller.
  */
 static void dm_mvert_map_doubles(int *doubles_map,
-                                 const float (*positions)[3],
+                                 const float (*vert_positions)[3],
                                  const int target_start,
                                  const int target_verts_num,
                                  const int source_start,
@@ -167,10 +167,10 @@ static void dm_mvert_map_doubles(int *doubles_map,
       MEM_malloc_arrayN(source_verts_num, sizeof(SortVertsElem), __func__));
 
   /* Copy target vertices index and cos into SortVertsElem array */
-  svert_from_mvert(sorted_verts_target, positions, target_start, target_end);
+  svert_from_mvert(sorted_verts_target, vert_positions, target_start, target_end);
 
   /* Copy source vertices index and cos into SortVertsElem array */
-  svert_from_mvert(sorted_verts_source, positions, source_start, source_end);
+  svert_from_mvert(sorted_verts_source, vert_positions, source_start, source_end);
 
   /* sort arrays according to sum of vertex coordinates (sumco) */
   qsort(sorted_verts_target, target_verts_num, sizeof(SortVertsElem), svert_sum_cmp);
@@ -238,8 +238,8 @@ static void dm_mvert_map_doubles(int *doubles_map,
          * then there will be no mapping at all for this source. */
         while (best_target_vertex != -1 &&
                !ELEM(doubles_map[best_target_vertex], -1, best_target_vertex)) {
-          if (compare_len_v3v3(positions[sve_source->vertex_num],
-                               positions[doubles_map[best_target_vertex]],
+          if (compare_len_v3v3(vert_positions[sve_source->vertex_num],
+                               vert_positions[doubles_map[best_target_vertex]],
                                dist)) {
             best_target_vertex = doubles_map[best_target_vertex];
           }

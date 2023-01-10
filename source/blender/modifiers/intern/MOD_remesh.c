@@ -79,7 +79,7 @@ static void init_dualcon_mesh(DualConInput *input, Mesh *mesh)
  * keep track of the current elements */
 typedef struct {
   Mesh *mesh;
-  float (*positions)[3];
+  float (*vert_positions)[3];
   MPoly *polys;
   int *corner_verts;
   int curvert, curface;
@@ -95,7 +95,7 @@ static void *dualcon_alloc_output(int totvert, int totquad)
   }
 
   output->mesh = BKE_mesh_new_nomain(totvert, 0, 0, 4 * totquad, totquad);
-  output->positions = BKE_mesh_vert_positions_for_write(output->mesh);
+  output->vert_positions = BKE_mesh_vert_positions_for_write(output->mesh);
   output->polys = BKE_mesh_polys_for_write(output->mesh);
   output->corner_verts = BKE_mesh_corner_verts_for_write(output->mesh);
 
@@ -108,7 +108,7 @@ static void dualcon_add_vert(void *output_v, const float co[3])
 
   BLI_assert(output->curvert < output->mesh->totvert);
 
-  copy_v3_v3(output->positions[output->curvert], co);
+  copy_v3_v3(output->vert_positions[output->curvert], co);
   output->curvert++;
 }
 

@@ -82,12 +82,12 @@ static void extract_fdots_pos_iter_poly_mesh(const MeshRenderData *mr,
     const int vert_i = mr->corner_verts[ml_index];
     if (mr->use_subsurf_fdots) {
       if (BLI_BITMAP_TEST(facedot_tags, vert_i)) {
-        copy_v3_v3(center[mp_index], mr->positions[vert_i]);
+        copy_v3_v3(center[mp_index], mr->vert_positions[vert_i]);
         break;
       }
     }
     else {
-      add_v3_v3(center[mp_index], mr->positions[vert_i]);
+      add_v3_v3(center[mp_index], mr->vert_positions[vert_i]);
     }
   }
 

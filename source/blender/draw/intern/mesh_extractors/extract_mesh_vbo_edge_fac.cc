@@ -131,9 +131,9 @@ static void extract_edge_fac_iter_poly_mesh(const MeshRenderData *mr,
         const int ml_index_other = (ml_index == ml_index_last) ? mp->loopstart : (ml_index + 1);
         const int vert_next = mr->corner_verts[ml_index_other];
         float ratio = loop_edge_factor_get(mr->poly_normals[mp_index],
-                                           mr->positions[vert_i],
+                                           mr->vert_positions[vert_i],
                                            mr->vert_normals[vert_i],
-                                           mr->positions[vert_next]);
+                                           mr->vert_positions[vert_next]);
         data->vbo_data[ml_index] = ratio * 253 + 1;
       }
       else {

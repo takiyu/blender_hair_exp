@@ -72,7 +72,7 @@ struct WeightedNormalData {
   int loops_num;
   int polys_num;
 
-  const float (*positions)[3];
+  const float (*vert_positions)[3];
   const float (*vert_normals)[3];
   MEdge *medge;
 
@@ -188,7 +188,7 @@ static void apply_weights_vertex_normal(WeightedNormalModifierData *wnmd,
   const int loops_num = wn_data->loops_num;
   const int polys_num = wn_data->polys_num;
 
-  const float(*positions)[3] = wn_data->positions;
+  const float(*positions)[3] = wn_data->vert_positions;
   MEdge *medge = wn_data->medge;
 
   const Span<int> corner_verts = wn_data->corner_verts;
@@ -462,7 +462,7 @@ static void wn_face_area(WeightedNormalModifierData *wnmd, WeightedNormalData *w
   using namespace blender;
   const int polys_num = wn_data->polys_num;
 
-  const float(*positions)[3] = wn_data->positions;
+  const float(*positions)[3] = wn_data->vert_positions;
   const Span<int> corner_verts = wn_data->corner_verts;
   const MPoly *mpoly = wn_data->mpoly;
 
@@ -490,7 +490,7 @@ static void wn_corner_angle(WeightedNormalModifierData *wnmd, WeightedNormalData
   const int loops_num = wn_data->loops_num;
   const int polys_num = wn_data->polys_num;
 
-  const float(*positions)[3] = wn_data->positions;
+  const float(*positions)[3] = wn_data->vert_positions;
   const Span<int> corner_verts = wn_data->corner_verts;
   const MPoly *mpoly = wn_data->mpoly;
 
@@ -527,7 +527,7 @@ static void wn_face_with_angle(WeightedNormalModifierData *wnmd, WeightedNormalD
   const int loops_num = wn_data->loops_num;
   const int polys_num = wn_data->polys_num;
 
-  const float(*positions)[3] = wn_data->positions;
+  const float(*positions)[3] = wn_data->vert_positions;
   const Span<int> corner_verts = wn_data->corner_verts;
   const MPoly *mpoly = wn_data->mpoly;
 
@@ -635,7 +635,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
   wn_data.loops_num = loops_num;
   wn_data.polys_num = polys_num;
 
-  wn_data.positions = positions;
+  wn_data.vert_positions = positions;
   wn_data.vert_normals = BKE_mesh_vertex_normals_ensure(result);
   wn_data.medge = medge;
 

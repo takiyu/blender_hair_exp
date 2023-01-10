@@ -34,7 +34,7 @@
 #define SCULPT_GEODESIC_VERTEX_NONE -1
 
 /* Propagate distance from v1 and v2 to v0. */
-static bool sculpt_geodesic_mesh_test_dist_add(const float (*positions)[3],
+static bool sculpt_geodesic_mesh_test_dist_add(const float (*vert_positions)[3],
                                                const int v0,
                                                const int v1,
                                                const int v2,
@@ -57,11 +57,11 @@ static bool sculpt_geodesic_mesh_test_dist_add(const float (*positions)[3],
       return false;
     }
     dist0 = geodesic_distance_propagate_across_triangle(
-        positions[v0], positions[v1], positions[v2], dists[v1], dists[v2]);
+        vert_positions[v0], vert_positions[v1], vert_positions[v2], dists[v1], dists[v2]);
   }
   else {
     float vec[3];
-    sub_v3_v3v3(vec, positions[v1], positions[v0]);
+    sub_v3_v3v3(vec, vert_positions[v1], vert_positions[v0]);
     dist0 = dists[v1] + len_v3(vec);
   }
 
@@ -85,7 +85,7 @@ static float *SCULPT_geodesic_mesh_create(Object *ob,
 
   const float limit_radius_sq = limit_radius * limit_radius;
 
-  float(*positions)[3] = SCULPT_mesh_deformed_positions_get(ss);
+  float(*vert_positions)[3] = SCULPT_mesh_deformed_positions_get(ss);
   const MEdge *edges = BKE_mesh_edges(mesh);
   const MPoly *polys = BKE_mesh_polys(mesh);
   const int *corner_verts = BKE_mesh_corner_verts(mesh);
@@ -140,9 +140,9 @@ static float *SCULPT_geodesic_mesh_create(Object *ob,
      * number of vertices (usually just 1 or 2). */
     GSET_ITER (gs_iter, initial_verts) {
       const int v = POINTER_AS_INT(BLI_gsetIterator_getKey(&gs_iter));
-      float *v_co = positions[v];
+      float *v_co = vert_positions[v];
       for (int i = 0; i < totvert; i++) {
-        if (len_squared_v3v3(v_co, positions[i]) <= limit_radius_sq) {
+        if (len_squared_v3v3(v_co, vert_positions[i]) <= limit_radius_sq) {
           BLI_BITMAP_ENABLE(affected_vertex, i);
         }
       }
@@ -172,7 +172,7 @@ static float *SCULPT_geodesic_mesh_create(Object *ob,
           SWAP(int, v1, v2);
         }
         sculpt_geodesic_mesh_test_dist_add(
-            positions, v2, v1, SCULPT_GEODESIC_VERTEX_NONE, dists, initial_verts);
+            vert_positions, v2, v1, SCULPT_GEODESIC_VERTEX_NONE, dists, initial_verts);
       }
 
       if (ss->epmap[e].count != 0) {
@@ -189,7 +189,7 @@ static float *SCULPT_geodesic_mesh_create(Object *ob,
               continue;
             }
             if (sculpt_geodesic_mesh_test_dist_add(
-                    positions, v_other, v1, v2, dists, initial_verts)) {
+                    vert_positions, v_other, v1, v2, dists, initial_verts)) {
               for (int edge_map_index = 0; edge_map_index < ss->vemap[v_other].count;
                    edge_map_index++) {
                 const int e_other = ss->vemap[v_other].indices[edge_map_index];

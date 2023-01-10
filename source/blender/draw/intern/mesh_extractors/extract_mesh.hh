@@ -74,7 +74,7 @@ struct MeshRenderData {
   int freestyle_face_ofs;
   /** Mesh */
   Mesh *me;
-  const blender::float3 *positions;
+  const blender::float3 *vert_positions;
   const MEdge *medge;
   const int *corner_verts;
   const int *corner_edges;

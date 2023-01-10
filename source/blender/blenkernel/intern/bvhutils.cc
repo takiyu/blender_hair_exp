@@ -762,7 +762,7 @@ BVHTree *bvhtree_from_editmesh_verts(
 }
 
 BVHTree *bvhtree_from_mesh_verts_ex(BVHTreeFromMesh *data,
-                                    const float (*positions)[3],
+                                    const float (*vert_positions)[3],
                                     const int verts_num,
                                     const BitVector<> &verts_mask,
                                     int verts_num_active,
@@ -771,14 +771,14 @@ BVHTree *bvhtree_from_mesh_verts_ex(BVHTreeFromMesh *data,
                                     int axis)
 {
   BVHTree *tree = bvhtree_from_mesh_verts_create_tree(
-      epsilon, tree_type, axis, positions, verts_num, verts_mask, verts_num_active);
+      epsilon, tree_type, axis, vert_positions, verts_num, verts_mask, verts_num_active);
 
   bvhtree_balance(tree, false);
 
   if (data) {
     /* Setup BVHTreeFromMesh */
     bvhtree_from_mesh_setup_data(
-        tree, BVHTREE_FROM_VERTS, positions, nullptr, nullptr, nullptr, nullptr, data);
+        tree, BVHTREE_FROM_VERTS, vert_positions, nullptr, nullptr, nullptr, nullptr, data);
   }
 
   return tree;
@@ -896,7 +896,7 @@ BVHTree *bvhtree_from_editmesh_edges(
 }
 
 BVHTree *bvhtree_from_mesh_edges_ex(BVHTreeFromMesh *data,
-                                    const float (*positions)[3],
+                                    const float (*vert_positions)[3],
                                     const MEdge *edge,
                                     const int edges_num,
                                     const BitVector<> &edges_mask,
@@ -906,14 +906,14 @@ BVHTree *bvhtree_from_mesh_edges_ex(BVHTreeFromMesh *data,
                                     int axis)
 {
   BVHTree *tree = bvhtree_from_mesh_edges_create_tree(
-      positions, edge, edges_num, edges_mask, edges_num_active, epsilon, tree_type, axis);
+      vert_positions, edge, edges_num, edges_mask, edges_num_active, epsilon, tree_type, axis);
 
   bvhtree_balance(tree, false);
 
   if (data) {
     /* Setup BVHTreeFromMesh */
     bvhtree_from_mesh_setup_data(
-        tree, BVHTREE_FROM_EDGES, positions, edge, nullptr, nullptr, nullptr, data);
+        tree, BVHTREE_FROM_EDGES, vert_positions, edge, nullptr, nullptr, nullptr, data);
   }
 
   return tree;
@@ -1105,7 +1105,7 @@ BVHTree *bvhtree_from_editmesh_looptri(
 }
 
 BVHTree *bvhtree_from_mesh_looptri_ex(BVHTreeFromMesh *data,
-                                      const float (*positions)[3],
+                                      const float (*vert_positions)[3],
                                       const int *corner_verts,
                                       const struct MLoopTri *looptri,
                                       const int looptri_num,
@@ -1118,7 +1118,7 @@ BVHTree *bvhtree_from_mesh_looptri_ex(BVHTreeFromMesh *data,
   BVHTree *tree = bvhtree_from_mesh_looptri_create_tree(epsilon,
                                                         tree_type,
                                                         axis,
-                                                        positions,
+                                                        vert_positions,
                                                         corner_verts,
                                                         looptri,
                                                         looptri_num,
@@ -1130,7 +1130,7 @@ BVHTree *bvhtree_from_mesh_looptri_ex(BVHTreeFromMesh *data,
   if (data) {
     /* Setup BVHTreeFromMesh */
     bvhtree_from_mesh_setup_data(
-        tree, BVHTREE_FROM_LOOPTRI, positions, nullptr, nullptr, corner_verts, looptri, data);
+        tree, BVHTREE_FROM_LOOPTRI, vert_positions, nullptr, nullptr, corner_verts, looptri, data);
   }
 
   return tree;

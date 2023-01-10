@@ -1774,7 +1774,7 @@ typedef struct DynamicPaintModifierApplyData {
   const DynamicPaintSurface *surface;
   Object *ob;
 
-  float (*positions)[3];
+  float (*vert_positions)[3];
   const float (*vert_normals)[3];
   const int *corner_verts;
   const MPoly *mpoly;
@@ -1795,7 +1795,7 @@ static void dynamic_paint_apply_surface_displace_cb(void *__restrict userdata,
   const float *value = (float *)surface->data->type_data;
   const float val = value[i] * surface->disp_factor;
 
-  madd_v3_v3fl(data->positions[i], data->vert_normals[i], -val);
+  madd_v3_v3fl(data->vert_positions[i], data->vert_normals[i], -val);
 }
 
 /* apply displacing vertex surface to the derived mesh */
@@ -1809,11 +1809,9 @@ static void dynamicPaint_applySurfaceDisplace(DynamicPaintSurface *surface, Mesh
 
   /* displace paint */
   if (surface->type == MOD_DPAINT_SURFACE_T_DISPLACE) {
-    float(*positions)[3] = BKE_mesh_vert_positions_for_write(result);
-
     DynamicPaintModifierApplyData data = {
         .surface = surface,
-        .positions = positions,
+        .vert_positions = BKE_mesh_vert_positions_for_write(result),
         .vert_normals = BKE_mesh_vertex_normals_ensure(result),
     };
     TaskParallelSettings settings;
@@ -1881,7 +1879,7 @@ static void dynamic_paint_apply_surface_wave_cb(void *__restrict userdata,
 
   PaintWavePoint *wPoint = (PaintWavePoint *)data->surface->data->type_data;
 
-  madd_v3_v3fl(data->positions[i], data->vert_normals[i], wPoint[i].height);
+  madd_v3_v3fl(data->vert_positions[i], data->vert_normals[i], wPoint[i].height);
 }
 
 /*
@@ -2007,11 +2005,9 @@ static Mesh *dynamicPaint_Modifier_apply(DynamicPaintModifierData *pmd, Object *
           }
           /* wave simulation */
           else if (surface->type == MOD_DPAINT_SURFACE_T_WAVE) {
-            float(*positions)[3] = BKE_mesh_vert_positions_for_write(result);
-
             DynamicPaintModifierApplyData data = {
                 .surface = surface,
-                .positions = positions,
+                .vert_positions = BKE_mesh_vert_positions_for_write(result),
                 .vert_normals = BKE_mesh_vertex_normals_ensure(result),
             };
             TaskParallelSettings settings;

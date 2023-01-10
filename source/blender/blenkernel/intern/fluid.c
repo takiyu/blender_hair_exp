@@ -840,7 +840,7 @@ BLI_INLINE void apply_effector_fields(FluidEffectorSettings *UNUSED(fes),
 }
 
 static void update_velocities(FluidEffectorSettings *fes,
-                              const float (*positions)[3],
+                              const float (*vert_positions)[3],
                               const int *corner_verts,
                               const MLoopTri *mlooptri,
                               float *velocity_map,
@@ -870,7 +870,8 @@ static void update_velocities(FluidEffectorSettings *fes,
     v1 = corner_verts[mlooptri[f_index].tri[0]];
     v2 = corner_verts[mlooptri[f_index].tri[1]];
     v3 = corner_verts[mlooptri[f_index].tri[2]];
-    interp_weights_tri_v3(weights, positions[v1], positions[v2], positions[v3], nearest.co);
+    interp_weights_tri_v3(
+        weights, vert_positions[v1], vert_positions[v2], vert_positions[v3], nearest.co);
 
     /* Apply object velocity. */
     float hit_vel[3];
@@ -937,7 +938,7 @@ static void update_velocities(FluidEffectorSettings *fes,
 typedef struct ObstaclesFromDMData {
   FluidEffectorSettings *fes;
 
-  const float (*positions)[3];
+  const float (*vert_positions)[3];
   const int *corner_verts;
   const MLoopTri *mlooptri;
 
@@ -972,7 +973,7 @@ static void obstacles_from_mesh_task_cb(void *__restrict userdata,
 
       /* Calculate object velocities. Result in bb->velocity. */
       update_velocities(data->fes,
-                        data->positions,
+                        data->vert_positions,
                         data->corner_verts,
                         data->mlooptri,
                         bb->velocity,
@@ -1070,7 +1071,7 @@ static void obstacles_from_mesh(Object *coll_ob,
 
       ObstaclesFromDMData data = {
           .fes = fes,
-          .positions = positions,
+          .vert_positions = positions,
           .corner_verts = corner_verts,
           .mlooptri = looptri,
           .tree = &tree_data,
@@ -1784,7 +1785,7 @@ static void update_distances(int index,
 }
 
 static void sample_mesh(FluidFlowSettings *ffs,
-                        const float (*positions)[3],
+                        const float (*vert_positions)[3],
                         const float (*vert_normals)[3],
                         const int *corner_verts,
                         const MLoopTri *mlooptri,
@@ -1872,7 +1873,8 @@ static void sample_mesh(FluidFlowSettings *ffs,
     v1 = corner_verts[mlooptri[f_index].tri[0]];
     v2 = corner_verts[mlooptri[f_index].tri[1]];
     v3 = corner_verts[mlooptri[f_index].tri[2]];
-    interp_weights_tri_v3(weights, positions[v1], positions[v2], positions[v3], nearest.co);
+    interp_weights_tri_v3(
+        weights, vert_positions[v1], vert_positions[v2], vert_positions[v3], nearest.co);
 
     /* Compute emission strength for smoke flow. */
     if (is_gas_flow) {
@@ -1978,7 +1980,7 @@ typedef struct EmitFromDMData {
   FluidDomainSettings *fds;
   FluidFlowSettings *ffs;
 
-  const float (*positions)[3];
+  const float (*vert_positions)[3];
   const float (*vert_normals)[3];
   const int *corner_verts;
   const MLoopTri *mlooptri;
@@ -2012,7 +2014,7 @@ static void emit_from_mesh_task_cb(void *__restrict userdata,
        * Result in bb->influence. Also computes initial velocities. Result in bb->velocity. */
       if (ELEM(data->ffs->behavior, FLUID_FLOW_BEHAVIOR_GEOMETRY, FLUID_FLOW_BEHAVIOR_INFLOW)) {
         sample_mesh(data->ffs,
-                    data->positions,
+                    data->vert_positions,
                     data->vert_normals,
                     data->corner_verts,
                     data->mlooptri,
@@ -2136,7 +2138,7 @@ static void emit_from_mesh(
       EmitFromDMData data = {
           .fds = fds,
           .ffs = ffs,
-          .positions = positions,
+          .vert_positions = positions,
           .vert_normals = vert_normals,
           .corner_verts = corner_verts,
           .mlooptri = mlooptri,
