@@ -110,7 +110,7 @@ static Mesh *create_circle_mesh(const float radius,
                                    circle_face_total(fill_type, verts_num));
   BKE_id_material_eval_ensure_default_slot(&mesh->id);
   BKE_mesh_smooth_flag_set(mesh, false);
-  MutableSpan<MVert> verts = mesh->verts_for_write();
+  MutableSpan<float3> positions = mesh->vert_positions_for_write();
   MutableSpan<MEdge> edges = mesh->edges_for_write();
   MutableSpan<MPoly> polys = mesh->polys_for_write();
   MutableSpan<MLoop> loops = mesh->loops_for_write();
@@ -119,10 +119,10 @@ static Mesh *create_circle_mesh(const float radius,
   const float angle_delta = 2.0f * (M_PI / float(verts_num));
   for (const int i : IndexRange(verts_num)) {
     const float angle = i * angle_delta;
-    copy_v3_v3(verts[i].co, float3(std::cos(angle) * radius, std::sin(angle) * radius, 0.0f));
+    positions[i] = float3(std::cos(angle) * radius, std::sin(angle) * radius, 0.0f);
   }
   if (fill_type == GEO_NODE_MESH_CIRCLE_FILL_TRIANGLE_FAN) {
-    copy_v3_v3(verts.last().co, float3(0));
+    positions.last() = float3(0);
   }
 
   /* Create outer edges. */

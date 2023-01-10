@@ -91,16 +91,20 @@ static void rna_Mesh_calc_smooth_groups(
     Mesh *mesh, bool use_bitflags, int *r_poly_group_len, int **r_poly_group, int *r_group_total)
 {
   *r_poly_group_len = mesh->totpoly;
-  *r_poly_group = BKE_mesh_calc_smoothgroups(
-      BKE_mesh_edges(mesh),
-      mesh->totedge,
-      BKE_mesh_polys(mesh),
-      (const bool *)CustomData_get_layer_named(&mesh->pdata, CD_PROP_BOOL, "sharp_face"),
-      mesh->totpoly,
-      BKE_mesh_loops(mesh),
-      mesh->totloop,
-      r_group_total,
-      use_bitflags);
+  const bool *sharp_edges = (const bool *)CustomData_get_layer_named(
+      &mesh->edata, CD_PROP_BOOL, "sharp_edge");
+  const bool *sharp_faces = (const bool *)CustomData_get_layer_named(
+      &mesh->pdata, CD_PROP_BOOL, "sharp_face");
+  *r_poly_group = BKE_mesh_calc_smoothgroups(BKE_mesh_edges(mesh),
+                                             mesh->totedge,
+                                             BKE_mesh_polys(mesh),
+                                             mesh->totpoly,
+                                             sharp_faces,
+                                             BKE_mesh_loops(mesh),
+                                             mesh->totloop,
+                                             sharp_edges,
+                                             r_group_total,
+                                             use_bitflags);
 }
 
 static void rna_Mesh_normals_split_custom_do(Mesh *mesh,
@@ -250,7 +254,7 @@ void RNA_api_mesh(StructRNA *srna)
   parm = RNA_def_string(func,
                         "uvmap",
                         NULL,
-                        MAX_CUSTOMDATA_LAYER_NAME,
+                        MAX_CUSTOMDATA_LAYER_NAME_NO_PREFIX,
                         "",
                         "Name of the UV map to use for tangent space computation");
 
