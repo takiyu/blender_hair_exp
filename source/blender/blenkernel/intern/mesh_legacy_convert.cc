@@ -1225,7 +1225,7 @@ void BKE_mesh_tessface_ensure(struct Mesh *mesh)
 /** \name Sharp Edge Conversion
  * \{ */
 
-void BKE_mesh_sharp_faces_to_flags(Mesh *mesh)
+void BKE_mesh_legacy_sharp_faces_to_flags(Mesh *mesh)
 {
   using namespace blender;
   MutableSpan<MPoly> polys = mesh->polys_for_write();
@@ -1244,7 +1244,7 @@ void BKE_mesh_sharp_faces_to_flags(Mesh *mesh)
   }
 }
 
-void BKE_mesh_sharp_faces_from_flags(Mesh *mesh)
+void BKE_mesh_legacy_sharp_faces_from_flags(Mesh *mesh)
 {
   using namespace blender;
   using namespace blender::bke;
