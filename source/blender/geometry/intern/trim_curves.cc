@@ -617,11 +617,13 @@ static void trim_polygonal_curves(const bke::CurvesGeometry &src_curves,
 {
   const Span<float3> src_positions = src_curves.positions();
   MutableSpan<float3> dst_positions = dst_curves.positions_for_write();
+  const OffsetArrayRef<int> src_points_by_curve = src_curves.points_by_curve();
+  const OffsetArrayRef<int> dst_points_by_curve = dst_curves.points_by_curve();
 
   threading::parallel_for(selection.index_range(), 512, [&](const IndexRange range) {
     for (const int64_t curve_i : selection.slice(range)) {
-      const IndexRange src_points = src_curves.points_for_curve(curve_i);
-      const IndexRange dst_points = dst_curves.points_for_curve(curve_i);
+      const IndexRange src_points = src_points_by_curve[curve_i];
+      const IndexRange dst_points = dst_points_by_curve[curve_i];
 
       sample_interval_linear<float3>(src_positions.slice(src_points),
                                      dst_positions,

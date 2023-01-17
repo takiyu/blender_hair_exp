@@ -55,9 +55,10 @@ static void select_by_handle_type(const bke::CurvesGeometry &curves,
   VArray<int8_t> curve_types = curves.curve_types();
   VArray<int8_t> left = curves.handle_types_left();
   VArray<int8_t> right = curves.handle_types_right();
+  const OffsetArrayRef<int> points_by_curve = curves.points_by_curve();
 
   for (const int i_curve : curves.curves_range()) {
-    const IndexRange points = curves.points_for_curve(i_curve);
+    const IndexRange points = points_by_curve[i_curve];
     if (curve_types[i_curve] != CURVE_TYPE_BEZIER) {
       r_selection.slice(points).fill(false);
     }

@@ -18,6 +18,7 @@
 #include "BLI_generic_virtual_array.hh"
 #include "BLI_index_mask.hh"
 #include "BLI_math_vector_types.hh"
+#include "BLI_offset_array_ref.hh"
 #include "BLI_shared_cache.hh"
 #include "BLI_span.hh"
 #include "BLI_task.hh"
@@ -175,6 +176,11 @@ class CurvesGeometry : public ::CurvesGeometry {
    */
   Span<int> offsets() const;
   MutableSpan<int> offsets_for_write();
+
+  /**
+   * The offsets of every curve into arrays on the points domain.
+   */
+  OffsetArrayRef<int> points_by_curve() const;
 
   /**
    * Access a range of indices of point data for a specific curve.
@@ -882,6 +888,11 @@ inline const std::array<int, CURVE_TYPES_NUM> &CurvesGeometry::curve_type_counts
 {
   BLI_assert(this->runtime->type_counts == calculate_type_counts(this->curve_types()));
   return this->runtime->type_counts;
+}
+
+inline OffsetArrayRef<int> CurvesGeometry::points_by_curve() const
+{
+  return OffsetArrayRef<int>({this->curve_offsets, this->curve_num + 1});
 }
 
 inline IndexRange CurvesGeometry::points_for_curve(const int index) const
