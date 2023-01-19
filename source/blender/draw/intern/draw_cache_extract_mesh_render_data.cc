@@ -549,8 +549,8 @@ MeshRenderData *mesh_render_data_create(Object *object,
     mr->vert_positions = mr->me->vert_positions().data();
     mr->medge = BKE_mesh_edges(mr->me);
     mr->mpoly = BKE_mesh_polys(mr->me);
-    mr->corner_verts = BKE_mesh_corner_verts(mr->me);
-    mr->corner_edges = BKE_mesh_corner_edges(mr->me);
+    mr->corner_verts = mr->me->corner_verts().data();
+    mr->corner_edges = mr->me->corner_edges().data();
 
     mr->v_origindex = static_cast<const int *>(CustomData_get_layer(&mr->me->vdata, CD_ORIGINDEX));
     mr->e_origindex = static_cast<const int *>(CustomData_get_layer(&mr->me->edata, CD_ORIGINDEX));

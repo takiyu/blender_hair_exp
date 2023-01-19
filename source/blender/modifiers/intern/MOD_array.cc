@@ -281,8 +281,8 @@ static void mesh_merge_transform(Mesh *result,
   float(*result_positions)[3] = BKE_mesh_vert_positions_for_write(result);
   MEdge *result_edges = BKE_mesh_edges_for_write(result);
   MPoly *result_polys = BKE_mesh_polys_for_write(result);
-  int *result_corner_verts = BKE_mesh_corner_verts_for_write(result);
-  int *result_corner_edges = BKE_mesh_corner_edges_for_write(result);
+  blender::MutableSpan<int> result_corner_verts = result->corner_verts_for_write();
+  blender::MutableSpan<int> result_corner_edges = result->corner_edges_for_write();
 
   CustomData_copy_data(&cap_mesh->vdata, &result->vdata, 0, cap_verts_index, cap_nverts);
   CustomData_copy_data(&cap_mesh->edata, &result->edata, 0, cap_edges_index, cap_nedges);
@@ -538,8 +538,8 @@ static Mesh *arrayModifier_doArray(ArrayModifierData *amd,
   float(*result_positions)[3] = BKE_mesh_vert_positions_for_write(result);
   MEdge *result_edges = BKE_mesh_edges_for_write(result);
   MPoly *result_polys = BKE_mesh_polys_for_write(result);
-  int *result_corner_verts = BKE_mesh_corner_verts_for_write(result);
-  int *result_corner_edges = BKE_mesh_corner_edges_for_write(result);
+  blender::MutableSpan<int> result_corner_verts = result->corner_verts_for_write();
+  blender::MutableSpan<int> result_corner_edges = result->corner_edges_for_write();
 
   if (use_merge) {
     /* Will need full_doubles_map for handling merge */

@@ -74,8 +74,8 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
   const int poly_src_num = mesh->totpoly;
   const MEdge *medge_src = BKE_mesh_edges(mesh);
   const MPoly *mpoly_src = BKE_mesh_polys(mesh);
-  const int *corner_verts_src = BKE_mesh_corner_verts(mesh);
-  const int *corner_edges_src = BKE_mesh_corner_edges(mesh);
+  const int *corner_verts_src = mesh->corner_verts().data();
+  const int *corner_edges_src = mesh->corner_edges().data();
 
   int *vertMap = static_cast<int *>(MEM_malloc_arrayN(vert_src_num, sizeof(int), __func__));
   int *edgeMap = static_cast<int *>(MEM_malloc_arrayN(edge_src_num, sizeof(int), __func__));
@@ -198,8 +198,8 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
       mesh, BLI_ghash_len(vertHash), BLI_ghash_len(edgeHash), 0, loops_dst_num, faces_dst_num);
   MEdge *result_edges = BKE_mesh_edges_for_write(result);
   MPoly *result_polys = BKE_mesh_polys_for_write(result);
-  int *result_corner_verts = BKE_mesh_corner_verts_for_write(result);
-  int *result_corner_edges = BKE_mesh_corner_edges_for_write(result);
+  blender::MutableSpan<int> result_corner_verts = result->corner_verts_for_write();
+  blender::MutableSpan<int> result_corner_edges = result->corner_edges_for_write();
 
   /* copy the vertices across */
   GHASH_ITER (gh_iter, vertHash) {

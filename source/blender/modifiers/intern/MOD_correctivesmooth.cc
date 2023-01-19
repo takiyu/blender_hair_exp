@@ -129,7 +129,7 @@ static void mesh_get_boundaries(Mesh *mesh, float *smooth_weights)
 {
   const MEdge *medge = BKE_mesh_edges(mesh);
   const MPoly *mpoly = BKE_mesh_polys(mesh);
-  const int *corner_edges = BKE_mesh_corner_edges(mesh);
+  const blender::Span<int> corner_edges = mesh->corner_edges();
 
   const uint mpoly_num = (uint)mesh->totpoly;
   const uint medge_num = (uint)mesh->totedge;
@@ -440,7 +440,7 @@ static void calc_tangent_spaces(const Mesh *mesh,
   const uint mpoly_num = (uint)mesh->totpoly;
   const uint mvert_num = (uint)mesh->totvert;
   const MPoly *mpoly = BKE_mesh_polys(mesh);
-  const int *corner_verts = BKE_mesh_corner_verts(mesh);
+  blender::Span<int> corner_verts = mesh->corner_verts();
   uint i;
 
   if (r_tangent_weights_per_vertex != nullptr) {
@@ -521,7 +521,7 @@ static void calc_deltas(CorrectiveSmoothModifierData *csmd,
                         const float (*rest_coords)[3],
                         uint verts_num)
 {
-  const int *corner_verts = BKE_mesh_corner_verts(mesh);
+  blender::Span<int> corner_verts = mesh->corner_verts();
   const uint loops_num = (uint)mesh->totloop;
 
   float(*smooth_vertex_coords)[3] = static_cast<float(*)[3]>(MEM_dupallocN(rest_coords));
@@ -580,7 +580,7 @@ static void correctivesmooth_modifier_do(ModifierData *md,
       ((csmd->rest_source == MOD_CORRECTIVESMOOTH_RESTSOURCE_ORCO) &&
        (((ID *)ob->data)->recalc & ID_RECALC_ALL));
 
-  const int *corner_verts = BKE_mesh_corner_verts(mesh);
+  blender::Span<int> corner_verts = mesh->corner_verts();
   const uint loops_num = (uint)mesh->totloop;
 
   bool use_only_smooth = (csmd->flag & MOD_CORRECTIVESMOOTH_ONLY_SMOOTH) != 0;

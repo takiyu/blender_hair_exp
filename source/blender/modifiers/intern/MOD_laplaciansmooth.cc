@@ -398,7 +398,7 @@ static void laplaciansmoothModifier_do(
   }
 
   sys->mpoly = BKE_mesh_polys(mesh);
-  sys->corner_verts = BKE_mesh_corner_verts(mesh);
+  sys->corner_verts = mesh->corner_verts().data();
   sys->medges = BKE_mesh_edges(mesh);
   sys->vertexCos = vertexCos;
   sys->min_area = 0.00001f;

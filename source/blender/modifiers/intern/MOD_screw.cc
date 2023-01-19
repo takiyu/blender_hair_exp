@@ -382,14 +382,14 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
   const float(*vert_positions_orig)[3] = BKE_mesh_vert_positions(mesh);
   const MEdge *medge_orig = BKE_mesh_edges(mesh);
   const MPoly *mpoly_orig = BKE_mesh_polys(mesh);
-  const int *corner_verts_orig = BKE_mesh_corner_verts(mesh);
-  const int *corner_edges_orig = BKE_mesh_corner_edges(mesh);
+  const blender::Span<int> corner_verts_orig = mesh->corner_verts();
+  const blender::Span<int> corner_edges_orig = mesh->corner_edges();
 
   float(*vert_positions_new)[3] = BKE_mesh_vert_positions_for_write(result);
   MEdge *medge_new = BKE_mesh_edges_for_write(result);
   MPoly *mpoly_new = BKE_mesh_polys_for_write(result);
-  int *corner_verts_new = BKE_mesh_corner_verts_for_write(result);
-  int *corner_edges_new = BKE_mesh_corner_edges_for_write(result);
+  blender::MutableSpan<int> corner_verts_new = result->corner_verts_for_write();
+  blender::MutableSpan<int> corner_edges_new = result->corner_edges_for_write();
 
   if (!CustomData_has_layer(&result->pdata, CD_ORIGINDEX)) {
     CustomData_add_layer(&result->pdata, CD_ORIGINDEX, CD_SET_DEFAULT, nullptr, int(maxPolys));

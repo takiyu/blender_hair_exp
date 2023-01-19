@@ -63,7 +63,7 @@ static void mesh_calc_hq_normal(Mesh *mesh,
   const int edges_num = mesh->totedge;
   const int polys_num = mesh->totpoly;
   const MPoly *mpoly = BKE_mesh_polys(mesh);
-  const int *corner_edges = BKE_mesh_corner_edges(mesh);
+  const blender::Span<int> corner_edges = mesh->corner_edges();
   const MEdge *medge = BKE_mesh_edges(mesh);
 
   const MPoly *mp = mpoly;
@@ -212,8 +212,8 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
   const float(*orig_vert_positions)[3] = BKE_mesh_vert_positions(mesh);
   const MEdge *orig_medge = BKE_mesh_edges(mesh);
   const MPoly *orig_mpoly = BKE_mesh_polys(mesh);
-  const int *orig_corner_verts = BKE_mesh_corner_verts(mesh);
-  const int *orig_corner_edges = BKE_mesh_corner_edges(mesh);
+  const blender::Span<int> orig_corner_verts = mesh->corner_verts();
+  const blender::Span<int> orig_corner_edges = mesh->corner_edges();
 
   if (need_poly_normals) {
     /* calculate only face normals */
@@ -336,8 +336,8 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
   float(*vert_positions)[3] = BKE_mesh_vert_positions_for_write(result);
   MEdge *medge = BKE_mesh_edges_for_write(result);
   MPoly *mpoly = BKE_mesh_polys_for_write(result);
-  int *corner_verts = BKE_mesh_corner_verts_for_write(result);
-  int *corner_edges = BKE_mesh_corner_edges_for_write(result);
+  blender::MutableSpan<int> corner_verts = result->corner_verts_for_write();
+  blender::MutableSpan<int> corner_edges = result->corner_edges_for_write();
 
   if (do_shell) {
     CustomData_copy_data(&mesh->vdata, &result->vdata, 0, 0, int(verts_num));
@@ -1073,8 +1073,8 @@ Mesh *MOD_solidify_extrude_modifyMesh(ModifierData *md, const ModifierEvalContex
 
     /* faces */
     MPoly *mp = mpoly + (polys_num * stride);
-    int *new_corner_verts = corner_verts + (loops_num * stride);
-    int *new_corner_edges = corner_edges + (loops_num * stride);
+    int *new_corner_verts = &corner_verts[loops_num * stride];
+    int *new_corner_edges = &corner_edges[loops_num * stride];
     j = 0;
     for (i = 0; i < newPolys; i++, mp++) {
       uint eidx = new_edge_arr[i];

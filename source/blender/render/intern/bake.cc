@@ -462,7 +462,7 @@ static TriTessFace *mesh_calc_tri_tessface(Mesh *me, bool tangent, Mesh *me_eval
 
   const float(*positions)[3] = BKE_mesh_vert_positions(me);
   const MPoly *polys = BKE_mesh_polys(me);
-  const int *corner_verts = BKE_mesh_corner_verts(me);
+  const blender::Span<int> corner_verts = me->corner_verts();
 
   looptri = static_cast<MLoopTri *>(MEM_mallocN(sizeof(*looptri) * tottri, __func__));
   triangles = static_cast<TriTessFace *>(MEM_callocN(sizeof(TriTessFace) * tottri, __func__));
@@ -473,11 +473,17 @@ static TriTessFace *mesh_calc_tri_tessface(Mesh *me, bool tangent, Mesh *me_eval
   const bool calculate_normal = precomputed_normals ? false : true;
 
   if (precomputed_normals != nullptr) {
-    BKE_mesh_recalc_looptri_with_normals(
-        corner_verts, polys, positions, me->totloop, me->totpoly, looptri, precomputed_normals);
+    BKE_mesh_recalc_looptri_with_normals(corner_verts.data(),
+                                         polys,
+                                         positions,
+                                         me->totloop,
+                                         me->totpoly,
+                                         looptri,
+                                         precomputed_normals);
   }
   else {
-    BKE_mesh_recalc_looptri(corner_verts, polys, positions, me->totloop, me->totpoly, looptri);
+    BKE_mesh_recalc_looptri(
+        corner_verts.data(), polys, positions, me->totloop, me->totpoly, looptri);
   }
 
   const TSpace *tspace = nullptr;
@@ -747,8 +753,8 @@ void RE_bake_pixels_populate(Mesh *me,
 
   const float(*positions)[3] = BKE_mesh_vert_positions(me);
   const MPoly *polys = BKE_mesh_polys(me);
-  const int *corner_verts = BKE_mesh_corner_verts(me);
-  BKE_mesh_recalc_looptri(corner_verts, polys, positions, me->totloop, me->totpoly, looptri);
+  const blender::Span<int> corner_verts = me->corner_verts();
+  BKE_mesh_recalc_looptri(corner_verts.data(), polys, positions, me->totloop, me->totpoly, looptri);
 
   const int *material_indices = BKE_mesh_material_indices(me);
   const int materials_num = targets->materials_num;

@@ -494,10 +494,10 @@ static void do_multires_bake(MultiresBakeRender *bkr,
   memcpy(BKE_mesh_polys_for_write(temp_mesh),
          dm->getPolyArray(dm),
          temp_mesh->totpoly * sizeof(MPoly));
-  memcpy(BKE_mesh_corner_verts_for_write(temp_mesh),
+  memcpy(temp_mesh->corner_verts_for_write().data(),
          dm->getCornerVertArray(dm),
          temp_mesh->totloop * sizeof(int));
-  memcpy(BKE_mesh_corner_edges_for_write(temp_mesh),
+  memcpy(temp_mesh->corner_edges_for_write().data(),
          dm->getCornerEdgeArray(dm),
          temp_mesh->totloop * sizeof(int));
   const float(*vert_normals)[3] = BKE_mesh_vertex_normals_ensure(temp_mesh);

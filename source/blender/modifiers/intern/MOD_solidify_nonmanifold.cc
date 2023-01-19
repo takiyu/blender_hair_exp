@@ -185,8 +185,8 @@ Mesh *MOD_solidify_nonmanifold_modifyMesh(ModifierData *md,
   const float(*orig_vert_positions)[3] = BKE_mesh_vert_positions(mesh);
   const MEdge *orig_medge = BKE_mesh_edges(mesh);
   const MPoly *orig_mpoly = BKE_mesh_polys(mesh);
-  const int *orig_corner_verts = BKE_mesh_corner_verts(mesh);
-  const int *orig_corner_edges = BKE_mesh_corner_edges(mesh);
+  const blender::Span<int> orig_corner_verts = mesh->corner_verts();
+  const blender::Span<int> orig_corner_edges = mesh->corner_edges();
 
   /* These might be null. */
   const float *orig_vert_bweight = static_cast<const float *>(
@@ -1989,8 +1989,8 @@ Mesh *MOD_solidify_nonmanifold_modifyMesh(ModifierData *md,
   float(*vert_positions)[3] = BKE_mesh_vert_positions_for_write(result);
   MEdge *medge = BKE_mesh_edges_for_write(result);
   MPoly *mpoly = BKE_mesh_polys_for_write(result);
-  int *corner_verts = BKE_mesh_corner_verts_for_write(result);
-  int *corner_edges = BKE_mesh_corner_edges_for_write(result);
+  blender::MutableSpan<int> corner_verts = result->corner_verts_for_write();
+  blender::MutableSpan<int> corner_edges = result->corner_edges_for_write();
 
   int *origindex_edge = static_cast<int *>(
       CustomData_get_layer_for_write(&result->edata, CD_ORIGINDEX, result->totedge));

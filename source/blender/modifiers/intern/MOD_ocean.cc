@@ -266,7 +266,7 @@ static Mesh *generate_ocean_geometry(OceanModifierData *omd, Mesh *mesh_orig, co
 
   gogd.vert_positions = BKE_mesh_vert_positions_for_write(result);
   gogd.mpolys = BKE_mesh_polys_for_write(result);
-  gogd.corner_verts = BKE_mesh_corner_verts_for_write(result);
+  gogd.corner_verts = result->corner_verts_for_write().data();
 
   TaskParallelSettings settings;
   BLI_parallel_range_settings_defaults(&settings);
@@ -365,7 +365,7 @@ static Mesh *doOcean(ModifierData *md, const ModifierEvalContext *ctx, Mesh *mes
   if (omd->flag & MOD_OCEAN_GENERATE_FOAM) {
     const int polys_num = result->totpoly;
     const int loops_num = result->totloop;
-    const int *corner_verts = BKE_mesh_corner_verts(result);
+    const blender::Span<int> corner_verts = result->corner_verts();
     MLoopCol *mloopcols = static_cast<MLoopCol *>(CustomData_add_layer_named(&result->ldata,
                                                                              CD_PROP_BYTE_COLOR,
                                                                              CD_SET_DEFAULT,

@@ -212,12 +212,8 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
     memcpy(BKE_mesh_edges_for_write(result), BKE_mesh_edges(mesh), sizeof(MEdge) * mesh->totedge);
   }
   if (!CustomData_has_layer(&mesh->pdata, CD_MPOLY)) {
-    memcpy(BKE_mesh_corner_verts_for_write(result),
-           BKE_mesh_corner_verts(mesh),
-           sizeof(int) * mesh->totloop);
-    memcpy(BKE_mesh_corner_edges_for_write(result),
-           BKE_mesh_corner_edges(mesh),
-           sizeof(int) * mesh->totloop);
+    result->corner_verts_for_write().copy_from(mesh->corner_verts());
+    result->corner_edges_for_write().copy_from(mesh->corner_edges());
     memcpy(BKE_mesh_polys_for_write(result), BKE_mesh_polys(mesh), sizeof(MPoly) * mesh->totpoly);
   }
 
@@ -317,7 +313,7 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
 
   /* adjust mirrored poly loopstart indices, and reverse loop order (normals) */
   mp = BKE_mesh_polys_for_write(result) + maxPolys;
-  int *corner_edges = BKE_mesh_corner_edges_for_write(result);
+  blender::MutableSpan<int> corner_edges = result->corner_edges_for_write();
   for (i = 0; i < maxPolys; i++, mp++) {
     int j, e;
 
@@ -334,7 +330,7 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
                            1);
     }
 
-    int *corner_edge_2 = corner_edges + mp->loopstart + maxLoops;
+    int *corner_edge_2 = &corner_edges[mp->loopstart + maxLoops];
     e = corner_edge_2[0];
     for (j = 0; j < mp->totloop - 1; j++) {
       corner_edge_2[j] = corner_edge_2[j + 1];
@@ -345,7 +341,7 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
   }
 
   /* adjust mirrored loop vertex and edge indices */
-  int *corner_verts = BKE_mesh_corner_verts_for_write(result);
+  blender::MutableSpan<int> corner_verts = result->corner_verts_for_write();
   for (i = 0; i < maxLoops; i++) {
     corner_verts[maxLoops + i] += maxVerts;
     corner_edges[maxLoops + i] += maxEdges;
@@ -419,8 +415,8 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
                                 result->totvert,
                                 BKE_mesh_edges(result),
                                 result->totedge,
-                                BKE_mesh_corner_verts(result),
-                                BKE_mesh_corner_edges(result),
+                                result->corner_verts().data(),
+                                result->corner_edges().data(),
                                 loop_normals,
                                 totloop,
                                 BKE_mesh_polys(result),

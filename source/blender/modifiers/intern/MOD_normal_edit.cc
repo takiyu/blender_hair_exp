@@ -553,8 +553,8 @@ static Mesh *normalEditModifier_do(NormalEditModifierData *enmd,
   const float(*positions)[3] = BKE_mesh_vert_positions(result);
   const MEdge *edges = BKE_mesh_edges(result);
   const MPoly *polys = BKE_mesh_polys(result);
-  int *corner_verts = BKE_mesh_corner_verts_for_write(result);
-  int *corner_edges = BKE_mesh_corner_edges_for_write(result);
+  blender::MutableSpan<int> corner_verts = result->corner_verts_for_write();
+  blender::MutableSpan<int> corner_edges = result->corner_edges_for_write();
 
   int defgrp_index;
   const MDeformVert *dvert;
@@ -583,8 +583,8 @@ static Mesh *normalEditModifier_do(NormalEditModifierData *enmd,
                                 verts_num,
                                 edges,
                                 edges_num,
-                                corner_verts,
-                                corner_edges,
+                                corner_verts.data(),
+                                corner_edges.data(),
                                 loop_normals,
                                 loops_num,
                                 polys,
@@ -624,8 +624,8 @@ static Mesh *normalEditModifier_do(NormalEditModifierData *enmd,
                                  edges,
                                  edges_num,
                                  sharp_edges.span.data(),
-                                 corner_verts,
-                                 corner_edges,
+                                 corner_verts.data(),
+                                 corner_edges.data(),
                                  loops_num,
                                  polys,
                                  polys_num);
@@ -649,8 +649,8 @@ static Mesh *normalEditModifier_do(NormalEditModifierData *enmd,
                                       edges,
                                       edges_num,
                                       sharp_edges.span.data(),
-                                      corner_verts,
-                                      corner_edges,
+                                      corner_verts.data(),
+                                      corner_edges.data(),
                                       loops_num,
                                       polys,
                                       polys_num);

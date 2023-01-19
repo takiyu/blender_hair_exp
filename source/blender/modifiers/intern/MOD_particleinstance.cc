@@ -317,13 +317,13 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
   result = BKE_mesh_new_nomain_from_template(mesh, maxvert, maxedge, 0, maxloop, maxpoly);
 
   const MPoly *orig_mpoly = BKE_mesh_polys(mesh);
-  const int *orig_corner_verts = BKE_mesh_corner_verts(mesh);
-  const int *orig_corner_edges = BKE_mesh_corner_edges(mesh);
+  const blender::Span<int> orig_corner_verts = mesh->corner_verts();
+  const blender::Span<int> orig_corner_edges = mesh->corner_edges();
   float(*positions)[3] = BKE_mesh_vert_positions_for_write(result);
   MEdge *edges = BKE_mesh_edges_for_write(result);
   MPoly *mpoly = BKE_mesh_polys_for_write(result);
-  int *corner_verts = BKE_mesh_corner_verts_for_write(result);
-  int *corner_edges = BKE_mesh_corner_edges_for_write(result);
+  blender::MutableSpan<int> corner_verts = result->corner_verts_for_write();
+  blender::MutableSpan<int> corner_edges = result->corner_edges_for_write();
 
   MLoopCol *mloopcols_index = static_cast<MLoopCol *>(CustomData_get_layer_named_for_write(
       &result->ldata, CD_PROP_BYTE_COLOR, pimd->index_layer_name, result->totloop));

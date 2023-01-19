@@ -2235,8 +2235,8 @@ void BKE_keyblock_mesh_calc_normals(const KeyBlock *kb,
   BKE_keyblock_convert_to_mesh(kb, positions, mesh->totvert);
   const MEdge *edges = BKE_mesh_edges(mesh);
   const MPoly *polys = BKE_mesh_polys(mesh);
-  const int *corner_verts = BKE_mesh_corner_verts(mesh);
-  const int *corner_edges = BKE_mesh_corner_edges(mesh);
+  const blender::Span<int> corner_verts = mesh->corner_verts();
+  const blender::Span<int> corner_edges = mesh->corner_edges();
 
   const bool loop_normals_needed = r_loop_normals != nullptr;
   const bool vert_normals_needed = r_vert_normals != nullptr || loop_normals_needed;
@@ -2259,13 +2259,18 @@ void BKE_keyblock_mesh_calc_normals(const KeyBlock *kb,
   }
 
   if (poly_normals_needed) {
-    BKE_mesh_calc_normals_poly(
-        positions, mesh->totvert, corner_verts, mesh->totloop, polys, mesh->totpoly, poly_normals);
+    BKE_mesh_calc_normals_poly(positions,
+                               mesh->totvert,
+                               corner_verts.data(),
+                               mesh->totloop,
+                               polys,
+                               mesh->totpoly,
+                               poly_normals);
   }
   if (vert_normals_needed) {
     BKE_mesh_calc_normals_poly_and_vertex(positions,
                                           mesh->totvert,
-                                          corner_verts,
+                                          corner_verts.data(),
                                           mesh->totloop,
                                           polys,
                                           mesh->totpoly,
@@ -2282,8 +2287,8 @@ void BKE_keyblock_mesh_calc_normals(const KeyBlock *kb,
                                 mesh->totvert,
                                 edges,
                                 mesh->totedge,
-                                corner_verts,
-                                corner_edges,
+                                corner_verts.data(),
+                                corner_edges.data(),
                                 r_loop_normals,
                                 mesh->totloop,
                                 polys,
