@@ -1,10 +1,9 @@
 /* SPDX-License-Identifier: GPL-2.0-or-later */
 
+#include "BLI_task.hh"
+
 #include "BKE_mesh.h"
 #include "BKE_mesh_runtime.h"
-
-#include "DNA_mesh_types.h"
-#include "DNA_meshdata_types.h"
 
 #include "BKE_attribute_math.hh"
 
@@ -34,16 +33,18 @@ static void mesh_flip_faces(Mesh &mesh, const Field<bool> &selection_field)
   MutableSpan<int> corner_verts = mesh.corner_verts_for_write();
   MutableSpan<int> corner_edges = mesh.corner_edges_for_write();
 
-  for (const int i : selection.index_range()) {
-    const MPoly &poly = polys[selection[i]];
-    int start = poly.loopstart;
-    for (const int j : IndexRange(poly.totloop / 2)) {
-      const int index1 = start + j + 1;
-      const int index2 = start + poly.totloop - j - 1;
-      std::swap(corner_verts[index1], corner_verts[index2]);
-      std::swap(corner_edges[index1 - 1], corner_edges[index2]);
+  threading::parallel_for(selection.index_range(), 1024, [&](const IndexRange range) {
+    for (const int i : selection.slice(range)) {
+      const IndexRange poly(polys[i].loopstart, polys[i].totloop);
+      int start = poly.start();
+      for (const int j : IndexRange(poly.size() / 2)) {
+        const int index1 = start + j + 1;
+        const int index2 = start + poly.size() - j - 1;
+        std::swap(corner_verts[index1], corner_verts[index2]);
+        std::swap(corner_edges[index1 - 1], corner_edges[index2]);
+      }
     }
-  }
+  });
 
   MutableAttributeAccessor attributes = mesh.attributes_for_write();
   attributes.for_all(
@@ -60,10 +61,12 @@ static void mesh_flip_faces(Mesh &mesh, const Field<bool> &selection_field)
           attribute_math::convert_to_static_type(meta_data.data_type, [&](auto dummy) {
             using T = decltype(dummy);
             MutableSpan<T> dst_span = attribute.span.typed<T>();
-            for (const int j : selection.index_range()) {
-              const MPoly &poly = polys[selection[j]];
-              dst_span.slice(poly.loopstart + 1, poly.totloop - 1).reverse();
-            }
+            threading::parallel_for(selection.index_range(), 1024, [&](const IndexRange range) {
+              for (const int i : selection.slice(range)) {
+                const IndexRange poly(polys[i].loopstart, polys[i].totloop);
+                dst_span.slice(poly.drop_front(1)).reverse();
+              }
+            });
           });
           attribute.finish();
         }
