@@ -580,8 +580,8 @@ static void statvis_calc_sharp(const MeshRenderData *mr, float *r_sharp)
     BLI_edgehash_free(eh, nullptr);
 
     for (int l_index = 0; l_index < mr->loop_len; l_index++) {
-      const int vert_i = mr->corner_verts[l_index];
-      r_sharp[l_index] = sharp_remap(vert_angles[vert_i], min, max, minmax_irange);
+      const int vert = mr->corner_verts[l_index];
+      r_sharp[l_index] = sharp_remap(vert_angles[vert], min, max, minmax_irange);
     }
   }
 

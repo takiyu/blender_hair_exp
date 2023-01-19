@@ -177,8 +177,8 @@ static void adapt_mesh_domain_corner_to_point_impl(const Mesh &mesh,
   const Span<int> corner_verts = mesh.corner_verts();
 
   attribute_math::DefaultMixer<T> mixer(r_values);
-  for (const int corner_i : IndexRange(mesh.totloop)) {
-    mixer.mix_in(corner_verts[corner_i], old_values[corner_i]);
+  for (const int corner : IndexRange(mesh.totloop)) {
+    mixer.mix_in(corner_verts[corner], old_values[corner]);
   }
   mixer.finalize();
 }
@@ -195,11 +195,11 @@ void adapt_mesh_domain_corner_to_point_impl(const Mesh &mesh,
   Array<bool> loose_verts(mesh.totvert, true);
 
   r_values.fill(true);
-  for (const int corner_i : IndexRange(mesh.totloop)) {
-    const int point_index = corner_verts[corner_i];
+  for (const int corner : IndexRange(mesh.totloop)) {
+    const int point_index = corner_verts[corner];
 
     loose_verts[point_index] = false;
-    if (!old_values[corner_i]) {
+    if (!old_values[corner]) {
       r_values[point_index] = false;
     }
   }
@@ -242,8 +242,8 @@ static GVArray adapt_mesh_domain_point_to_corner(const Mesh &mesh, const GVArray
   attribute_math::convert_to_static_type(varray.type(), [&](auto dummy) {
     using T = decltype(dummy);
     new_varray = VArray<T>::ForFunc(
-        mesh.totloop, [corner_verts, varray = varray.typed<T>()](const int64_t corner_i) {
-          return varray[corner_verts[corner_i]];
+        mesh.totloop, [corner_verts, varray = varray.typed<T>()](const int64_t corner) {
+          return varray[corner_verts[corner]];
         });
   });
   return new_varray;
@@ -383,8 +383,8 @@ void adapt_mesh_domain_face_to_point_impl(const Mesh &mesh,
   for (const int poly_index : polys.index_range()) {
     const MPoly &poly = polys[poly_index];
     const T value = old_values[poly_index];
-    for (const int vert_i : corner_verts.slice(poly.loopstart, poly.totloop)) {
-      mixer.mix_in(vert_i, value);
+    for (const int vert : corner_verts.slice(poly.loopstart, poly.totloop)) {
+      mixer.mix_in(vert, value);
     }
   }
 
@@ -406,8 +406,8 @@ void adapt_mesh_domain_face_to_point_impl(const Mesh &mesh,
     for (const int poly_index : range) {
       if (old_values[poly_index]) {
         const MPoly &poly = polys[poly_index];
-        for (const int vert_i : corner_verts.slice(poly.loopstart, poly.totloop)) {
-          r_values[vert_i] = true;
+        for (const int vert : corner_verts.slice(poly.loopstart, poly.totloop)) {
+          r_values[vert] = true;
         }
       }
     }
@@ -472,8 +472,8 @@ void adapt_mesh_domain_face_to_edge_impl(const Mesh &mesh,
   for (const int poly_index : polys.index_range()) {
     const MPoly &poly = polys[poly_index];
     const T value = old_values[poly_index];
-    for (const int edge_i : corner_edges.slice(poly.loopstart, poly.totloop)) {
-      mixer.mix_in(edge_i, value);
+    for (const int edge : corner_edges.slice(poly.loopstart, poly.totloop)) {
+      mixer.mix_in(edge, value);
     }
   }
   mixer.finalize();
@@ -494,8 +494,8 @@ void adapt_mesh_domain_face_to_edge_impl(const Mesh &mesh,
     for (const int poly_index : range) {
       if (old_values[poly_index]) {
         const MPoly &poly = polys[poly_index];
-        for (const int edge_i : corner_edges.slice(poly.loopstart, poly.totloop)) {
-          r_values[edge_i] = true;
+        for (const int edge : corner_edges.slice(poly.loopstart, poly.totloop)) {
+          r_values[edge] = true;
         }
       }
     }
@@ -530,8 +530,8 @@ static GVArray adapt_mesh_domain_point_to_face(const Mesh &mesh, const GVArray &
             [corner_verts, polys, varray = varray.typed<bool>()](const int face_index) {
               /* A face is selected if all of its vertices were selected. */
               const MPoly &poly = polys[face_index];
-              for (const int vert_i : corner_verts.slice(poly.loopstart, poly.totloop)) {
-                if (!varray[vert_i]) {
+              for (const int vert : corner_verts.slice(poly.loopstart, poly.totloop)) {
+                if (!varray[vert]) {
                   return false;
                 }
               }
@@ -544,8 +544,8 @@ static GVArray adapt_mesh_domain_point_to_face(const Mesh &mesh, const GVArray &
               T return_value;
               attribute_math::DefaultMixer<T> mixer({&return_value, 1});
               const MPoly &poly = polys[face_index];
-              for (const int vert_i : corner_verts.slice(poly.loopstart, poly.totloop)) {
-                mixer.mix_in(0, varray[vert_i]);
+              for (const int vert : corner_verts.slice(poly.loopstart, poly.totloop)) {
+                mixer.mix_in(0, varray[vert]);
               }
               mixer.finalize();
               return return_value;
@@ -606,10 +606,10 @@ void adapt_mesh_domain_edge_to_corner_impl(const Mesh &mesh,
     /* For every corner, mix the values from the adjacent edges on the face. */
     for (const int loop_index : IndexRange(poly.loopstart, poly.totloop)) {
       const int loop_index_prev = mesh_topology::poly_loop_prev(poly, loop_index);
-      const int edge_i = corner_edges[loop_index];
-      const int edge_i_prev = corner_edges[loop_index_prev];
-      mixer.mix_in(loop_index, old_values[edge_i]);
-      mixer.mix_in(loop_index, old_values[edge_i_prev]);
+      const int edge = corner_edges[loop_index];
+      const int edge_prev = corner_edges[loop_index_prev];
+      mixer.mix_in(loop_index, old_values[edge]);
+      mixer.mix_in(loop_index, old_values[edge_prev]);
     }
   }
 
@@ -633,9 +633,9 @@ void adapt_mesh_domain_edge_to_corner_impl(const Mesh &mesh,
       const MPoly &poly = polys[poly_index];
       for (const int loop_index : IndexRange(poly.loopstart, poly.totloop)) {
         const int loop_index_prev = mesh_topology::poly_loop_prev(poly, loop_index);
-        const int edge_i = corner_edges[loop_index];
-        const int edge_i_prev = corner_edges[loop_index_prev];
-        if (old_values[edge_i] && old_values[edge_i_prev]) {
+        const int edge = corner_edges[loop_index];
+        const int edge_prev = corner_edges[loop_index_prev];
+        if (old_values[edge] && old_values[edge_prev]) {
           r_values[loop_index] = true;
         }
       }
@@ -726,8 +726,8 @@ static GVArray adapt_mesh_domain_edge_to_face(const Mesh &mesh, const GVArray &v
         new_varray = VArray<bool>::ForFunc(
             polys.size(), [corner_edges, polys, varray = varray.typed<T>()](const int face_index) {
               const MPoly &poly = polys[face_index];
-              for (const int edge_i : corner_edges.slice(poly.loopstart, poly.totloop)) {
-                if (!varray[edge_i]) {
+              for (const int edge : corner_edges.slice(poly.loopstart, poly.totloop)) {
+                if (!varray[edge]) {
                   return false;
                 }
               }
@@ -740,8 +740,8 @@ static GVArray adapt_mesh_domain_edge_to_face(const Mesh &mesh, const GVArray &v
               T return_value;
               attribute_math::DefaultMixer<T> mixer({&return_value, 1});
               const MPoly &poly = polys[face_index];
-              for (const int edge_i : corner_edges.slice(poly.loopstart, poly.totloop)) {
-                mixer.mix_in(0, varray[edge_i]);
+              for (const int edge : corner_edges.slice(poly.loopstart, poly.totloop)) {
+                mixer.mix_in(0, varray[edge]);
               }
               mixer.finalize();
               return return_value;
@@ -1247,9 +1247,11 @@ static ComponentAttributeProviders create_attribute_providers_for_mesh()
                                                        nullptr,
                                                        AttributeValidator{&material_index_clamp});
 
+  /* Note: This clamping is more of a last resort, since it's quite easy to make an
+   * invalid mesh that will crash Blender by arbitrarily editing this attribute. */
   static const auto int_index_clamp = mf::build::SI1_SO<int, int>(
       "Index Validate",
-      [](int value) { return std::clamp<int>(value, 0, std::numeric_limits<int>::max()); },
+      [](int value) { return std::max(value, 0); },
       mf::build::exec_presets::AllSpanOrSingle());
   static BuiltinCustomDataLayerProvider corner_vert(".corner_vert",
                                                     ATTR_DOMAIN_CORNER,

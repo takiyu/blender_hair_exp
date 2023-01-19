@@ -468,8 +468,8 @@ int16_t OBJMesh::get_poly_deform_group_index(const int poly_index,
   group_weights.fill(0);
   bool found_any_group = false;
   const MPoly &mpoly = mesh_polys_[poly_index];
-  for (const int vert_i : mesh_corner_verts_.slice(mpoly.loopstart, mpoly.totloop)) {
-    const MDeformVert &dv = dverts[vert_i];
+  for (const int vert : mesh_corner_verts_.slice(mpoly.loopstart, mpoly.totloop)) {
+    const MDeformVert &dv = dverts[vert];
     for (int weight_i = 0; weight_i < dv.totweight; ++weight_i) {
       const auto group = dv.dw[weight_i].def_nr;
       if (group < group_weights.size()) {

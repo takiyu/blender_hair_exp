@@ -93,11 +93,11 @@ static VArray<float3> construct_uv_gvarray(const Mesh &mesh,
     Array<const float *, 16> mp_co(mp.totloop);
     Array<float *, 16> mp_uv(mp.totloop);
     for (const int i : IndexRange(mp.totloop)) {
-      const int corner_i = corner_i;
-      const int vert_i = corner_verts[corner_i];
-      mp_vkeys[i] = vert_i;
-      mp_co[i] = positions[vert_i];
-      mp_uv[i] = uv[corner_i];
+      const int corner = mp.loopstart + i;
+      const int vert = corner_verts[corner];
+      mp_vkeys[i] = vert;
+      mp_co[i] = positions[vert];
+      mp_uv[i] = uv[corner];
       mp_pin[i] = false;
       mp_select[i] = false;
     }

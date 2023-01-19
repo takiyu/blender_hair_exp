@@ -202,24 +202,24 @@ void BKE_mesh_foreach_mapped_loop(Mesh *mesh,
     if (v_index || f_index) {
       for (p_idx = 0; p_idx < mesh->totpoly; p_idx++, mp++) {
         for (i = 0; i < mp->totloop; i++) {
-          const int vert_i = corner_verts[i];
-          const int v_idx = v_index ? v_index[vert_i] : vert_i;
+          const int vert = corner_verts[i];
+          const int v_idx = v_index ? v_index[vert] : vert;
           const int f_idx = f_index ? f_index[p_idx] : p_idx;
           const float *no = loop_normals ? *loop_normals++ : nullptr;
           if (ELEM(ORIGINDEX_NONE, v_idx, f_idx)) {
             continue;
           }
-          func(userData, v_idx, f_idx, positions[vert_i], no);
+          func(userData, v_idx, f_idx, positions[vert], no);
         }
       }
     }
     else {
       for (p_idx = 0; p_idx < mesh->totpoly; p_idx++, mp++) {
         for (i = 0; i < mp->totloop; i++) {
-          const int vert_i = corner_verts[i];
+          const int vert = corner_verts[i];
           const int f_idx = p_idx;
           const float *no = loop_normals ? *loop_normals++ : nullptr;
-          func(userData, vert_i, f_idx, positions[vert_i], no);
+          func(userData, vert, f_idx, positions[vert], no);
         }
       }
     }
@@ -324,12 +324,12 @@ void BKE_mesh_foreach_mapped_subdiv_face_center(
         continue;
       }
       for (int j = 0; j < mp->totloop; j++) {
-        const int vert_i = corner_verts[mp->loopstart + j];
-        if (BLI_BITMAP_TEST(facedot_tags, vert_i)) {
+        const int vert = corner_verts[mp->loopstart + j];
+        if (BLI_BITMAP_TEST(facedot_tags, vert)) {
           func(userData,
                orig,
-               positions[vert_i],
-               (flag & MESH_FOREACH_USE_NORMAL) ? vert_normals[vert_i] : nullptr);
+               positions[vert],
+               (flag & MESH_FOREACH_USE_NORMAL) ? vert_normals[vert] : nullptr);
         }
       }
     }
@@ -337,12 +337,12 @@ void BKE_mesh_foreach_mapped_subdiv_face_center(
   else {
     for (int i = 0; i < mesh->totpoly; i++, mp++) {
       for (int j = 0; j < mp->totloop; j++) {
-        const int vert_i = corner_verts[mp->loopstart + j];
-        if (BLI_BITMAP_TEST(facedot_tags, vert_i)) {
+        const int vert = corner_verts[mp->loopstart + j];
+        if (BLI_BITMAP_TEST(facedot_tags, vert)) {
           func(userData,
                i,
-               positions[vert_i],
-               (flag & MESH_FOREACH_USE_NORMAL) ? vert_normals[vert_i] : nullptr);
+               positions[vert],
+               (flag & MESH_FOREACH_USE_NORMAL) ? vert_normals[vert] : nullptr);
         }
       }
     }

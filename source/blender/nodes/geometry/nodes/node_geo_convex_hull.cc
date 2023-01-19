@@ -110,7 +110,7 @@ static Mesh *hull_from_bullet(const Mesh *mesh, Span<float3> coords)
   MutableSpan<MPoly> polys = result->polys_for_write();
   MutableSpan<int> mesh_corner_verts = result->corner_verts_for_write();
   MutableSpan<int> mesh_corner_edges = result->corner_edges_for_write();
-  int dst_corner_i = 0;
+  int dst_corner = 0;
 
   for (const int i : IndexRange(faces_num)) {
     const int len = plConvexHullGetFaceSize(hull, i);
@@ -125,9 +125,9 @@ static Mesh *hull_from_bullet(const Mesh *mesh, Span<float3> coords)
     face.loopstart = j;
     face.totloop = len;
     for (const int k : IndexRange(len)) {
-      mesh_corner_verts[dst_corner_i] = corner_verts[loops[k]];
-      mesh_corner_edges[dst_corner_i] = corner_edges[loops[k]];
-      dst_corner_i++;
+      mesh_corner_verts[dst_corner] = corner_verts[loops[k]];
+      mesh_corner_edges[dst_corner] = corner_edges[loops[k]];
+      dst_corner++;
     }
     j += len;
   }

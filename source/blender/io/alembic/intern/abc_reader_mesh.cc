@@ -210,15 +210,15 @@ static void read_mpolys(CDStreamConfig &config, const AbcMeshData &mesh_data)
 
     uint last_vertex_index = 0;
     for (int f = 0; f < face_size; f++, loop_index++, rev_loop_index--) {
-      const int vert_i = (*face_indices)[loop_index];
-      corner_verts[rev_loop_index] = vert_i;
+      const int vert = (*face_indices)[loop_index];
+      corner_verts[rev_loop_index] = vert;
 
-      if (f > 0 && vert_i == last_vertex_index) {
+      if (f > 0 && vert == last_vertex_index) {
         /* This face is invalid, as it has consecutive loops from the same vertex. This is caused
          * by invalid geometry in the Alembic file, such as in T76514. */
         seen_invalid_geometry = true;
       }
-      last_vertex_index = vert_i;
+      last_vertex_index = vert;
 
       if (do_uvs) {
         uv_index = (*uvs_indices)[do_uvs_per_loop ? loop_index : last_vertex_index];

@@ -1111,8 +1111,8 @@ static void sculpt_face_set_grow(Object *ob,
       continue;
     }
     const MPoly *c_poly = &polys[p];
-    for (const int vert_i : corner_verts.slice(c_poly->loopstart, c_poly->totloop)) {
-      const MeshElemMap *vert_map = &ss->pmap[vert_i];
+    for (const int vert : corner_verts.slice(c_poly->loopstart, c_poly->totloop)) {
+      const MeshElemMap *vert_map = &ss->pmap[vert];
       for (int i = 0; i < vert_map->count; i++) {
         const int neighbor_face_index = vert_map->indices[i];
         if (neighbor_face_index == p) {

@@ -39,8 +39,8 @@ static Array<EdgeMapEntry> create_edge_map(const Span<MPoly> polys,
 
   for (const int i_poly : polys.index_range()) {
     const MPoly &mpoly = polys[i_poly];
-    for (const int edge_i : corner_edges.slice(mpoly.loopstart, mpoly.totloop)) {
-      EdgeMapEntry &entry = edge_map[edge_i];
+    for (const int edge : corner_edges.slice(mpoly.loopstart, mpoly.totloop)) {
+      EdgeMapEntry &entry = edge_map[edge];
       if (entry.face_count == 0) {
         entry.face_index_1 = i_poly;
       }

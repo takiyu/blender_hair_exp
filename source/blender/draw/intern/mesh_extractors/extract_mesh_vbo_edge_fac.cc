@@ -112,27 +112,27 @@ static void extract_edge_fac_iter_poly_mesh(const MeshRenderData *mr,
 
   const int ml_index_end = mp->loopstart + mp->totloop;
   for (int ml_index = mp->loopstart; ml_index < ml_index_end; ml_index += 1) {
-    const int vert_i = mr->corner_verts[ml_index];
-    const int edge_i = mr->corner_edges[ml_index];
+    const int vert = mr->corner_verts[ml_index];
+    const int edge = mr->corner_edges[ml_index];
 
     if (data->use_edge_render) {
-      const MEdge *med = &mr->medge[edge_i];
+      const MEdge *med = &mr->medge[edge];
       data->vbo_data[ml_index] = (med->flag & ME_EDGEDRAW) ? 255 : 0;
     }
     else {
 
       /* Count loop per edge to detect non-manifold. */
-      if (data->edge_loop_count[edge_i] < 3) {
-        data->edge_loop_count[edge_i]++;
+      if (data->edge_loop_count[edge] < 3) {
+        data->edge_loop_count[edge]++;
       }
-      if (data->edge_loop_count[edge_i] == 2) {
+      if (data->edge_loop_count[edge] == 2) {
         /* Manifold */
         const int ml_index_last = mp->totloop + mp->loopstart - 1;
         const int ml_index_other = (ml_index == ml_index_last) ? mp->loopstart : (ml_index + 1);
         const int vert_next = mr->corner_verts[ml_index_other];
         float ratio = loop_edge_factor_get(mr->poly_normals[mp_index],
-                                           mr->vert_positions[vert_i],
-                                           mr->vert_normals[vert_i],
+                                           mr->vert_positions[vert],
+                                           mr->vert_normals[vert],
                                            mr->vert_positions[vert_next]);
         data->vbo_data[ml_index] = ratio * 253 + 1;
       }

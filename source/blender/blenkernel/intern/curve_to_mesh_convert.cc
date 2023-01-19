@@ -144,7 +144,6 @@ static void fill_mesh_topology(const int vert_offset,
       corner_edges[cap_loop_offset + i] = profile_edges_start + ((i == (profile_segment_num - 1)) ?
                                                                      (profile_segment_num - 1) :
                                                                      (i_inv - 1));
-
       corner_verts[cap_loop_offset + profile_segment_num + i] = last_ring_vert_offset + i;
       corner_edges[cap_loop_offset + profile_segment_num + i] = last_ring_edge_offset + i;
     }

@@ -578,11 +578,11 @@ static void duplicate_faces(GeometrySet &geometry_set,
       new_polys[poly_index] = source;
       new_polys[poly_index].loopstart = loop_index;
       for (const int i_loops : IndexRange(source.totloop)) {
-        const int src_corner_i = source.loopstart + i_loops;
-        corner_mapping[loop_index] = src_corner_i;
-        vert_mapping[loop_index] = corner_verts[src_corner_i];
-        new_edges[loop_index] = edges[corner_edges[src_corner_i]];
-        edge_mapping[loop_index] = corner_edges[src_corner_i];
+        const int src_corner = source.loopstart + i_loops;
+        corner_mapping[loop_index] = src_corner;
+        vert_mapping[loop_index] = corner_verts[src_corner];
+        new_edges[loop_index] = edges[corner_edges[src_corner]];
+        edge_mapping[loop_index] = corner_edges[src_corner];
         new_edges[loop_index].v1 = loop_index;
         if (i_loops + 1 != source.totloop) {
           new_edges[loop_index].v2 = loop_index + 1;

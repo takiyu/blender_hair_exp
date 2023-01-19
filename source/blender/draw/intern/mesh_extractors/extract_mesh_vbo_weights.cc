@@ -140,9 +140,9 @@ static void extract_weights_iter_poly_mesh(const MeshRenderData *mr,
   MeshExtract_Weight_Data *data = static_cast<MeshExtract_Weight_Data *>(_data);
   const int ml_index_end = mp->loopstart + mp->totloop;
   for (int ml_index = mp->loopstart; ml_index < ml_index_end; ml_index += 1) {
-    const int vert_i = mr->corner_verts[ml_index];
+    const int vert = mr->corner_verts[ml_index];
     if (data->dvert != nullptr) {
-      const MDeformVert *dvert = &data->dvert[vert_i];
+      const MDeformVert *dvert = &data->dvert[vert];
       data->vbo_data[ml_index] = evaluate_vertex_weight(dvert, data->wstate);
     }
     else {

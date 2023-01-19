@@ -570,7 +570,7 @@ static int customdata_compare(
 
       if (StringRef(l1->name) == ".corner_edge") {
         /* TODO(Hans): This attribute wasn't tested before loops were refactored into separate
-         * corner edges and corner verts arrays. Remove after updating tests. */
+         * corner edges and corner verts attributes. Remove after updating tests. */
         continue;
       }
 

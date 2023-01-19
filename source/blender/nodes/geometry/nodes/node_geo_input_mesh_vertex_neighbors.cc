@@ -70,8 +70,8 @@ static VArray<int> construct_face_count_gvarray(const Mesh &mesh, const eAttrDom
   const Span<int> corner_verts = mesh.corner_verts();
   if (domain == ATTR_DOMAIN_POINT) {
     Array<int> vertices(mesh.totvert, 0);
-    for (const int vert_i : corner_verts) {
-      vertices[vert_i]++;
+    for (const int vert : corner_verts) {
+      vertices[vert]++;
     }
     return VArray<int>::ForContainer(std::move(vertices));
   }

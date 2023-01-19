@@ -1550,7 +1550,7 @@ void BKE_mesh_normals_loop_split(const float (*vert_positions)[3],
   common_data.clnors_data = {reinterpret_cast<short2 *>(clnors_data), clnors_data ? numLoops : 0};
   common_data.positions = {reinterpret_cast<const float3 *>(vert_positions), numVerts};
   common_data.edges = {medges, numEdges};
-  common_data.polys = {mpolys, numPolys};
+  common_data.polys = polys;
   common_data.corner_verts = {corner_verts, numLoops};
   common_data.corner_edges = {corner_edges, numLoops};
   common_data.edge_to_loops = edge_to_loops;
@@ -1989,9 +1989,9 @@ void BKE_mesh_normals_loop_to_vertex(const int numVerts,
 
   int i;
   for (i = 0; i < numLoops; i++) {
-    const int vert_i = corner_verts[i];
-    add_v3_v3(r_vert_clnors[vert_i], clnors[i]);
-    vert_loops_count[vert_i]++;
+    const int vert = corner_verts[i];
+    add_v3_v3(r_vert_clnors[vert], clnors[i]);
+    vert_loops_count[vert]++;
   }
 
   for (i = 0; i < numVerts; i++) {

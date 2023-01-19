@@ -222,9 +222,8 @@ static Array<Vector<int>> create_mesh_map(const Mesh &mesh,
     }
     case ATTR_DOMAIN_FACE: {
       const Span<MPoly> polys = mesh.polys();
-      const Span<int> corner_edges = mesh.corner_edges();
       const int edges_num = mesh.totedge;
-      return build_face_to_face_by_edge_map(polys, corner_edges, edges_num, mask);
+      return build_face_to_face_by_edge_map(polys, mesh.corner_edges(), edges_num, mask);
     }
     case ATTR_DOMAIN_CORNER: {
       return {};

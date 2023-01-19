@@ -465,9 +465,9 @@ static void get_topology(struct Mesh *mesh,
 
     r_has_flat_shaded_poly |= (poly.flag & ME_SMOOTH) == 0;
 
-    int corner_i = poly.loopstart + (poly.totloop - 1);
-    for (int j = 0; j < poly.totloop; j++, corner_i--) {
-      poly_verts.push_back(corner_verts[corner_i]);
+    int corner = poly.loopstart + (poly.totloop - 1);
+    for (int j = 0; j < poly.totloop; j++, corner--) {
+      poly_verts.push_back(corner_verts[corner]);
     }
   }
 }

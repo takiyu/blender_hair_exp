@@ -231,9 +231,9 @@ bool BKE_mesh_validate_arrays(Mesh *mesh,
   (void)0
 #define IS_REMOVED_EDGE(_me) (_me->v2 == _me->v1)
 
-#define REMOVE_LOOP_TAG(corner_i) \
+#define REMOVE_LOOP_TAG(corner) \
   { \
-    corner_edges[corner_i] = INVALID_LOOP_EDGE_MARKER; \
+    corner_edges[corner] = INVALID_LOOP_EDGE_MARKER; \
     free_flag.polyloops = do_fixes; \
   } \
   (void)0
@@ -604,28 +604,28 @@ bool BKE_mesh_validate_arrays(Mesh *mesh,
          * before we start checking each poly, but several polys can use same vert,
          * so we have to ensure here all verts of current poly are cleared. */
         for (j = 0; j < mp->totloop; j++) {
-          const int vert_i = corner_verts[sp->loopstart + j];
-          if (vert_i < totvert) {
-            BLI_BITMAP_DISABLE(vert_tag, vert_i);
+          const int vert = corner_verts[sp->loopstart + j];
+          if (vert < totvert) {
+            BLI_BITMAP_DISABLE(vert_tag, vert);
           }
         }
 
         /* Test all poly's loops' vert idx. */
         for (j = 0; j < mp->totloop; j++, v++) {
-          const int vert_i = corner_verts[sp->loopstart + j];
-          if (vert_i >= totvert) {
+          const int vert = corner_verts[sp->loopstart + j];
+          if (vert >= totvert) {
             /* Invalid vert idx. */
-            PRINT_ERR("\tLoop %u has invalid vert reference (%d)", sp->loopstart + j, vert_i);
+            PRINT_ERR("\tLoop %u has invalid vert reference (%d)", sp->loopstart + j, vert);
             sp->invalid = true;
           }
-          else if (BLI_BITMAP_TEST(vert_tag, vert_i)) {
+          else if (BLI_BITMAP_TEST(vert_tag, vert)) {
             PRINT_ERR("\tPoly %u has duplicated vert reference at corner (%u)", i, j);
             sp->invalid = true;
           }
           else {
-            BLI_BITMAP_ENABLE(vert_tag, vert_i);
+            BLI_BITMAP_ENABLE(vert_tag, vert);
           }
-          *v = vert_i;
+          *v = vert;
         }
 
         if (sp->invalid) {
@@ -634,10 +634,10 @@ bool BKE_mesh_validate_arrays(Mesh *mesh,
 
         /* Test all poly's loops. */
         for (j = 0; j < mp->totloop; j++) {
-          const int corner_i = sp->loopstart + j;
-          const int vert_i = corner_verts[corner_i];
-          const int edge_i = corner_edges[corner_i];
-          v1 = vert_i;
+          const int corner = sp->loopstart + j;
+          const int vert = corner_verts[corner];
+          const int edge = corner_edges[corner];
+          v1 = vert;
           v2 = corner_verts[sp->loopstart + (j + 1) % mp->totloop];
           if (!BLI_edgehash_haskey(edge_hash, v1, v2)) {
             /* Edge not existing. */
@@ -649,33 +649,33 @@ bool BKE_mesh_validate_arrays(Mesh *mesh,
               sp->invalid = true;
             }
           }
-          else if (edge_i >= totedge) {
+          else if (edge >= totedge) {
             /* Invalid edge idx.
              * We already know from previous text that a valid edge exists, use it (if allowed)! */
             if (do_fixes) {
-              int prev_e = edge_i;
-              corner_edges[corner_i] = POINTER_AS_INT(BLI_edgehash_lookup(edge_hash, v1, v2));
+              int prev_e = edge;
+              corner_edges[corner] = POINTER_AS_INT(BLI_edgehash_lookup(edge_hash, v1, v2));
               fix_flag.loops_edge = true;
               PRINT_ERR("\tLoop %d has invalid edge reference (%d), fixed using edge %d",
-                        corner_i,
+                        corner,
                         prev_e,
-                        corner_edges[corner_i]);
+                        corner_edges[corner]);
             }
             else {
-              PRINT_ERR("\tLoop %d has invalid edge reference (%d)", corner_i, edge_i);
+              PRINT_ERR("\tLoop %d has invalid edge reference (%d)", corner, edge);
               sp->invalid = true;
             }
           }
           else {
-            me = &medges[edge_i];
+            me = &medges[edge];
             if (IS_REMOVED_EDGE(me) ||
                 !((me->v1 == v1 && me->v2 == v2) || (me->v1 == v2 && me->v2 == v1))) {
               /* The pointed edge is invalid (tagged as removed, or vert idx mismatch),
                * and we already know from previous test that a valid one exists,
                * use it (if allowed)! */
               if (do_fixes) {
-                int prev_e = edge_i;
-                corner_edges[corner_i] = POINTER_AS_INT(BLI_edgehash_lookup(edge_hash, v1, v2));
+                int prev_e = edge;
+                corner_edges[corner] = POINTER_AS_INT(BLI_edgehash_lookup(edge_hash, v1, v2));
                 fix_flag.loops_edge = true;
                 PRINT_ERR(
                     "\tPoly %u has invalid edge reference (%d, is_removed: %d), fixed using edge "
@@ -683,10 +683,10 @@ bool BKE_mesh_validate_arrays(Mesh *mesh,
                     sp->index,
                     prev_e,
                     IS_REMOVED_EDGE(me),
-                    corner_edges[corner_i]);
+                    corner_edges[corner]);
               }
               else {
-                PRINT_ERR("\tPoly %u has invalid edge reference (%d)", sp->index, edge_i);
+                PRINT_ERR("\tPoly %u has invalid edge reference (%d)", sp->index, edge);
                 sp->invalid = true;
               }
             }
@@ -764,11 +764,11 @@ bool BKE_mesh_validate_arrays(Mesh *mesh,
       else {
         /* Unused loops. */
         if (prev_end < sp->loopstart) {
-          int corner_i;
-          for (j = prev_end, corner_i = prev_end; j < sp->loopstart; j++, corner_i++) {
+          int corner;
+          for (j = prev_end, corner = prev_end; j < sp->loopstart; j++, corner++) {
             PRINT_ERR("\tLoop %u is unused.", j);
             if (do_fixes) {
-              REMOVE_LOOP_TAG(corner_i);
+              REMOVE_LOOP_TAG(corner);
             }
           }
           prev_end = sp->loopstart + sp->numverts;
@@ -798,11 +798,11 @@ bool BKE_mesh_validate_arrays(Mesh *mesh,
     }
     /* We may have some remaining unused loops to get rid of! */
     if (prev_end < totloop) {
-      int corner_i;
-      for (j = prev_end, corner_i = prev_end; j < totloop; j++, corner_i++) {
+      int corner;
+      for (j = prev_end, corner = prev_end; j < totloop; j++, corner++) {
         PRINT_ERR("\tLoop %u is unused.", j);
         if (do_fixes) {
-          REMOVE_LOOP_TAG(corner_i);
+          REMOVE_LOOP_TAG(corner);
         }
       }
     }
@@ -1253,9 +1253,9 @@ void BKE_mesh_strip_loose_polysloops(Mesh *me)
   }
 
   /* And now, get rid of invalid loops. */
-  int corner_i = 0;
-  for (a = b = 0; a < me->totloop; a++, corner_i++) {
-    if (corner_edges[corner_i] != INVALID_LOOP_EDGE_MARKER) {
+  int corner = 0;
+  for (a = b = 0; a < me->totloop; a++, corner++) {
+    if (corner_edges[corner] != INVALID_LOOP_EDGE_MARKER) {
       if (a != b) {
         CustomData_copy_data(&me->ldata, &me->ldata, a, b, 1);
       }

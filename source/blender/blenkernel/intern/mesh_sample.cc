@@ -164,14 +164,10 @@ Span<float3> MeshAttributeInterpolator::ensure_barycentric_coords()
     const int looptri_index = looptri_indices_[i];
     const MLoopTri &looptri = looptris[looptri_index];
 
-    const int v0_index = corner_verts[looptri.tri[0]];
-    const int v1_index = corner_verts[looptri.tri[1]];
-    const int v2_index = corner_verts[looptri.tri[2]];
-
     interp_weights_tri_v3(bary_coords_[i],
-                          positions[v0_index],
-                          positions[v1_index],
-                          positions[v2_index],
+                          positions[corner_verts[looptri.tri[0]]],
+                          positions[corner_verts[looptri.tri[1]]],
+                          positions[corner_verts[looptri.tri[2]]],
                           positions_[i]);
   }
   return bary_coords_;
@@ -193,13 +189,9 @@ Span<float3> MeshAttributeInterpolator::ensure_nearest_weights()
     const int looptri_index = looptri_indices_[i];
     const MLoopTri &looptri = looptris[looptri_index];
 
-    const int v0_index = corner_verts[looptri.tri[0]];
-    const int v1_index = corner_verts[looptri.tri[1]];
-    const int v2_index = corner_verts[looptri.tri[2]];
-
-    const float d0 = len_squared_v3v3(positions_[i], positions[v0_index]);
-    const float d1 = len_squared_v3v3(positions_[i], positions[v1_index]);
-    const float d2 = len_squared_v3v3(positions_[i], positions[v2_index]);
+    const float d0 = len_squared_v3v3(positions_[i], positions[corner_verts[looptri.tri[0]]]);
+    const float d1 = len_squared_v3v3(positions_[i], positions[corner_verts[looptri.tri[1]]]);
+    const float d2 = len_squared_v3v3(positions_[i], positions[corner_verts[looptri.tri[2]]]);
 
     nearest_weights_[i] = MIN3_PAIR(d0, d1, d2, float3(1, 0, 0), float3(0, 1, 0), float3(0, 0, 1));
   }

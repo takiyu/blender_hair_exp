@@ -59,8 +59,8 @@ class PlanarFieldInput final : public bke::MeshFieldInput {
       float min = FLT_MAX;
       float max = -FLT_MAX;
 
-      for (const int vert_i : corner_verts.slice(poly.loopstart, poly.totloop)) {
-        float dot = math::dot(reference_normal, positions[vert_i]);
+      for (const int vert : corner_verts.slice(poly.loopstart, poly.totloop)) {
+        float dot = math::dot(reference_normal, positions[vert]);
         if (dot > max) {
           max = dot;
         }

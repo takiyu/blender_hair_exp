@@ -30,8 +30,8 @@ class EdgeNeighborCountFieldInput final : public bke::MeshFieldInput {
   {
     const Span<int> corner_edges = mesh.corner_edges();
     Array<int> face_count(mesh.totedge, 0);
-    for (const int edge_i:corner_edges) {
-      face_count[edge_i]++;
+    for (const int edge : corner_edges) {
+      face_count[edge]++;
     }
 
     return mesh.attributes().adapt_domain<int>(

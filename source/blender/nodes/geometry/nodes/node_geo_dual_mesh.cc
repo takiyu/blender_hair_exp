@@ -331,8 +331,8 @@ static bool sort_vertex_polys(const Span<MEdge> edges,
     const MPoly &poly = polys[connected_polys[i]];
     bool first_edge_done = false;
     for (const int corner : IndexRange(poly.loopstart, poly.totloop)) {
-      const int edge_i = corner_edges[corner];
-      if (edges[edge_i].v1 == vertex_index || edges[edge_i].v2 == vertex_index) {
+      const int edge = corner_edges[corner];
+      if (edges[edge].v1 == vertex_index || edges[edge].v2 == vertex_index) {
         if (!first_edge_done) {
           poly_vertex_corners[i].first = corner;
           first_edge_done = true;

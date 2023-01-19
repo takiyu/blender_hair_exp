@@ -399,9 +399,9 @@ static int mesh_remap_interp_poly_data_get(const MPoly *mp,
   }
 
   for (i = 0, vco = *vcos, index = *indices; i < sources_num; i++, vco++, index++) {
-    const int vert_i = corner_verts[mp->loopstart + i];
-    *index = use_loops ? int(mp->loopstart) + i : vert_i;
-    copy_v3_v3(*vco, vcos_src[vert_i]);
+    const int vert = corner_verts[mp->loopstart + i];
+    *index = use_loops ? int(mp->loopstart) + i : vert;
+    copy_v3_v3(*vco, vcos_src[vert]);
     if (r_closest_index) {
       /* Find closest vert/loop in this case. */
       const float dist_sq = len_squared_v3v3(point, *vco);
@@ -1168,9 +1168,9 @@ static void mesh_island_to_astar_graph(MeshIslandStore *islands,
     }
 
     for (pl_idx = 0, l_idx = mp->loopstart; pl_idx < mp->totloop; pl_idx++, l_idx++) {
-      const int edge_i = corner_edges[l_idx];
+      const int edge = corner_edges[l_idx];
 
-      if (BLI_BITMAP_TEST(done_edges, edge_i)) {
+      if (BLI_BITMAP_TEST(done_edges, edge)) {
         continue;
       }
 
@@ -1180,7 +1180,7 @@ static void mesh_island_to_astar_graph(MeshIslandStore *islands,
                                               positions,
                                               polys,
                                               corner_verts,
-                                              edge_i,
+                                              edge,
                                               done_edges,
                                               edge_to_poly_map,
                                               false,
@@ -1613,11 +1613,11 @@ void BKE_mesh_remap_calc_loops_from_mesh(const int mode,
         BVHTreeFromMesh *tdata = &treedata[tindex];
 
         for (plidx_dst = 0; plidx_dst < mp_dst->totloop; plidx_dst++) {
-          const int vert_dst_i = corner_verts_dst[mp_dst->loopstart + plidx_dst];
+          const int vert_dst = corner_verts_dst[mp_dst->loopstart + plidx_dst];
           if (use_from_vert) {
             MeshElemMap *vert_to_refelem_map_src = nullptr;
 
-            copy_v3_v3(tmp_co, vert_positions_dst[vert_dst_i]);
+            copy_v3_v3(tmp_co, vert_positions_dst[vert_dst]);
             nearest.index = -1;
 
             /* Convert the vertex to tree coordinates, if needed. */
@@ -1704,8 +1704,8 @@ void BKE_mesh_remap_calc_loops_from_mesh(const int mode,
                  * Have to find its loop matching our closest vertex. */
                 mp_src = &polys_src[best_index_src];
                 for (plidx_src = 0; plidx_src < mp_src->totloop; plidx_src++) {
-                  const int vert_src_i = corner_verts_src[mp_src->loopstart + plidx_src];
-                  if (vert_src_i == nearest.index) {
+                  const int vert_src = corner_verts_src[mp_src->loopstart + plidx_src];
+                  if (vert_src == nearest.index) {
                     best_index_src = plidx_src + mp_src->loopstart;
                     break;
                   }
@@ -1727,7 +1727,7 @@ void BKE_mesh_remap_calc_loops_from_mesh(const int mode,
             int n = (ray_radius > 0.0f) ? MREMAP_RAYCAST_APPROXIMATE_NR : 1;
             float w = 1.0f;
 
-            copy_v3_v3(tmp_co, vert_positions_dst[vert_dst_i]);
+            copy_v3_v3(tmp_co, vert_positions_dst[vert_dst]);
             copy_v3_v3(tmp_no, loop_nors_dst[plidx_dst + mp_dst->loopstart]);
 
             /* We do our transform here, since we may do several raycast/nearest queries. */
@@ -1755,7 +1755,7 @@ void BKE_mesh_remap_calc_loops_from_mesh(const int mode,
                * is null, it means none of its loop mapped to this source island,
                * hence we can skip it later.
                */
-              copy_v3_v3(tmp_co, vert_positions_dst[vert_dst_i]);
+              copy_v3_v3(tmp_co, vert_positions_dst[vert_dst]);
               nearest.index = -1;
 
               /* Convert the vertex to tree coordinates, if needed. */
@@ -1781,7 +1781,7 @@ void BKE_mesh_remap_calc_loops_from_mesh(const int mode,
             }
           }
           else { /* Nearest poly either to use all its loops/verts or just closest one. */
-            copy_v3_v3(tmp_co, vert_positions_dst[vert_dst_i]);
+            copy_v3_v3(tmp_co, vert_positions_dst[vert_dst]);
             nearest.index = -1;
 
             /* Convert the vertex to tree coordinates, if needed. */
@@ -1922,8 +1922,8 @@ void BKE_mesh_remap_calc_loops_from_mesh(const int mode,
                                               last_valid_pidx_isld_src);
                     mp_src = &polys_src[pidx_src];
                     for (j = 0; j < mp_src->totloop; j++) {
-                      const int vert_src_i = corner_verts_src[mp_src->loopstart + j];
-                      const float dist_sq = len_squared_v3v3(positions_src[vert_src_i], tmp_co);
+                      const int vert_src = corner_verts_src[mp_src->loopstart + j];
+                      const float dist_sq = len_squared_v3v3(positions_src[vert_src], tmp_co);
                       if (dist_sq < best_dist_sq) {
                         best_dist_sq = dist_sq;
                         lidx_src = mp_src->loopstart + j;
@@ -2002,8 +2002,8 @@ void BKE_mesh_remap_calc_loops_from_mesh(const int mode,
                     float best_dist_sq = FLT_MAX;
                     int j;
 
-                    const int vert_dst_i = corner_verts_dst[lidx_dst];
-                    copy_v3_v3(tmp_co, vert_positions_dst[vert_dst_i]);
+                    const int vert_dst = corner_verts_dst[lidx_dst];
+                    copy_v3_v3(tmp_co, vert_positions_dst[vert_dst]);
 
                     /* We do our transform here,
                      * since we may do several raycast/nearest queries. */
@@ -2329,8 +2329,8 @@ void BKE_mesh_remap_calc_polys_from_mesh(const int mode,
         INIT_MINMAX2(poly_dst_2d_min, poly_dst_2d_max);
 
         for (j = 0; j < mp->totloop; j++) {
-          const int vert_i = corner_verts[j + mp->loopstart];
-          copy_v3_v3(tmp_co, vert_positions_dst[vert_i]);
+          const int vert = corner_verts[mp->loopstart + j];
+          copy_v3_v3(tmp_co, vert_positions_dst[vert]);
           if (space_transform) {
             BLI_space_transform_apply(space_transform, tmp_co);
           }

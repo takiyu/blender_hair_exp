@@ -135,8 +135,8 @@ static void get_face_vertices(const OpenSubdiv_Converter *converter,
   ConverterStorage *storage = converter->user_data;
   const MPoly *poly = &storage->polys[manifold_face_index];
   for (int i = 0; i < poly->totloop; i++) {
-    const int vert_i = storage->corner_verts[poly->loopstart + i];
-    manifold_face_vertices[i] = storage->manifold_vertex_index[vert_i];
+    const int vert = storage->corner_verts[poly->loopstart + i];
+    manifold_face_vertices[i] = storage->manifold_vertex_index[vert];
   }
 }
 

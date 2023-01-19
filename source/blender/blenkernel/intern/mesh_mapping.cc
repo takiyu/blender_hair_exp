@@ -624,7 +624,7 @@ Vector<Vector<int>> build_edge_to_loop_map_resizable(const Span<int> corner_edge
  * Callback deciding whether the given poly/loop/edge define an island boundary or not.
  */
 using MeshRemap_CheckIslandBoundary = bool (*)(const MPoly *mpoly,
-                                               const int corner_i,
+                                               const int corner,
                                                const MEdge *medge,
                                                const int edge_index,
                                                const bool *sharp_edges,
@@ -722,15 +722,15 @@ static void poly_edge_loop_islands_calc(const MEdge *medge,
       BLI_assert(poly_groups[poly] == poly_group_id);
 
       mp = &mpoly[poly];
-      for (const int64_t corner_i : blender::IndexRange(mp->loopstart, mp->totloop)) {
+      for (const int64_t corner : blender::IndexRange(mp->loopstart, mp->totloop)) {
         /* loop over poly users */
-        const int me_idx = corner_edges[corner_i];
+        const int me_idx = corner_edges[corner];
         const MEdge *me = &medge[me_idx];
         const MeshElemMap *map_ele = &edge_poly_map[me_idx];
         const int *p = map_ele->indices;
         int i = map_ele->count;
         if (!edge_boundary_check(mp,
-                                 int(corner_i),
+                                 int(corner),
                                  me,
                                  me_idx,
                                  sharp_edges,
@@ -836,7 +836,7 @@ static void poly_edge_loop_islands_calc(const MEdge *medge,
 }
 
 static bool poly_is_island_boundary_smooth_cb(const MPoly *mp,
-                                              const int /*corner_i*/,
+                                              const int /*corner*/,
                                               const MEdge * /*me*/,
                                               const int edge_index,
                                               const bool *sharp_edges,
@@ -1018,7 +1018,7 @@ struct MeshCheckIslandBoundaryUv {
 };
 
 static bool mesh_check_island_boundary_uv(const MPoly * /*mp*/,
-                                          const int corner_i,
+                                          const int corner,
                                           const MEdge *me,
                                           const int /*edge_index*/,
                                           const bool * /*sharp_edges*/,
@@ -1032,7 +1032,7 @@ static bool mesh_check_island_boundary_uv(const MPoly * /*mp*/,
         user_data);
     const int *corner_verts = data->corner_verts;
     const float(*luvs)[2] = data->luvs;
-    const MeshElemMap *edge_to_loops = &data->edge_loop_map[data->corner_edges[corner_i]];
+    const MeshElemMap *edge_to_loops = &data->edge_loop_map[data->corner_edges[corner]];
 
     BLI_assert(edge_to_loops->count >= 2 && (edge_to_loops->count % 2) == 0);
 

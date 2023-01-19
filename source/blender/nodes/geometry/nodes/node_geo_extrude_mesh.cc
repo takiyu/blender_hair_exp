@@ -299,8 +299,8 @@ static Array<Vector<int, 2>> mesh_calculate_polys_of_edge(const Mesh &mesh)
 
   for (const int i_poly : polys.index_range()) {
     const MPoly &poly = polys[i_poly];
-    for (const int edge_i : corner_edges.slice(poly.loopstart, poly.totloop)) {
-      polys_of_edge[edge_i].append(i_poly);
+    for (const int edge : corner_edges.slice(poly.loopstart, poly.totloop)) {
+      polys_of_edge[edge].append(i_poly);
     }
   }
 
@@ -689,8 +689,8 @@ static void extrude_mesh_face_regions(Mesh &mesh,
     for (const int i_poly : poly_selection) {
       const MPoly &poly = orig_polys[i_poly];
       const float3 offset = poly_offsets[i_poly];
-      for (const int vert_i : orig_corner_verts.slice(poly.loopstart, poly.totloop)) {
-        mixer.mix_in(vert_i, offset);
+      for (const int vert : orig_corner_verts.slice(poly.loopstart, poly.totloop)) {
+        mixer.mix_in(vert, offset);
       }
     }
     mixer.finalize();
@@ -705,8 +705,8 @@ static void extrude_mesh_face_regions(Mesh &mesh,
   all_selected_verts.reserve(orig_polys.size());
   for (const int i_poly : poly_selection) {
     const MPoly &poly = orig_polys[i_poly];
-    for (const int vert_i : orig_corner_verts.slice(poly.loopstart, poly.totloop)) {
-      all_selected_verts.add(vert_i);
+    for (const int vert : orig_corner_verts.slice(poly.loopstart, poly.totloop)) {
+      all_selected_verts.add(vert);
     }
   }
 
@@ -841,20 +841,20 @@ static void extrude_mesh_face_regions(Mesh &mesh,
   /* Connect the selected faces to the extruded or duplicated edges and the new vertices. */
   for (const int i_poly : poly_selection) {
     const MPoly &poly = polys[i_poly];
-    for (const int corner_i : IndexRange(poly.loopstart, poly.totloop)) {
-      const int i_new_vert = new_vert_indices.index_of_try(corner_verts[corner_i]);
+    for (const int corner : IndexRange(poly.loopstart, poly.totloop)) {
+      const int i_new_vert = new_vert_indices.index_of_try(corner_verts[corner]);
       if (i_new_vert != -1) {
-        corner_verts[corner_i] = new_vert_range[i_new_vert];
+        corner_verts[corner] = new_vert_range[i_new_vert];
       }
-      const int i_boundary_edge = boundary_edge_indices.index_of_try(corner_edges[corner_i]);
+      const int i_boundary_edge = boundary_edge_indices.index_of_try(corner_edges[corner]);
       if (i_boundary_edge != -1) {
-        corner_edges[corner_i] = boundary_edge_range[i_boundary_edge];
+        corner_edges[corner] = boundary_edge_range[i_boundary_edge];
         /* Skip the next check, an edge cannot be both a boundary edge and an inner edge. */
         continue;
       }
-      const int i_new_inner_edge = new_inner_edge_indices.index_of_try(corner_edges[corner_i]);
+      const int i_new_inner_edge = new_inner_edge_indices.index_of_try(corner_edges[corner]);
       if (i_new_inner_edge != -1) {
-        corner_edges[corner_i] = new_inner_edge_range[i_new_inner_edge];
+        corner_edges[corner] = new_inner_edge_range[i_new_inner_edge];
       }
     }
   }

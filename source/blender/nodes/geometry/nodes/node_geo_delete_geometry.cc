@@ -445,8 +445,8 @@ static void compute_selected_polys_from_vertex_selection(const Mesh &mesh,
     const MPoly &poly_src = polys[i];
 
     bool all_verts_in_selection = true;
-    for (const int vert_i : corner_verts.slice(poly_src.loopstart, poly_src.totloop)) {
-      if (!vertex_selection[vert_i]) {
+    for (const int vert : corner_verts.slice(poly_src.loopstart, poly_src.totloop)) {
+      if (!vertex_selection[vert]) {
         all_verts_in_selection = false;
         break;
       }
@@ -548,8 +548,8 @@ static void compute_selected_polys_from_edge_selection(const Mesh &mesh,
     const MPoly &poly_src = polys[i];
 
     bool all_edges_in_selection = true;
-    for (const int edge_i : corner_edges.slice(poly_src.loopstart, poly_src.totloop)) {
-      if (!edge_selection[edge_i]) {
+    for (const int edge : corner_edges.slice(poly_src.loopstart, poly_src.totloop)) {
+      if (!edge_selection[edge]) {
         all_edges_in_selection = false;
         break;
       }
@@ -734,10 +734,10 @@ static void compute_selected_mesh_data_from_poly_selection_edge_face(
       selected_loops_num += poly_src.totloop;
 
       /* Add the vertices and the edges. */
-      for (const int edge_i : corner_edges.slice(poly_src.loopstart, poly_src.totloop)) {
+      for (const int edge : corner_edges.slice(poly_src.loopstart, poly_src.totloop)) {
         /* Check first if it has not yet been added. */
-        if (r_edge_map[edge_i] == -1) {
-          r_edge_map[edge_i] = selected_edges_num;
+        if (r_edge_map[edge] == -1) {
+          r_edge_map[edge] = selected_edges_num;
           selected_edges_num++;
         }
       }
@@ -788,15 +788,15 @@ static void compute_selected_mesh_data_from_poly_selection(const Mesh &mesh,
 
       /* Add the vertices and the edges. */
       for (const int corner : IndexRange(poly_src.loopstart, poly_src.totloop)) {
-        const int vert_i = corner_verts[corner];
-        const int edge_i = corner_edges[corner];
+        const int vert = corner_verts[corner];
+        const int edge = corner_edges[corner];
         /* Check first if it has not yet been added. */
-        if (r_vertex_map[vert_i] == -1) {
-          r_vertex_map[vert_i] = selected_verts_num;
+        if (r_vertex_map[vert] == -1) {
+          r_vertex_map[vert] = selected_verts_num;
           selected_verts_num++;
         }
-        if (r_edge_map[edge_i] == -1) {
-          r_edge_map[edge_i] = selected_edges_num;
+        if (r_edge_map[edge] == -1) {
+          r_edge_map[edge] = selected_edges_num;
           selected_edges_num++;
         }
       }

@@ -283,8 +283,8 @@ static void get_loops_polys(const Mesh *mesh, USDMeshData &usd_mesh_data)
   for (const int i : polys.index_range()) {
     const MPoly &poly = polys[i];
     usd_mesh_data.face_vertex_counts.push_back(poly.totloop);
-    for (const int vert_i : corner_verts.slice(poly.loopstart, poly.totloop)) {
-      usd_mesh_data.face_indices.push_back(vert_i);
+    for (const int vert : corner_verts.slice(poly.loopstart, poly.totloop)) {
+      usd_mesh_data.face_indices.push_back(vert);
     }
   }
 }
@@ -433,8 +433,8 @@ void USDGenericMeshWriter::write_normals(const Mesh *mesh, pxr::UsdGeomMesh usd_
       }
       else {
         /* Smooth shaded, use individual vert normals. */
-        for (const int vert_i : corner_verts.slice(poly.loopstart, poly.totloop)) {
-          loop_normals.push_back(pxr::GfVec3f(vert_normals[vert_i]));
+        for (const int vert : corner_verts.slice(poly.loopstart, poly.totloop)) {
+          loop_normals.push_back(pxr::GfVec3f(vert_normals[vert]));
         }
       }
     }

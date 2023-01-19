@@ -79,15 +79,15 @@ static void extract_fdots_pos_iter_poly_mesh(const MeshRenderData *mr,
 
   const int ml_index_end = mp->loopstart + mp->totloop;
   for (int ml_index = mp->loopstart; ml_index < ml_index_end; ml_index += 1) {
-    const int vert_i = mr->corner_verts[ml_index];
+    const int vert = mr->corner_verts[ml_index];
     if (mr->use_subsurf_fdots) {
-      if (BLI_BITMAP_TEST(facedot_tags, vert_i)) {
-        copy_v3_v3(center[mp_index], mr->vert_positions[vert_i]);
+      if (BLI_BITMAP_TEST(facedot_tags, vert)) {
+        copy_v3_v3(center[mp_index], mr->vert_positions[vert]);
         break;
       }
     }
     else {
-      add_v3_v3(center[mp_index], mr->vert_positions[vert_i]);
+      add_v3_v3(center[mp_index], mr->vert_positions[vert]);
     }
   }
 

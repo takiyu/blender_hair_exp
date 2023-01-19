@@ -215,6 +215,7 @@ void MeshFromGeometry::create_polys_loops(Mesh *mesh, bool use_vertex_groups)
       const PolyCorner &curr_corner = mesh_geometry_.face_corners_[curr_face.start_index_ + idx];
       corner_verts[tot_loop_idx] = mesh_geometry_.global_to_local_vertices_.lookup_default(
           curr_corner.vert_index, 0);
+      tot_loop_idx++;
 
       /* Setup vertex group data, if needed. */
       if (dverts.is_empty()) {

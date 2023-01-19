@@ -245,13 +245,13 @@ static Vector<ElementIsland> prepare_face_islands(const Mesh &mesh, const IndexM
   DisjointSet<int> disjoint_set(mesh.totvert);
   for (const int poly_index : face_selection) {
     const MPoly &poly = polys[poly_index];
-    const Span<int> poly_corner_verts = corner_verts.slice(poly.loopstart, poly.totloop);
+    const Span<int> poly_verts = corner_verts.slice(poly.loopstart, poly.totloop);
     for (const int loop_index : IndexRange(poly.totloop - 1)) {
-      const int v1 = poly_corner_verts[loop_index];
-      const int v2 = poly_corner_verts[loop_index + 1];
+      const int v1 = poly_verts[loop_index];
+      const int v2 = poly_verts[loop_index + 1];
       disjoint_set.join(v1, v2);
     }
-    disjoint_set.join(poly_corner_verts.first(), poly_corner_verts.last());
+    disjoint_set.join(poly_verts.first(), poly_verts.last());
   }
 
   VectorSet<int> island_ids;
@@ -262,8 +262,8 @@ static Vector<ElementIsland> prepare_face_islands(const Mesh &mesh, const IndexM
   /* Gather all of the face indices in each island into separate vectors. */
   for (const int poly_index : face_selection) {
     const MPoly &poly = polys[poly_index];
-    const Span<int> poly_corner_verts = corner_verts.slice(poly.loopstart, poly.totloop);
-    const int island_id = disjoint_set.find_root(poly_corner_verts[0]);
+    const Span<int> poly_verts = corner_verts.slice(poly.loopstart, poly.totloop);
+    const int island_id = disjoint_set.find_root(poly_verts[0]);
     const int island_index = island_ids.index_of_or_add(island_id);
     if (island_index == islands.size()) {
       islands.append_as();
