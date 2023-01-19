@@ -39,7 +39,6 @@ struct MPoly;
 struct Main;
 struct MemArena;
 struct Mesh;
-struct ModifierData;
 struct Object;
 struct PointCloud;
 struct Scene;
@@ -247,11 +246,13 @@ struct BoundBox *BKE_mesh_boundbox_get(struct Object *ob);
 
 void BKE_mesh_texspace_calc(struct Mesh *me);
 void BKE_mesh_texspace_ensure(struct Mesh *me);
-void BKE_mesh_texspace_get(struct Mesh *me, float r_loc[3], float r_size[3]);
+void BKE_mesh_texspace_get(struct Mesh *me,
+                           float r_texspace_location[3],
+                           float r_texspace_size[3]);
 void BKE_mesh_texspace_get_reference(struct Mesh *me,
-                                     char **r_texflag,
-                                     float **r_loc,
-                                     float **r_size);
+                                     char **r_texspace_flag,
+                                     float **r_texspace_location,
+                                     float **r_texspace_size);
 void BKE_mesh_texspace_copy_from_object(struct Mesh *me, struct Object *ob);
 
 /**
@@ -472,15 +473,15 @@ void BKE_mesh_ensure_normals_for_display(struct Mesh *mesh);
  * Used when defining an empty custom loop normals data layer,
  * to keep same shading as with auto-smooth!
  */
-void BKE_edges_sharp_from_angle_set(struct MEdge *medges,
-                                    int numEdges,
+void BKE_edges_sharp_from_angle_set(int numEdges,
                                     const int *corner_verts,
                                     const int *corner_edges,
                                     int corners_num,
                                     const struct MPoly *mpolys,
                                     const float (*poly_normals)[3],
                                     int numPolys,
-                                    float split_angle);
+                                    float split_angle,
+                                    bool *sharp_edges);
 
 /**
  * References a contiguous loop-fan with normal offset vars.
@@ -593,6 +594,8 @@ void BKE_lnor_space_custom_normal_to_data(const MLoopNorSpace *lnor_space,
  * (splitting edges).
  *
  * \param loop_to_poly_map: Optional pre-created map from loops to their polygon.
+ * \param sharp_edges: Optional array of sharp edge tags, used to split the evaluated normals on
+ * each side of the edge.
  */
 void BKE_mesh_normals_loop_split(const float (*vert_positions)[3],
                                  const float (*vert_normals)[3],
@@ -608,6 +611,7 @@ void BKE_mesh_normals_loop_split(const float (*vert_positions)[3],
                                  int numPolys,
                                  bool use_split_normals,
                                  float split_angle,
+                                 const bool *sharp_edges,
                                  const int *loop_to_poly_map,
                                  MLoopNorSpaceArray *r_lnors_spacearr,
                                  short (*clnors_data)[2]);
@@ -615,7 +619,7 @@ void BKE_mesh_normals_loop_split(const float (*vert_positions)[3],
 void BKE_mesh_normals_loop_custom_set(const float (*vert_positions)[3],
                                       const float (*vert_normals)[3],
                                       int numVerts,
-                                      struct MEdge *medges,
+                                      const struct MEdge *medges,
                                       int numEdges,
                                       const int *corner_verts,
                                       const int *corner_edges,
@@ -624,12 +628,13 @@ void BKE_mesh_normals_loop_custom_set(const float (*vert_positions)[3],
                                       const struct MPoly *mpolys,
                                       const float (*poly_normals)[3],
                                       int numPolys,
+                                      bool *sharp_edges,
                                       short (*r_clnors_data)[2]);
 void BKE_mesh_normals_loop_custom_from_verts_set(const float (*vert_positions)[3],
                                                  const float (*vert_normals)[3],
                                                  float (*r_custom_vert_normals)[3],
                                                  int numVerts,
-                                                 struct MEdge *medges,
+                                                 const struct MEdge *medges,
                                                  int numEdges,
                                                  const int *corner_verts,
                                                  const int *corner_edges,
@@ -637,6 +642,7 @@ void BKE_mesh_normals_loop_custom_from_verts_set(const float (*vert_positions)[3
                                                  const struct MPoly *mpolys,
                                                  const float (*poly_normals)[3],
                                                  int numPolys,
+                                                 bool *sharp_edges,
                                                  short (*r_clnors_data)[2]);
 
 /**
@@ -758,7 +764,8 @@ void BKE_mesh_polygon_flip_ex(const struct MPoly *mpoly,
 void BKE_mesh_polygon_flip(const struct MPoly *mpoly,
                            int *corner_verts,
                            int *corner_edges,
-                           struct CustomData *ldata);
+                           struct CustomData *ldata,
+                           int totloop);
 /**
  * Flip (invert winding of) all polygons (used to inverse their normals).
  *
@@ -812,9 +819,9 @@ struct Mesh *BKE_mesh_merge_verts(struct Mesh *mesh,
                                   int merge_mode);
 
 /**
- * Account for custom-data such as UV's becoming detached because of imprecision
+ * Account for custom-data such as UVs becoming detached because of imprecision
  * in custom-data interpolation.
- * Without running this operation subdivision surface can cause UV's to be disconnected,
+ * Without running this operation subdivision surface can cause UVs to be disconnected,
  * see: T81065.
  */
 void BKE_mesh_merge_customdata_for_apply_modifier(struct Mesh *me);
@@ -984,7 +991,7 @@ BLI_INLINE const int *BKE_mesh_material_indices(const Mesh *mesh)
  */
 BLI_INLINE int *BKE_mesh_material_indices_for_write(Mesh *mesh)
 {
-  int *indices = (int *)CustomData_duplicate_referenced_layer_named(
+  int *indices = (int *)CustomData_get_layer_named_for_write(
       &mesh->pdata, CD_PROP_INT32, "material_index", mesh->totpoly);
   if (indices) {
     return indices;
@@ -999,7 +1006,7 @@ BLI_INLINE const float (*BKE_mesh_vert_positions(const Mesh *mesh))[3]
 }
 BLI_INLINE float (*BKE_mesh_vert_positions_for_write(Mesh *mesh))[3]
 {
-  return (float(*)[3])CustomData_duplicate_referenced_layer_named(
+  return (float(*)[3])CustomData_get_layer_named_for_write(
       &mesh->vdata, CD_PROP_FLOAT3, "position", mesh->totvert);
 }
 
@@ -1009,7 +1016,7 @@ BLI_INLINE const MEdge *BKE_mesh_edges(const Mesh *mesh)
 }
 BLI_INLINE MEdge *BKE_mesh_edges_for_write(Mesh *mesh)
 {
-  return (MEdge *)CustomData_duplicate_referenced_layer(&mesh->edata, CD_MEDGE, mesh->totedge);
+  return (MEdge *)CustomData_get_layer_for_write(&mesh->edata, CD_MEDGE, mesh->totedge);
 }
 
 BLI_INLINE const MPoly *BKE_mesh_polys(const Mesh *mesh)
@@ -1018,7 +1025,7 @@ BLI_INLINE const MPoly *BKE_mesh_polys(const Mesh *mesh)
 }
 BLI_INLINE MPoly *BKE_mesh_polys_for_write(Mesh *mesh)
 {
-  return (MPoly *)CustomData_duplicate_referenced_layer(&mesh->pdata, CD_MPOLY, mesh->totpoly);
+  return (MPoly *)CustomData_get_layer_for_write(&mesh->pdata, CD_MPOLY, mesh->totpoly);
 }
 
 BLI_INLINE const int *BKE_mesh_corner_verts(const Mesh *mesh)
@@ -1027,7 +1034,7 @@ BLI_INLINE const int *BKE_mesh_corner_verts(const Mesh *mesh)
 }
 BLI_INLINE int *BKE_mesh_corner_verts_for_write(Mesh *mesh)
 {
-  return (int *)CustomData_duplicate_referenced_layer_named(
+  return (int *)CustomData_get_layer_named_for_write(
       &mesh->ldata, CD_PROP_INT32, ".corner_vert", mesh->totloop);
 }
 
@@ -1037,7 +1044,7 @@ BLI_INLINE const int *BKE_mesh_corner_edges(const Mesh *mesh)
 }
 BLI_INLINE int *BKE_mesh_corner_edges_for_write(Mesh *mesh)
 {
-  return (int *)CustomData_duplicate_referenced_layer_named(
+  return (int *)CustomData_get_layer_named_for_write(
       &mesh->ldata, CD_PROP_INT32, ".corner_edge", mesh->totloop);
 }
 
@@ -1047,7 +1054,7 @@ BLI_INLINE const MDeformVert *BKE_mesh_deform_verts(const Mesh *mesh)
 }
 BLI_INLINE MDeformVert *BKE_mesh_deform_verts_for_write(Mesh *mesh)
 {
-  MDeformVert *dvert = (MDeformVert *)CustomData_duplicate_referenced_layer(
+  MDeformVert *dvert = (MDeformVert *)CustomData_get_layer_for_write(
       &mesh->vdata, CD_MDEFORMVERT, mesh->totvert);
   if (dvert) {
     return dvert;

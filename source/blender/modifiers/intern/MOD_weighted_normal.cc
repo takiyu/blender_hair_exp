@@ -19,6 +19,7 @@
 #include "DNA_scene_types.h"
 #include "DNA_screen_types.h"
 
+#include "BKE_attribute.hh"
 #include "BKE_context.h"
 #include "BKE_deform.h"
 #include "BKE_lib_id.h"
@@ -74,7 +75,8 @@ struct WeightedNormalData {
 
   const float (*vert_positions)[3];
   const float (*vert_normals)[3];
-  MEdge *medge;
+  const MEdge *medge;
+  bool *sharp_edges;
 
   blender::Span<int> corner_verts;
   blender::Span<int> corner_edges;
@@ -189,7 +191,7 @@ static void apply_weights_vertex_normal(WeightedNormalModifierData *wnmd,
   const int polys_num = wn_data->polys_num;
 
   const float(*positions)[3] = wn_data->vert_positions;
-  MEdge *medge = wn_data->medge;
+  const MEdge *medge = wn_data->medge;
 
   const Span<int> corner_verts = wn_data->corner_verts;
   const Span<int> corner_edges = wn_data->corner_edges;
@@ -239,6 +241,7 @@ static void apply_weights_vertex_normal(WeightedNormalModifierData *wnmd,
                                 polys_num,
                                 true,
                                 split_angle,
+                                wn_data->sharp_edges,
                                 loop_to_poly.data(),
                                 &lnors_spacearr,
                                 has_clnors ? clnors : nullptr);
@@ -370,6 +373,7 @@ static void apply_weights_vertex_normal(WeightedNormalModifierData *wnmd,
                                      mpoly,
                                      poly_normals,
                                      polys_num,
+                                     wn_data->sharp_edges,
                                      clnors);
   }
   else {
@@ -402,6 +406,7 @@ static void apply_weights_vertex_normal(WeightedNormalModifierData *wnmd,
                                                   mpoly,
                                                   poly_normals,
                                                   polys_num,
+                                                  wn_data->sharp_edges,
                                                   clnors);
 
       MEM_freeN(vert_normals);
@@ -424,6 +429,7 @@ static void apply_weights_vertex_normal(WeightedNormalModifierData *wnmd,
                                   polys_num,
                                   true,
                                   split_angle,
+                                  wn_data->sharp_edges,
                                   loop_to_poly.data(),
                                   nullptr,
                                   has_clnors ? clnors : nullptr);
@@ -447,6 +453,7 @@ static void apply_weights_vertex_normal(WeightedNormalModifierData *wnmd,
                                        mpoly,
                                        poly_normals,
                                        polys_num,
+                                       wn_data->sharp_edges,
                                        clnors);
     }
   }
@@ -590,7 +597,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
   const int loops_num = result->totloop;
   const int polys_num = result->totpoly;
   const float(*positions)[3] = BKE_mesh_vert_positions(result);
-  MEdge *medge = BKE_mesh_edges_for_write(result);
+  const MEdge *medge = BKE_mesh_edges(result);
   const MPoly *mpoly = BKE_mesh_polys(result);
 
   /* Right now:
@@ -612,7 +619,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
 
   const float split_angle = mesh->smoothresh;
   short(*clnors)[2] = static_cast<short(*)[2]>(
-      CustomData_get_layer(&result->ldata, CD_CUSTOMLOOPNORMAL));
+      CustomData_get_layer_for_write(&result->ldata, CD_CUSTOMLOOPNORMAL, mesh->totloop));
 
   /* Keep info whether we had clnors,
    * it helps when generating clnor spaces and default normals. */
@@ -629,6 +636,10 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
   const Array<int> loop_to_poly_map = bke::mesh_topology::build_loop_to_poly_map(result->polys(),
                                                                                  result->totloop);
 
+  bke::MutableAttributeAccessor attributes = result->attributes_for_write();
+  bke::SpanAttributeWriter<bool> sharp_edges = attributes.lookup_or_add_for_write_span<bool>(
+      "sharp_edge", ATTR_DOMAIN_EDGE);
+
   WeightedNormalData wn_data{};
   wn_data.verts_num = verts_num;
   wn_data.edges_num = edges_num;
@@ -638,6 +649,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
   wn_data.vert_positions = positions;
   wn_data.vert_normals = BKE_mesh_vertex_normals_ensure(result);
   wn_data.medge = medge;
+  wn_data.sharp_edges = sharp_edges.span.data();
 
   wn_data.corner_verts = result->corner_verts();
   wn_data.corner_edges = result->corner_edges();
@@ -674,6 +686,8 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
   MEM_SAFE_FREE(wn_data.items_data);
 
   result->runtime->is_original_bmesh = false;
+
+  sharp_edges.finish();
 
   return result;
 }
@@ -737,35 +751,35 @@ static void panelRegister(ARegionType *region_type)
 }
 
 ModifierTypeInfo modifierType_WeightedNormal = {
-    /* name */ N_("WeightedNormal"),
-    /* structName */ "WeightedNormalModifierData",
-    /* structSize */ sizeof(WeightedNormalModifierData),
-    /* srna */ &RNA_WeightedNormalModifier,
-    /* type */ eModifierTypeType_Constructive,
-    /* flags */ eModifierTypeFlag_AcceptsMesh | eModifierTypeFlag_SupportsMapping |
+    /*name*/ N_("WeightedNormal"),
+    /*structName*/ "WeightedNormalModifierData",
+    /*structSize*/ sizeof(WeightedNormalModifierData),
+    /*srna*/ &RNA_WeightedNormalModifier,
+    /*type*/ eModifierTypeType_Constructive,
+    /*flags*/ eModifierTypeFlag_AcceptsMesh | eModifierTypeFlag_SupportsMapping |
         eModifierTypeFlag_SupportsEditmode | eModifierTypeFlag_EnableInEditmode,
-    /* icon */ ICON_MOD_NORMALEDIT,
+    /*icon*/ ICON_MOD_NORMALEDIT,
 
-    /* copyData */ BKE_modifier_copydata_generic,
+    /*copyData*/ BKE_modifier_copydata_generic,
 
-    /* deformVerts */ nullptr,
-    /* deformMatrices */ nullptr,
-    /* deformVertsEM */ nullptr,
-    /* deformMatricesEM */ nullptr,
-    /* modifyMesh */ modifyMesh,
-    /* modifyGeometrySet */ nullptr,
+    /*deformVerts*/ nullptr,
+    /*deformMatrices*/ nullptr,
+    /*deformVertsEM*/ nullptr,
+    /*deformMatricesEM*/ nullptr,
+    /*modifyMesh*/ modifyMesh,
+    /*modifyGeometrySet*/ nullptr,
 
-    /* initData */ initData,
-    /* requiredDataMask */ requiredDataMask,
-    /* freeData */ nullptr,
-    /* isDisabled */ nullptr,
-    /* updateDepsgraph */ nullptr,
-    /* dependsOnTime */ nullptr,
-    /* dependsOnNormals */ dependsOnNormals,
-    /* foreachIDLink */ nullptr,
-    /* foreachTexLink */ nullptr,
-    /* freeRuntimeData */ nullptr,
-    /* panelRegister */ panelRegister,
-    /* blendWrite */ nullptr,
-    /* blendRead */ nullptr,
+    /*initData*/ initData,
+    /*requiredDataMask*/ requiredDataMask,
+    /*freeData*/ nullptr,
+    /*isDisabled*/ nullptr,
+    /*updateDepsgraph*/ nullptr,
+    /*dependsOnTime*/ nullptr,
+    /*dependsOnNormals*/ dependsOnNormals,
+    /*foreachIDLink*/ nullptr,
+    /*foreachTexLink*/ nullptr,
+    /*freeRuntimeData*/ nullptr,
+    /*panelRegister*/ panelRegister,
+    /*blendWrite*/ nullptr,
+    /*blendRead*/ nullptr,
 };

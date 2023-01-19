@@ -53,7 +53,7 @@ Object *MeshFromGeometry::create_mesh(Main *bmain,
   obj->data = BKE_object_obdata_add_from_type(bmain, OB_MESH, ob_name.c_str());
 
   create_vertices(mesh);
-  create_polys_loops(mesh, import_params.import_vertex_groups);
+  create_polys_loops(mesh, import_params.import_vertex_groups && !import_params.use_split_groups);
   create_edges(mesh);
   create_uv_verts(mesh);
   create_normals(mesh);
@@ -213,17 +213,20 @@ void MeshFromGeometry::create_polys_loops(Mesh *mesh, bool use_vertex_groups)
 
     for (int idx = 0; idx < curr_face.corner_count_; ++idx) {
       const PolyCorner &curr_corner = mesh_geometry_.face_corners_[curr_face.start_index_ + idx];
-      corner_verts[tot_loop_idx] = mesh_geometry_.global_to_local_vertices_.lookup_default(curr_corner.vert_index, 0);
+      corner_verts[tot_loop_idx] = mesh_geometry_.global_to_local_vertices_.lookup_default(
+          curr_corner.vert_index, 0);
 
       /* Setup vertex group data, if needed. */
       if (dverts.is_empty()) {
         continue;
       }
       const int group_index = curr_face.vertex_group_index;
-      MDeformWeight *dw = BKE_defvert_ensure_index(&dverts[corner_verts[tot_loop_idx]], group_index);
-      dw->weight = 1.0f;
-
-      tot_loop_idx++;
+      /* Note: face might not belong to any group */
+      if (group_index >= 0 || 1) {
+        MDeformWeight *dw = BKE_defvert_ensure_index(&dverts[corner_verts[tot_loop_idx]],
+                                                     group_index);
+        dw->weight = 1.0f;
+      }
     }
   }
 

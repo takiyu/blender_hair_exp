@@ -340,23 +340,23 @@ bool BKE_mesh_runtime_is_valid(Mesh *me_eval)
       do_fixes,
       &changed);
 
-  is_valid &= BKE_mesh_validate_arrays(
-      me_eval,
-      reinterpret_cast<float(*)[3]>(positions.data()),
-      positions.size(),
-      edges.data(),
-      edges.size(),
-      static_cast<MFace *>(CustomData_get_layer(&me_eval->fdata, CD_MFACE)),
-      me_eval->totface,
-      me_eval->corner_verts_for_write().data(),
-      me_eval->corner_edges_for_write().data(),
-      me_eval->totloop,
-      polys.data(),
-      polys.size(),
-      me_eval->deform_verts_for_write().data(),
-      do_verbose,
-      do_fixes,
-      &changed);
+  is_valid &= BKE_mesh_validate_arrays(me_eval,
+                                       reinterpret_cast<float(*)[3]>(positions.data()),
+                                       positions.size(),
+                                       edges.data(),
+                                       edges.size(),
+                                       static_cast<MFace *>(CustomData_get_layer_for_write(
+                                           &me_eval->fdata, CD_MFACE, me_eval->totface)),
+                                       me_eval->totface,
+                                       me_eval->corner_verts_for_write().data(),
+                                       me_eval->corner_edges_for_write().data(),
+                                       me_eval->totloop,
+                                       polys.data(),
+                                       polys.size(),
+                                       me_eval->deform_verts_for_write().data(),
+                                       do_verbose,
+                                       do_fixes,
+                                       &changed);
 
   BLI_assert(changed == false);
 

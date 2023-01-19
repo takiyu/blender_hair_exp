@@ -605,10 +605,6 @@ else()
   set(WITH_METAL_BACKEND OFF)
 endif()
 
-if(WITH_METAL_BACKEND)
-  set(CMAKE_OSX_DEPLOYMENT_TARGET "10.15" CACHE STRING "Minimum OS X deployment version" FORCE)
-endif()
-
 if(WIN32)
   getDefaultWindowsPrefixBase(CMAKE_GENERIC_PROGRAM_FILES)
   set(CPACK_INSTALL_PREFIX ${CMAKE_GENERIC_PROGRAM_FILES}/${})
@@ -1431,6 +1427,9 @@ if(CMAKE_COMPILER_IS_GNUCC)
   add_check_c_compiler_flag(C_WARNINGS C_WARN_TYPE_LIMITS -Wtype-limits)
   add_check_c_compiler_flag(C_WARNINGS C_WARN_FORMAT_SIGN -Wformat-signedness)
   add_check_c_compiler_flag(C_WARNINGS C_WARN_RESTRICT -Wrestrict)
+  # Useful but too many false positives and inconvenient to suppress each occurrence.
+  add_check_c_compiler_flag(C_WARNINGS C_WARN_NO_STRINGOP_OVERREAD -Wno-stringop-overread)
+  add_check_c_compiler_flag(C_WARNINGS C_WARN_NO_STRINGOP_OVERFLOW -Wno-stringop-overflow)
 
   # C-only.
   add_check_c_compiler_flag(C_WARNINGS C_WARN_NO_NULL -Wnonnull)
@@ -1470,6 +1469,9 @@ if(CMAKE_COMPILER_IS_GNUCC)
   add_check_cxx_compiler_flag(CXX_WARNINGS CXX_WARN_RESTRICT -Wrestrict)
   add_check_cxx_compiler_flag(CXX_WARNINGS CXX_WARN_NO_SUGGEST_OVERRIDE  -Wno-suggest-override)
   add_check_cxx_compiler_flag(CXX_WARNINGS CXX_WARN_UNINITIALIZED -Wuninitialized)
+  # Useful but too many false positives and inconvenient to suppress each occurrence.
+  add_check_cxx_compiler_flag(CXX_WARNINGS CXX_WARN_NO_STRINGOP_OVERREAD -Wno-stringop-overread)
+  add_check_cxx_compiler_flag(CXX_WARNINGS CXX_WARN_NO_STRINGOP_OVERFLOW -Wno-stringop-overflow)
 
   # causes too many warnings
   if(NOT APPLE)

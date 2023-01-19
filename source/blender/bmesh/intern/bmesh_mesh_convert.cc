@@ -338,6 +338,8 @@ void BM_mesh_bm_from_me(BMesh *bm, const Mesh *me, const struct BMeshFromMeshPar
       &me->pdata, CD_PROP_BOOL, ".hide_poly");
   const int *material_indices = (const int *)CustomData_get_layer_named(
       &me->pdata, CD_PROP_INT32, "material_index");
+  const bool *sharp_edges = (const bool *)CustomData_get_layer_named(
+      &me->edata, CD_PROP_BOOL, "sharp_edge");
 
   const Span<float3> positions = me->vert_positions();
   Array<BMVert *> vtable(me->totvert);
@@ -391,6 +393,9 @@ void BM_mesh_bm_from_me(BMesh *bm, const Mesh *me, const struct BMeshFromMeshPar
     }
     if (select_edge && select_edge[i]) {
       BM_edge_select_set(bm, e, true);
+    }
+    if (!(sharp_edges && sharp_edges[i])) {
+      BM_elem_flag_enable(e, BM_ELEM_SMOOTH);
     }
 
     /* Copy Custom Data */
@@ -1075,6 +1080,7 @@ void BM_mesh_bm_to_me(Main *bmain, BMesh *bm, Mesh *me, const struct BMeshToMesh
   bool need_hide_edge = false;
   bool need_hide_poly = false;
   bool need_material_index = false;
+  bool need_sharp_edge = false;
 
   i = 0;
   BM_ITER_MESH (v, &iter, bm, BM_VERTS_OF_MESH) {
@@ -1109,6 +1115,9 @@ void BM_mesh_bm_to_me(Main *bmain, BMesh *bm, Mesh *me, const struct BMeshToMesh
     }
     if (BM_elem_flag_test(e, BM_ELEM_SELECT)) {
       need_select_edge = true;
+    }
+    if (!BM_elem_flag_test(e, BM_ELEM_SMOOTH)) {
+      need_sharp_edge = true;
     }
 
     BM_elem_index_set(e, i); /* set_inline */
@@ -1169,6 +1178,13 @@ void BM_mesh_bm_to_me(Main *bmain, BMesh *bm, Mesh *me, const struct BMeshToMesh
                                "material_index",
                                ATTR_DOMAIN_FACE,
                                [&](const int i) { return int(BM_face_at_index(bm, i)->mat_nr); });
+  }
+  if (need_sharp_edge) {
+    BM_mesh_elem_table_ensure(bm, BM_EDGE);
+    write_fn_to_attribute<bool>(
+        me->attributes_for_write(), "sharp_edge", ATTR_DOMAIN_EDGE, [&](const int i) {
+          return !BM_elem_flag_test(BM_edge_at_index(bm, i), BM_ELEM_SMOOTH);
+        });
   }
 
   /* Patch hook indices and vertex parents. */
@@ -1371,6 +1387,7 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
 
   bke::SpanAttributeWriter<bool> hide_edge_attribute;
   bke::SpanAttributeWriter<bool> select_edge_attribute;
+  bke::SpanAttributeWriter<bool> sharp_edge_attribute;
   BM_ITER_MESH_INDEX (eed, &iter, bm, BM_EDGES_OF_MESH, i) {
     MEdge *med = &medge[i];
 
@@ -1393,6 +1410,13 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
             ".select_edge", ATTR_DOMAIN_EDGE);
       }
       select_edge_attribute.span[i] = true;
+    }
+    if (!BM_elem_flag_test(eed, BM_ELEM_SMOOTH)) {
+      if (!sharp_edge_attribute) {
+        sharp_edge_attribute = mesh_attributes.lookup_or_add_for_write_span<bool>(
+            "sharp_edge", ATTR_DOMAIN_EDGE);
+      }
+      sharp_edge_attribute.span[i] = true;
     }
 
     CustomData_from_bmesh_block(&bm->edata, &me->edata, eed->head.data, i);
@@ -1460,4 +1484,5 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
   select_vert_attribute.finish();
   select_edge_attribute.finish();
   select_poly_attribute.finish();
+  sharp_edge_attribute.finish();
 }

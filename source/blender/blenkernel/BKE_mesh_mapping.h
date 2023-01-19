@@ -324,6 +324,7 @@ int *BKE_mesh_calc_smoothgroups(const struct MEdge *medge,
                                 int totpoly,
                                 const int *corner_edges,
                                 int totloop,
+                                const bool *sharp_edges,
                                 int *r_totgroup,
                                 bool use_bitflags);
 
