@@ -151,7 +151,7 @@ class OBJMesh : NonCopyable {
   /**
    * Calculate vertex indices of all vertices of the polygon at the given index.
    */
-  Vector<int> calc_poly_vertex_indices(int poly_index) const;
+  Span<int> calc_poly_vertex_indices(int poly_index) const;
   /**
    * Calculate UV vertex coordinates of an Object.
    * Stores the coordinates and UV vertex indices in the member variables.

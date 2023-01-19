@@ -276,7 +276,7 @@ float3 OBJMesh::calc_vertex_coords(const int vert_index, const float global_scal
   return r_coords;
 }
 
-Vector<int> OBJMesh::calc_poly_vertex_indices(const int poly_index) const
+Span<int> OBJMesh::calc_poly_vertex_indices(const int poly_index) const
 {
   const MPoly &mpoly = mesh_polys_[poly_index];
   return mesh_corner_verts_.slice(mpoly.loopstart, mpoly.totloop);
