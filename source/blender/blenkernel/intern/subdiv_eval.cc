@@ -83,7 +83,7 @@ static void set_coarse_positions(Subdiv *subdiv,
 {
   const float(*positions)[3] = BKE_mesh_vert_positions(mesh);
   const MPoly *mpoly = BKE_mesh_polys(mesh);
-  const int *corner_verts = BKE_mesh_corner_verts(mesh);
+  const blender::Span<int> corner_verts = mesh->corner_verts();
   /* Mark vertices which needs new coordinates. */
   /* TODO(sergey): This is annoying to calculate this on every update,
    * maybe it's better to cache this mapping. Or make it possible to have

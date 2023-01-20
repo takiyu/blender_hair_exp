@@ -402,8 +402,8 @@ static void init_user_data(OpenSubdiv_Converter *converter,
   user_data->vert_positions = BKE_mesh_vert_positions(mesh);
   user_data->edges = BKE_mesh_edges(mesh);
   user_data->polys = BKE_mesh_polys(mesh);
-  user_data->corner_verts = BKE_mesh_corner_verts(mesh);
-  user_data->corner_edges = BKE_mesh_corner_edges(mesh);
+  user_data->corner_verts = mesh->corner_verts().data();
+  user_data->corner_edges = mesh->corner_edges().data();
   user_data->cd_vertex_crease = static_cast<const float *>(
       CustomData_get_layer(&mesh->vdata, CD_CREASE));
   user_data->cd_edge_crease = static_cast<const float *>(

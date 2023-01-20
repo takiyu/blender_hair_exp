@@ -1820,8 +1820,8 @@ bool BKE_subdiv_foreach_subdiv_geometry(Subdiv *subdiv,
   ctx.coarse_mesh = coarse_mesh;
   ctx.coarse_edges = BKE_mesh_edges(coarse_mesh);
   ctx.coarse_polys = BKE_mesh_polys(coarse_mesh);
-  ctx.coarse_corner_verts = BKE_mesh_corner_verts(coarse_mesh);
-  ctx.coarse_corner_edges = BKE_mesh_corner_edges(coarse_mesh);
+  ctx.coarse_corner_verts = coarse_mesh->corner_verts().data();
+  ctx.coarse_corner_edges = coarse_mesh->corner_edges().data();
   ctx.settings = mesh_settings;
   ctx.foreach_context = context;
   subdiv_foreach_ctx_init(subdiv, &ctx);

@@ -802,7 +802,7 @@ static void sculpt_expand_grids_to_faces_falloff(SculptSession *ss,
 static void sculpt_expand_vertex_to_faces_falloff(Mesh *mesh, ExpandCache *expand_cache)
 {
   const MPoly *polys = BKE_mesh_polys(mesh);
-  const int *corner_verts = BKE_mesh_corner_verts(mesh);
+  const blender::Span<int> corner_verts = mesh->corner_verts();
 
   for (int p = 0; p < mesh->totpoly; p++) {
     const MPoly *poly = &polys[p];
@@ -1979,7 +1979,7 @@ static void sculpt_expand_delete_face_set_id(int *r_face_sets,
   const int totface = ss->totfaces;
   MeshElemMap *pmap = ss->pmap;
   const MPoly *polys = BKE_mesh_polys(mesh);
-  const int *corner_verts = BKE_mesh_corner_verts(mesh);
+  const blender::Span<int> corner_verts = mesh->corner_verts();
 
   /* Check that all the face sets IDs in the mesh are not equal to `delete_id`
    * before attempting to delete it. */

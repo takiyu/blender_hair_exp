@@ -1221,7 +1221,7 @@ static void sculpt_gesture_trim_geometry_generate(SculptGestureContext *sgcontex
 
   /* Write the front face triangle indices. */
   MPoly *polys = BKE_mesh_polys_for_write(trim_operation->mesh);
-  int *corner_verts = BKE_mesh_corner_verts_for_write(trim_operation->mesh);
+  blender::MutableSpan<int> corner_verts = trim_operation->mesh->corner_verts_for_write();
   MPoly *mp = polys;
   int corner_i = 0;
   for (int i = 0; i < tot_tris_face; i++, mp++, corner_i += 3) {
