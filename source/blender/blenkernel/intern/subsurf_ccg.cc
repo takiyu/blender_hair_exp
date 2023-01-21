@@ -1565,7 +1565,6 @@ static void set_ccgdm_all_geometry(CCGDerivedMesh *ccgdm,
 
   medge = dm->getEdgeArray(dm);
 
-  const MPoly *mpoly = static_cast<const MPoly *>(CustomData_get_layer(&dm->polyData, CD_MPOLY));
   const int *material_indices = static_cast<const int *>(
       CustomData_get_layer_named(&dm->polyData, CD_MPOLY, "material_index"));
   const bool *sharp_faces = static_cast<const bool *>(

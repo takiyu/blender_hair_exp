@@ -1043,7 +1043,8 @@ static bool data_transfer_layersmapping_generate(ListBase *r_map,
           mix_factor,
           mix_weights,
           CustomData_get_layer_named(&me_src->pdata, CD_PROP_BOOL, "sharp_face"),
-          CustomData_get_layer_named(&me_dst->pdata, CD_PROP_BOOL, "sharp_face"),
+          CustomData_get_layer_named_for_write(
+              &me_dst->pdata, CD_PROP_BOOL, "sharp_face", num_elem_dst),
           interp,
           interp_data);
       return true;

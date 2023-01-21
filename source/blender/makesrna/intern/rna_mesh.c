@@ -671,7 +671,7 @@ static bool rna_MeshPolygon_use_smooth_get(PointerRNA *ptr)
 static void rna_MeshPolygon_use_smooth_set(PointerRNA *ptr, bool value)
 {
   Mesh *mesh = rna_mesh(ptr);
-  bool *sharp_faces = (bool *)CustomData_duplicate_referenced_layer_named(
+  bool *sharp_faces = (bool *)CustomData_get_layer_named_for_write(
       &mesh->pdata, CD_PROP_BOOL, "sharp_face", mesh->totpoly);
   if (!sharp_faces) {
     if (value) {

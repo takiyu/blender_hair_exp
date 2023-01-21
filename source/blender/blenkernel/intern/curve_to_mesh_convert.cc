@@ -738,8 +738,6 @@ Mesh *curve_to_mesh_sweep(const CurvesGeometry &main,
                         positions.slice(info.vert_range));
   });
 
-  MutableAttributeAccessor mesh_attributes = mesh->attributes_for_write();
-
   SpanAttributeWriter<bool> sharp_edges;
   write_sharp_bezier_edges(curves_info, offsets, mesh_attributes, sharp_edges);
   if (fill_caps) {

@@ -454,7 +454,7 @@ static void convert_mfaces_to_mpolys(ID *id,
         pdata, CD_PROP_INT32, CD_SET_DEFAULT, nullptr, totpoly, "material_index"));
   }
   bool *sharp_faces = static_cast<bool *>(
-      CustomData_get_layer_named(pdata, CD_PROP_BOOL, "sharp_face"));
+      CustomData_get_layer_named_for_write(pdata, CD_PROP_BOOL, "sharp_face", totpoly));
   if (!sharp_faces) {
     sharp_faces = static_cast<bool *>(CustomData_add_layer_named(
         pdata, CD_PROP_BOOL, CD_SET_DEFAULT, nullptr, totpoly, "sharp_face"));
