@@ -596,7 +596,8 @@ struct PBVHBatches {
         fill_vbo_normal_faces(vbo, args, foreach_faces, &access);
         break;
       case CD_PBVH_MASK_TYPE: {
-        float *mask = static_cast<float *>(CustomData_get_layer(args->vdata, CD_PAINT_MASK));
+        const float *mask = static_cast<const float *>(
+            CustomData_get_layer(args->vdata, CD_PAINT_MASK));
 
         if (mask) {
           foreach_faces(
@@ -614,7 +615,7 @@ struct PBVHBatches {
         break;
       }
       case CD_PBVH_FSET_TYPE: {
-        int *face_sets = static_cast<int *>(
+        const int *face_sets = static_cast<const int *>(
             CustomData_get_layer_named(args->pdata, CD_PROP_INT32, ".sculpt_face_set"));
 
         if (face_sets) {
@@ -654,13 +655,13 @@ struct PBVHBatches {
       }
       case CD_PROP_COLOR:
         if (vbo.domain == ATTR_DOMAIN_POINT) {
-          MPropCol *mpropcol = static_cast<MPropCol *>(
+          const MPropCol *mpropcol = static_cast<const MPropCol *>(
               CustomData_get_layer_named(args->vdata, CD_PROP_COLOR, vbo.name.c_str()));
 
           foreach_faces(
               [&](int /*buffer_i*/, int /*tri_i*/, int vertex_i, const MLoopTri * /*tri*/) {
                 ushort color[4];
-                MPropCol *col = mpropcol + vertex_i;
+                const MPropCol *col = mpropcol + vertex_i;
 
                 color[0] = unit_float_to_ushort_clamp(col->color[0]);
                 color[1] = unit_float_to_ushort_clamp(col->color[1]);
@@ -671,12 +672,12 @@ struct PBVHBatches {
               });
         }
         else if (vbo.domain == ATTR_DOMAIN_CORNER) {
-          MPropCol *mpropcol = static_cast<MPropCol *>(
+          const MPropCol *mpropcol = static_cast<const MPropCol *>(
               CustomData_get_layer_named(args->ldata, CD_PROP_COLOR, vbo.name.c_str()));
 
           foreach_faces([&](int /*buffer_i*/, int tri_i, int /*vertex_i*/, const MLoopTri *tri) {
             ushort color[4];
-            MPropCol *col = mpropcol + tri->tri[tri_i];
+            const MPropCol *col = mpropcol + tri->tri[tri_i];
 
             color[0] = unit_float_to_ushort_clamp(col->color[0]);
             color[1] = unit_float_to_ushort_clamp(col->color[1]);
@@ -689,13 +690,13 @@ struct PBVHBatches {
         break;
       case CD_PROP_BYTE_COLOR:
         if (vbo.domain == ATTR_DOMAIN_POINT) {
-          MLoopCol *mbytecol = static_cast<MLoopCol *>(
+          const MLoopCol *mbytecol = static_cast<const MLoopCol *>(
               CustomData_get_layer_named(args->vdata, CD_PROP_BYTE_COLOR, vbo.name.c_str()));
 
           foreach_faces(
               [&](int /*buffer_i*/, int /*tri_i*/, int vertex_i, const MLoopTri * /*tri*/) {
                 ushort color[4];
-                MLoopCol *col = mbytecol + vertex_i;
+                const MLoopCol *col = mbytecol + vertex_i;
 
                 color[0] = unit_float_to_ushort_clamp(BLI_color_from_srgb_table[col->r]);
                 color[1] = unit_float_to_ushort_clamp(BLI_color_from_srgb_table[col->g]);
@@ -706,12 +707,12 @@ struct PBVHBatches {
               });
         }
         else if (vbo.domain == ATTR_DOMAIN_CORNER) {
-          MLoopCol *mbytecol = static_cast<MLoopCol *>(
+          const MLoopCol *mbytecol = static_cast<const MLoopCol *>(
               CustomData_get_layer_named(args->ldata, CD_PROP_BYTE_COLOR, vbo.name.c_str()));
 
           foreach_faces([&](int /*buffer_i*/, int tri_i, int /*vertex_i*/, const MLoopTri *tri) {
             ushort color[4];
-            MLoopCol *col = mbytecol + tri->tri[tri_i];
+            const MLoopCol *col = mbytecol + tri->tri[tri_i];
 
             color[0] = unit_float_to_ushort_clamp(BLI_color_from_srgb_table[col->r]);
             color[1] = unit_float_to_ushort_clamp(BLI_color_from_srgb_table[col->g]);
@@ -722,6 +723,15 @@ struct PBVHBatches {
           });
         }
         break;
+      case CD_PROP_FLOAT2: {
+        const float2 *mloopuv = static_cast<const float2 *>(
+            CustomData_get_layer_named(args->ldata, CD_PROP_FLOAT2, vbo.name.c_str()));
+
+        foreach_faces([&](int /*buffer_i*/, int tri_i, int /*vertex_i*/, const MLoopTri *tri) {
+          *static_cast<float2 *>(GPU_vertbuf_raw_step(&access)) = mloopuv[tri->tri[tri_i]];
+        });
+        break;
+      }
     }
   }
 
@@ -963,7 +973,7 @@ struct PBVHBatches {
 
   void create_index_faces(PBVH_GPU_Args *args)
   {
-    int *mat_index = static_cast<int *>(
+    const int *mat_index = static_cast<const int *>(
         CustomData_get_layer_named(args->pdata, CD_PROP_INT32, "material_index"));
 
     if (mat_index && args->totprim) {
@@ -1053,7 +1063,7 @@ struct PBVHBatches {
 
   void create_index_grids(PBVH_GPU_Args *args, bool do_coarse)
   {
-    int *mat_index = static_cast<int *>(
+    const int *mat_index = static_cast<const int *>(
         CustomData_get_layer_named(args->pdata, CD_PROP_INT32, "material_index"));
 
     if (mat_index && args->totprim) {
