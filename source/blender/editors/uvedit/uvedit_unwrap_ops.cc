@@ -1347,7 +1347,8 @@ static void uv_map_transform_center(const Scene *scene,
                                     float r_bounds[2][3])
 {
   /* only operates on the edit object - this is all that's needed now */
-  const int around = (v3d) ? scene->toolsettings->transform_pivot_point : V3D_AROUND_CENTER_BOUNDS;
+  const int around = (v3d) ? scene->toolsettings->transform_pivot_point :
+                             int(V3D_AROUND_CENTER_BOUNDS);
 
   float bounds[2][3];
   INIT_MINMAX(bounds[0], bounds[1]);
@@ -2301,7 +2302,6 @@ static int smart_project_exec(bContext *C, wmOperator *op)
 
     if (project_normal_array.size() == 0) {
       MEM_freeN(thick_faces);
-      BLI_assert(project_normal_array == nullptr);
       continue;
     }
 
