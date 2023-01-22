@@ -665,7 +665,7 @@ static bool rna_MeshPolygon_use_smooth_get(PointerRNA *ptr)
   const bool *sharp_faces = (const bool *)CustomData_get_layer_named(
       &mesh->pdata, CD_PROP_BOOL, "sharp_face");
   const int index = rna_MeshPolygon_index_get(ptr);
-  return sharp_faces == NULL ? false : sharp_faces[index];
+  return !(sharp_faces && sharp_faces[index]);
 }
 
 static void rna_MeshPolygon_use_smooth_set(PointerRNA *ptr, bool value)
@@ -1688,13 +1688,10 @@ static int rna_MeshLoopTriangle_material_index_get(PointerRNA *ptr)
 static bool rna_MeshLoopTriangle_use_smooth_get(PointerRNA *ptr)
 {
   const Mesh *me = rna_mesh(ptr);
+  const MLoopTri *ltri = (MLoopTri *)ptr->data;
   const bool *sharp_faces = (const bool *)CustomData_get_layer_named(
       &me->pdata, CD_PROP_BOOL, "sharp_face");
-  if (!sharp_faces) {
-    return true;
-  }
-  const MLoopTri *ltri = (MLoopTri *)ptr->data;
-  return sharp_faces[ltri->poly];
+  return !(sharp_faces && sharp_faces[ltri->poly]);
 }
 
 /* path construction */
