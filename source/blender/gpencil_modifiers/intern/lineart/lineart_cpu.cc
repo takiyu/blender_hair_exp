@@ -1474,12 +1474,12 @@ struct EdgeFeatData {
   Object *ob_eval; /* For evaluated materials. */
   const MLoopTri *mlooptri;
   const int *material_indices;
-  blender::VArray<bool> sharp_faces;
   blender::Span<MEdge> edges;
   blender::Span<MLoop> loops;
   blender::Span<MPoly> polys;
   LineartTriangle *tri_array;
   blender::VArray<bool> sharp_edges;
+  blender::VArray<bool> sharp_faces;
   LineartVert *v_array;
   float crease_threshold;
   bool use_auto_smooth;
@@ -1937,9 +1937,6 @@ static void lineart_geometry_object_load(LineartObjectInfo *ob_info,
   const MLoopTri *mlooptri = BKE_mesh_runtime_looptri_ensure(me);
   const int tot_tri = BKE_mesh_runtime_looptri_len(me);
 
-  const bke::AttributeAccessor attributes = me->attributes();
-  const VArray<bool> sharp_faces = attributes.lookup_or_default<bool>(
-      "sharp_face", ATTR_DOMAIN_FACE, false);
   const int *material_indices = (const int *)CustomData_get_layer_named(
       &me->pdata, CD_PROP_INT32, "material_index");
 
@@ -2073,8 +2070,11 @@ static void lineart_geometry_object_load(LineartObjectInfo *ob_info,
   edge_feat_settings.userdata_chunk_size = sizeof(EdgeFeatReduceData);
   edge_feat_settings.func_reduce = feat_data_sum_reduce;
 
+  const bke::AttributeAccessor attributes = me->attributes();
   const VArray<bool> sharp_edges = attributes.lookup_or_default<bool>(
       "sharp_edge", ATTR_DOMAIN_EDGE, false);
+  const VArray<bool> sharp_faces = attributes.lookup_or_default<bool>(
+      "sharp_face", ATTR_DOMAIN_FACE, false);
 
   EdgeFeatData edge_feat_data = {nullptr};
   edge_feat_data.ld = la_data;
@@ -2082,11 +2082,11 @@ static void lineart_geometry_object_load(LineartObjectInfo *ob_info,
   edge_feat_data.ob_eval = ob_info->original_ob_eval;
   edge_feat_data.mlooptri = mlooptri;
   edge_feat_data.material_indices = material_indices;
-  edge_feat_data.sharp_faces = sharp_faces;
   edge_feat_data.edges = me->edges();
   edge_feat_data.polys = me->polys();
   edge_feat_data.loops = me->loops();
   edge_feat_data.sharp_edges = sharp_edges;
+  edge_feat_data.sharp_faces = sharp_faces;
   edge_feat_data.edge_nabr = lineart_build_edge_neighbor(me, total_edges);
   edge_feat_data.tri_array = la_tri_arr;
   edge_feat_data.v_array = la_v_arr;

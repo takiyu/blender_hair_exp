@@ -437,11 +437,11 @@ void BM_mesh_bm_from_me(BMesh *bm, const Mesh *me, const struct BMeshFromMeshPar
     BM_elem_index_set(f, bm->totface - 1); /* set_ok */
 
     /* Transfer flag. */
-    if (hide_poly && hide_poly[i]) {
-      BM_elem_flag_enable(f, BM_ELEM_HIDDEN);
-    }
     if (!(sharp_faces && sharp_faces[i])) {
       BM_elem_flag_enable(f, BM_ELEM_SMOOTH);
+    }
+    if (hide_poly && hide_poly[i]) {
+      BM_elem_flag_enable(f, BM_ELEM_HIDDEN);
     }
     if (select_poly && select_poly[i]) {
       BM_face_select_set(bm, f, true);
@@ -1174,18 +1174,18 @@ void BM_mesh_bm_to_me(Main *bmain, BMesh *bm, Mesh *me, const struct BMeshToMesh
                                ATTR_DOMAIN_FACE,
                                [&](const int i) { return int(BM_face_at_index(bm, i)->mat_nr); });
   }
-  if (need_sharp_face) {
-    BM_mesh_elem_table_ensure(bm, BM_FACE);
-    write_fn_to_attribute<bool>(
-        me->attributes_for_write(), "sharp_face", ATTR_DOMAIN_FACE, [&](const int i) {
-          return !BM_elem_flag_test(BM_face_at_index(bm, i), BM_ELEM_SMOOTH);
-        });
-  }
   if (need_sharp_edge) {
     BM_mesh_elem_table_ensure(bm, BM_EDGE);
     write_fn_to_attribute<bool>(
         me->attributes_for_write(), "sharp_edge", ATTR_DOMAIN_EDGE, [&](const int i) {
           return !BM_elem_flag_test(BM_edge_at_index(bm, i), BM_ELEM_SMOOTH);
+        });
+  }
+  if (need_sharp_face) {
+    BM_mesh_elem_table_ensure(bm, BM_FACE);
+    write_fn_to_attribute<bool>(
+        me->attributes_for_write(), "sharp_face", ATTR_DOMAIN_FACE, [&](const int i) {
+          return !BM_elem_flag_test(BM_face_at_index(bm, i), BM_ELEM_SMOOTH);
         });
   }
 

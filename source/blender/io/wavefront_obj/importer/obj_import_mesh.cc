@@ -203,9 +203,7 @@ void MeshFromGeometry::create_polys_loops(Mesh *mesh, bool use_vertex_groups)
     MPoly &mpoly = polys[poly_idx];
     mpoly.totloop = curr_face.corner_count_;
     mpoly.loopstart = tot_loop_idx;
-    if (!curr_face.shaded_smooth) {
-      sharp_faces.span[poly_idx] = true;
-    }
+    sharp_faces.span[poly_idx] = !curr_face.shaded_smooth;
     material_indices.span[poly_idx] = curr_face.material_index;
     /* Importing obj files without any materials would result in negative indices, which is not
      * supported. */

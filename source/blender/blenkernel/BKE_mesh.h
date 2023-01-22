@@ -473,7 +473,7 @@ void BKE_mesh_ensure_normals_for_display(struct Mesh *mesh);
  * Used when defining an empty custom loop normals data layer,
  * to keep same shading as with auto-smooth!
  *
- * \param sharp_faces: Optional array used to mark specific faces as sharp.
+ * \param sharp_faces: Optional array used to mark specific faces for sharp shading.
  */
 void BKE_edges_sharp_from_angle_set(int numEdges,
                                     const struct MLoop *mloops,
@@ -596,7 +596,7 @@ void BKE_lnor_space_custom_normal_to_data(const MLoopNorSpace *lnor_space,
  * (splitting edges).
  *
  * \param loop_to_poly_map: Optional pre-created map from loops to their polygon.
- * \param sharp_faces: Optional array used to mark specific faces as sharp.
+ * \param sharp_faces: Optional array used to mark specific faces for sharp shading.
  * \param sharp_edges: Optional array of sharp edge tags, used to split the evaluated normals on
  * each side of the edge.
  */

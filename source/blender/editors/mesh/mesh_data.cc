@@ -1542,40 +1542,30 @@ void ED_mesh_split_faces(Mesh *mesh)
   const Span<MPoly> polys = mesh->polys();
   const Span<MLoop> loops = mesh->loops();
   const float split_angle = (mesh->flag & ME_AUTOSMOOTH) != 0 ? mesh->smoothresh : float(M_PI);
+  const bool *sharp_faces = static_cast<const bool *>(
+      CustomData_get_layer_named(&mesh->pdata, CD_PROP_BOOL, "sharp_face"));
 
   Array<bool> sharp_edges(mesh->totedge, false);
-  const bool *sharp_faces_ptr = static_cast<const bool *>(
-      CustomData_get_layer_named(&mesh->pdata, CD_PROP_BOOL, "sharp_face"));
   BKE_edges_sharp_from_angle_set(mesh->totedge,
                                  loops.data(),
                                  loops.size(),
                                  polys.data(),
                                  BKE_mesh_poly_normals_ensure(mesh),
-                                 sharp_faces_ptr,
+                                 sharp_faces,
                                  polys.size(),
                                  split_angle,
                                  sharp_edges.data());
 
-  const bke::AttributeAccessor attributes = mesh->attributes();
-  const VArray<bool> sharp_faces = attributes.lookup_or_default<bool>(
-      "sharp_face", ATTR_DOMAIN_FACE, false);
-  if (const std::optional<bool> value = sharp_faces.get_if_single()) {
-    if (value) {
-      sharp_edges.fill(true);
-    }
-  }
-  else {
-    threading::parallel_for(polys.index_range(), 1024, [&](const IndexRange range) {
-      for (const int poly_i : range) {
-        const MPoly &poly = polys[poly_i];
-        if (sharp_faces[poly_i]) {
-          for (const MLoop &loop : loops.slice(poly.loopstart, poly.totloop)) {
-            sharp_edges[loop.e] = true;
-          }
+  threading::parallel_for(polys.index_range(), 1024, [&](const IndexRange range) {
+    for (const int poly_i : range) {
+      const MPoly &poly = polys[poly_i];
+      if (sharp_faces && sharp_faces[poly_i]) {
+        for (const MLoop &loop : loops.slice(poly.loopstart, poly.totloop)) {
+          sharp_edges[loop.e] = true;
         }
       }
-    });
-  }
+    }
+  });
 
   Vector<int64_t> split_indices;
   const IndexMask split_mask = index_mask_ops::find_indices_from_virtual_array(

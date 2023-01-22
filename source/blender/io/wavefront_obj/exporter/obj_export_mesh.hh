@@ -41,7 +41,6 @@ class OBJMesh : NonCopyable {
   Span<MEdge> mesh_edges_;
   Span<MPoly> mesh_polys_;
   Span<MLoop> mesh_loops_;
-
   VArray<bool> sharp_faces_;
 
   /**

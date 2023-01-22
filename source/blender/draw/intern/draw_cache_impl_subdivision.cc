@@ -785,7 +785,7 @@ static void draw_subdiv_cache_extra_coarse_face_data_mapped(Mesh *mesh,
     /* Selection and hiding from bmesh. */
     uint32_t flag = (f) ? compute_coarse_face_flag_bm(f, mr->efa_act) : 0;
     /* Smooth from mesh. */
-    if ((mr->sharp_faces && mr->sharp_faces[i])) {
+    if (!(mr->sharp_faces && mr->sharp_faces[i])) {
       flag |= SUBDIV_COARSE_FACE_FLAG_SMOOTH;
     }
     flags_data[i] = uint(polys[i].loopstart) | (flag << SUBDIV_COARSE_FACE_FLAG_OFFSET);

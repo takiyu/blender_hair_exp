@@ -674,8 +674,8 @@ static void rna_MeshPolygon_use_smooth_set(PointerRNA *ptr, bool value)
   bool *sharp_faces = (bool *)CustomData_get_layer_named_for_write(
       &mesh->pdata, CD_PROP_BOOL, "sharp_face", mesh->totpoly);
   if (!sharp_faces) {
-    if (value) {
-      /* Skip adding layer if it doesn't exist already anyway and we're not hiding an element. */
+    if (!value) {
+      /* Skip adding layer if the value is the same as the default. */
       return;
     }
     sharp_faces = (bool *)CustomData_add_layer_named(
@@ -2855,9 +2855,9 @@ static void rna_def_mpolygon(BlenderRNA *brna)
   RNA_def_property_update(prop, 0, "rna_Mesh_update_select");
 
   prop = RNA_def_property(srna, "use_smooth", PROP_BOOLEAN, PROP_NONE);
-  RNA_def_property_ui_text(prop, "Smooth", "");
   RNA_def_property_boolean_funcs(
       prop, "rna_MeshPolygon_use_smooth_get", "rna_MeshPolygon_use_smooth_set");
+  RNA_def_property_ui_text(prop, "Smooth", "");
   RNA_def_property_update(prop, 0, "rna_Mesh_update_data_legacy_deg_tag_all");
 
   prop = RNA_def_property(srna, "use_freestyle_mark", PROP_BOOLEAN, PROP_NONE);

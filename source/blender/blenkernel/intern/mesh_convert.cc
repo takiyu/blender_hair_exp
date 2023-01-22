@@ -286,9 +286,7 @@ static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispba
           }
         }
 
-        if (!is_smooth) {
-          sharp_faces.span[dst_poly] = true;
-        }
+        sharp_faces.span[dst_poly] = !is_smooth;
         dst_poly++;
         dst_loop += 3;
         index += 3;
@@ -371,9 +369,7 @@ static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispba
             }
           }
 
-          if (!is_smooth) {
-            sharp_faces.span[dst_poly] = true;
-          }
+          sharp_faces.span[dst_poly] = !is_smooth;
           dst_poly++;
           dst_loop += 4;
 
@@ -389,6 +385,14 @@ static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispba
   if (totpoly) {
     make_edges_mdata_extend(*mesh);
   }
+
+  int sharp_faces_count = 0;
+  for (const bool value : sharp_faces.span) {
+    if (value) {
+      sharp_faces_count++;
+    }
+  }
+  std::cout << "Number of sharp faces: " << sharp_faces_count << '\n';
 
   material_indices.finish();
   sharp_faces.finish();

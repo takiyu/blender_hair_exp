@@ -1005,7 +1005,7 @@ static void create_mesh(Scene *scene,
     if (sharp_faces) {
       return sharp_faces->data[poly_index].value();
     }
-    return 0;
+    return false;
   };
 
   /* create faces */

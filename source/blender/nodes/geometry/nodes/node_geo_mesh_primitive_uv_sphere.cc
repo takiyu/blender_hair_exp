@@ -315,12 +315,12 @@ static Mesh *create_uv_sphere_mesh(const float radius,
                                    0,
                                    sphere_corner_total(segments, rings),
                                    sphere_face_total(segments, rings));
-  BKE_mesh_smooth_flag_set(mesh, false);
   BKE_id_material_eval_ensure_default_slot(&mesh->id);
   MutableSpan<float3> positions = mesh->vert_positions_for_write();
   MutableSpan<MEdge> edges = mesh->edges_for_write();
   MutableSpan<MPoly> polys = mesh->polys_for_write();
   MutableSpan<MLoop> loops = mesh->loops_for_write();
+  BKE_mesh_smooth_flag_set(mesh, false);
 
   threading::parallel_invoke(
       1024 < segments * rings,

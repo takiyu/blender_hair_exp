@@ -336,7 +336,8 @@ static void normalEditModifier_do_radial(NormalEditModifierData *enmd,
     /* We need to recompute vertex normals! */
     BKE_mesh_normals_tag_dirty(mesh);
   }
-
+  const bool *sharp_faces = static_cast<const bool *>(
+      CustomData_get_layer_named(&mesh->pdata, CD_PROP_BOOL, "sharp_face"));
   BKE_mesh_normals_loop_custom_set(vert_positions,
                                    BKE_mesh_vertex_normals_ensure(mesh),
                                    verts_num,
@@ -347,8 +348,7 @@ static void normalEditModifier_do_radial(NormalEditModifierData *enmd,
                                    loops_num,
                                    mpoly,
                                    poly_normals,
-                                   static_cast<const bool *>(CustomData_get_layer_named(
-                                       &mesh->pdata, CD_PROP_BOOL, "sharp_face")),
+                                   sharp_faces,
                                    polys_num,
                                    sharp_edges,
                                    clnors);
@@ -460,7 +460,8 @@ static void normalEditModifier_do_directional(NormalEditModifierData *enmd,
                                              polys_num)) {
     BKE_mesh_normals_tag_dirty(mesh);
   }
-
+  const bool *sharp_faces = static_cast<const bool *>(
+      CustomData_get_layer_named(&mesh->pdata, CD_PROP_BOOL, "sharp_face"));
   BKE_mesh_normals_loop_custom_set(positions,
                                    BKE_mesh_vertex_normals_ensure(mesh),
                                    verts_num,
@@ -471,8 +472,7 @@ static void normalEditModifier_do_directional(NormalEditModifierData *enmd,
                                    loops_num,
                                    mpoly,
                                    poly_normals,
-                                   static_cast<const bool *>(CustomData_get_layer_named(
-                                       &mesh->pdata, CD_PROP_BOOL, "sharp_face")),
+                                   sharp_faces,
                                    polys_num,
                                    sharp_edges,
                                    clnors);

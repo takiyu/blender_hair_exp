@@ -197,7 +197,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext * /*ctx*/, M
     MEM_freeN(output);
   }
 
-  BKE_mesh_smooth_flag_set(result, (rmd->flag & MOD_REMESH_SMOOTH_SHADING));
+  BKE_mesh_smooth_flag_set(result, rmd->flag & MOD_REMESH_SMOOTH_SHADING);
 
   BKE_mesh_copy_parameters_for_eval(result, mesh);
   BKE_mesh_calc_edges(result, true, false);

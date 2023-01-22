@@ -1855,7 +1855,7 @@ void BKE_mesh_legacy_convert_flags_to_selection_layers(Mesh *mesh)
         ".select_poly", ATTR_DOMAIN_FACE);
     threading::parallel_for(polys.index_range(), 4096, [&](IndexRange range) {
       for (const int i : range) {
-        select_poly.span[i] = (polys[i].flag_legacy & ME_FACE_SEL) != 0;
+        select_poly.span[i] = polys[i].flag_legacy & ME_FACE_SEL;
       }
     });
     select_poly.finish();

@@ -278,15 +278,14 @@ struct SGLSLMeshToTangent {
   const float (*precomputedFaceNormals)[3];
   const float (*precomputedLoopNormals)[3];
   const MLoopTri *looptri;
-  const float2 *mloopuv; /* texture coordinates */
-  const MPoly *mpoly;    /* indices */
-  const MLoop *mloop;    /* indices */
-  const MVert *mvert;    /* vertex coordinates */
-  const bool *sharp_faces;
+  const float2 *mloopuv;       /* texture coordinates */
+  const MPoly *mpoly;          /* indices */
+  const MLoop *mloop;          /* indices */
   const float (*positions)[3]; /* vertex coordinates */
   const float (*vert_normals)[3];
   const float (*orco)[3];
   float (*tangent)[4]; /* destination */
+  const bool *sharp_faces;
   int numTessFaces;
 
 #ifdef USE_LOOPTRI_DETECT_QUADS
