@@ -386,14 +386,6 @@ static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispba
     make_edges_mdata_extend(*mesh);
   }
 
-  int sharp_faces_count = 0;
-  for (const bool value : sharp_faces.span) {
-    if (value) {
-      sharp_faces_count++;
-    }
-  }
-  std::cout << "Number of sharp faces: " << sharp_faces_count << '\n';
-
   material_indices.finish();
   sharp_faces.finish();
 
