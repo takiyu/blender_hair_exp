@@ -1035,7 +1035,9 @@ void BKE_pbvh_free(PBVH *pbvh)
       if (node->bm_other_verts) {
         BLI_gset_free(node->bm_other_verts, NULL);
       }
+    }
 
+    if (node->flag & (PBVH_Leaf | PBVH_TexLeaf)) {
       pbvh_node_pixels_free(node);
     }
   }
@@ -1109,7 +1111,7 @@ static void pbvh_stack_push(PBVHIter *iter, PBVHNode *node, bool revisiting)
   iter->stacksize++;
 }
 
-static PBVHNode *pbvh_iter_next(PBVHIter *iter)
+static PBVHNode *pbvh_iter_next(PBVHIter *iter, PBVHNodeFlags leaf_flag)
 {
   /* purpose here is to traverse tree, visiting child nodes before their
    * parents, this order is necessary for e.g. computing bounding boxes */
@@ -1136,7 +1138,7 @@ static PBVHNode *pbvh_iter_next(PBVHIter *iter)
       continue; /* don't traverse, outside of search zone */
     }
 
-    if (node->flag & PBVH_Leaf) {
+    if (node->flag & leaf_flag) {
       /* immediately hit leaf node */
       return node;
     }
@@ -1181,8 +1183,12 @@ static PBVHNode *pbvh_iter_next_occluded(PBVHIter *iter)
   return NULL;
 }
 
-void BKE_pbvh_search_gather(
-    PBVH *pbvh, BKE_pbvh_SearchCallback scb, void *search_data, PBVHNode ***r_array, int *r_tot)
+void BKE_pbvh_search_gather_ex(PBVH *pbvh,
+                               BKE_pbvh_SearchCallback scb,
+                               void *search_data,
+                               PBVHNode ***r_array,
+                               int *r_tot,
+                               PBVHNodeFlags leaf_flag)
 {
   PBVHIter iter;
   PBVHNode **array = NULL, *node;
@@ -1190,8 +1196,8 @@ void BKE_pbvh_search_gather(
 
   pbvh_iter_begin(&iter, pbvh, scb, search_data);
 
-  while ((node = pbvh_iter_next(&iter))) {
-    if (node->flag & PBVH_Leaf) {
+  while ((node = pbvh_iter_next(&iter, leaf_flag))) {
+    if (node->flag & leaf_flag) {
       if (UNLIKELY(tot == space)) {
         /* resize array if needed */
         space = (tot == 0) ? 32 : space * 2;
@@ -1214,6 +1220,12 @@ void BKE_pbvh_search_gather(
   *r_tot = tot;
 }
 
+void BKE_pbvh_search_gather(
+    PBVH *pbvh, BKE_pbvh_SearchCallback scb, void *search_data, PBVHNode ***r_array, int *r_tot)
+{
+  BKE_pbvh_search_gather_ex(pbvh, scb, search_data, r_array, r_tot, PBVH_Leaf);
+}
+
 void BKE_pbvh_search_callback(PBVH *pbvh,
                               BKE_pbvh_SearchCallback scb,
                               void *search_data,
@@ -1225,7 +1237,7 @@ void BKE_pbvh_search_callback(PBVH *pbvh,
 
   pbvh_iter_begin(&iter, pbvh, scb, search_data);
 
-  while ((node = pbvh_iter_next(&iter))) {
+  while ((node = pbvh_iter_next(&iter, PBVH_Leaf))) {
     if (node->flag & PBVH_Leaf) {
       hcb(node, hit_data);
     }
@@ -1961,7 +1973,7 @@ void BKE_pbvh_redraw_BB(PBVH *pbvh, float bb_min[3], float bb_max[3])
 
   pbvh_iter_begin(&iter, pbvh, NULL, NULL);
 
-  while ((node = pbvh_iter_next(&iter))) {
+  while ((node = pbvh_iter_next(&iter, PBVH_Leaf))) {
     if (node->flag & PBVH_UpdateRedraw) {
       BB_expand_with_bb(&bb, &node->vb);
     }
@@ -1981,7 +1993,7 @@ void BKE_pbvh_get_grid_updates(PBVH *pbvh, bool clear, void ***r_gridfaces, int 
 
   pbvh_iter_begin(&iter, pbvh, NULL, NULL);
 
-  while ((node = pbvh_iter_next(&iter))) {
+  while ((node = pbvh_iter_next(&iter, PBVH_Leaf))) {
     if (node->flag & PBVH_UpdateNormals) {
       for (uint i = 0; i < node->totprim; i++) {
         void *face = pbvh->gridfaces[node->prim_indices[i]];
@@ -3162,8 +3174,23 @@ void BKE_pbvh_draw_debug_cb(PBVH *pbvh,
                                             PBVHNodeFlags flag),
                             void *user_data)
 {
+  PBVHNodeFlags flag = PBVH_Leaf;
+
   for (int a = 0; a < pbvh->totnode; a++) {
     PBVHNode *node = &pbvh->nodes[a];
+
+    if (node->flag & PBVH_TexLeaf) {
+      flag = PBVH_TexLeaf;
+      break;
+    }
+  }
+
+  for (int a = 0; a < pbvh->totnode; a++) {
+    PBVHNode *node = &pbvh->nodes[a];
+
+    if (!(node->flag & flag)) {
+      continue;
+    }
 
     draw_fn(node, user_data, node->vb.bmin, node->vb.bmax, node->flag);
   }
