@@ -961,8 +961,27 @@ static void version_geometry_nodes_extrude_smooth_propagation(bNodeTree &ntree)
         return false;
       }
       bNodeSocket *capture_in_socket = nodeFindSocket(capture_node, SOCK_IN, "Value_003");
-      bNodeLink *link = in_links_per_socket.lookup_default(capture_in_socket, nullptr);
-      if (!link || link->fromnode->idname != StringRef("GeometryNodeInputShadeSmooth")) {
+      bNodeLink *capture_in_link = in_links_per_socket.lookup_default(capture_in_socket, nullptr);
+      if (!capture_in_link) {
+        return false;
+      }
+      if (capture_in_link->fromnode->idname != StringRef("GeometryNodeInputShadeSmooth")) {
+        return false;
+      }
+      if (geometry_out_links.size() != 1) {
+        return false;
+      }
+      bNodeLink *geometry_out_link = geometry_out_links.first();
+      if (geometry_out_link->tonode->idname != StringRef("GeometryNodeSetShadeSmooth")) {
+        return false;
+      }
+      bNode *set_smooth_node = geometry_out_link->tonode;
+      bNodeSocket *smooth_in_socket = nodeFindSocket(set_smooth_node, SOCK_IN, "Shade Smooth");
+      bNodeLink *connecting_link = in_links_per_socket.lookup_default(smooth_in_socket, nullptr);
+      if (!connecting_link) {
+        return false;
+      }
+      if (connecting_link->fromnode != capture_node) {
         return false;
       }
       return true;
@@ -971,58 +990,51 @@ static void version_geometry_nodes_extrude_smooth_propagation(bNodeTree &ntree)
       continue;
     }
 
-    bNode *capture_node = nullptr;
+    bNode *capture_node = nodeAddNode(nullptr, &ntree, "GeometryNodeAttributeCapture");
+    capture_node->parent = node->parent;
+    capture_node->locx = node->locx - 25;
+    capture_node->locx = node->locy;
+    new_nodes.append(capture_node);
+    static_cast<NodeGeometryAttributeCapture *>(capture_node->storage)->data_type = CD_PROP_BOOL;
+    static_cast<NodeGeometryAttributeCapture *>(capture_node->storage)->domain = ATTR_DOMAIN_FACE;
 
-    if (!capture_node) {
-      capture_node = nodeAddNode(nullptr, &ntree, "GeometryNodeAttributeCapture");
-      new_nodes.append(capture_node);
-      NodeGeometryAttributeCapture &capture_storage = *static_cast<NodeGeometryAttributeCapture *>(
-          capture_node->storage);
-      capture_storage.data_type = CD_PROP_BOOL;
-      capture_storage.domain = ATTR_DOMAIN_FACE;
-      bNodeSocket *capture_out_socket = nodeFindSocket(capture_node, SOCK_OUT, "Attribute_003");
-      bNode *is_smooth_node = nodeAddNode(nullptr, &ntree, "GeometryNodeInputShadeSmooth");
-      nodeAddLink(&ntree,
-                  is_smooth_node,
-                  nodeFindSocket(is_smooth_node, SOCK_OUT, "Smooth"),
-                  capture_node,
-                  nodeFindSocket(capture_node, SOCK_IN, "Value_003"));
-      nodeAddLink(&ntree,
-                  capture_node,
-                  nodeFindSocket(capture_node, SOCK_OUT, "Geometry"),
-                  capture_node,
-                  geometry_in_socket);
-      geometry_in_link->tonode = capture_node;
-      geometry_in_link->tosock = nodeFindSocket(capture_node, SOCK_IN, "Geometry");
-    }
+    bNode *is_smooth_node = nodeAddNode(nullptr, &ntree, "GeometryNodeInputShadeSmooth");
+    is_smooth_node->parent = node->parent;
+    capture_node->locx = capture_node->locx - 25;
+    capture_node->locx = capture_node->locy;
+    nodeAddLink(&ntree,
+                is_smooth_node,
+                nodeFindSocket(is_smooth_node, SOCK_OUT, "Smooth"),
+                capture_node,
+                nodeFindSocket(capture_node, SOCK_IN, "Value_003"));
+    nodeAddLink(&ntree,
+                capture_node,
+                nodeFindSocket(capture_node, SOCK_OUT, "Geometry"),
+                capture_node,
+                geometry_in_socket);
+    geometry_in_link->tonode = capture_node;
+    geometry_in_link->tosock = nodeFindSocket(capture_node, SOCK_IN, "Geometry");
 
-    bNodeSocket *capture_out_socket = nodeFindSocket(capture_node, SOCK_OUT, "Attribute_003");
+    bNode *set_smooth_node = nodeAddNode(nullptr, &ntree, "GeometryNodeSetShadeSmooth");
+    set_smooth_node->parent = node->parent;
+    set_smooth_node->locx = node->locx + 25;
+    set_smooth_node->locx = node->locy;
+    nodeAddLink(&ntree,
+                node,
+                geometry_out_socket,
+                set_smooth_node,
+                nodeFindSocket(set_smooth_node, SOCK_IN, "Geometry"));
 
-    bNode *set_smooth_node = nullptr;
-    if (geometry_out_links.size() == 1) {
-      bNodeLink *link = geometry_out_links.first();
-      if (link->tonode->idname == StringRef("GeometryNodeSetShadeSmooth")) {
-      }
-    }
-
+    bNodeSocket *smooth_geometry_out = nodeFindSocket(set_smooth_node, SOCK_OUT, "Geometry");
     for (bNodeLink *link : geometry_out_links) {
-      if (link->tonode->idname == StringRef("GeometryNodeSetShadeSmooth")) {
-        set_smooth_nodes.append(link->tonode);
-        continue;
-      }
-      bNode *set_node = nodeAddNode(nullptr, &ntree, "GeometryNodeSetShadeSmooth");
-      nodeAddLink(&ntree, )
+      link->fromnode = set_smooth_node;
+      link->fromsock = smooth_geometry_out;
     }
-
-    for (bNode *set_smooth_node : set_smooth_nodes) {
-      bNodeSocket *in_socket = nodeFindSocket(set_smooth_node, SOCK_IN, "Shade Smooth");
-      if (bNodeLink *link = in_links_per_socket.lookup_default(in_socket, nullptr)) {
-        if (link->fromnode == capture_smooth_node) {
-          continue;
-        }
-      }
-      nodeAddLink(&ntree, capture_smooth_node, capture_out_socket, set_smooth_node, in_socket);
-    }
+    nodeAddLink(&ntree,
+                capture_node,
+                nodeFindSocket(capture_node, SOCK_OUT, "Attribute_003"),
+                set_smooth_node,
+                nodeFindSocket(set_smooth_node, SOCK_IN, "Shade Smooth"));
   }
 
   /* Move nodes to the front so that they are drawn behind existing nodes. */
