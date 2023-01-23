@@ -14,6 +14,7 @@
 
 #include "BLI_listbase.h"
 #include "BLI_math_vector.h"
+#include "BLI_multi_value_map.hh"
 #include "BLI_path_util.h"
 #include "BLI_string.h"
 #include "BLI_string_utils.h"
@@ -907,6 +908,121 @@ static void version_geometry_nodes_primitive_uv_maps(bNodeTree &ntree)
                 store_attribute_geometry_input);
     nodeAddLink(
         &ntree, node, uv_map_output_socket, store_attribute_node, store_attribute_value_input);
+  }
+
+  /* Move nodes to the front so that they are drawn behind existing nodes. */
+  for (bNode *node : new_nodes) {
+    BLI_remlink(&ntree.nodes, node);
+    BLI_addhead(&ntree.nodes, node);
+  }
+  if (!new_nodes.is_empty()) {
+    nodeRebuildIDVector(&ntree);
+  }
+}
+
+static void version_geometry_nodes_extrude_smooth_propagation(bNodeTree &ntree)
+{
+  using namespace blender;
+  Vector<bNode *> new_nodes;
+  LISTBASE_FOREACH_MUTABLE (bNode *, node, &ntree.nodes) {
+    if (node->idname != StringRef("GeometryNodeExtrudeMesh")) {
+      continue;
+    }
+    const NodeGeometryExtrudeMesh &storage = *static_cast<const NodeGeometryExtrudeMesh *>(
+        node->storage);
+    if (storage.mode != GEO_NODE_EXTRUDE_MESH_EDGES) {
+      continue;
+    }
+    bNodeSocket *geometry_in_socket = nodeFindSocket(node, SOCK_IN, "Geometry");
+    bNodeSocket *geometry_out_socket = nodeFindSocket(node, SOCK_OUT, "Geometry");
+
+    Map<bNodeSocket *, bNodeLink *> in_links_per_socket;
+    MultiValueMap<bNodeSocket *, bNodeLink *> out_links_per_socket;
+    LISTBASE_FOREACH (bNodeLink *, link, &ntree.links) {
+      in_links_per_socket.add(link->tosock, link);
+      out_links_per_socket.add(link->fromsock, link);
+    }
+
+    bNodeLink *geometry_in_link = in_links_per_socket.lookup_default(geometry_in_socket, nullptr);
+    Span<bNodeLink *> geometry_out_links = out_links_per_socket.lookup(geometry_in_socket);
+    if (!geometry_in_link || geometry_out_links.is_empty()) {
+      continue;
+    }
+
+    const bool versioning_already_done = [&]() {
+      if (geometry_in_link->fromnode->idname != StringRef("GeometryNodeAttributeCapture")) {
+        return false;
+      }
+      bNode *capture_node = geometry_in_link->fromnode;
+      const NodeGeometryAttributeCapture &capture_storage =
+          *static_cast<const NodeGeometryAttributeCapture *>(capture_node->storage);
+      if (capture_storage.data_type != CD_PROP_BOOL ||
+          capture_storage.domain != ATTR_DOMAIN_FACE) {
+        return false;
+      }
+      bNodeSocket *capture_in_socket = nodeFindSocket(capture_node, SOCK_IN, "Value_003");
+      bNodeLink *link = in_links_per_socket.lookup_default(capture_in_socket, nullptr);
+      if (!link || link->fromnode->idname != StringRef("GeometryNodeInputShadeSmooth")) {
+        return false;
+      }
+      return true;
+    }();
+    if (versioning_already_done) {
+      continue;
+    }
+
+    bNode *capture_node = nullptr;
+
+    if (!capture_node) {
+      capture_node = nodeAddNode(nullptr, &ntree, "GeometryNodeAttributeCapture");
+      new_nodes.append(capture_node);
+      NodeGeometryAttributeCapture &capture_storage = *static_cast<NodeGeometryAttributeCapture *>(
+          capture_node->storage);
+      capture_storage.data_type = CD_PROP_BOOL;
+      capture_storage.domain = ATTR_DOMAIN_FACE;
+      bNodeSocket *capture_out_socket = nodeFindSocket(capture_node, SOCK_OUT, "Attribute_003");
+      bNode *is_smooth_node = nodeAddNode(nullptr, &ntree, "GeometryNodeInputShadeSmooth");
+      nodeAddLink(&ntree,
+                  is_smooth_node,
+                  nodeFindSocket(is_smooth_node, SOCK_OUT, "Smooth"),
+                  capture_node,
+                  nodeFindSocket(capture_node, SOCK_IN, "Value_003"));
+      nodeAddLink(&ntree,
+                  capture_node,
+                  nodeFindSocket(capture_node, SOCK_OUT, "Geometry"),
+                  capture_node,
+                  geometry_in_socket);
+      geometry_in_link->tonode = capture_node;
+      geometry_in_link->tosock = nodeFindSocket(capture_node, SOCK_IN, "Geometry");
+    }
+
+    bNodeSocket *capture_out_socket = nodeFindSocket(capture_node, SOCK_OUT, "Attribute_003");
+
+    bNode *set_smooth_node = nullptr;
+    if (geometry_out_links.size() == 1) {
+      bNodeLink *link = geometry_out_links.first();
+      if (link->tonode->idname == StringRef("GeometryNodeSetShadeSmooth")) {
+      }
+    }
+
+    for (bNodeLink *link : geometry_out_links) {
+      if (link->tonode->idname == StringRef("GeometryNodeSetShadeSmooth")) {
+        set_smooth_nodes.append(link->tonode);
+        continue;
+      }
+      bNode *set_node = nodeAddNode(nullptr, &ntree, "GeometryNodeSetShadeSmooth");
+      nodeAddLink(&ntree, )
+    }
+
+    for (bNode *set_smooth_node : set_smooth_nodes) {
+      bNodeSocket *in_socket = nodeFindSocket(set_smooth_node, SOCK_IN, "Shade Smooth");
+      if (bNodeLink *link = in_links_per_socket.lookup_default(in_socket, nullptr)) {
+        if (link->fromnode == capture_smooth_node) {
+          continue;
+        }
+      }
+      nodeAddLink(&ntree, capture_smooth_node, capture_out_socket, set_smooth_node, in_socket);
+    }
   }
 
   /* Move nodes to the front so that they are drawn behind existing nodes. */
@@ -3912,5 +4028,10 @@ void blo_do_versions_300(FileData *fd, Library * /*lib*/, Main *bmain)
    */
   {
     /* Keep this block, even when empty. */
+    LISTBASE_FOREACH (bNodeTree *, ntree, &bmain->nodetrees) {
+      if (ntree->type == NTREE_GEOMETRY) {
+        version_geometry_nodes_extrude_smooth_propagation(*ntree);
+      }
+    }
   }
 }
