@@ -928,13 +928,12 @@ static void version_geometry_nodes_extrude_smooth_propagation(bNodeTree &ntree)
     if (node->idname != StringRef("GeometryNodeExtrudeMesh")) {
       continue;
     }
-    const NodeGeometryExtrudeMesh &storage = *static_cast<const NodeGeometryExtrudeMesh *>(
-        node->storage);
-    if (storage.mode != GEO_NODE_EXTRUDE_MESH_EDGES) {
+    if (static_cast<const NodeGeometryExtrudeMesh *>(node->storage)->mode !=
+        GEO_NODE_EXTRUDE_MESH_EDGES) {
       continue;
     }
-    bNodeSocket *geometry_in_socket = nodeFindSocket(node, SOCK_IN, "Geometry");
-    bNodeSocket *geometry_out_socket = nodeFindSocket(node, SOCK_OUT, "Geometry");
+    bNodeSocket *geometry_in_socket = nodeFindSocket(node, SOCK_IN, "Mesh");
+    bNodeSocket *geometry_out_socket = nodeFindSocket(node, SOCK_OUT, "Mesh");
 
     Map<bNodeSocket *, bNodeLink *> in_links_per_socket;
     MultiValueMap<bNodeSocket *, bNodeLink *> out_links_per_socket;
@@ -944,13 +943,13 @@ static void version_geometry_nodes_extrude_smooth_propagation(bNodeTree &ntree)
     }
 
     bNodeLink *geometry_in_link = in_links_per_socket.lookup_default(geometry_in_socket, nullptr);
-    Span<bNodeLink *> geometry_out_links = out_links_per_socket.lookup(geometry_in_socket);
+    Span<bNodeLink *> geometry_out_links = out_links_per_socket.lookup(geometry_out_socket);
     if (!geometry_in_link || geometry_out_links.is_empty()) {
       continue;
     }
 
     const bool versioning_already_done = [&]() {
-      if (geometry_in_link->fromnode->idname != StringRef("GeometryNodeAttributeCapture")) {
+      if (geometry_in_link->fromnode->idname != StringRef("GeometryNodeCaptureAttribute")) {
         return false;
       }
       bNode *capture_node = geometry_in_link->fromnode;
@@ -990,18 +989,19 @@ static void version_geometry_nodes_extrude_smooth_propagation(bNodeTree &ntree)
       continue;
     }
 
-    bNode *capture_node = nodeAddNode(nullptr, &ntree, "GeometryNodeAttributeCapture");
+    bNode *capture_node = nodeAddNode(nullptr, &ntree, "GeometryNodeCaptureAttribute");
     capture_node->parent = node->parent;
     capture_node->locx = node->locx - 25;
-    capture_node->locx = node->locy;
+    capture_node->locy = node->locy;
     new_nodes.append(capture_node);
     static_cast<NodeGeometryAttributeCapture *>(capture_node->storage)->data_type = CD_PROP_BOOL;
     static_cast<NodeGeometryAttributeCapture *>(capture_node->storage)->domain = ATTR_DOMAIN_FACE;
 
     bNode *is_smooth_node = nodeAddNode(nullptr, &ntree, "GeometryNodeInputShadeSmooth");
     is_smooth_node->parent = node->parent;
-    capture_node->locx = capture_node->locx - 25;
-    capture_node->locx = capture_node->locy;
+    is_smooth_node->locx = capture_node->locx - 25;
+    is_smooth_node->locy = capture_node->locy;
+    new_nodes.append(is_smooth_node);
     nodeAddLink(&ntree,
                 is_smooth_node,
                 nodeFindSocket(is_smooth_node, SOCK_OUT, "Smooth"),
@@ -1018,7 +1018,8 @@ static void version_geometry_nodes_extrude_smooth_propagation(bNodeTree &ntree)
     bNode *set_smooth_node = nodeAddNode(nullptr, &ntree, "GeometryNodeSetShadeSmooth");
     set_smooth_node->parent = node->parent;
     set_smooth_node->locx = node->locx + 25;
-    set_smooth_node->locx = node->locy;
+    set_smooth_node->locy = node->locy;
+    new_nodes.append(set_smooth_node);
     nodeAddLink(&ntree,
                 node,
                 geometry_out_socket,
