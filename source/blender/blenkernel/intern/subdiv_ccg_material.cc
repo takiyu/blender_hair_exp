@@ -46,7 +46,6 @@ void BKE_subdiv_ccg_material_flags_init_from_mesh(
       &mesh->pdata, CD_PROP_INT32, "material_index");
   data->sharp_faces = (const bool *)CustomData_get_layer_named(
       &mesh->pdata, CD_PROP_BOOL, "sharp_face");
-
   material_flags_evaluator->eval_material_flags = subdiv_ccg_material_flags_eval;
   material_flags_evaluator->free = subdiv_ccg_material_flags_free;
   material_flags_evaluator->user_data = data;
