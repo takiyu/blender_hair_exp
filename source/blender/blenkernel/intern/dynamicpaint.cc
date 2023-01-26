@@ -1416,7 +1416,7 @@ static void dynamicPaint_initAdjacencyData(DynamicPaintSurface *surface, const b
     int numOfPolys = mesh->totpoly;
     const MEdge *edges = BKE_mesh_edges(mesh);
     const MPoly *polys = BKE_mesh_polys(mesh);
-    const int *corner_verts = BKE_mesh_corner_verts(mesh);
+    const blender::Span<int> corner_verts = mesh->corner_verts();
 
     /* count number of edges per vertex */
     for (int i = 0; i < numOfEdges; i++) {
@@ -1618,7 +1618,7 @@ static void dynamicPaint_setInitialColor(const Scene *scene, DynamicPaintSurface
   else if (surface->init_color_type == MOD_DPAINT_INITIAL_TEXTURE) {
     Tex *tex = surface->init_texture;
 
-    const int *corner_verts = BKE_mesh_corner_verts(mesh);
+    const blender::Span<int> corner_verts = mesh->corner_verts();
     const MLoopTri *mlooptri = BKE_mesh_runtime_looptri_ensure(mesh);
     const int tottri = BKE_mesh_runtime_looptri_len(mesh);
 
@@ -1644,7 +1644,7 @@ static void dynamicPaint_setInitialColor(const Scene *scene, DynamicPaintSurface
 
       DynamicPaintSetInitColorData data{};
       data.surface = surface;
-      data.corner_verts = corner_verts;
+      data.corner_verts = corner_verts.data();
       data.mlooptri = mlooptri;
       data.mloopuv = mloopuv;
       data.pool = pool;
@@ -1676,7 +1676,7 @@ static void dynamicPaint_setInitialColor(const Scene *scene, DynamicPaintSurface
 
     /* For vertex surface, just copy colors from #MLoopCol. */
     if (surface->format == MOD_DPAINT_SURFACE_F_VERTEX) {
-      const int *corner_verts = BKE_mesh_corner_verts(mesh);
+      const blender::Span<int> corner_verts = mesh->corner_verts();
       const int totloop = mesh->totloop;
       const MLoopCol *col = static_cast<const MLoopCol *>(
           CustomData_get_layer_named(&mesh->ldata, CD_PROP_BYTE_COLOR, surface->init_layername));
@@ -1930,7 +1930,7 @@ static Mesh *dynamicPaint_Modifier_apply(DynamicPaintModifierData *pmd, Object *
 
           /* vertex color paint */
           if (surface->type == MOD_DPAINT_SURFACE_T_PAINT) {
-            const int *corner_verts = BKE_mesh_corner_verts(result);
+            const blender::Span<int> corner_verts = mesh->corner_verts();
             const int totloop = result->totloop;
             const MPoly *mpoly = BKE_mesh_polys(result);
             const int totpoly = result->totpoly;
@@ -1982,7 +1982,7 @@ static Mesh *dynamicPaint_Modifier_apply(DynamicPaintModifierData *pmd, Object *
             }
 
             data.ob = ob;
-            data.corner_verts = corner_verts;
+            data.corner_verts = corner_verts.data();
             data.mpoly = mpoly;
             data.mloopcol = mloopcol;
             data.mloopcol_wet = mloopcol_wet;
@@ -2837,7 +2837,7 @@ int dynamicPaint_createUVSurface(Scene *scene,
     return setError(canvas, N_("Cannot bake non-'image sequence' formats"));
   }
 
-  const int *corner_verts = BKE_mesh_corner_verts(mesh);
+  const blender::Span<int> corner_verts = mesh->corner_verts();
   mlooptri = BKE_mesh_runtime_looptri_ensure(mesh);
   const int tottri = BKE_mesh_runtime_looptri_len(mesh);
 
@@ -2925,7 +2925,7 @@ int dynamicPaint_createUVSurface(Scene *scene,
     data.tempWeights = tempWeights;
     data.mlooptri = mlooptri;
     data.mloopuv = mloopuv;
-    data.corner_verts = corner_verts;
+    data.corner_verts = corner_verts.data();
     data.tottri = tottri;
     data.faceBB = faceBB;
 
@@ -2984,7 +2984,7 @@ int dynamicPaint_createUVSurface(Scene *scene,
                                          mesh->totvert,
                                          mlooptri,
                                          tottri,
-                                         corner_verts,
+                                         corner_verts.data(),
                                          mesh->totloop);
 
         int total_border = 0;
@@ -4298,7 +4298,7 @@ static bool dynamicPaint_paintMesh(Depsgraph *depsgraph,
     float(*positions)[3] = BKE_mesh_vert_positions_for_write(mesh);
     const float(*vert_normals)[3] = BKE_mesh_vertex_normals_ensure(mesh);
     mlooptri = BKE_mesh_runtime_looptri_ensure(mesh);
-    const int *corner_verts = BKE_mesh_corner_verts(mesh);
+    const blender::Span<int> corner_verts = mesh->corner_verts();
     numOfVerts = mesh->totvert;
 
     /* Transform collider vertices to global space
@@ -4352,7 +4352,7 @@ static bool dynamicPaint_paintMesh(Depsgraph *depsgraph,
           data.c_index = c_index;
           data.mesh = mesh;
           data.positions = positions;
-          data.corner_verts = corner_verts;
+          data.corner_verts = corner_verts.data();
           data.mlooptri = mlooptri;
           data.brush_radius = brush_radius;
           data.avg_brushNor = avg_brushNor;

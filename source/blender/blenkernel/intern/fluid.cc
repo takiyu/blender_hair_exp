@@ -1009,7 +1009,7 @@ static void obstacles_from_mesh(Object *coll_ob,
 
     int min[3], max[3], res[3];
 
-    const int *corner_verts = BKE_mesh_corner_verts(me);
+    const blender::Span<int> corner_verts = me->corner_verts();
     looptri = BKE_mesh_runtime_looptri_ensure(me);
     numverts = me->totvert;
 
@@ -1073,7 +1073,7 @@ static void obstacles_from_mesh(Object *coll_ob,
       ObstaclesFromDMData data{};
       data.fes = fes;
       data.vert_positions = positions;
-      data.corner_verts = corner_verts;
+      data.corner_verts = corner_verts.data();
       data.mlooptri = looptri;
       data.tree = &tree_data;
       data.bb = bb;
@@ -2066,7 +2066,7 @@ static void emit_from_mesh(
     Mesh *me = BKE_mesh_copy_for_eval(ffs->mesh, false);
     float(*positions)[3] = BKE_mesh_vert_positions_for_write(me);
 
-    const int *corner_verts = BKE_mesh_corner_verts(me);
+    const blender::Span<int> corner_verts = me->corner_verts();
     const MLoopTri *mlooptri = BKE_mesh_runtime_looptri_ensure(me);
     const int numverts = me->totvert;
     const MDeformVert *dvert = BKE_mesh_deform_verts(me);
@@ -2143,7 +2143,7 @@ static void emit_from_mesh(
       data.ffs = ffs;
       data.vert_positions = positions;
       data.vert_normals = vert_normals;
-      data.corner_verts = corner_verts;
+      data.corner_verts = corner_verts.data();
       data.mlooptri = mlooptri;
       data.mloopuv = mloopuv;
       data.dvert = dvert;
@@ -3254,7 +3254,7 @@ static Mesh *create_liquid_geometry(FluidDomainSettings *fds,
   }
   float(*positions)[3] = BKE_mesh_vert_positions_for_write(me);
   mpolys = BKE_mesh_polys_for_write(me);
-  corner_verts = BKE_mesh_corner_verts_for_write(me);
+  corner_verts = me->corner_verts_for_write().data();
 
   /* Get size (dimension) but considering scaling. */
   copy_v3_v3(cell_size_scaled, fds->cell_size);
@@ -3389,7 +3389,7 @@ static Mesh *create_smoke_geometry(FluidDomainSettings *fds, Mesh *orgmesh, Obje
   result = BKE_mesh_new_nomain(num_verts, 0, 0, num_faces * 4, num_faces);
   float(*positions)[3] = BKE_mesh_vert_positions_for_write(result);
   mpolys = BKE_mesh_polys_for_write(result);
-  corner_verts = BKE_mesh_corner_verts_for_write(result);
+  corner_verts = result->corner_verts_for_write().data();
 
   if (num_verts) {
     /* Volume bounds. */

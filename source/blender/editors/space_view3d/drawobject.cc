@@ -71,7 +71,7 @@ void ED_draw_object_facemap(Depsgraph *depsgraph,
 
     const float(*positions)[3] = BKE_mesh_vert_positions(me);
     const MPoly *polys = BKE_mesh_polys(me);
-    const int *corner_verts = BKE_mesh_corner_verts(me);
+    const blender::Span<int> corner_verts = me->corner_verts();
 
     int mpoly_len = me->totpoly;
     int mloop_len = me->totloop;

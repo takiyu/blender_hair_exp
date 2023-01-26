@@ -1033,8 +1033,8 @@ static void bake_targets_populate_pixels_color_attributes(BakeTargets *targets,
   const int tottri = poly_to_tri_count(me_eval->totpoly, me_eval->totloop);
   MLoopTri *looptri = static_cast<MLoopTri *>(MEM_mallocN(sizeof(*looptri) * tottri, __func__));
 
-  const int *corner_verts = BKE_mesh_corner_verts(me_eval);
-  BKE_mesh_recalc_looptri(corner_verts,
+  const blender::Span<int> corner_verts = me_eval->corner_verts();
+  BKE_mesh_recalc_looptri(corner_verts.data(),
                           BKE_mesh_polys(me_eval),
                           BKE_mesh_vert_positions(me_eval),
                           me_eval->totloop,
@@ -1047,7 +1047,7 @@ static void bake_targets_populate_pixels_color_attributes(BakeTargets *targets,
   const int *poly_origindex = static_cast<const int *>(
       CustomData_get_layer(&me_eval->pdata, CD_ORIGINDEX));
   const MPoly *orig_polys = BKE_mesh_polys(me);
-  const int *orig_corner_verts = BKE_mesh_corner_verts(me);
+  const blender::Span<int> orig_corner_verts = me->corner_verts();
 
   for (int i = 0; i < tottri; i++) {
     const MLoopTri *lt = &looptri[i];
@@ -1059,7 +1059,7 @@ static void bake_targets_populate_pixels_color_attributes(BakeTargets *targets,
       /* Map back to original loop if there are modifiers. */
       if (vert_origindex != nullptr && poly_origindex != nullptr) {
         l = find_original_loop(
-            orig_polys, orig_corner_verts, vert_origindex, poly_origindex, lt->poly, v);
+            orig_polys, orig_corner_verts.data(), vert_origindex, poly_origindex, lt->poly, v);
         if (l == ORIGINDEX_NONE || l >= me->totloop) {
           continue;
         }
@@ -1156,7 +1156,7 @@ static bool bake_targets_output_vertex_colors(BakeTargets *targets, Object *ob)
         MEM_callocN(sizeof(int) * me->totvert, "num_loops_for_vertex"));
     memset(mcol, 0, sizeof(MPropCol) * me->totvert);
 
-    const int *corner_verts = BKE_mesh_corner_verts(me);
+    const blender::Span<int> corner_verts = me->corner_verts();
     for (int i = 0; i < totloop; i++) {
       const int v = corner_verts[i];
       bake_result_add_to_rgba(mcol[v].color, &result[i * channels_num], channels_num);

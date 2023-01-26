@@ -659,7 +659,7 @@ void heat_bone_weighting(Object *ob,
 
   const float(*vert_positions)[3] = BKE_mesh_vert_positions(me);
   const MPoly *polys = BKE_mesh_polys(me);
-  const int *corner_verts = BKE_mesh_corner_verts(me);
+  const blender::Span<int> corner_verts = me->corner_verts();
   bool use_vert_sel = (me->editflag & ME_EDIT_PAINT_VERT_SEL) != 0;
   bool use_face_sel = (me->editflag & ME_EDIT_PAINT_FACE_SEL) != 0;
 
@@ -708,10 +708,11 @@ void heat_bone_weighting(Object *ob,
   mlooptri = static_cast<MLoopTri *>(
       MEM_mallocN(sizeof(*sys->heat.mlooptri) * sys->heat.tris_num, __func__));
 
-  BKE_mesh_recalc_looptri(corner_verts, polys, vert_positions, me->totloop, me->totpoly, mlooptri);
+  BKE_mesh_recalc_looptri(
+      corner_verts.data(), polys, vert_positions, me->totloop, me->totpoly, mlooptri);
 
   sys->heat.mlooptri = mlooptri;
-  sys->heat.corner_verts = corner_verts;
+  sys->heat.corner_verts = corner_verts.data();
   sys->heat.verts_num = me->totvert;
   sys->heat.verts = verts;
   sys->heat.root = root;
@@ -1633,7 +1634,7 @@ static void harmonic_coordinates_bind(MeshDeformModifierData *mmd, MeshDeformBin
   {
     Mesh *me = mdb->cagemesh;
     mdb->cagemesh_cache.mpoly = BKE_mesh_polys(me);
-    mdb->cagemesh_cache.corner_verts = BKE_mesh_corner_verts(me);
+    mdb->cagemesh_cache.corner_verts = me->corner_verts().data();
     mdb->cagemesh_cache.looptri = BKE_mesh_runtime_looptri_ensure(me);
     mdb->cagemesh_cache.poly_nors = BKE_mesh_poly_normals_ensure(me);
   }
