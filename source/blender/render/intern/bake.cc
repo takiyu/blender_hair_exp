@@ -56,6 +56,7 @@
 #include "DNA_mesh_types.h"
 #include "DNA_meshdata_types.h"
 
+#include "BKE_attribute.hh"
 #include "BKE_bvhutils.h"
 #include "BKE_customdata.h"
 #include "BKE_image.h"
@@ -450,6 +451,7 @@ static bool cast_ray_highpoly(BVHTreeFromMesh *treeData,
  */
 static TriTessFace *mesh_calc_tri_tessface(Mesh *me, bool tangent, Mesh *me_eval)
 {
+  using namespace blender;
   int i;
 
   const int tottri = poly_to_tri_count(me->totpoly, me->totloop);
@@ -463,6 +465,9 @@ static TriTessFace *mesh_calc_tri_tessface(Mesh *me, bool tangent, Mesh *me_eval
   const float(*positions)[3] = BKE_mesh_vert_positions(me);
   const MPoly *polys = BKE_mesh_polys(me);
   const MLoop *loops = BKE_mesh_loops(me);
+  const bke::AttributeAccessor attributes = me->attributes();
+  const VArray<bool> sharp_faces = attributes.lookup_or_default<bool>(
+      "sharp_face", ATTR_DOMAIN_FACE, false);
 
   looptri = static_cast<MLoopTri *>(MEM_mallocN(sizeof(*looptri) * tottri, __func__));
   triangles = static_cast<TriTessFace *>(MEM_callocN(sizeof(TriTessFace) * tottri, __func__));
@@ -505,7 +510,7 @@ static TriTessFace *mesh_calc_tri_tessface(Mesh *me, bool tangent, Mesh *me_eval
     triangles[i].vert_normals[0] = vert_normals[loops[lt->tri[0]].v];
     triangles[i].vert_normals[1] = vert_normals[loops[lt->tri[1]].v];
     triangles[i].vert_normals[2] = vert_normals[loops[lt->tri[2]].v];
-    triangles[i].is_smooth = (mp->flag & ME_SMOOTH) != 0;
+    triangles[i].is_smooth = !sharp_faces[lt->poly];
 
     if (tangent) {
       triangles[i].tspace[0] = &tspace[lt->tri[0]];

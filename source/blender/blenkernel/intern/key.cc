@@ -2276,6 +2276,8 @@ void BKE_keyblock_mesh_calc_normals(const KeyBlock *kb,
         &mesh->ldata, CD_CUSTOMLOOPNORMAL, mesh->totloop)); /* May be nullptr. */
     const bool *sharp_edges = static_cast<const bool *>(
         CustomData_get_layer_named(&mesh->edata, CD_PROP_BOOL, "sharp_edge"));
+    const bool *sharp_faces = static_cast<const bool *>(
+        CustomData_get_layer_named(&mesh->pdata, CD_PROP_BOOL, "sharp_face"));
     BKE_mesh_normals_loop_split(positions,
                                 vert_normals,
                                 mesh->totvert,
@@ -2290,6 +2292,7 @@ void BKE_keyblock_mesh_calc_normals(const KeyBlock *kb,
                                 (mesh->flag & ME_AUTOSMOOTH) != 0,
                                 mesh->smoothresh,
                                 sharp_edges,
+                                sharp_faces,
                                 nullptr,
                                 nullptr,
                                 clnors);

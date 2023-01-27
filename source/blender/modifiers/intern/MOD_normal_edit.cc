@@ -336,7 +336,8 @@ static void normalEditModifier_do_radial(NormalEditModifierData *enmd,
     /* We need to recompute vertex normals! */
     BKE_mesh_normals_tag_dirty(mesh);
   }
-
+  const bool *sharp_faces = static_cast<const bool *>(
+      CustomData_get_layer_named(&mesh->pdata, CD_PROP_BOOL, "sharp_face"));
   BKE_mesh_normals_loop_custom_set(vert_positions,
                                    BKE_mesh_vertex_normals_ensure(mesh),
                                    verts_num,
@@ -347,6 +348,7 @@ static void normalEditModifier_do_radial(NormalEditModifierData *enmd,
                                    loops_num,
                                    mpoly,
                                    poly_normals,
+                                   sharp_faces,
                                    polys_num,
                                    sharp_edges,
                                    clnors);
@@ -458,7 +460,8 @@ static void normalEditModifier_do_directional(NormalEditModifierData *enmd,
                                              polys_num)) {
     BKE_mesh_normals_tag_dirty(mesh);
   }
-
+  const bool *sharp_faces = static_cast<const bool *>(
+      CustomData_get_layer_named(&mesh->pdata, CD_PROP_BOOL, "sharp_face"));
   BKE_mesh_normals_loop_custom_set(positions,
                                    BKE_mesh_vertex_normals_ensure(mesh),
                                    verts_num,
@@ -469,6 +472,7 @@ static void normalEditModifier_do_directional(NormalEditModifierData *enmd,
                                    loops_num,
                                    mpoly,
                                    poly_normals,
+                                   sharp_faces,
                                    polys_num,
                                    sharp_edges,
                                    clnors);
@@ -569,7 +573,8 @@ static Mesh *normalEditModifier_do(NormalEditModifierData *enmd,
         CustomData_get_layer_for_write(ldata, CD_CUSTOMLOOPNORMAL, loops_num));
     loop_normals = static_cast<float(*)[3]>(
         MEM_malloc_arrayN(size_t(loops_num), sizeof(*loop_normals), __func__));
-
+    const bool *sharp_faces = static_cast<const bool *>(
+        CustomData_get_layer_named(&result->pdata, CD_PROP_BOOL, "sharp_face"));
     BKE_mesh_normals_loop_split(positions,
                                 vert_normals,
                                 verts_num,
@@ -584,6 +589,7 @@ static Mesh *normalEditModifier_do(NormalEditModifierData *enmd,
                                 true,
                                 result->smoothresh,
                                 sharp_edges.span.data(),
+                                sharp_faces,
                                 nullptr,
                                 nullptr,
                                 clnors);

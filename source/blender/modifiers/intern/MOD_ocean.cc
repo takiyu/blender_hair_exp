@@ -205,8 +205,6 @@ static void generate_ocean_geometry_polys(void *__restrict userdata,
 
     mp->loopstart = fi * 4;
     mp->totloop = 4;
-
-    mp->flag |= ME_SMOOTH;
   }
 }
 

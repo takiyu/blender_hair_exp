@@ -2300,6 +2300,7 @@ static bool attribute_stored_in_bmesh_flag(const StringRef name)
               ".select_edge",
               ".select_poly",
               "material_index",
+              "sharp_face",
               "sharp_edge");
 }
 

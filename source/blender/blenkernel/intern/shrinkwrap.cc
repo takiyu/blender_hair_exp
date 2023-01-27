@@ -116,6 +116,8 @@ bool BKE_shrinkwrap_init_tree(
   data->mesh = mesh;
   data->polys = BKE_mesh_polys(mesh);
   data->vert_normals = BKE_mesh_vertex_normals_ensure(mesh);
+  data->sharp_faces = static_cast<const bool *>(
+      CustomData_get_layer_named(&mesh->edata, CD_PROP_BOOL, "sharp_face"));
 
   if (shrinkType == MOD_SHRINKWRAP_NEAREST_VERTEX) {
     data->bvh = BKE_bvhtree_from_mesh_get(&data->treeData, mesh, BVHTREE_FROM_VERTS, 2);
@@ -1176,7 +1178,7 @@ void BKE_shrinkwrap_compute_smooth_normal(const ShrinkwrapTreeData *tree,
   const float(*vert_normals)[3] = tree->vert_normals;
 
   /* Interpolate smooth normals if enabled. */
-  if ((tree->polys[tri->poly].flag & ME_SMOOTH) != 0) {
+  if (!(tree->sharp_faces && tree->sharp_faces[tri->poly])) {
     const uint32_t vert_indices[3] = {treeData->loop[tri->tri[0]].v,
                                       treeData->loop[tri->tri[1]].v,
                                       treeData->loop[tri->tri[2]].v};
