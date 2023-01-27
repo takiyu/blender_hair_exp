@@ -210,7 +210,7 @@ MeshImporter::MeshImporter(UnitConverter *unitconv,
 }
 
 bool MeshImporter::set_poly_indices(
-    MPoly *mpoly, MLoop *mloop, int loop_index, const uint *indices, int loop_count)
+    MPoly *mpoly, int *poly_verts, int loop_index, const uint *indices, int loop_count)
 {
   mpoly->loopstart = loop_index;
   mpoly->totloop = loop_count;
@@ -227,8 +227,8 @@ bool MeshImporter::set_poly_indices(
       }
     }
 
-    mloop->v = indices[index];
-    mloop++;
+    *poly_verts = indices[index];
+    poly_verts++;
   }
   return broken_loop;
 }
@@ -457,7 +457,8 @@ void MeshImporter::allocate_poly_data(COLLADAFW::Mesh *collada_mesh, Mesh *me)
     me->totpoly = total_poly_count;
     me->totloop = total_loop_count;
     CustomData_add_layer(&me->pdata, CD_MPOLY, CD_SET_DEFAULT, nullptr, me->totpoly);
-    CustomData_add_layer(&me->ldata, CD_MLOOP, CD_SET_DEFAULT, nullptr, me->totloop);
+    CustomData_add_layer_named(
+        &me->ldata, CD_PROP_INT32, CD_SET_DEFAULT, nullptr, me->totloop, ".corner_vert");
 
     uint totuvset = collada_mesh->getUVCoords().getInputInfosArray().getCount();
     for (int i = 0; i < totuvset; i++) {
@@ -617,9 +618,8 @@ void MeshImporter::read_polys(COLLADAFW::Mesh *collada_mesh,
   VCOLDataWrapper vcol(collada_mesh->getColors());
 
   MutableSpan<MPoly> polys = me->polys_for_write();
-  MutableSpan<MLoop> loops = me->loops_for_write();
+  MutableSpan<int> corner_verts = me->corner_verts_for_write();
   MPoly *mpoly = polys.data();
-  MLoop *mloop = loops.data();
   int loop_index = 0;
 
   MaterialIdPrimitiveArrayMap mat_prim_map;
@@ -668,7 +668,8 @@ void MeshImporter::read_polys(COLLADAFW::Mesh *collada_mesh,
           /* For each triangle store indices of its 3 vertices */
           uint triangle_vertex_indices[3] = {
               first_vertex, position_indices[1], position_indices[2]};
-          set_poly_indices(mpoly, mloop, loop_index, triangle_vertex_indices, 3);
+          set_poly_indices(
+              mpoly, &corner_verts[loop_index], loop_index, triangle_vertex_indices, 3);
 
           if (mp_has_normals) { /* vertex normals, same implementation as for the triangles */
             /* The same for vertices normals. */
@@ -682,7 +683,6 @@ void MeshImporter::read_polys(COLLADAFW::Mesh *collada_mesh,
           if (material_indices) {
             material_indices++;
           }
-          mloop += 3;
           loop_index += 3;
           prim.totpoly++;
         }
@@ -715,7 +715,8 @@ void MeshImporter::read_polys(COLLADAFW::Mesh *collada_mesh,
           continue; /* TODO: add support for holes */
         }
 
-        bool broken_loop = set_poly_indices(mpoly, mloop, loop_index, position_indices, vcount);
+        bool broken_loop = set_poly_indices(
+            mpoly, &corner_verts[loop_index], loop_index, position_indices, vcount);
         if (broken_loop) {
           invalid_loop_holes += 1;
         }
@@ -784,7 +785,6 @@ void MeshImporter::read_polys(COLLADAFW::Mesh *collada_mesh,
         if (material_indices) {
           material_indices++;
         }
-        mloop += vcount;
         loop_index += vcount;
         start_index += vcount;
         prim.totpoly++;
@@ -906,8 +906,8 @@ std::string *MeshImporter::get_geometry_name(const std::string &mesh_name)
 
 static bool bc_has_out_of_bound_indices(Mesh *me)
 {
-  for (const MLoop &loop : me->loops()) {
-    if (loop.v >= me->totvert) {
+  for (const int vert_i : me->corner_verts()) {
+    if (vert_i >= me->totvert) {
       return true;
     }
   }
@@ -1170,7 +1170,7 @@ bool MeshImporter::write_geometry(const COLLADAFW::Geometry *geom)
    * BKE_mesh_set_custom_normals()'s internals expect me->medge to be populated
    * and for the MLoops to have correct edge indices. */
   if (use_custom_normals && !loop_normals.is_empty()) {
-    /* BKE_mesh_set_custom_normals()'s internals also expect that each MLoop
+    /* BKE_mesh_set_custom_normals()'s internals also expect that each corner
      * has a valid vertex index, which may not be the case due to the existing
      * logic in read_polys(). This check isn't necessary in the no-custom-normals
      * case because the invalid MLoops get stripped in a later step. */

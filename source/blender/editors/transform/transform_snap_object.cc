@@ -243,7 +243,7 @@ static void snap_object_data_mesh_get(SnapObjectContext *sctx,
 {
   const Span<float3> vert_positions = me_eval->vert_positions();
   const Span<MPoly> polys = me_eval->polys();
-  const Span<MLoop> loops = me_eval->loops();
+  const Span<int> corner_verts = me_eval->corner_verts();
 
   if (ob_eval->type == OB_MESH) {
     /* Any existing #SnapData_EditMesh is now invalid. */
@@ -256,11 +256,11 @@ static void snap_object_data_mesh_get(SnapObjectContext *sctx,
 
   BLI_assert(reinterpret_cast<const float3 *>(r_treedata->vert_positions) ==
              vert_positions.data());
-  BLI_assert(r_treedata->loop == loops.data());
+  BLI_assert(r_treedata->corner_verts == corner_verts.data());
   BLI_assert(!polys.data() || r_treedata->looptri);
   BLI_assert(!r_treedata->tree || r_treedata->looptri);
 
-  UNUSED_VARS_NDEBUG(vert_positions, polys, loops);
+  UNUSED_VARS_NDEBUG(vert_positions, polys, corner_verts);
 }
 
 /* Searches for the #Mesh_Runtime associated with the object that is most likely to be updated due
@@ -624,9 +624,9 @@ static void mesh_looptri_raycast_backface_culling_cb(void *userdata,
   const float(*vert_positions)[3] = data->vert_positions;
   const MLoopTri *lt = &data->looptri[index];
   const float *vtri_co[3] = {
-      vert_positions[data->loop[lt->tri[0]].v],
-      vert_positions[data->loop[lt->tri[1]].v],
-      vert_positions[data->loop[lt->tri[2]].v],
+      vert_positions[data->corner_verts[lt->tri[0]]],
+      vert_positions[data->corner_verts[lt->tri[1]]],
+      vert_positions[data->corner_verts[lt->tri[2]]],
   };
   float dist = bvhtree_ray_tri_intersection(ray, hit->dist, UNPACK3(vtri_co));
 
@@ -1428,7 +1428,8 @@ struct Nearest2dUserData {
       const float (*vert_positions)[3];
       const float (*vert_normals)[3];
       const MEdge *edge; /* only used for #BVHTreeFromMeshEdges */
-      const MLoop *loop;
+      const int *corner_verts;
+      const int *corner_edges;
       const MLoopTri *looptri;
     };
   };
@@ -1479,14 +1480,15 @@ static void cb_bedge_verts_get(const int index, const Nearest2dUserData *data, i
 static void cb_mlooptri_edges_get(const int index, const Nearest2dUserData *data, int r_v_index[3])
 {
   const MEdge *medge = data->edge;
-  const MLoop *mloop = data->loop;
+  const int *corner_verts = data->corner_verts;
+  const int *corner_edges = data->corner_edges;
   const MLoopTri *lt = &data->looptri[index];
   for (int j = 2, j_next = 0; j_next < 3; j = j_next++) {
-    const MEdge *ed = &medge[mloop[lt->tri[j]].e];
-    const uint tri_edge[2] = {mloop[lt->tri[j]].v, mloop[lt->tri[j_next]].v};
+    const MEdge *ed = &medge[corner_edges[lt->tri[j]]];
+    const int tri_edge[2] = {corner_verts[lt->tri[j]], corner_verts[lt->tri[j_next]]};
     if (ELEM(ed->v1, tri_edge[0], tri_edge[1]) && ELEM(ed->v2, tri_edge[0], tri_edge[1])) {
       // printf("real edge found\n");
-      r_v_index[j] = mloop[lt->tri[j]].e;
+      r_v_index[j] = corner_edges[lt->tri[j]];
     }
     else {
       r_v_index[j] = -1;
@@ -1496,12 +1498,12 @@ static void cb_mlooptri_edges_get(const int index, const Nearest2dUserData *data
 
 static void cb_mlooptri_verts_get(const int index, const Nearest2dUserData *data, int r_v_index[3])
 {
-  const MLoop *loop = data->loop;
+  const int *corner_verts = data->corner_verts;
   const MLoopTri *looptri = &data->looptri[index];
 
-  r_v_index[0] = loop[looptri->tri[0]].v;
-  r_v_index[1] = loop[looptri->tri[1]].v;
-  r_v_index[2] = loop[looptri->tri[2]].v;
+  r_v_index[0] = corner_verts[looptri->tri[0]];
+  r_v_index[1] = corner_verts[looptri->tri[1]];
+  r_v_index[2] = corner_verts[looptri->tri[2]];
 }
 
 static bool test_projected_vert_dist(const DistProjectedAABBPrecalc *precalc,
@@ -1717,7 +1719,8 @@ static void nearest2d_data_init_mesh(const Mesh *mesh,
   r_nearest2d->vert_positions = BKE_mesh_vert_positions(mesh);
   r_nearest2d->vert_normals = BKE_mesh_vertex_normals_ensure(mesh);
   r_nearest2d->edge = mesh->edges().data();
-  r_nearest2d->loop = mesh->loops().data();
+  r_nearest2d->corner_verts = mesh->corner_verts().data();
+  r_nearest2d->corner_edges = mesh->corner_edges().data();
   r_nearest2d->looptri = BKE_mesh_runtime_looptri_ensure(mesh);
 
   r_nearest2d->is_persp = is_persp;
@@ -1782,13 +1785,14 @@ static eSnapMode snap_mesh_polygon(SnapObjectContext *sctx,
                              &nearest2d);
 
     const MPoly *mp = &mesh->polys()[sctx->ret.index];
-    const MLoop *ml = &nearest2d.loop[mp->loopstart];
+
     if (sctx->runtime.snap_to_flag & SCE_SNAP_MODE_EDGE) {
       elem = SCE_SNAP_MODE_EDGE;
       BLI_assert(nearest2d.edge != nullptr);
-      for (int i = mp->totloop; i--; ml++) {
+      const int *poly_edges = &nearest2d.corner_edges[mp->loopstart];
+      for (int i = mp->totloop; i--;) {
         cb_snap_edge(&nearest2d,
-                     int(ml->e),
+                     poly_edges[i],
                      &neasrest_precalc,
                      clip_planes_local,
                      sctx->runtime.clip_plane_len,
@@ -1797,9 +1801,10 @@ static eSnapMode snap_mesh_polygon(SnapObjectContext *sctx,
     }
     else {
       elem = SCE_SNAP_MODE_VERTEX;
-      for (int i = mp->totloop; i--; ml++) {
+      const int *poly_verts = &nearest2d.corner_verts[mp->loopstart];
+      for (int i = mp->totloop; i--;) {
         cb_snap_vert(&nearest2d,
-                     int(ml->v),
+                     poly_verts[i],
                      &neasrest_precalc,
                      clip_planes_local,
                      sctx->runtime.clip_plane_len,

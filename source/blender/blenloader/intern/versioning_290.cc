@@ -49,6 +49,7 @@
 #include "BKE_lib_id.h"
 #include "BKE_main.h"
 #include "BKE_mesh.h"
+#include "BKE_mesh_legacy_convert.h"
 #include "BKE_multires.h"
 #include "BKE_node.h"
 
@@ -819,6 +820,7 @@ void blo_do_versions_290(FileData *fd, Library * /*lib*/, Main *bmain)
       for (const MPoly *mp = BKE_mesh_polys(me), *mp_end = mp + me->totpoly; mp < mp_end; mp++) {
         if (mp->totloop == 2) {
           bool changed;
+          BKE_mesh_legacy_convert_loops_to_corners(me);
           BKE_mesh_validate_arrays(
               me,
               BKE_mesh_vert_positions_for_write(me),
@@ -827,7 +829,8 @@ void blo_do_versions_290(FileData *fd, Library * /*lib*/, Main *bmain)
               me->totedge,
               (MFace *)CustomData_get_layer_for_write(&me->fdata, CD_MFACE, me->totface),
               me->totface,
-              BKE_mesh_loops_for_write(me),
+              me->corner_verts_for_write().data(),
+              me->corner_edges_for_write().data(),
               me->totloop,
               BKE_mesh_polys_for_write(me),
               me->totpoly,

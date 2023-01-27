@@ -186,7 +186,8 @@ static void fill_vertbuf_with_attribute(const MeshRenderData *mr,
   const int layer_index = request.layer_index;
 
   const MPoly *mpoly = mr->mpoly;
-  const MLoop *mloop = mr->mloop;
+  const int *corner_verts = mr->corner_verts;
+  const int *corner_edges = mr->corner_edges;
 
   const AttributeType *attr_data = static_cast<const AttributeType *>(
       CustomData_get_layer_n(custom_data, request.cd_type, layer_index));
@@ -195,8 +196,8 @@ static void fill_vertbuf_with_attribute(const MeshRenderData *mr,
 
   switch (request.domain) {
     case ATTR_DOMAIN_POINT:
-      for (int ml_index = 0; ml_index < mr->loop_len; ml_index++, vbo_data++, mloop++) {
-        *vbo_data = Converter::convert_value(attr_data[mloop->v]);
+      for (int ml_index = 0; ml_index < mr->loop_len; ml_index++, vbo_data++) {
+        *vbo_data = Converter::convert_value(attr_data[corner_verts[ml_index]]);
       }
       break;
     case ATTR_DOMAIN_CORNER:
@@ -205,8 +206,8 @@ static void fill_vertbuf_with_attribute(const MeshRenderData *mr,
       }
       break;
     case ATTR_DOMAIN_EDGE:
-      for (int ml_index = 0; ml_index < mr->loop_len; ml_index++, vbo_data++, mloop++) {
-        *vbo_data = Converter::convert_value(attr_data[mloop->e]);
+      for (int ml_index = 0; ml_index < mr->loop_len; ml_index++, vbo_data++) {
+        *vbo_data = Converter::convert_value(attr_data[corner_edges[ml_index]]);
       }
       break;
     case ATTR_DOMAIN_FACE:

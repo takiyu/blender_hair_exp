@@ -680,7 +680,8 @@ static bool mesh_is_manifold_consistent(Mesh *mesh)
    */
   const Span<float3> positions = mesh->vert_positions();
   const Span<MEdge> edges = mesh->edges();
-  const Span<MLoop> loops = mesh->loops();
+  const Span<int> corner_verts = mesh->corner_verts();
+  const Span<int> corner_edges = mesh->corner_edges();
 
   bool is_manifold_consistent = true;
   char *edge_faces = (char *)MEM_callocN(mesh->totedge * sizeof(char), "remesh_manifold_check");
@@ -691,17 +692,19 @@ static bool mesh_is_manifold_consistent(Mesh *mesh)
     edge_vert[i] = -1;
   }
 
-  for (const MLoop &loop : loops) {
-    edge_faces[loop.e] += 1;
-    if (edge_faces[loop.e] > 2) {
+  for (const int corner_i : corner_verts.index_range()) {
+    const int vert_i = corner_verts[corner_i];
+    const int edge_i = corner_edges[corner_i];
+    edge_faces[edge_i] += 1;
+    if (edge_faces[edge_i] > 2) {
       is_manifold_consistent = false;
       break;
     }
 
-    if (edge_vert[loop.e] == -1) {
-      edge_vert[loop.e] = loop.v;
+    if (edge_vert[edge_i] == -1) {
+      edge_vert[edge_i] = vert_i;
     }
-    else if (edge_vert[loop.e] == loop.v) {
+    else if (edge_vert[edge_i] == vert_i) {
       /* Mesh has flips in the surface so it is non consistent */
       is_manifold_consistent = false;
       break;

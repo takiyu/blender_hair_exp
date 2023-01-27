@@ -865,15 +865,15 @@ static int mesh_customdata_custom_splitnormals_add_exec(bContext *C, wmOperator 
      * to preserve auto-smooth shading. */
     if (me->flag & ME_AUTOSMOOTH) {
       const Span<MPoly> polys = me->polys();
-      const Span<MLoop> loops = me->loops();
       bke::MutableAttributeAccessor attributes = me->attributes_for_write();
       bke::SpanAttributeWriter<bool> sharp_edges = attributes.lookup_or_add_for_write_span<bool>(
           "sharp_edge", ATTR_DOMAIN_EDGE);
       const bool *sharp_faces = static_cast<const bool *>(
           CustomData_get_layer_named(&me->pdata, CD_PROP_BOOL, "sharp_face"));
       BKE_edges_sharp_from_angle_set(me->totedge,
-                                     loops.data(),
-                                     loops.size(),
+                                     me->corner_verts().data(),
+                                     me->corner_edges().data(),
+                                     me->totloop,
                                      polys.data(),
                                      BKE_mesh_poly_normals_ensure(me),
                                      sharp_faces,
@@ -1290,8 +1290,13 @@ static void mesh_add_loops(Mesh *mesh, int len)
   CustomData_copy(&mesh->ldata, &ldata, CD_MASK_MESH.lmask, CD_SET_DEFAULT, totloop);
   CustomData_copy_data(&mesh->ldata, &ldata, 0, 0, mesh->totloop);
 
-  if (!CustomData_has_layer(&ldata, CD_MLOOP)) {
-    CustomData_add_layer(&ldata, CD_MLOOP, CD_SET_DEFAULT, nullptr, totloop);
+  if (!CustomData_get_layer_named(&ldata, CD_PROP_INT32, ".corner_vert")) {
+    CustomData_add_layer_named(
+        &ldata, CD_PROP_INT32, CD_SET_DEFAULT, nullptr, totloop, ".corner_vert");
+  }
+  if (!CustomData_get_layer_named(&ldata, CD_PROP_INT32, ".corner_edge")) {
+    CustomData_add_layer_named(
+        &ldata, CD_PROP_INT32, CD_SET_DEFAULT, nullptr, totloop, ".corner_edge");
   }
 
   BKE_mesh_runtime_clear_cache(mesh);
@@ -1540,15 +1545,17 @@ void ED_mesh_split_faces(Mesh *mesh)
 {
   using namespace blender;
   const Span<MPoly> polys = mesh->polys();
-  const Span<MLoop> loops = mesh->loops();
+  const Span<int> corner_verts = mesh->corner_verts();
+  const Span<int> corner_edges = mesh->corner_edges();
   const float split_angle = (mesh->flag & ME_AUTOSMOOTH) != 0 ? mesh->smoothresh : float(M_PI);
   const bool *sharp_faces = static_cast<const bool *>(
       CustomData_get_layer_named(&mesh->pdata, CD_PROP_BOOL, "sharp_face"));
 
   Array<bool> sharp_edges(mesh->totedge, false);
   BKE_edges_sharp_from_angle_set(mesh->totedge,
-                                 loops.data(),
-                                 loops.size(),
+                                 corner_verts.data(),
+                                 corner_edges.data(),
+                                 corner_verts.size(),
                                  polys.data(),
                                  BKE_mesh_poly_normals_ensure(mesh),
                                  sharp_faces,
@@ -1560,8 +1567,8 @@ void ED_mesh_split_faces(Mesh *mesh)
     for (const int poly_i : range) {
       const MPoly &poly = polys[poly_i];
       if (sharp_faces && sharp_faces[poly_i]) {
-        for (const MLoop &loop : loops.slice(poly.loopstart, poly.totloop)) {
-          sharp_edges[loop.e] = true;
+        for (const int edge_i : corner_edges.slice(poly.loopstart, poly.totloop)) {
+          sharp_edges[edge_i] = true;
         }
       }
     }

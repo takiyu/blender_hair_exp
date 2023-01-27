@@ -63,8 +63,8 @@ static void init_dualcon_mesh(DualConInput *input, Mesh *mesh)
   input->co_stride = sizeof(float[3]);
   input->totco = mesh->totvert;
 
-  input->mloop = (DualConLoop)BKE_mesh_loops(mesh);
-  input->loop_stride = sizeof(MLoop);
+  input->mloop = (DualConLoop)mesh->corner_verts().data();
+  input->loop_stride = sizeof(int);
 
   input->looptri = (DualConTri)BKE_mesh_runtime_looptri_ensure(mesh);
   input->tri_stride = sizeof(MLoopTri);
@@ -80,7 +80,7 @@ typedef struct {
   Mesh *mesh;
   float (*vert_positions)[3];
   MPoly *polys;
-  MLoop *loops;
+  int *corner_verts;
   int curvert, curface;
 } DualConOutput;
 
@@ -96,7 +96,7 @@ static void *dualcon_alloc_output(int totvert, int totquad)
   output->mesh = BKE_mesh_new_nomain(totvert, 0, 0, 4 * totquad, totquad);
   output->vert_positions = BKE_mesh_vert_positions_for_write(output->mesh);
   output->polys = BKE_mesh_polys_for_write(output->mesh);
-  output->loops = BKE_mesh_loops_for_write(output->mesh);
+  output->corner_verts = output->mesh->corner_verts_for_write().data();
 
   return output;
 }
@@ -120,13 +120,13 @@ static void dualcon_add_quad(void *output_v, const int vert_indices[4])
   BLI_assert(output->curface < mesh->totpoly);
   UNUSED_VARS_NDEBUG(mesh);
 
-  MLoop *mloop = output->loops;
+  int *corner_verts = output->corner_verts;
   MPoly *cur_poly = &output->polys[output->curface];
 
   cur_poly->loopstart = output->curface * 4;
   cur_poly->totloop = 4;
   for (i = 0; i < 4; i++) {
-    mloop[output->curface * 4 + i].v = vert_indices[i];
+    corner_verts[output->curface * 4 + i] = vert_indices[i];
   }
 
   output->curface++;

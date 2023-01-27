@@ -76,7 +76,8 @@ struct MeshRenderData {
   Mesh *me;
   const blender::float3 *vert_positions;
   const MEdge *medge;
-  const MLoop *mloop;
+  const int *corner_verts;
+  const int *corner_edges;
   const MPoly *mpoly;
   BMVert *eve_act;
   BMEdge *eed_act;

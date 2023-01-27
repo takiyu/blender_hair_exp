@@ -30,7 +30,8 @@ static void mesh_flip_faces(Mesh &mesh, const Field<bool> &selection_field)
   const IndexMask selection = evaluator.get_evaluated_as_mask(0);
 
   const Span<MPoly> polys = mesh.polys();
-  MutableSpan<MLoop> loops = mesh.loops_for_write();
+  MutableSpan<int> corner_verts = mesh.corner_verts_for_write();
+  MutableSpan<int> corner_edges = mesh.corner_edges_for_write();
 
   threading::parallel_for(selection.index_range(), 1024, [&](const IndexRange range) {
     for (const int i : selection.slice(range)) {
@@ -39,8 +40,8 @@ static void mesh_flip_faces(Mesh &mesh, const Field<bool> &selection_field)
       for (const int j : IndexRange(poly.size() / 2)) {
         const int index1 = start + j + 1;
         const int index2 = start + poly.size() - j - 1;
-        std::swap(loops[index1].v, loops[index2].v);
-        std::swap(loops[index1 - 1].e, loops[index2].e);
+        std::swap(corner_verts[index1], corner_verts[index2]);
+        std::swap(corner_edges[index1 - 1], corner_edges[index2]);
       }
     }
   });
@@ -49,6 +50,9 @@ static void mesh_flip_faces(Mesh &mesh, const Field<bool> &selection_field)
   attributes.for_all(
       [&](const bke::AttributeIDRef &attribute_id, const AttributeMetaData &meta_data) {
         if (meta_data.data_type == CD_PROP_STRING) {
+          return true;
+        }
+        if (ELEM(attribute_id.name(), ".corner_vert", ".corner_edge")) {
           return true;
         }
         if (meta_data.domain == ATTR_DOMAIN_CORNER) {

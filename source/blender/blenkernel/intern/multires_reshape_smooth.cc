@@ -850,7 +850,7 @@ static void geometry_init_loose_information(MultiresReshapeSmoothContext *reshap
   const MultiresReshapeContext *reshape_context = reshape_smooth_context->reshape_context;
   const Mesh *base_mesh = reshape_context->base_mesh;
   const MPoly *base_mpoly = reshape_context->base_polys;
-  const MLoop *base_mloop = reshape_context->base_loops;
+  const int *base_corner_edges = reshape_context->base_corner_edges;
 
   reshape_smooth_context->non_loose_base_edge_map = BLI_BITMAP_NEW(base_mesh->totedge,
                                                                    "non_loose_base_edge_map");
@@ -859,11 +859,11 @@ static void geometry_init_loose_information(MultiresReshapeSmoothContext *reshap
   for (int poly_index = 0; poly_index < base_mesh->totpoly; ++poly_index) {
     const MPoly *base_poly = &base_mpoly[poly_index];
     for (int corner = 0; corner < base_poly->totloop; corner++) {
-      const MLoop *loop = &base_mloop[base_poly->loopstart + corner];
-      if (!BLI_BITMAP_TEST_BOOL(reshape_smooth_context->non_loose_base_edge_map, loop->e)) {
-        BLI_BITMAP_ENABLE(reshape_smooth_context->non_loose_base_edge_map, loop->e);
+      const int edge_i = base_corner_edges[base_poly->loopstart + corner];
+      if (!BLI_BITMAP_TEST_BOOL(reshape_smooth_context->non_loose_base_edge_map, edge_i)) {
+        BLI_BITMAP_ENABLE(reshape_smooth_context->non_loose_base_edge_map, edge_i);
 
-        const float crease = get_effective_crease(reshape_smooth_context, loop->e);
+        const float crease = get_effective_crease(reshape_smooth_context, edge_i);
         if (crease > 0.0f) {
           ++num_used_edges;
         }

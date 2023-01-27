@@ -155,7 +155,7 @@ static bool dependsOnNormals(ModifierData *md)
 struct GenerateOceanGeometryData {
   float (*vert_positions)[3];
   MPoly *mpolys;
-  MLoop *mloops;
+  int *corner_verts;
   float (*mloopuvs)[2];
 
   int res_x, res_y;
@@ -192,16 +192,11 @@ static void generate_ocean_geometry_polys(void *__restrict userdata,
     const int fi = y * gogd->res_x + x;
     const int vi = y * (gogd->res_x + 1) + x;
     MPoly *mp = &gogd->mpolys[fi];
-    MLoop *ml = &gogd->mloops[fi * 4];
 
-    ml->v = vi;
-    ml++;
-    ml->v = vi + 1;
-    ml++;
-    ml->v = vi + 1 + gogd->res_x + 1;
-    ml++;
-    ml->v = vi + gogd->res_x + 1;
-    ml++;
+    gogd->corner_verts[fi * 4 + 0] = vi;
+    gogd->corner_verts[fi * 4 + 1] = vi + 1;
+    gogd->corner_verts[fi * 4 + 2] = vi + 1 + gogd->res_x + 1;
+    gogd->corner_verts[fi * 4 + 3] = vi + gogd->res_x + 1;
 
     mp->loopstart = fi * 4;
     mp->totloop = 4;
@@ -269,7 +264,7 @@ static Mesh *generate_ocean_geometry(OceanModifierData *omd, Mesh *mesh_orig, co
 
   gogd.vert_positions = BKE_mesh_vert_positions_for_write(result);
   gogd.mpolys = BKE_mesh_polys_for_write(result);
-  gogd.mloops = BKE_mesh_loops_for_write(result);
+  gogd.corner_verts = result->corner_verts_for_write().data();
 
   TaskParallelSettings settings;
   BLI_parallel_range_settings_defaults(&settings);
@@ -368,7 +363,7 @@ static Mesh *doOcean(ModifierData *md, const ModifierEvalContext *ctx, Mesh *mes
   if (omd->flag & MOD_OCEAN_GENERATE_FOAM) {
     const int polys_num = result->totpoly;
     const int loops_num = result->totloop;
-    const MLoop *mloops = BKE_mesh_loops(result);
+    const blender::Span<int> corner_verts = result->corner_verts();
     MLoopCol *mloopcols = static_cast<MLoopCol *>(CustomData_add_layer_named(&result->ldata,
                                                                              CD_PROP_BYTE_COLOR,
                                                                              CD_SET_DEFAULT,
@@ -390,7 +385,7 @@ static Mesh *doOcean(ModifierData *md, const ModifierEvalContext *ctx, Mesh *mes
       const MPoly *mp;
 
       for (i = 0, mp = polys; i < polys_num; i++, mp++) {
-        const MLoop *ml = &mloops[mp->loopstart];
+        const int *corner_vert = &corner_verts[mp->loopstart];
         MLoopCol *mlcol = &mloopcols[mp->loopstart];
 
         MLoopCol *mlcolspray = nullptr;
@@ -398,8 +393,8 @@ static Mesh *doOcean(ModifierData *md, const ModifierEvalContext *ctx, Mesh *mes
           mlcolspray = &mloopcols_spray[mp->loopstart];
         }
 
-        for (j = mp->totloop; j--; ml++, mlcol++) {
-          const float *vco = positions[ml->v];
+        for (j = mp->totloop; j--; corner_vert++, mlcol++) {
+          const float *vco = positions[*corner_vert];
           const float u = OCEAN_CO(size_co_inv, vco[0]);
           const float v = OCEAN_CO(size_co_inv, vco[1]);
           float foam;

@@ -328,7 +328,7 @@ void GeometryExporter::create_mesh_primitive_list(short material_index,
                                                   std::vector<BCPolygonNormalsIndices> &norind)
 {
   const Span<MPoly> polys = me->polys();
-  const Span<MLoop> loops = me->loops();
+  const Span<int> corner_verts = me->corner_verts();
 
   std::vector<ulong> vcount_list;
 
@@ -415,11 +415,11 @@ void GeometryExporter::create_mesh_primitive_list(short material_index,
     int loop_count = p->totloop;
 
     if (material_indices[i] == material_index) {
-      const MLoop *l = &loops[p->loopstart];
       BCPolygonNormalsIndices normal_indices = norind[i];
 
       for (int j = 0; j < loop_count; j++) {
-        primitive_list->appendValues(l[j].v);
+        const int vert_i = corner_verts[p->loopstart + j];
+        primitive_list->appendValues(vert_i);
         primitive_list->appendValues(normal_indices[j]);
         if (has_uvs) {
           primitive_list->appendValues(texindex + j);
@@ -622,7 +622,7 @@ void GeometryExporter::create_normals(std::vector<Normal> &normals,
   const Span<float3> positions = me->vert_positions();
   const float(*vert_normals)[3] = BKE_mesh_vertex_normals_ensure(me);
   const Span<MPoly> polys = me->polys();
-  const Span<MLoop> loops = me->loops();
+  const Span<int> corner_verts = me->corner_verts();
   const float(*lnors)[3] = nullptr;
   bool use_custom_normals = false;
 
@@ -645,7 +645,7 @@ void GeometryExporter::create_normals(std::vector<Normal> &normals,
 
       float vector[3];
       BKE_mesh_calc_poly_normal(mpoly,
-                                &loops[mpoly->loopstart],
+                                &corner_verts[mpoly->loopstart],
                                 reinterpret_cast<const float(*)[3]>(positions.data()),
                                 vector);
 
@@ -664,7 +664,7 @@ void GeometryExporter::create_normals(std::vector<Normal> &normals,
           normalize_v3_v3(normalized, lnors[loop_idx]);
         }
         else {
-          copy_v3_v3(normalized, vert_normals[loops[loop_index].v]);
+          copy_v3_v3(normalized, vert_normals[corner_verts[loop_index]]);
           normalize_v3(normalized);
         }
         Normal n = {normalized[0], normalized[1], normalized[2]};

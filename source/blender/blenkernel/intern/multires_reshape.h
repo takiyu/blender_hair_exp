@@ -16,7 +16,6 @@ struct GridPaintMask;
 struct MDisps;
 struct MEdge;
 struct Mesh;
-struct MLoop;
 struct MPoly;
 struct MultiresModifierData;
 struct Object;
@@ -36,7 +35,8 @@ typedef struct MultiresReshapeContext {
   const float (*base_positions)[3];
   const struct MEdge *base_edges;
   const struct MPoly *base_polys;
-  const struct MLoop *base_loops;
+  const int *base_corner_verts;
+  const int *base_corner_edges;
 
   /* Subdivision surface created for multires modifier.
    *

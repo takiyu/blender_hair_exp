@@ -175,7 +175,6 @@ std::unique_ptr<ColumnValues> GeometryDataSource::get_column_values(
     if (const Mesh *mesh = component.get_for_read()) {
       const Span<MEdge> edges = mesh->edges();
       const Span<MPoly> polys = mesh->polys();
-      const Span<MLoop> loops = mesh->loops();
 
       if (domain_ == ATTR_DOMAIN_EDGE) {
         if (STREQ(column_id.name, "Vertex 1")) {
@@ -207,16 +206,12 @@ std::unique_ptr<ColumnValues> GeometryDataSource::get_column_values(
       }
       else if (domain_ == ATTR_DOMAIN_CORNER) {
         if (STREQ(column_id.name, "Vertex")) {
-          return std::make_unique<ColumnValues>(
-              column_id.name, VArray<int>::ForFunc(loops.size(), [loops](int64_t index) {
-                return loops[index].v;
-              }));
+          return std::make_unique<ColumnValues>(column_id.name,
+                                                VArray<int>::ForSpan(mesh->corner_verts()));
         }
         if (STREQ(column_id.name, "Edge")) {
-          return std::make_unique<ColumnValues>(
-              column_id.name, VArray<int>::ForFunc(loops.size(), [loops](int64_t index) {
-                return loops[index].e;
-              }));
+          return std::make_unique<ColumnValues>(column_id.name,
+                                                VArray<int>::ForSpan(mesh->corner_edges()));
         }
       }
     }

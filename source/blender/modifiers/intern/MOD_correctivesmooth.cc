@@ -129,7 +129,7 @@ static void mesh_get_boundaries(Mesh *mesh, float *smooth_weights)
 {
   const MEdge *medge = BKE_mesh_edges(mesh);
   const MPoly *mpoly = BKE_mesh_polys(mesh);
-  const MLoop *mloop = BKE_mesh_loops(mesh);
+  const blender::Span<int> corner_edges = mesh->corner_edges();
 
   const uint mpoly_num = uint(mesh->totpoly);
   const uint medge_num = uint(mesh->totedge);
@@ -143,7 +143,7 @@ static void mesh_get_boundaries(Mesh *mesh, float *smooth_weights)
     const int totloop = p->totloop;
     int j;
     for (j = 0; j < totloop; j++) {
-      uint8_t *e_value = &boundaries[mloop[p->loopstart + j].e];
+      uint8_t *e_value = &boundaries[corner_edges[p->loopstart + j]];
       *e_value |= uint8_t((*e_value) + 1);
     }
   }
@@ -440,7 +440,7 @@ static void calc_tangent_spaces(const Mesh *mesh,
   const uint mpoly_num = uint(mesh->totpoly);
   const uint mvert_num = uint(mesh->totvert);
   const MPoly *mpoly = BKE_mesh_polys(mesh);
-  const MLoop *mloop = BKE_mesh_loops(mesh);
+  blender::Span<int> corner_verts = mesh->corner_verts();
   uint i;
 
   if (r_tangent_weights_per_vertex != nullptr) {
@@ -449,40 +449,42 @@ static void calc_tangent_spaces(const Mesh *mesh,
 
   for (i = 0; i < mpoly_num; i++) {
     const MPoly *mp = &mpoly[i];
-    const MLoop *l_next = &mloop[mp->loopstart];
-    const MLoop *l_term = l_next + mp->totloop;
-    const MLoop *l_prev = l_term - 2;
-    const MLoop *l_curr = l_term - 1;
+    int next_corner = mp->loopstart;
+    int term_corner = next_corner + mp->totloop;
+    int prev_corner = term_corner - 2;
+    int curr_corner = term_corner - 1;
 
     /* loop directions */
     float v_dir_prev[3], v_dir_next[3];
 
     /* needed entering the loop */
-    sub_v3_v3v3(v_dir_prev, vertexCos[l_prev->v], vertexCos[l_curr->v]);
+    sub_v3_v3v3(
+        v_dir_prev, vertexCos[corner_verts[prev_corner]], vertexCos[corner_verts[curr_corner]]);
     normalize_v3(v_dir_prev);
 
-    for (; l_next != l_term; l_prev = l_curr, l_curr = l_next, l_next++) {
-      uint l_index = uint(l_curr - mloop);
-      float(*ts)[3] = r_tangent_spaces[l_index];
+    for (; next_corner != term_corner;
+         prev_corner = curr_corner, curr_corner = next_corner, next_corner++) {
+      float(*ts)[3] = r_tangent_spaces[curr_corner];
 
       /* re-use the previous value */
 #if 0
-      sub_v3_v3v3(v_dir_prev, vertexCos[l_prev->v], vertexCos[l_curr->v]);
+      sub_v3_v3v3(v_dir_prev, vertexCos[corner_verts[prev_corner]], vertexCos[corner_verts[curr_corner]]);
       normalize_v3(v_dir_prev);
 #endif
-      sub_v3_v3v3(v_dir_next, vertexCos[l_curr->v], vertexCos[l_next->v]);
+      sub_v3_v3v3(
+          v_dir_next, vertexCos[corner_verts[curr_corner]], vertexCos[corner_verts[next_corner]]);
       normalize_v3(v_dir_next);
 
       if (calc_tangent_loop(v_dir_prev, v_dir_next, ts)) {
         if (r_tangent_weights != nullptr) {
           const float weight = fabsf(acosf(dot_v3v3(v_dir_next, v_dir_prev)));
-          r_tangent_weights[l_index] = weight;
-          r_tangent_weights_per_vertex[l_curr->v] += weight;
+          r_tangent_weights[curr_corner] = weight;
+          r_tangent_weights_per_vertex[corner_verts[curr_corner]] += weight;
         }
       }
       else {
         if (r_tangent_weights != nullptr) {
-          r_tangent_weights[l_index] = 0;
+          r_tangent_weights[curr_corner] = 0;
         }
       }
 
@@ -519,7 +521,7 @@ static void calc_deltas(CorrectiveSmoothModifierData *csmd,
                         const float (*rest_coords)[3],
                         uint verts_num)
 {
-  const MLoop *mloop = BKE_mesh_loops(mesh);
+  blender::Span<int> corner_verts = mesh->corner_verts();
   const uint loops_num = uint(mesh->totloop);
 
   float(*smooth_vertex_coords)[3] = static_cast<float(*)[3]>(MEM_dupallocN(rest_coords));
@@ -547,7 +549,7 @@ static void calc_deltas(CorrectiveSmoothModifierData *csmd,
   copy_vn_fl(&csmd->delta_cache.deltas[0][0], int(loops_num) * 3, 0.0f);
 
   for (l_index = 0; l_index < loops_num; l_index++) {
-    const int v_index = int(mloop[l_index].v);
+    const int v_index = corner_verts[l_index];
     float delta[3];
     sub_v3_v3v3(delta, rest_coords[v_index], smooth_vertex_coords[v_index]);
 
@@ -578,7 +580,7 @@ static void correctivesmooth_modifier_do(ModifierData *md,
       ((csmd->rest_source == MOD_CORRECTIVESMOOTH_RESTSOURCE_ORCO) &&
        (((ID *)ob->data)->recalc & ID_RECALC_ALL));
 
-  const MLoop *mloop = BKE_mesh_loops(mesh);
+  blender::Span<int> corner_verts = mesh->corner_verts();
   const uint loops_num = uint(mesh->totloop);
 
   bool use_only_smooth = (csmd->flag & MOD_CORRECTIVESMOOTH_ONLY_SMOOTH) != 0;
@@ -708,7 +710,7 @@ static void correctivesmooth_modifier_do(ModifierData *md,
         mesh, vertexCos, tangent_spaces, tangent_weights, tangent_weights_per_vertex);
 
     for (l_index = 0; l_index < loops_num; l_index++) {
-      const uint v_index = mloop[l_index].v;
+      const int v_index = corner_verts[l_index];
       const float weight = tangent_weights[l_index] / tangent_weights_per_vertex[v_index];
       if (UNLIKELY(!(weight > 0.0f))) {
         /* Catches zero & divide by zero. */

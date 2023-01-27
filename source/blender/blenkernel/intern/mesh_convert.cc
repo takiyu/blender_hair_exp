@@ -86,13 +86,14 @@ static void make_edges_mdata_extend(Mesh &mesh)
   int i;
 
   const Span<MPoly> polys = mesh.polys();
-  MutableSpan<MLoop> loops = mesh.loops_for_write();
+  const Span<int> corner_verts = mesh.corner_verts();
+  MutableSpan<int> corner_edges = mesh.corner_edges_for_write();
 
   const int eh_reserve = max_ii(totedge, BLI_EDGEHASH_SIZE_GUESS_FROM_POLYS(mesh.totpoly));
   EdgeHash *eh = BLI_edgehash_new_ex(__func__, eh_reserve);
 
   for (const MPoly &poly : polys) {
-    BKE_mesh_poly_edgehash_insert(eh, &poly, &loops[poly.loopstart]);
+    BKE_mesh_poly_edgehash_insert(eh, &poly, corner_verts.data());
   }
 
   const int totedge_new = BLI_edgehash_len(eh);
@@ -126,13 +127,14 @@ static void make_edges_mdata_extend(Mesh &mesh)
     BLI_edgehashIterator_free(ehi);
 
     for (i = 0, mp = polys.data(); i < mesh.totpoly; i++, mp++) {
-      MLoop *l = &loops[mp->loopstart];
-      MLoop *l_prev = (l + (mp->totloop - 1));
+      int corner = mp->loopstart;
+      int corner_prev = mp->loopstart + (mp->totloop - 1);
       int j;
-      for (j = 0; j < mp->totloop; j++, l++) {
+      for (j = 0; j < mp->totloop; j++, corner++) {
         /* lookup hashed edge index */
-        l_prev->e = POINTER_AS_UINT(BLI_edgehash_lookup(eh, l_prev->v, l->v));
-        l_prev = l;
+        corner_edges[corner_prev] = POINTER_AS_UINT(
+            BLI_edgehash_lookup(eh, corner_verts[corner_prev], corner_verts[corner]));
+        corner_prev = corner;
       }
     }
   }
@@ -193,7 +195,7 @@ static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispba
   MutableSpan<float3> positions = mesh->vert_positions_for_write();
   MutableSpan<MEdge> edges = mesh->edges_for_write();
   MutableSpan<MPoly> polys = mesh->polys_for_write();
-  MutableSpan<MLoop> loops = mesh->loops_for_write();
+  MutableSpan<int> corner_verts = mesh->corner_verts_for_write();
 
   MutableAttributeAccessor attributes = mesh->attributes_for_write();
   SpanAttributeWriter<int> material_indices = attributes.lookup_or_add_for_write_only_span<int>(
@@ -272,16 +274,16 @@ static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispba
       a = dl->parts;
       const int *index = dl->index;
       while (a--) {
-        loops[dst_loop + 0].v = startvert + index[0];
-        loops[dst_loop + 1].v = startvert + index[2];
-        loops[dst_loop + 2].v = startvert + index[1];
+        corner_verts[dst_loop + 0] = startvert + index[0];
+        corner_verts[dst_loop + 1] = startvert + index[2];
+        corner_verts[dst_loop + 2] = startvert + index[1];
         polys[dst_poly].loopstart = dst_loop;
         polys[dst_poly].totloop = 3;
         material_indices.span[dst_poly] = dl->col;
 
         if (mloopuv) {
           for (int i = 0; i < 3; i++, mloopuv++) {
-            (*mloopuv)[0] = (loops[dst_loop + i].v - startvert) / float(dl->nr - 1);
+            (*mloopuv)[0] = (corner_verts[dst_loop + i] - startvert) / float(dl->nr - 1);
             (*mloopuv)[1] = 0.0f;
           }
         }
@@ -329,10 +331,10 @@ static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispba
         }
 
         for (; b < dl->nr; b++) {
-          loops[dst_loop + 0].v = p1;
-          loops[dst_loop + 1].v = p3;
-          loops[dst_loop + 2].v = p4;
-          loops[dst_loop + 3].v = p2;
+          corner_verts[dst_loop + 0] = p1;
+          corner_verts[dst_loop + 1] = p3;
+          corner_verts[dst_loop + 2] = p4;
+          corner_verts[dst_loop + 3] = p2;
           polys[dst_poly].loopstart = dst_loop;
           polys[dst_poly].totloop = 4;
           material_indices.span[dst_poly] = dl->col;
@@ -354,7 +356,7 @@ static Mesh *mesh_nurbs_displist_to_mesh(const Curve *cu, const ListBase *dispba
 
             for (int i = 0; i < 4; i++, mloopuv++) {
               /* find uv based on vertex index into grid array */
-              int v = loops[dst_loop + i].v - startvert;
+              int v = corner_verts[dst_loop + i] - startvert;
 
               (*mloopuv)[0] = (v / dl->nr) / float(orco_sizev);
               (*mloopuv)[1] = (v % dl->nr) / float(orco_sizeu);
@@ -459,7 +461,7 @@ void BKE_mesh_to_curve_nurblist(const Mesh *me, ListBase *nurblist, const int ed
   const Span<float3> positions = me->vert_positions();
   const Span<MEdge> mesh_edges = me->edges();
   const Span<MPoly> polys = me->polys();
-  const Span<MLoop> loops = me->loops();
+  const Span<int> corner_edges = me->corner_edges();
 
   const MEdge *med;
   const MPoly *mp;
@@ -477,10 +479,9 @@ void BKE_mesh_to_curve_nurblist(const Mesh *me, ListBase *nurblist, const int ed
   /* get boundary edges */
   edge_users = (int *)MEM_calloc_arrayN(medge_len, sizeof(int), __func__);
   for (i = 0, mp = polys.data(); i < mpoly_len; i++, mp++) {
-    const MLoop *ml = &loops[mp->loopstart];
     int j;
-    for (j = 0; j < mp->totloop; j++, ml++) {
-      edge_users[ml->e]++;
+    for (j = 0; j < mp->totloop; j++) {
+      edge_users[corner_edges[mp->loopstart + j]]++;
     }
   }
 

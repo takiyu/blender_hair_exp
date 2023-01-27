@@ -643,7 +643,7 @@ static void store_grid_data(MultiresUnsubdivideContext *context,
 {
   Mesh *original_mesh = context->original_mesh;
   const MPoly *polys = BKE_mesh_polys(original_mesh);
-  const MLoop *loops = BKE_mesh_loops(original_mesh);
+  const blender::Span<int> corner_verts = original_mesh->corner_verts();
   const MPoly *poly = &polys[BM_elem_index_get(f)];
 
   const int corner_vertex_index = BM_elem_index_get(v);
@@ -653,8 +653,7 @@ static void store_grid_data(MultiresUnsubdivideContext *context,
   int loop_offset = 0;
   for (int i = 0; i < poly->totloop; i++) {
     const int loop_index = poly->loopstart + i;
-    const MLoop *l = &loops[loop_index];
-    if (l->v == corner_vertex_index) {
+    if (corner_verts[loop_index] == corner_vertex_index) {
       loop_offset = i;
       break;
     }
@@ -967,19 +966,19 @@ static void multires_unsubdivide_prepare_original_bmesh_for_extract(
  * necessary.
  */
 static bool multires_unsubdivide_flip_grid_x_axis(
-    const MPoly *polys, const MLoop *loops, int poly, int loop, int v_x)
+    const MPoly *polys, const int *corner_verts, int poly, int loop, int v_x)
 {
   const MPoly *p = &polys[poly];
 
-  const MLoop *l_first = &loops[p->loopstart];
-  if ((loop == (p->loopstart + (p->totloop - 1))) && l_first->v == v_x) {
+  const int v_first = corner_verts[p->loopstart];
+  if ((loop == (p->loopstart + (p->totloop - 1))) && v_first == v_x) {
     return true;
   }
 
   int next_l_index = loop + 1;
   if (next_l_index < p->loopstart + p->totloop) {
-    const MLoop *l_next = &loops[next_l_index];
-    if (l_next->v == v_x) {
+    const int v_next = corner_verts[next_l_index];
+    if (v_next == v_x) {
       return true;
     }
   }
@@ -1042,7 +1041,7 @@ static void multires_unsubdivide_extract_grids(MultiresUnsubdivideContext *conte
       &bm_base_mesh->ldata, CD_PROP_INT32, base_l_layer_index);
 
   const MPoly *polys = BKE_mesh_polys(base_mesh);
-  const MLoop *loops = BKE_mesh_loops(base_mesh);
+  const blender::Span<int> corner_verts = base_mesh->corner_verts();
 
   /* Main loop for extracting the grids. Iterates over the base mesh vertices. */
   BM_ITER_MESH (v, &iter, bm_base_mesh, BM_VERTS_OF_MESH) {
@@ -1080,8 +1079,11 @@ static void multires_unsubdivide_extract_grids(MultiresUnsubdivideContext *conte
 
           /* Check the orientation of the loops in case that is needed to flip the x and y axis
            * when extracting the grid. */
-          const bool flip_grid = multires_unsubdivide_flip_grid_x_axis(
-              polys, loops, base_mesh_face_index, base_mesh_loop_index, corner_x_index);
+          const bool flip_grid = multires_unsubdivide_flip_grid_x_axis(polys,
+                                                                       corner_verts.data(),
+                                                                       base_mesh_face_index,
+                                                                       base_mesh_loop_index,
+                                                                       corner_x_index);
 
           /* Extract the grid for that loop. */
           context->base_mesh_grids[base_mesh_loop_index].grid_index = base_mesh_loop_index;

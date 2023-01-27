@@ -113,19 +113,21 @@ using blender::StringRef;
 
 /* Static function for alloc (duplicate in modifiers_bmesh.c) */
 static BMFace *bm_face_create_from_mpoly(BMesh &bm,
-                                         Span<MLoop> loops,
+                                         Span<int> poly_verts,
+                                         Span<int> poly_edges,
                                          Span<BMVert *> vtable,
                                          Span<BMEdge *> etable)
 {
-  Array<BMVert *, BM_DEFAULT_NGON_STACK_SIZE> verts(loops.size());
-  Array<BMEdge *, BM_DEFAULT_NGON_STACK_SIZE> edges(loops.size());
+  const int size = poly_verts.size();
+  Array<BMVert *, BM_DEFAULT_NGON_STACK_SIZE> verts(size);
+  Array<BMEdge *, BM_DEFAULT_NGON_STACK_SIZE> edges(size);
 
-  for (const int i : loops.index_range()) {
-    verts[i] = vtable[loops[i].v];
-    edges[i] = etable[loops[i].e];
+  for (const int i : IndexRange(size)) {
+    verts[i] = vtable[poly_verts[i]];
+    edges[i] = etable[poly_edges[i]];
   }
 
-  return BM_face_create(&bm, verts.data(), edges.data(), loops.size(), nullptr, BM_CREATE_SKIP_CD);
+  return BM_face_create(&bm, verts.data(), edges.data(), size, nullptr, BM_CREATE_SKIP_CD);
 }
 
 void BM_mesh_bm_from_me(BMesh *bm, const Mesh *me, const struct BMeshFromMeshParams *params)
@@ -406,7 +408,8 @@ void BM_mesh_bm_from_me(BMesh *bm, const Mesh *me, const struct BMeshFromMeshPar
   }
 
   const Span<MPoly> mpoly = me->polys();
-  const Span<MLoop> mloop = me->loops();
+  const Span<int> corner_verts = me->corner_verts();
+  const Span<int> corner_edges = me->corner_edges();
 
   /* Only needed for selection. */
 
@@ -417,8 +420,11 @@ void BM_mesh_bm_from_me(BMesh *bm, const Mesh *me, const struct BMeshFromMeshPar
 
   int totloops = 0;
   for (const int i : mpoly.index_range()) {
-    BMFace *f = bm_face_create_from_mpoly(
-        *bm, mloop.slice(mpoly[i].loopstart, mpoly[i].totloop), vtable, etable);
+    BMFace *f = bm_face_create_from_mpoly(*bm,
+                                          corner_verts.slice(mpoly[i].loopstart, mpoly[i].totloop),
+                                          corner_edges.slice(mpoly[i].loopstart, mpoly[i].totloop),
+                                          vtable,
+                                          etable);
     if (!ftable.is_empty()) {
       ftable[i] = f;
     }
@@ -459,7 +465,7 @@ void BM_mesh_bm_from_me(BMesh *bm, const Mesh *me, const struct BMeshFromMeshPar
       /* Don't use 'j' since we may have skipped some faces, hence some loops. */
       BM_elem_index_set(l_iter, totloops++); /* set_ok */
 
-      /* Save index of corresponding #MLoop. */
+      /* Save index of corresponding corner. */
       CustomData_to_bmesh_block(&mesh_ldata, &bm->ldata, j++, &l_iter->head.data, true);
     } while ((l_iter = l_iter->next) != l_first);
 
@@ -890,6 +896,8 @@ static void assert_bmesh_has_no_mesh_only_attributes(const BMesh &bm)
 {
   (void)bm; /* Unused in the release builds. */
   BLI_assert(CustomData_get_layer_named(&bm.vdata, CD_PROP_FLOAT3, "position") == nullptr);
+  BLI_assert(CustomData_get_layer_named(&bm.ldata, CD_PROP_FLOAT3, ".corner_vert") == nullptr);
+  BLI_assert(CustomData_get_layer_named(&bm.ldata, CD_PROP_FLOAT3, ".corner_edge") == nullptr);
 
   /* The "hide" attributes are stored as flags on #BMesh. */
   BLI_assert(CustomData_get_layer_named(&bm.vdata, CD_PROP_BOOL, ".hide_vert") == nullptr);
@@ -1058,12 +1066,16 @@ void BM_mesh_bm_to_me(Main *bmain, BMesh *bm, Mesh *me, const struct BMeshToMesh
   CustomData_add_layer_named(
       &me->vdata, CD_PROP_FLOAT3, CD_CONSTRUCT, nullptr, me->totvert, "position");
   CustomData_add_layer(&me->edata, CD_MEDGE, CD_SET_DEFAULT, nullptr, me->totedge);
-  CustomData_add_layer(&me->ldata, CD_MLOOP, CD_SET_DEFAULT, nullptr, me->totloop);
+  CustomData_add_layer_named(
+      &me->ldata, CD_PROP_INT32, CD_CONSTRUCT, nullptr, me->totloop, ".corner_vert");
+  CustomData_add_layer_named(
+      &me->ldata, CD_PROP_INT32, CD_CONSTRUCT, nullptr, me->totloop, ".corner_edge");
   CustomData_add_layer(&me->pdata, CD_MPOLY, CD_SET_DEFAULT, nullptr, me->totpoly);
   MutableSpan<float3> positions = me->vert_positions_for_write();
   MutableSpan<MEdge> medge = me->edges_for_write();
   MutableSpan<MPoly> mpoly = me->polys_for_write();
-  MutableSpan<MLoop> mloop = me->loops_for_write();
+  MutableSpan<int> corner_verts = me->corner_verts_for_write();
+  MutableSpan<int> corner_edges = me->corner_edges_for_write();
 
   bool need_select_vert = false;
   bool need_select_edge = false;
@@ -1144,8 +1156,8 @@ void BM_mesh_bm_to_me(Main *bmain, BMesh *bm, Mesh *me, const struct BMeshToMesh
 
     l_iter = l_first = BM_FACE_FIRST_LOOP(f);
     do {
-      mloop[j].e = BM_elem_index_get(l_iter->e);
-      mloop[j].v = BM_elem_index_get(l_iter->v);
+      corner_verts[j] = BM_elem_index_get(l_iter->v);
+      corner_edges[j] = BM_elem_index_get(l_iter->e);
 
       /* Copy over custom-data. */
       CustomData_from_bmesh_block(&bm->ldata, &me->ldata, l_iter->head.data, j);
@@ -1324,7 +1336,14 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
         &me->vdata, CD_PROP_FLOAT3, CD_CONSTRUCT, nullptr, bm->totvert, "position");
   }
   CustomData_add_layer(&me->edata, CD_MEDGE, CD_SET_DEFAULT, nullptr, bm->totedge);
-  CustomData_add_layer(&me->ldata, CD_MLOOP, CD_SET_DEFAULT, nullptr, bm->totloop);
+  if (!CustomData_get_layer_named(&me->ldata, CD_PROP_INT32, ".corner_vert")) {
+    CustomData_add_layer_named(
+        &me->ldata, CD_PROP_INT32, CD_CONSTRUCT, nullptr, bm->totloop, ".corner_vert");
+  }
+  if (!CustomData_get_layer_named(&me->ldata, CD_PROP_INT32, ".corner_edge")) {
+    CustomData_add_layer_named(
+        &me->ldata, CD_PROP_INT32, CD_CONSTRUCT, nullptr, bm->totloop, ".corner_edge");
+  }
   CustomData_add_layer(&me->pdata, CD_MPOLY, CD_SET_DEFAULT, nullptr, bm->totface);
 
   /* Don't process shape-keys, we only feed them through the modifier stack as needed,
@@ -1346,8 +1365,8 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
   MutableSpan<float3> positions = me->vert_positions_for_write();
   MutableSpan<MEdge> medge = me->edges_for_write();
   MutableSpan<MPoly> mpoly = me->polys_for_write();
-  MutableSpan<MLoop> loops = me->loops_for_write();
-  MLoop *mloop = loops.data();
+  MutableSpan<int> corner_verts = me->corner_verts_for_write();
+  MutableSpan<int> corner_edges = me->corner_edges_for_write();
   uint i, j;
 
   me->runtime->deformed_only = true;
@@ -1464,14 +1483,13 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
 
     l_iter = l_first = BM_FACE_FIRST_LOOP(efa);
     do {
-      mloop->v = BM_elem_index_get(l_iter->v);
-      mloop->e = BM_elem_index_get(l_iter->e);
+      corner_verts[j] = BM_elem_index_get(l_iter->v);
+      corner_edges[j] = BM_elem_index_get(l_iter->e);
       CustomData_from_bmesh_block(&bm->ldata, &me->ldata, l_iter->head.data, j);
 
       BM_elem_index_set(l_iter, j); /* set_inline */
 
       j++;
-      mloop++;
     } while ((l_iter = l_iter->next) != l_first);
 
     CustomData_from_bmesh_block(&bm->pdata, &me->pdata, efa->head.data, i);

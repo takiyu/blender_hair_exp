@@ -223,7 +223,7 @@ static void select_linked_tfaces_with_seams(Mesh *me, const uint index, const bo
 
   const Span<MEdge> edges = me->edges();
   const Span<MPoly> polys = me->polys();
-  const Span<MLoop> loops = me->loops();
+  const Span<int> corner_edges = me->corner_edges();
   bke::MutableAttributeAccessor attributes = me->attributes_for_write();
   const VArray<bool> hide_poly = attributes.lookup_or_default<bool>(
       ".hide_poly", ATTR_DOMAIN_FACE, false);
@@ -233,7 +233,7 @@ static void select_linked_tfaces_with_seams(Mesh *me, const uint index, const bo
   if (index != uint(-1)) {
     /* only put face under cursor in array */
     const MPoly &poly = polys[index];
-    BKE_mesh_poly_edgebitmap_insert(edge_tag, &poly, &loops[poly.loopstart]);
+    BKE_mesh_poly_edgebitmap_insert(edge_tag, &poly, &corner_edges[poly.loopstart]);
     BLI_BITMAP_ENABLE(poly_tag, index);
   }
   else {
@@ -244,7 +244,7 @@ static void select_linked_tfaces_with_seams(Mesh *me, const uint index, const bo
       }
       else if (select_poly.span[i]) {
         const MPoly &poly = polys[i];
-        BKE_mesh_poly_edgebitmap_insert(edge_tag, &poly, &loops[poly.loopstart]);
+        BKE_mesh_poly_edgebitmap_insert(edge_tag, &poly, &corner_edges[poly.loopstart]);
         BLI_BITMAP_ENABLE(poly_tag, i);
       }
     }
@@ -263,10 +263,11 @@ static void select_linked_tfaces_with_seams(Mesh *me, const uint index, const bo
         mark = false;
 
         const MPoly &poly = polys[i];
-        const MLoop *ml = &loops[poly.loopstart];
-        for (int b = 0; b < poly.totloop; b++, ml++) {
-          if ((edges[ml->e].flag & ME_SEAM) == 0) {
-            if (BLI_BITMAP_TEST(edge_tag, ml->e)) {
+        for (int b = 0; b < poly.totloop; b++) {
+          const int corner = poly.loopstart + b;
+          const int edge_i = corner_edges[corner];
+          if ((edges[edge_i].flag & ME_SEAM) == 0) {
+            if (BLI_BITMAP_TEST(edge_tag, edge_i)) {
               mark = true;
               break;
             }
@@ -275,7 +276,7 @@ static void select_linked_tfaces_with_seams(Mesh *me, const uint index, const bo
 
         if (mark) {
           BLI_BITMAP_ENABLE(poly_tag, i);
-          BKE_mesh_poly_edgebitmap_insert(edge_tag, &poly, &loops[poly.loopstart]);
+          BKE_mesh_poly_edgebitmap_insert(edge_tag, &poly, &corner_edges[poly.loopstart]);
           do_it = true;
         }
       }
@@ -387,7 +388,7 @@ bool paintface_minmax(Object *ob, float r_min[3], float r_max[3])
 
   const Span<float3> positions = me->vert_positions();
   const Span<MPoly> polys = me->polys();
-  const Span<MLoop> loops = me->loops();
+  const Span<int> corner_verts = me->corner_verts();
   bke::AttributeAccessor attributes = me->attributes();
   const VArray<bool> hide_poly = attributes.lookup_or_default<bool>(
       ".hide_poly", ATTR_DOMAIN_FACE, false);
@@ -400,9 +401,9 @@ bool paintface_minmax(Object *ob, float r_min[3], float r_max[3])
     }
 
     const MPoly &poly = polys[i];
-    const MLoop *ml = &loops[poly.loopstart];
-    for (int b = 0; b < poly.totloop; b++, ml++) {
-      mul_v3_m3v3(vec, bmat, positions[ml->v]);
+    for (int b = 0; b < poly.totloop; b++) {
+      const int corner = poly.loopstart + b;
+      mul_v3_m3v3(vec, bmat, positions[corner_verts[corner]]);
       add_v3_v3v3(vec, vec, ob->object_to_world[3]);
       minmax_v3v3_v3(r_min, r_max, vec);
     }

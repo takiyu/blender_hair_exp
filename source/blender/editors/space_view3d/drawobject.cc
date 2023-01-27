@@ -71,7 +71,7 @@ void ED_draw_object_facemap(Depsgraph *depsgraph,
 
     const float(*positions)[3] = BKE_mesh_vert_positions(me);
     const MPoly *polys = BKE_mesh_polys(me);
-    const MLoop *loops = BKE_mesh_loops(me);
+    const blender::Span<int> corner_verts = me->corner_verts();
 
     int mpoly_len = me->totpoly;
     int mloop_len = me->totloop;
@@ -101,11 +101,11 @@ void ED_draw_object_facemap(Depsgraph *depsgraph,
         if (facemap_data[i] == facemap) {
           for (int j = 2; j < mp->totloop; j++) {
             copy_v3_v3(static_cast<float *>(GPU_vertbuf_raw_step(&pos_step)),
-                       positions[loops[mlt->tri[0]].v]);
+                       positions[corner_verts[mlt->tri[0]]]);
             copy_v3_v3(static_cast<float *>(GPU_vertbuf_raw_step(&pos_step)),
-                       positions[loops[mlt->tri[1]].v]);
+                       positions[corner_verts[mlt->tri[1]]]);
             copy_v3_v3(static_cast<float *>(GPU_vertbuf_raw_step(&pos_step)),
-                       positions[loops[mlt->tri[2]].v]);
+                       positions[corner_verts[mlt->tri[2]]]);
             vbo_len_used += 3;
             mlt++;
           }
@@ -119,18 +119,20 @@ void ED_draw_object_facemap(Depsgraph *depsgraph,
       /* No tessellation data, fan-fill. */
       for (mp = polys, i = 0; i < mpoly_len; i++, mp++) {
         if (facemap_data[i] == facemap) {
-          const MLoop *ml_start = &loops[mp->loopstart];
-          const MLoop *ml_a = ml_start + 1;
-          const MLoop *ml_b = ml_start + 2;
+          const int *corner_vert_start = &corner_verts[mp->loopstart];
+          const int *corner_vert_a = corner_vert_start + 1;
+          const int *corner_vert_b = corner_vert_start + 2;
           for (int j = 2; j < mp->totloop; j++) {
             copy_v3_v3(static_cast<float *>(GPU_vertbuf_raw_step(&pos_step)),
-                       positions[ml_start->v]);
-            copy_v3_v3(static_cast<float *>(GPU_vertbuf_raw_step(&pos_step)), positions[ml_a->v]);
-            copy_v3_v3(static_cast<float *>(GPU_vertbuf_raw_step(&pos_step)), positions[ml_b->v]);
+                       positions[*corner_vert_start]);
+            copy_v3_v3(static_cast<float *>(GPU_vertbuf_raw_step(&pos_step)),
+                       positions[*corner_vert_a]);
+            copy_v3_v3(static_cast<float *>(GPU_vertbuf_raw_step(&pos_step)),
+                       positions[*corner_vert_b]);
             vbo_len_used += 3;
 
-            ml_a++;
-            ml_b++;
+            corner_vert_a++;
+            corner_vert_b++;
           }
         }
       }

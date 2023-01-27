@@ -375,7 +375,8 @@ void mesh_render_data_update_normals(MeshRenderData *mr, const eMRDataType data_
                                   mr->vert_len,
                                   mr->medge,
                                   mr->edge_len,
-                                  mr->mloop,
+                                  mr->corner_verts,
+                                  mr->corner_edges,
                                   mr->loop_normals,
                                   mr->loop_len,
                                   mr->mpoly,
@@ -549,7 +550,8 @@ MeshRenderData *mesh_render_data_create(Object *object,
     mr->vert_positions = mr->me->vert_positions().data();
     mr->medge = BKE_mesh_edges(mr->me);
     mr->mpoly = BKE_mesh_polys(mr->me);
-    mr->mloop = BKE_mesh_loops(mr->me);
+    mr->corner_verts = mr->me->corner_verts().data();
+    mr->corner_edges = mr->me->corner_edges().data();
 
     mr->v_origindex = static_cast<const int *>(CustomData_get_layer(&mr->me->vdata, CD_ORIGINDEX));
     mr->e_origindex = static_cast<const int *>(CustomData_get_layer(&mr->me->edata, CD_ORIGINDEX));

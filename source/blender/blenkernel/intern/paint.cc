@@ -1696,7 +1696,7 @@ static void sculpt_update_object(
      * and tools use the Face Sets data from the base mesh when Multires is active. */
     ss->vert_positions = BKE_mesh_vert_positions_for_write(me);
     ss->mpoly = BKE_mesh_polys(me);
-    ss->mloop = BKE_mesh_loops(me);
+    ss->corner_verts = me->corner_verts().data();
   }
   else {
     ss->totvert = me->totvert;
@@ -1704,7 +1704,7 @@ static void sculpt_update_object(
     ss->totfaces = me->totpoly;
     ss->vert_positions = BKE_mesh_vert_positions_for_write(me);
     ss->mpoly = BKE_mesh_polys(me);
-    ss->mloop = BKE_mesh_loops(me);
+    ss->corner_verts = me->corner_verts().data();
     ss->multires.active = false;
     ss->multires.modifier = nullptr;
     ss->multires.level = 0;
@@ -1765,7 +1765,7 @@ static void sculpt_update_object(
     BKE_mesh_vert_poly_map_create(&ss->pmap,
                                   &ss->pmap_mem,
                                   BKE_mesh_polys(me),
-                                  BKE_mesh_loops(me),
+                                  me->corner_verts().data(),
                                   me->totvert,
                                   me->totpoly,
                                   me->totloop);
@@ -1985,7 +1985,7 @@ int BKE_sculpt_mask_layers_ensure(Depsgraph *depsgraph,
 {
   Mesh *me = static_cast<Mesh *>(ob->data);
   const Span<MPoly> polys = me->polys();
-  const Span<MLoop> loops = me->loops();
+  const Span<int> corner_verts = me->corner_verts();
   int ret = 0;
 
   const float *paint_mask = static_cast<const float *>(
@@ -2019,22 +2019,22 @@ int BKE_sculpt_mask_layers_ensure(Depsgraph *depsgraph,
 
         /* mask center */
         for (j = 0; j < p->totloop; j++) {
-          const MLoop *l = &loops[p->loopstart + j];
-          avg += paint_mask[l->v];
+          const int vert_i = corner_verts[p->loopstart + j];
+          avg += paint_mask[vert_i];
         }
         avg /= float(p->totloop);
 
         /* fill in multires mask corner */
         for (j = 0; j < p->totloop; j++) {
           GridPaintMask *gpm = &gmask[p->loopstart + j];
-          const MLoop *l = &loops[p->loopstart + j];
-          const MLoop *prev = ME_POLY_LOOP_PREV(loops, p, j);
-          const MLoop *next = ME_POLY_LOOP_NEXT(loops, p, j);
+          const int vert_i = corner_verts[p->loopstart + j];
+          const int prev = ME_POLY_LOOP_PREV(p, j);
+          const int next = ME_POLY_LOOP_NEXT(p, j);
 
           gpm->data[0] = avg;
-          gpm->data[1] = (paint_mask[l->v] + paint_mask[next->v]) * 0.5f;
-          gpm->data[2] = (paint_mask[l->v] + paint_mask[prev->v]) * 0.5f;
-          gpm->data[3] = paint_mask[l->v];
+          gpm->data[1] = (paint_mask[vert_i] + paint_mask[corner_verts[next]]) * 0.5f;
+          gpm->data[2] = (paint_mask[vert_i] + paint_mask[corner_verts[prev]]) * 0.5f;
+          gpm->data[3] = paint_mask[vert_i];
         }
       }
     }
@@ -2182,12 +2182,12 @@ static PBVH *build_pbvh_from_regular_mesh(Object *ob, Mesh *me_eval_deform, bool
 
   MutableSpan<float3> positions = me->vert_positions_for_write();
   const Span<MPoly> polys = me->polys();
-  const Span<MLoop> loops = me->loops();
+  const Span<int> corner_verts = me->corner_verts();
 
   MLoopTri *looptri = static_cast<MLoopTri *>(
       MEM_malloc_arrayN(looptris_num, sizeof(*looptri), __func__));
 
-  BKE_mesh_recalc_looptri(loops.data(),
+  BKE_mesh_recalc_looptri(corner_verts.data(),
                           polys.data(),
                           reinterpret_cast<const float(*)[3]>(positions.data()),
                           me->totloop,
@@ -2197,7 +2197,7 @@ static PBVH *build_pbvh_from_regular_mesh(Object *ob, Mesh *me_eval_deform, bool
   BKE_pbvh_build_mesh(pbvh,
                       me,
                       polys.data(),
-                      loops.data(),
+                      corner_verts.data(),
                       reinterpret_cast<float(*)[3]>(positions.data()),
                       me->totvert,
                       &me->vdata,

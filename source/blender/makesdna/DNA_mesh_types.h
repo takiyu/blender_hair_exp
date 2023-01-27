@@ -70,7 +70,7 @@ typedef struct Mesh {
   int totedge;
   /** The number of polygons/faces (#MPoly) in the mesh, and the size of #pdata. */
   int totpoly;
-  /** The number of face corners (#MLoop) in the mesh, and the size of #ldata. */
+  /** The number of face corners in the mesh, and the size of #ldata. */
   int totloop;
 
   CustomData vdata, edata, pdata, ldata;
@@ -225,7 +225,7 @@ typedef struct Mesh {
   blender::MutableSpan<blender::float3> vert_positions_for_write();
   /**
    * Array of edges, containing vertex indices. For simple triangle or quad meshes, edges could be
-   * calculated from the #MPoly and #MLoop arrays, however, edges need to be stored explicitly to
+   * calculated from the #MPoly and "corner edge" arrays, however, edges need to be stored explicitly to
    * edge domain attributes and to support loose edges that aren't connected to faces.
    */
   blender::Span<MEdge> edges() const;
@@ -237,13 +237,12 @@ typedef struct Mesh {
   blender::Span<MPoly> polys() const;
   /** Write access to polygon data. */
   blender::MutableSpan<MPoly> polys_for_write();
-  /**
-   * Mesh face corners that "loop" around each face, storing the vertex index and the index of the
-   * subsequent edge.
-   */
-  blender::Span<MLoop> loops() const;
-  /** Write access to loop data. */
-  blender::MutableSpan<MLoop> loops_for_write();
+
+  blender::Span<int> corner_verts() const;
+  blender::MutableSpan<int> corner_verts_for_write();
+
+  blender::Span<int> corner_edges() const;
+  blender::MutableSpan<int> corner_edges_for_write();
 
   blender::bke::AttributeAccessor attributes() const;
   blender::bke::MutableAttributeAccessor attributes_for_write();

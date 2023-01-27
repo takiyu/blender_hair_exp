@@ -1225,7 +1225,7 @@ static bool vgroup_normalize(Object *ob)
 static blender::Vector<int> getSurroundingVerts(Mesh *me, int vert)
 {
   const MPoly *mp = me->polys().data();
-  const MLoop *loops = me->loops().data();
+  const Span<int> corner_verts = me->corner_verts();
   int i = me->totpoly;
 
   blender::Vector<int> verts;
@@ -1233,25 +1233,25 @@ static blender::Vector<int> getSurroundingVerts(Mesh *me, int vert)
   while (i--) {
     int j = mp->totloop;
     int first_l = mp->totloop - 1;
-    const MLoop *ml = &loops[mp->loopstart];
+    const int *corner_vert = &corner_verts[mp->loopstart];
     while (j--) {
       /* XXX This assume a vert can only be once in a poly, even though
        *     it seems logical to me, not totally sure of that. */
-      if (ml->v == vert) {
+      if (*corner_vert == vert) {
         int a, b, k;
         if (j == first_l) {
           /* We are on the first corner. */
-          a = ml[1].v;
-          b = ml[j].v;
+          a = corner_vert[1];
+          b = corner_vert[j];
         }
         else if (!j) {
           /* We are on the last corner. */
-          a = (ml - 1)->v;
-          b = loops[mp->loopstart].v;
+          a = *(corner_vert - 1);
+          b = corner_verts[mp->loopstart];
         }
         else {
-          a = (ml - 1)->v;
-          b = (ml + 1)->v;
+          a = *(corner_vert - 1);
+          b = *(corner_vert + 1);
         }
 
         /* Append a and b verts to array, if not yet present. */
@@ -1275,7 +1275,7 @@ static blender::Vector<int> getSurroundingVerts(Mesh *me, int vert)
         /* Vert found in this poly, we can go to next one! */
         break;
       }
-      ml++;
+      corner_vert++;
     }
     mp++;
   }

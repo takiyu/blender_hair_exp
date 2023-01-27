@@ -591,7 +591,7 @@ static void add_mesh_quad_diag_springs(Object *ob)
 
     nofquads = count_mesh_quads(me);
     if (nofquads) {
-      const MLoop *mloop = BKE_mesh_loops(me);
+      const int *corner_verts = BKE_mesh_corner_verts(me);
       const MPoly *mp = BKE_mesh_polys(me);
       BodySpring *bs;
 
@@ -605,12 +605,12 @@ static void add_mesh_quad_diag_springs(Object *ob)
       // bp = ob->soft->bpoint; /* UNUSED */
       for (a = me->totpoly; a > 0; a--, mp++) {
         if (mp->totloop == 4) {
-          bs->v1 = mloop[mp->loopstart + 0].v;
-          bs->v2 = mloop[mp->loopstart + 2].v;
+          bs->v1 = corner_verts[mp->loopstart + 0];
+          bs->v2 = corner_verts[mp->loopstart + 2];
           bs->springtype = SB_STIFFQUAD;
           bs++;
-          bs->v1 = mloop[mp->loopstart + 1].v;
-          bs->v2 = mloop[mp->loopstart + 3].v;
+          bs->v1 = corner_verts[mp->loopstart + 1];
+          bs->v2 = corner_verts[mp->loopstart + 3];
           bs->springtype = SB_STIFFQUAD;
           bs++;
         }
@@ -2756,21 +2756,21 @@ static void mesh_faces_to_scratch(Object *ob)
   int a;
   const float(*vert_positions)[3] = BKE_mesh_vert_positions(me);
   const MPoly *polys = BKE_mesh_polys(me);
-  const MLoop *loops = BKE_mesh_loops(me);
+  const int *corner_verts = BKE_mesh_corner_verts(me);
 
   /* Allocate and copy faces. */
 
   sb->scratch->totface = poly_to_tri_count(me->totpoly, me->totloop);
   looptri = lt = MEM_mallocN(sizeof(*looptri) * sb->scratch->totface, __func__);
-  BKE_mesh_recalc_looptri(loops, polys, vert_positions, me->totloop, me->totpoly, looptri);
+  BKE_mesh_recalc_looptri(corner_verts, polys, vert_positions, me->totloop, me->totpoly, looptri);
 
   bodyface = sb->scratch->bodyface = MEM_mallocN(sizeof(BodyFace) * sb->scratch->totface,
                                                  "SB_body_Faces");
 
   for (a = 0; a < sb->scratch->totface; a++, lt++, bodyface++) {
-    bodyface->v1 = loops[lt->tri[0]].v;
-    bodyface->v2 = loops[lt->tri[1]].v;
-    bodyface->v3 = loops[lt->tri[2]].v;
+    bodyface->v1 = corner_verts[lt->tri[0]];
+    bodyface->v2 = corner_verts[lt->tri[1]];
+    bodyface->v3 = corner_verts[lt->tri[2]];
     zero_v3(bodyface->ext_force);
     bodyface->ext_force[0] = bodyface->ext_force[1] = bodyface->ext_force[2] = 0.0f;
     bodyface->flag = 0;

@@ -142,7 +142,7 @@ static void deleteLaplacianSystem(LaplacianSystem *sys)
 static void createFaceRingMap(const int mvert_tot,
                               const MLoopTri *mlooptri,
                               const int mtri_tot,
-                              const MLoop *mloop,
+                              const int *corner_verts,
                               MeshElemMap **r_map,
                               int **r_indices)
 {
@@ -154,7 +154,7 @@ static void createFaceRingMap(const int mvert_tot,
   for (i = 0, mlt = mlooptri; i < mtri_tot; i++, mlt++) {
 
     for (j = 0; j < 3; j++) {
-      const uint v_index = mloop[mlt->tri[j]].v;
+      const int v_index = corner_verts[mlt->tri[j]];
       map[v_index].count++;
       indices_num++;
     }
@@ -168,7 +168,7 @@ static void createFaceRingMap(const int mvert_tot,
   }
   for (i = 0, mlt = mlooptri; i < mtri_tot; i++, mlt++) {
     for (j = 0; j < 3; j++) {
-      const uint v_index = mloop[mlt->tri[j]].v;
+      const int v_index = corner_verts[mlt->tri[j]];
       map[v_index].indices[map[v_index].count] = i;
       map[v_index].count++;
     }
@@ -534,7 +534,6 @@ static void initSystem(
   if (isValidVertexGroup(lmd, ob, mesh)) {
     int *index_anchors = MEM_malloc_arrayN(verts_num, sizeof(int), __func__); /* over-alloc */
     const MLoopTri *mlooptri;
-    const MLoop *mloop;
 
     STACK_DECLARE(index_anchors);
 
@@ -570,19 +569,19 @@ static void initSystem(
     createFaceRingMap(mesh->totvert,
                       BKE_mesh_runtime_looptri_ensure(mesh),
                       BKE_mesh_runtime_looptri_len(mesh),
-                      BKE_mesh_loops(mesh),
+                      BKE_mesh_corner_verts(mesh),
                       &sys->ringf_map,
                       &sys->ringf_indices);
     createVertRingMap(
         mesh->totvert, BKE_mesh_edges(mesh), mesh->totedge, &sys->ringv_map, &sys->ringv_indices);
 
     mlooptri = BKE_mesh_runtime_looptri_ensure(mesh);
-    mloop = BKE_mesh_loops(mesh);
+    const int *corner_verts = BKE_mesh_corner_verts(mesh);
 
     for (i = 0; i < sys->tris_num; i++) {
-      sys->tris[i][0] = mloop[mlooptri[i].tri[0]].v;
-      sys->tris[i][1] = mloop[mlooptri[i].tri[1]].v;
-      sys->tris[i][2] = mloop[mlooptri[i].tri[2]].v;
+      sys->tris[i][0] = corner_verts[mlooptri[i].tri[0]];
+      sys->tris[i][1] = corner_verts[mlooptri[i].tri[1]];
+      sys->tris[i][2] = corner_verts[mlooptri[i].tri[2]];
     }
   }
 }

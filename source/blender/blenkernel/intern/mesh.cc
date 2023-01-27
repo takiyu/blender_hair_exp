@@ -266,6 +266,8 @@ static void mesh_blend_write(BlendWriter *writer, ID *id, const void *id_address
 
       mesh->mvert = BKE_mesh_legacy_convert_positions_to_verts(
           mesh, temp_arrays_for_legacy_format, vert_layers);
+      mesh->mloop = BKE_mesh_legacy_convert_corners_to_loops(
+          mesh, temp_arrays_for_legacy_format, loop_layers);
       BKE_mesh_legacy_convert_hide_layers_to_flags(mesh);
       BKE_mesh_legacy_convert_selection_layers_to_flags(mesh);
       BKE_mesh_legacy_convert_material_indices_to_mpoly(mesh);
@@ -282,7 +284,6 @@ static void mesh_blend_write(BlendWriter *writer, ID *id, const void *id_address
       /* Set deprecated mesh data pointers for forward compatibility. */
       mesh->medge = const_cast<MEdge *>(mesh->edges().data());
       mesh->mpoly = const_cast<MPoly *>(mesh->polys().data());
-      mesh->mloop = const_cast<MLoop *>(mesh->loops().data());
       mesh->dvert = const_cast<MDeformVert *>(mesh->deform_verts().data());
     }
 
@@ -514,14 +515,12 @@ static bool is_uv_bool_sublayer(CustomDataLayer const *l)
 
 /** Thresh is threshold for comparing vertices, UVs, vertex colors, weights, etc. */
 static int customdata_compare(
-    CustomData *c1, CustomData *c2, const int total_length, Mesh *m1, Mesh *m2, const float thresh)
+    CustomData *c1, CustomData *c2, const int total_length, Mesh *m1, const float thresh)
 {
   CustomDataLayer *l1, *l2;
   int layer_count1 = 0, layer_count2 = 0, j;
   const uint64_t cd_mask_non_generic = CD_MASK_MEDGE | CD_MASK_MPOLY | CD_MASK_MDEFORMVERT;
   const uint64_t cd_mask_all_attr = CD_MASK_PROP_ALL | cd_mask_non_generic;
-  const Span<MLoop> loops_1 = m1->loops();
-  const Span<MLoop> loops_2 = m2->loops();
 
   /* The uv selection / pin layers are ignored in the comparisons because
    * the original flags they replace were ignored as well. Because of the
@@ -570,6 +569,12 @@ static int customdata_compare(
 
       found_corresponding_layer = true;
 
+      if (StringRef(l1->name) == ".corner_edge") {
+        /* TODO(Hans): This attribute wasn't tested before loops were refactored into separate
+         * corner edges and corner verts attributes. Remove after updating tests. */
+        continue;
+      }
+
       switch (l1->type) {
         /* We're order-agnostic for edges here. */
         case CD_MEDGE: {
@@ -596,31 +601,8 @@ static int customdata_compare(
           int ptot = m1->totpoly;
 
           for (j = 0; j < ptot; j++, p1++, p2++) {
-            int k;
-
             if (p1->totloop != p2->totloop) {
               return MESHCMP_POLYMISMATCH;
-            }
-
-            const MLoop *lp1 = &loops_1[p1->loopstart];
-            const MLoop *lp2 = &loops_2[p2->loopstart];
-
-            for (k = 0; k < p1->totloop; k++, lp1++, lp2++) {
-              if (lp1->v != lp2->v) {
-                return MESHCMP_POLYVERTMISMATCH;
-              }
-            }
-          }
-          break;
-        }
-        case CD_MLOOP: {
-          MLoop *lp1 = (MLoop *)l1->data;
-          MLoop *lp2 = (MLoop *)l2->data;
-          int ltot = m1->totloop;
-
-          for (j = 0; j < ltot; j++, lp1++, lp2++) {
-            if (lp1->v != lp2->v) {
-              return MESHCMP_LOOPMISMATCH;
             }
           }
           break;
@@ -787,19 +769,19 @@ const char *BKE_mesh_cmp(Mesh *me1, Mesh *me2, float thresh)
     return "Number of loops don't match";
   }
 
-  if ((c = customdata_compare(&me1->vdata, &me2->vdata, me1->totvert, me1, me2, thresh))) {
+  if ((c = customdata_compare(&me1->vdata, &me2->vdata, me1->totvert, me1, thresh))) {
     return cmpcode_to_str(c);
   }
 
-  if ((c = customdata_compare(&me1->edata, &me2->edata, me1->totedge, me1, me2, thresh))) {
+  if ((c = customdata_compare(&me1->edata, &me2->edata, me1->totedge, me1, thresh))) {
     return cmpcode_to_str(c);
   }
 
-  if ((c = customdata_compare(&me1->ldata, &me2->ldata, me1->totloop, me1, me2, thresh))) {
+  if ((c = customdata_compare(&me1->ldata, &me2->ldata, me1->totloop, me1, thresh))) {
     return cmpcode_to_str(c);
   }
 
-  if ((c = customdata_compare(&me1->pdata, &me2->pdata, me1->totpoly, me1, me2, thresh))) {
+  if ((c = customdata_compare(&me1->pdata, &me2->pdata, me1->totpoly, me1, thresh))) {
     return cmpcode_to_str(c);
   }
 
@@ -808,7 +790,7 @@ const char *BKE_mesh_cmp(Mesh *me1, Mesh *me2, float thresh)
 
 bool BKE_mesh_attribute_required(const char *name)
 {
-  return StringRef(name) == "position";
+  return ELEM(StringRef(name), "position", ".corner_vert", ".corner_edge");
 }
 
 void BKE_mesh_ensure_skin_customdata(Mesh *me)
@@ -966,8 +948,13 @@ static void mesh_ensure_cdlayers_primary(Mesh *mesh, bool do_tessface)
   if (!CustomData_get_layer(&mesh->edata, CD_MEDGE)) {
     CustomData_add_layer(&mesh->edata, CD_MEDGE, CD_SET_DEFAULT, nullptr, mesh->totedge);
   }
-  if (!CustomData_get_layer(&mesh->ldata, CD_MLOOP)) {
-    CustomData_add_layer(&mesh->ldata, CD_MLOOP, CD_SET_DEFAULT, nullptr, mesh->totloop);
+  if (!CustomData_get_layer_named(&mesh->ldata, CD_PROP_INT32, ".corner_vert")) {
+    CustomData_add_layer_named(
+        &mesh->ldata, CD_PROP_INT32, CD_SET_DEFAULT, nullptr, mesh->totloop, ".corner_vert");
+  }
+  if (!CustomData_get_layer_named(&mesh->ldata, CD_PROP_INT32, ".corner_edge")) {
+    CustomData_add_layer_named(
+        &mesh->ldata, CD_PROP_INT32, CD_SET_DEFAULT, nullptr, mesh->totloop, ".corner_edge");
   }
   if (!CustomData_get_layer(&mesh->pdata, CD_MPOLY)) {
     CustomData_add_layer(&mesh->pdata, CD_MPOLY, CD_SET_DEFAULT, nullptr, mesh->totpoly);
@@ -1519,10 +1506,10 @@ void BKE_mesh_auto_smooth_flag_set(Mesh *me,
   }
 }
 
-int poly_find_loop_from_vert(const MPoly *poly, const MLoop *loopstart, int vert)
+int poly_find_loop_from_vert(const MPoly *poly, const int *poly_corner_verts, int vert)
 {
-  for (int j = 0; j < poly->totloop; j++, loopstart++) {
-    if (loopstart->v == vert) {
+  for (int j = 0; j < poly->totloop; j++) {
+    if (poly_corner_verts[j] == vert) {
       return j;
     }
   }
@@ -1530,14 +1517,17 @@ int poly_find_loop_from_vert(const MPoly *poly, const MLoop *loopstart, int vert
   return -1;
 }
 
-int poly_get_adj_loops_from_vert(const MPoly *poly, const MLoop *mloop, int vert, int r_adj[2])
+int poly_get_adj_loops_from_vert(const MPoly *poly,
+                                 const int *corner_verts,
+                                 int vert,
+                                 int r_adj[2])
 {
-  int corner = poly_find_loop_from_vert(poly, &mloop[poly->loopstart], vert);
+  int corner = poly_find_loop_from_vert(poly, &corner_verts[poly->loopstart], vert);
 
   if (corner != -1) {
     /* vertex was found */
-    r_adj[0] = ME_POLY_LOOP_PREV(mloop, poly, corner)->v;
-    r_adj[1] = ME_POLY_LOOP_NEXT(mloop, poly, corner)->v;
+    r_adj[0] = corner_verts[ME_POLY_LOOP_PREV(poly, corner)];
+    r_adj[1] = corner_verts[ME_POLY_LOOP_NEXT(poly, corner)];
   }
 
   return corner;
@@ -1556,17 +1546,22 @@ int BKE_mesh_edge_other_vert(const MEdge *e, int v)
 }
 
 void BKE_mesh_looptri_get_real_edges(const MEdge *edges,
-                                     const MLoop *loops,
+                                     const int *corner_verts,
+                                     const int *corner_edges,
                                      const MLoopTri *tri,
                                      int r_edges[3])
 {
   for (int i = 2, i_next = 0; i_next < 3; i = i_next++) {
-    const MLoop *l1 = &loops[tri->tri[i]], *l2 = &loops[tri->tri[i_next]];
-    const MEdge *e = &edges[l1->e];
+    const int corner_1 = tri->tri[i];
+    const int corner_2 = tri->tri[i_next];
+    const int vert_1 = corner_verts[corner_1];
+    const int vert_2 = corner_verts[corner_2];
+    const int edge = corner_edges[corner_1];
+    const MEdge *e = &edges[edge];
 
-    bool is_real = (l1->v == e->v1 && l2->v == e->v2) || (l1->v == e->v2 && l2->v == e->v1);
+    bool is_real = (vert_1 == e->v1 && vert_2 == e->v2) || (vert_1 == e->v2 && vert_2 == e->v1);
 
-    r_edges[i] = is_real ? l1->e : -1;
+    r_edges[i] = is_real ? edge : -1;
   }
 }
 
@@ -1854,16 +1849,16 @@ void BKE_mesh_calc_normals_split_ex(Mesh *mesh,
   const Span<float3> positions = mesh->vert_positions();
   const Span<MEdge> edges = mesh->edges();
   const Span<MPoly> polys = mesh->polys();
-  const Span<MLoop> loops = mesh->loops();
 
   BKE_mesh_normals_loop_split(reinterpret_cast<const float(*)[3]>(positions.data()),
                               BKE_mesh_vertex_normals_ensure(mesh),
                               positions.size(),
                               edges.data(),
                               edges.size(),
-                              loops.data(),
+                              mesh->corner_verts().data(),
+                              mesh->corner_edges().data(),
                               r_corner_normals,
-                              loops.size(),
+                              mesh->totloop,
                               polys.data(),
                               BKE_mesh_poly_normals_ensure(mesh),
                               polys.size(),
