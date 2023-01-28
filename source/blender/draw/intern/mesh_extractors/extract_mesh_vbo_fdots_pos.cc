@@ -67,7 +67,6 @@ static void extract_fdots_pos_iter_poly_bm(const MeshRenderData *mr,
 }
 
 static void extract_fdots_pos_iter_poly_mesh(const MeshRenderData *mr,
-                                             const MPoly *mp,
                                              const int mp_index,
                                              void *data)
 {
@@ -77,8 +76,7 @@ static void extract_fdots_pos_iter_poly_mesh(const MeshRenderData *mr,
 
   const BLI_bitmap *facedot_tags = mr->me->runtime->subsurf_face_dot_tags;
 
-  const int ml_index_end = mp->loopstart + mp->totloop;
-  for (int ml_index = mp->loopstart; ml_index < ml_index_end; ml_index += 1) {
+  for (const int ml_index : mr->polys[mp_index]) {
     const int vert = mr->corner_verts[ml_index];
     if (mr->use_subsurf_fdots) {
       if (BLI_BITMAP_TEST(facedot_tags, vert)) {
@@ -92,7 +90,7 @@ static void extract_fdots_pos_iter_poly_mesh(const MeshRenderData *mr,
   }
 
   if (!mr->use_subsurf_fdots) {
-    mul_v3_fl(co, 1.0f / float(mp->totloop));
+    mul_v3_fl(co, 1.0f / float(mr->polys[mp_index].size()));
   }
 }
 

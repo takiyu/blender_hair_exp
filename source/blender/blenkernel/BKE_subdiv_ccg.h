@@ -20,7 +20,6 @@ struct CCGFace;
 struct CCGKey;
 struct DMFlagMat;
 struct Mesh;
-struct MPoly;
 struct Subdiv;
 
 /* --------------------------------------------------------------------
@@ -310,7 +309,7 @@ typedef enum SubdivCCGAdjacencyType {
 SubdivCCGAdjacencyType BKE_subdiv_ccg_coarse_mesh_adjacency_info_get(const SubdivCCG *subdiv_ccg,
                                                                      const SubdivCCGCoord *coord,
                                                                      const int *corner_verts,
-                                                                     const struct MPoly *mpoly,
+                                                                     const int *poly_offsets,
                                                                      int *r_v1,
                                                                      int *r_v2);
 

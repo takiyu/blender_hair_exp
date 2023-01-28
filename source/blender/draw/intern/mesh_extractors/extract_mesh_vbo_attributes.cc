@@ -185,7 +185,6 @@ static void fill_vertbuf_with_attribute(const MeshRenderData *mr,
   BLI_assert(custom_data);
   const int layer_index = request.layer_index;
 
-  const MPoly *mpoly = mr->mpoly;
   const int *corner_verts = mr->corner_verts;
   const int *corner_edges = mr->corner_edges;
 
@@ -212,9 +211,9 @@ static void fill_vertbuf_with_attribute(const MeshRenderData *mr,
       break;
     case ATTR_DOMAIN_FACE:
       for (int mp_index = 0; mp_index < mr->poly_len; mp_index++) {
-        const MPoly &poly = mpoly[mp_index];
+        const IndexRange poly = mr->polys[mp_index];
         const VBOType value = Converter::convert_value(attr_data[mp_index]);
-        for (int l = 0; l < poly.totloop; l++) {
+        for (int l = 0; l < poly.size(); l++) {
           *vbo_data++ = value;
         }
       }

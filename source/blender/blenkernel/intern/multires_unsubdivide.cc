@@ -642,7 +642,7 @@ static void store_grid_data(MultiresUnsubdivideContext *context,
                             int grid_y)
 {
   Mesh *original_mesh = context->original_mesh;
-  const MPoly *polys = BKE_mesh_polys(original_mesh);
+  const OffsetIndices polys = original_mesh->polys();
   const blender::Span<int> corner_verts = original_mesh->corner_verts();
   const MPoly *poly = &polys[BM_elem_index_get(f)];
 
@@ -920,7 +920,7 @@ static void multires_unsubdivide_prepare_original_bmesh_for_extract(
     MultiresUnsubdivideContext *context)
 {
   Mesh *original_mesh = context->original_mesh;
-  const MPoly *original_polys = BKE_mesh_polys(original_mesh);
+  const OffsetIndices original_polys = original_mesh->polys();
 
   Mesh *base_mesh = context->base_mesh;
 
@@ -1040,7 +1040,7 @@ static void multires_unsubdivide_extract_grids(MultiresUnsubdivideContext *conte
   const int base_l_offset = CustomData_get_n_offset(
       &bm_base_mesh->ldata, CD_PROP_INT32, base_l_layer_index);
 
-  const MPoly *polys = BKE_mesh_polys(base_mesh);
+  const OffsetIndices polys = base_mesh->polys();
   const blender::Span<int> corner_verts = base_mesh->corner_verts();
 
   /* Main loop for extracting the grids. Iterates over the base mesh vertices. */

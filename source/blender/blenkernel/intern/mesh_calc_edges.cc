@@ -97,14 +97,13 @@ static void add_polygon_edges_to_hash_maps(Mesh *mesh,
                                            MutableSpan<EdgeMap> edge_maps,
                                            uint32_t parallel_mask)
 {
-  const Span<MPoly> polys = mesh->polys();
+  const OffsetIndices polys = mesh->polys();
   const Span<int> corner_verts = mesh->corner_verts();
   threading::parallel_for_each(edge_maps, [&](EdgeMap &edge_map) {
     const int task_index = &edge_map - edge_maps.data();
-    for (const MPoly &poly : polys) {
-      const IndexRange corners(poly.loopstart, poly.totloop);
-      int corner_prev = corners.last();
-      for (const int next_corner : corners) {
+    for (const int i : polys.index_range()) {
+      int corner_prev = polys[i].last();
+      for (const int next_corner : polys[i]) {
         /* Can only be the same when the mesh data is invalid. */
         const int vert = corner_verts[next_corner];
         const int vert_prev = corner_verts[corner_prev];
@@ -160,16 +159,13 @@ static void update_edge_indices_in_poly_loops(Mesh *mesh,
                                               Span<EdgeMap> edge_maps,
                                               uint32_t parallel_mask)
 {
-  const Span<MPoly> polys = mesh->polys();
+  const OffsetIndices polys = mesh->polys();
   const Span<int> corner_verts = mesh->corner_verts();
   MutableSpan<int> corner_edges = mesh->corner_edges_for_write();
   threading::parallel_for(IndexRange(mesh->totpoly), 100, [&](IndexRange range) {
     for (const int poly_index : range) {
-      const MPoly &poly = polys[poly_index];
-      const IndexRange corners(poly.loopstart, poly.totloop);
-
-      int prev_corner = corners.last();
-      for (const int next_corner : corners) {
+      int prev_corner = polys[poly_index].last();
+      for (const int next_corner : polys[poly_index]) {
         const int vert = corner_verts[next_corner];
         const int vert_prev = corner_verts[prev_corner];
 

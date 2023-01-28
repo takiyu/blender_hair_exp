@@ -29,7 +29,7 @@
 static void multires_subdivide_create_object_space_linear_grids(Mesh *mesh)
 {
   const float(*positions)[3] = BKE_mesh_vert_positions(mesh);
-  const MPoly *polys = BKE_mesh_polys(mesh);
+  const OffsetIndices polys = mesh->polys();
   const blender::Span<int> corner_verts = mesh->corner_verts();
 
   MDisps *mdisps = static_cast<MDisps *>(

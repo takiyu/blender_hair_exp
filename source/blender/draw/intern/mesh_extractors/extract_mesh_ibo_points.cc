@@ -69,13 +69,11 @@ static void extract_points_iter_poly_bm(const MeshRenderData * /*mr*/,
 }
 
 static void extract_points_iter_poly_mesh(const MeshRenderData *mr,
-                                          const MPoly *mp,
-                                          const int /*mp_index*/,
+                                          const int mp_index,
                                           void *_userdata)
 {
   GPUIndexBufBuilder *elb = static_cast<GPUIndexBufBuilder *>(_userdata);
-  const int ml_index_end = mp->loopstart + mp->totloop;
-  for (int ml_index = mp->loopstart; ml_index < ml_index_end; ml_index += 1) {
+  for (const int ml_index : mr->polys[mp_index]) {
     vert_set_mesh(elb, mr, mr->corner_verts[ml_index], ml_index);
   }
 }
@@ -201,7 +199,7 @@ static void extract_points_iter_subdiv_mesh(const DRWSubdivCache *subdiv_cache,
                                             const MeshRenderData *mr,
                                             void *_data,
                                             uint subdiv_quad_index,
-                                            const MPoly * /*coarse_quad*/)
+                                            const int /*coarse_quad_index*/)
 {
   GPUIndexBufBuilder *elb = static_cast<GPUIndexBufBuilder *>(_data);
   extract_points_iter_subdiv_common(elb, mr, subdiv_cache, subdiv_quad_index, false);

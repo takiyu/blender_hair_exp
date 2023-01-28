@@ -50,17 +50,15 @@ static void extract_lines_iter_poly_bm(const MeshRenderData * /*mr*/,
   } while ((l_iter = l_iter->next) != l_first);
 }
 
-static void extract_lines_iter_poly_mesh(const MeshRenderData *mr,
-                                         const MPoly *mp,
-                                         const int /*mp_index*/,
-                                         void *data)
+static void extract_lines_iter_poly_mesh(const MeshRenderData *mr, const int mp_index, void *data)
 {
   GPUIndexBufBuilder *elb = static_cast<GPUIndexBufBuilder *>(data);
+  const IndexRange poly = mr->polys[mp_index];
   /* Using poly & loop iterator would complicate accessing the adjacent loop. */
   const int *e_origindex = (mr->edit_bmesh) ? mr->e_origindex : nullptr;
   if (mr->use_hide || (e_origindex != nullptr)) {
-    const int ml_index_last = mp->loopstart + (mp->totloop - 1);
-    int ml_index = ml_index_last, ml_index_next = mp->loopstart;
+    const int ml_index_last = poly.last();
+    int ml_index = ml_index_last, ml_index_next = poly.start();
     do {
       const int edge_i = mr->corner_edges[ml_index];
       if (!((mr->use_hide && mr->hide_edge && mr->hide_edge[edge_i]) ||
@@ -73,8 +71,8 @@ static void extract_lines_iter_poly_mesh(const MeshRenderData *mr,
     } while ((ml_index = ml_index_next++) != ml_index_last);
   }
   else {
-    const int ml_index_last = mp->loopstart + (mp->totloop - 1);
-    int ml_index = ml_index_last, ml_index_next = mp->loopstart;
+    const int ml_index_last = poly.last();
+    int ml_index = ml_index_last, ml_index_next = poly.start();
     do {
       const int edge_i = mr->corner_edges[ml_index];
       GPU_indexbuf_set_line_verts(elb, edge_i, ml_index, ml_index_next);

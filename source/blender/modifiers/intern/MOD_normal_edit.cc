@@ -179,31 +179,28 @@ static bool polygons_check_flip(int *corner_verts,
                                 float (*nos)[3],
                                 CustomData *ldata,
                                 const int totloop,
-                                const MPoly *mpoly,
-                                float (*poly_normals)[3],
-                                const int polys_num)
+                                const blender::OffsetIndices<int> polys,
+                                float (*poly_normals)[3])
 {
-  const MPoly *mp;
   MDisps *mdisp = static_cast<MDisps *>(CustomData_get_layer_for_write(ldata, CD_MDISPS, totloop));
   int i;
   bool flipped = false;
 
-  for (i = 0, mp = mpoly; i < polys_num; i++, mp++) {
+  for (const int i : polys.index_range()) {
+    const blender::IndexRange poly = polys[i];
+
     float norsum[3] = {0.0f};
-    float(*no)[3];
-    int j;
-
-    for (j = 0, no = &nos[mp->loopstart]; j < mp->totloop; j++, no++) {
-      add_v3_v3(norsum, *no);
+    for (const int corner : poly) {
+      add_v3_v3(norsum, nos[corner]);
     }
-
     if (!normalize_v3(norsum)) {
       continue;
     }
 
     /* If average of new loop normals is opposed to polygon normal, flip polygon. */
     if (dot_v3v3(poly_normals[i], norsum) < 0.0f) {
-      BKE_mesh_polygon_flip_ex(mp, corner_verts, corner_edges, ldata, nos, mdisp, true);
+      BKE_mesh_polygon_flip_ex(
+          poly.start(), poly.size(), corner_verts, corner_edges, ldata, nos, mdisp, true);
       negate_v3(poly_normals[i]);
       flipped = true;
     }
@@ -233,8 +230,7 @@ static void normalEditModifier_do_radial(NormalEditModifierData *enmd,
                                          int *corner_verts,
                                          int *corner_edges,
                                          const int loops_num,
-                                         const MPoly *mpoly,
-                                         const int polys_num)
+                                         const blender::OffsetIndices<int> polys)
 {
   Object *ob_target = enmd->target;
 
@@ -333,9 +329,8 @@ static void normalEditModifier_do_radial(NormalEditModifierData *enmd,
                                              nos,
                                              &mesh->ldata,
                                              mesh->totloop,
-                                             mpoly,
-                                             BKE_mesh_poly_normals_for_write(mesh),
-                                             polys_num)) {
+                                             polys,
+                                             BKE_mesh_poly_normals_for_write(mesh))) {
     /* We need to recompute vertex normals! */
     BKE_mesh_normals_tag_dirty(mesh);
   }
@@ -350,10 +345,9 @@ static void normalEditModifier_do_radial(NormalEditModifierData *enmd,
                                    corner_edges,
                                    nos,
                                    loops_num,
-                                   mpoly,
+                                   polys,
                                    poly_normals,
                                    sharp_faces,
-                                   polys_num,
                                    sharp_edges,
                                    clnors);
 
@@ -383,8 +377,7 @@ static void normalEditModifier_do_directional(NormalEditModifierData *enmd,
                                               int *corner_verts,
                                               int *corner_edges,
                                               const int loops_num,
-                                              const MPoly *mpoly,
-                                              const int polys_num)
+                                              const blender::OffsetIndices<int> polys)
 {
   Object *ob_target = enmd->target;
 
@@ -461,9 +454,8 @@ static void normalEditModifier_do_directional(NormalEditModifierData *enmd,
                                              nos,
                                              &mesh->ldata,
                                              mesh->totloop,
-                                             mpoly,
-                                             BKE_mesh_poly_normals_for_write(mesh),
-                                             polys_num)) {
+                                             polys,
+                                             BKE_mesh_poly_normals_for_write(mesh))) {
     BKE_mesh_normals_tag_dirty(mesh);
   }
   const bool *sharp_faces = static_cast<const bool *>(
@@ -477,10 +469,9 @@ static void normalEditModifier_do_directional(NormalEditModifierData *enmd,
                                    corner_edges,
                                    nos,
                                    loops_num,
-                                   mpoly,
+                                   polys,
                                    poly_normals,
                                    sharp_faces,
-                                   polys_num,
                                    sharp_edges,
                                    clnors);
 
@@ -556,7 +547,7 @@ static Mesh *normalEditModifier_do(NormalEditModifierData *enmd,
   const int polys_num = result->totpoly;
   const float(*positions)[3] = BKE_mesh_vert_positions(result);
   const MEdge *edges = BKE_mesh_edges(result);
-  const MPoly *polys = BKE_mesh_polys(result);
+  const OffsetIndices polys = result->polys();
   blender::MutableSpan<int> corner_verts = result->corner_verts_for_write();
   blender::MutableSpan<int> corner_edges = result->corner_edges_for_write();
 
@@ -594,7 +585,6 @@ static Mesh *normalEditModifier_do(NormalEditModifierData *enmd,
                                 loops_num,
                                 polys,
                                 poly_normals,
-                                polys_num,
                                 true,
                                 result->smoothresh,
                                 sharp_edges.span.data(),
@@ -633,8 +623,7 @@ static Mesh *normalEditModifier_do(NormalEditModifierData *enmd,
                                  corner_verts.data(),
                                  corner_edges.data(),
                                  loops_num,
-                                 polys,
-                                 polys_num);
+                                 polys);
   }
   else if (enmd->mode == MOD_NORMALEDIT_MODE_DIRECTIONAL) {
     normalEditModifier_do_directional(enmd,
@@ -658,8 +647,7 @@ static Mesh *normalEditModifier_do(NormalEditModifierData *enmd,
                                       corner_verts.data(),
                                       corner_edges.data(),
                                       loops_num,
-                                      polys,
-                                      polys_num);
+                                      polys);
   }
 
   MEM_SAFE_FREE(loop_normals);

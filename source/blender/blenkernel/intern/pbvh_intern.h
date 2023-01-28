@@ -13,7 +13,6 @@ extern "C" {
 #endif
 
 struct MLoopTri;
-struct MPoly;
 
 /* Axis-aligned bounding box */
 typedef struct {
@@ -159,7 +158,7 @@ struct PBVH {
   float (*vert_normals)[3];
   bool *hide_vert;
   float (*vert_positions)[3];
-  const struct MPoly *mpoly;
+  const int *poly_offsets;
   bool *hide_poly;
   /** Material indices. Only valid for polygon meshes. */
   const int *material_indices;

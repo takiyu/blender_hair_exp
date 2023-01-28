@@ -195,15 +195,15 @@ static void mesh_uv_reset_bmface(BMFace *f, const int cd_loop_uv_offset)
   mesh_uv_reset_array(fuv.data(), f->len);
 }
 
-static void mesh_uv_reset_mface(const MPoly *mp, float2 *mloopuv)
+static void mesh_uv_reset_mface(const blender::IndexRange poly, float2 *mloopuv)
 {
-  Array<float *, BM_DEFAULT_NGON_STACK_SIZE> fuv(mp->totloop);
+  Array<float *, BM_DEFAULT_NGON_STACK_SIZE> fuv(poly.size());
 
-  for (int i = 0; i < mp->totloop; i++) {
-    fuv[i] = mloopuv[mp->loopstart + i];
+  for (int i = 0; i < poly.size(); i++) {
+    fuv[i] = mloopuv[poly[i]];
   }
 
-  mesh_uv_reset_array(fuv.data(), mp->totloop);
+  mesh_uv_reset_array(fuv.data(), poly.size());
 }
 
 void ED_mesh_uv_loop_reset_ex(Mesh *me, const int layernum)
@@ -234,9 +234,9 @@ void ED_mesh_uv_loop_reset_ex(Mesh *me, const int layernum)
     float2 *mloopuv = static_cast<float2 *>(
         CustomData_get_layer_n_for_write(&me->ldata, CD_PROP_FLOAT2, layernum, me->totloop));
 
-    const MPoly *polys = BKE_mesh_polys(me);
+    const OffsetIndices polys = me->polys();
     for (int i = 0; i < me->totpoly; i++) {
-      mesh_uv_reset_mface(&polys[i], mloopuv);
+      mesh_uv_reset_mface(polys[i], mloopuv);
     }
   }
 
@@ -864,7 +864,7 @@ static int mesh_customdata_custom_splitnormals_add_exec(bContext *C, wmOperator 
     /* Tag edges as sharp according to smooth threshold if needed,
      * to preserve auto-smooth shading. */
     if (me->flag & ME_AUTOSMOOTH) {
-      const Span<MPoly> polys = me->polys();
+      const OffsetIndices polys = me->polys();
       bke::MutableAttributeAccessor attributes = me->attributes_for_write();
       bke::SpanAttributeWriter<bool> sharp_edges = attributes.lookup_or_add_for_write_span<bool>(
           "sharp_edge", ATTR_DOMAIN_EDGE);
@@ -874,10 +874,9 @@ static int mesh_customdata_custom_splitnormals_add_exec(bContext *C, wmOperator 
                                      me->corner_verts().data(),
                                      me->corner_edges().data(),
                                      me->totloop,
-                                     polys.data(),
+                                     polys,
                                      BKE_mesh_poly_normals_ensure(me),
                                      sharp_faces,
-                                     polys.size(),
                                      me->smoothresh,
                                      sharp_edges.span.data());
       sharp_edges.finish();
@@ -1544,7 +1543,7 @@ Mesh *ED_mesh_context(bContext *C)
 void ED_mesh_split_faces(Mesh *mesh)
 {
   using namespace blender;
-  const Span<MPoly> polys = mesh->polys();
+  const OffsetIndices polys = mesh->polys();
   const Span<int> corner_verts = mesh->corner_verts();
   const Span<int> corner_edges = mesh->corner_edges();
   const float split_angle = (mesh->flag & ME_AUTOSMOOTH) != 0 ? mesh->smoothresh : float(M_PI);
@@ -1556,18 +1555,16 @@ void ED_mesh_split_faces(Mesh *mesh)
                                  corner_verts.data(),
                                  corner_edges.data(),
                                  corner_verts.size(),
-                                 polys.data(),
+                                 polys,
                                  BKE_mesh_poly_normals_ensure(mesh),
                                  sharp_faces,
-                                 polys.size(),
                                  split_angle,
                                  sharp_edges.data());
 
   threading::parallel_for(polys.index_range(), 1024, [&](const IndexRange range) {
     for (const int poly_i : range) {
-      const MPoly &poly = polys[poly_i];
       if (sharp_faces && sharp_faces[poly_i]) {
-        for (const int edge_i : corner_edges.slice(poly.loopstart, poly.totloop)) {
+        for (const int edge_i : corner_edges.slice(polys[poly_i])) {
           sharp_edges[edge_i] = true;
         }
       }

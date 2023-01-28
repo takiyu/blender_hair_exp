@@ -1075,7 +1075,7 @@ bool BKE_mesh_validate(Mesh *me, const bool do_verbose, const bool cddata_check_
                                    &changed);
   MutableSpan<float3> positions = me->vert_positions_for_write();
   MutableSpan<MEdge> edges = me->edges_for_write();
-  MutableSpan<MPoly> polys = me->polys_for_write();
+  MutableSpan<int> poly_offsets = me->poly_offsets_for_write();
 
   BKE_mesh_validate_arrays(
       me,
@@ -1127,7 +1127,7 @@ bool BKE_mesh_is_valid(Mesh *me)
 
   MutableSpan<float3> positions = me->vert_positions_for_write();
   MutableSpan<MEdge> edges = me->edges_for_write();
-  MutableSpan<MPoly> polys = me->polys_for_write();
+  MutableSpan<int> poly_offsets = me->poly_offsets_for_write();
 
   is_valid &= BKE_mesh_validate_arrays(
       me,
@@ -1214,7 +1214,7 @@ void BKE_mesh_strip_loose_faces(Mesh *me)
 
 void BKE_mesh_strip_loose_polysloops(Mesh *me)
 {
-  MutableSpan<MPoly> polys = me->polys_for_write();
+  MutableSpan<int> poly_offsets = me->poly_offsets_for_write();
   MutableSpan<int> corner_edges = me->corner_edges_for_write();
 
   MPoly *p;

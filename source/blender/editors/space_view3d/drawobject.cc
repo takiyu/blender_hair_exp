@@ -70,7 +70,7 @@ void ED_draw_object_facemap(Depsgraph *depsgraph,
     GPU_blend(GPU_BLEND_ALPHA);
 
     const float(*positions)[3] = BKE_mesh_vert_positions(me);
-    const MPoly *polys = BKE_mesh_polys(me);
+    const blender::OffsetIndices polys = me->polys();
     const blender::Span<int> corner_verts = me->corner_verts();
 
     int mpoly_len = me->totpoly;
@@ -93,13 +93,12 @@ void ED_draw_object_facemap(Depsgraph *depsgraph,
     GPUVertBufRaw pos_step;
     GPU_vertbuf_attr_get_raw_data(vbo_pos, pos_id, &pos_step);
 
-    const MPoly *mp;
     int i;
     if (BKE_mesh_runtime_looptri_ensure(me)) {
       const MLoopTri *mlt = BKE_mesh_runtime_looptri_ensure(me);
-      for (mp = polys, i = 0; i < mpoly_len; i++, mp++) {
+      for (const int i : polys.index_range()) {
         if (facemap_data[i] == facemap) {
-          for (int j = 2; j < mp->totloop; j++) {
+          for (int j = 2; j < polys[i].size(); j++) {
             copy_v3_v3(static_cast<float *>(GPU_vertbuf_raw_step(&pos_step)),
                        positions[corner_verts[mlt->tri[0]]]);
             copy_v3_v3(static_cast<float *>(GPU_vertbuf_raw_step(&pos_step)),
@@ -111,18 +110,18 @@ void ED_draw_object_facemap(Depsgraph *depsgraph,
           }
         }
         else {
-          mlt += mp->totloop - 2;
+          mlt += polys[i].size() - 2;
         }
       }
     }
     else {
       /* No tessellation data, fan-fill. */
-      for (mp = polys, i = 0; i < mpoly_len; i++, mp++) {
+      for (const int i : polys.index_range()) {
         if (facemap_data[i] == facemap) {
-          const int *corner_vert_start = &corner_verts[mp->loopstart];
+          const int *corner_vert_start = &corner_verts[polys[i].start()];
           const int *corner_vert_a = corner_vert_start + 1;
           const int *corner_vert_b = corner_vert_start + 2;
-          for (int j = 2; j < mp->totloop; j++) {
+          for (int j = 2; j < polys[i].size(); j++) {
             copy_v3_v3(static_cast<float *>(GPU_vertbuf_raw_step(&pos_step)),
                        positions[*corner_vert_start]);
             copy_v3_v3(static_cast<float *>(GPU_vertbuf_raw_step(&pos_step)),

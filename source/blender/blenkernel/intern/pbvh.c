@@ -821,7 +821,7 @@ static void pbvh_validate_node_prims(PBVH *pbvh)
 
 void BKE_pbvh_build_mesh(PBVH *pbvh,
                          Mesh *mesh,
-                         const MPoly *mpoly,
+                         const int *poly_offsets,
                          const int *corner_verts,
                          float (*vert_positions)[3],
                          int totvert,
@@ -836,7 +836,7 @@ void BKE_pbvh_build_mesh(PBVH *pbvh,
 
   pbvh->mesh = mesh;
   pbvh->header.type = PBVH_FACES;
-  pbvh->mpoly = mpoly;
+  pbvh->poly_offsets = poly_offsets;
   pbvh->hide_poly = (bool *)CustomData_get_layer_named_for_write(
       &mesh->pdata, CD_PROP_BOOL, ".hide_poly", mesh->totpoly);
   pbvh->material_indices = (const int *)CustomData_get_layer_named(
@@ -935,10 +935,10 @@ void BKE_pbvh_build_grids(PBVH *pbvh,
 
   /* Find maximum number of grids per face. */
   int max_grids = 1;
-  const MPoly *mpoly = BKE_mesh_polys(me);
+  const int *poly_offsets = BKE_mesh_poly_offsets(me);
 
   for (int i = 0; i < me->totpoly; i++) {
-    max_grids = max_ii(max_grids, mpoly[i].totloop);
+    max_grids = max_ii(max_grids, poly_offsets[i].totloop);
   }
 
   /* Ensure leaf limit is at least 4 so there's room
@@ -952,7 +952,7 @@ void BKE_pbvh_build_grids(PBVH *pbvh,
   pbvh->ldata = &me->ldata;
   pbvh->pdata = &me->pdata;
 
-  pbvh->mpoly = BKE_mesh_polys(me);
+  pbvh->poly_offsets = poly_offsets;
   pbvh->corner_verts = BKE_mesh_corner_verts(me);
 
   /* We also need the base mesh for PBVH draw. */
@@ -3844,7 +3844,7 @@ void BKE_pbvh_sync_visibility_from_verts(PBVH *pbvh, Mesh *mesh)
       break;
     }
     case PBVH_GRIDS: {
-      const MPoly *mp = BKE_mesh_polys(mesh);
+      const MPoly *mp = BKE_mesh_poly_offsets(mesh);
       CCGKey key = pbvh->gridkey;
 
       bool *hide_poly = (bool *)CustomData_get_layer_named_for_write(

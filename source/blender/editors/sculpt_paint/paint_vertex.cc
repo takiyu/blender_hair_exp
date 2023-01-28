@@ -1240,7 +1240,7 @@ static void vertex_paint_init_session_data(const ToolSettings *ts, Object *ob)
   }
 
   Mesh *me = (Mesh *)ob->data;
-  const Span<MPoly> polys = me->polys();
+  const OffsetIndices polys = me->polys();
   const Span<int> corner_verts = me->corner_verts();
 
   if (gmap->vert_to_loop == nullptr) {
@@ -4123,7 +4123,7 @@ static void fill_mesh_face_or_corner_attribute(Mesh &mesh,
   const VArray<bool> select_poly = mesh.attributes().lookup_or_default<bool>(
       ".select_poly", ATTR_DOMAIN_FACE, false);
 
-  const Span<MPoly> polys = mesh.polys();
+  const OffsetIndices polys = mesh.polys();
   const Span<int> corner_verts = mesh.corner_verts();
 
   for (const int i : polys.index_range()) {

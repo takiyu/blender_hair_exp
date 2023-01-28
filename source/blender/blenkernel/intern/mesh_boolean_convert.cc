@@ -162,7 +162,7 @@ const MPoly *MeshesToIMeshInfo::input_mpoly_for_orig_index(int orig_index,
   int orig_mesh_index = input_mesh_for_imesh_face(orig_index);
   BLI_assert(0 <= orig_mesh_index && orig_mesh_index < meshes.size());
   const Mesh *me = meshes[orig_mesh_index];
-  const Span<MPoly> polys = me->polys();
+  const OffsetIndices polys = me->polys();
   int index_in_mesh = orig_index - mesh_poly_offset[orig_mesh_index];
   BLI_assert(0 <= index_in_mesh && index_in_mesh < me->totpoly);
   const MPoly *mp = &polys[index_in_mesh];
@@ -307,7 +307,7 @@ static IMesh meshes_to_imesh(Span<const Mesh *> meshes,
 
     Vector<Vert *> verts(me->totvert);
     const Span<float3> vert_positions = me->vert_positions();
-    const Span<MPoly> polys = me->polys();
+    const OffsetIndices polys = me->polys();
     const Span<int> corner_verts = me->corner_verts();
     const Span<int> corner_edges = me->corner_edges();
 
@@ -735,7 +735,7 @@ static Mesh *imesh_to_mesh(IMesh *im, MeshesToIMeshInfo &mim)
                                                                             ATTR_DOMAIN_FACE);
   int cur_loop_index = 0;
   MutableSpan<int> dst_corner_verts = result->corner_verts_for_write();
-  MutableSpan<MPoly> dst_polys = result->polys_for_write();
+  MutableSpan<MPoly> dst_polys = result->poly_offsets_for_write();
   for (int fi : im->face_index_range()) {
     const Face *f = im->face(fi);
     const Mesh *orig_me;
@@ -846,7 +846,7 @@ Mesh *direct_mesh_boolean(Span<const Mesh *> meshes,
 
   /* Store intersecting edge indices. */
   if (r_intersecting_edges != nullptr) {
-    const Span<MPoly> polys = result->polys();
+    const OffsetIndices polys = result->polys();
     const Span<int> corner_edges = result->corner_edges();
     for (int fi : m_out.face_index_range()) {
       const Face &face = *m_out.face(fi);

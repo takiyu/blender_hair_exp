@@ -6,8 +6,6 @@
  */
 
 #ifdef __cplusplus
-extern "C" {
-#endif
 
 struct ReportList;
 
@@ -24,9 +22,15 @@ void BKE_mesh_calc_loop_tangent_single_ex(const float (*vert_positions)[3],
                                           const float (*loop_normals)[3],
                                           const float (*loopuv)[2],
                                           int numLoops,
-                                          const struct MPoly *mpolys,
-                                          int numPolys,
+                                          blender::OffsetIndices<int> polys,
                                           struct ReportList *reports);
+
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Wrapper around BKE_mesh_calc_loop_tangent_single_ex, which takes care of most boilerplate code.
  * \note
@@ -38,12 +42,17 @@ void BKE_mesh_calc_loop_tangent_single(struct Mesh *mesh,
                                        float (*r_looptangents)[4],
                                        struct ReportList *reports);
 
+#ifdef __cplusplus
+}
+#endif
+
+#ifdef __cplusplus
+
 /**
  * See: #BKE_editmesh_loop_tangent_calc (matching logic).
  */
 void BKE_mesh_calc_loop_tangent_ex(const float (*vert_positions)[3],
-                                   const struct MPoly *mpoly,
-                                   uint mpoly_len,
+                                   blender::OffsetIndices<int> polys,
                                    const int *corner_verts,
                                    const struct MLoopTri *looptri,
                                    uint looptri_len,
@@ -73,7 +82,7 @@ void BKE_mesh_add_loop_tangent_named_layer_for_uv(struct CustomData *uv_data,
                                                   int numLoopData,
                                                   const char *layer_name);
 
-#define DM_TANGENT_MASK_ORCO (1 << 9)
+#  define DM_TANGENT_MASK_ORCO (1 << 9)
 /**
  * Here we get some useful information such as active uv layer name and
  * search if it is already in tangent_names.
@@ -92,6 +101,4 @@ void BKE_mesh_calc_loop_tangent_step_0(const struct CustomData *loopData,
                                        char *rren_uv_name,
                                        short *rtangent_mask);
 
-#ifdef __cplusplus
-}
 #endif

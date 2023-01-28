@@ -1220,22 +1220,19 @@ static void sculpt_gesture_trim_geometry_generate(SculptGestureContext *sgcontex
   BLI_polyfill_calc(screen_points, tot_screen_points, 0, r_tris);
 
   /* Write the front face triangle indices. */
-  MPoly *polys = BKE_mesh_polys_for_write(trim_operation->mesh);
+  blender::MutableSpan<int> poly_offsets = trim_operation->mesh->poly_offsets_for_write();
   blender::MutableSpan<int> corner_verts = trim_operation->mesh->corner_verts_for_write();
-  MPoly *mp = polys;
+  poly_offsets.fill(3);
+  blender::offset_indices::accumulate_counts_to_offsets(poly_offsets);
   int corner_i = 0;
-  for (int i = 0; i < tot_tris_face; i++, mp++, corner_i += 3) {
-    mp->loopstart = corner_i;
-    mp->totloop = 3;
+  for (int i = 0; i < tot_tris_face; i++, corner_i += 3) {
     corner_verts[corner_i + 0] = r_tris[i][0];
     corner_verts[corner_i + 1] = r_tris[i][1];
     corner_verts[corner_i + 2] = r_tris[i][2];
   }
 
   /* Write the back face triangle indices. */
-  for (int i = 0; i < tot_tris_face; i++, mp++, corner_i += 3) {
-    mp->loopstart = corner_i;
-    mp->totloop = 3;
+  for (int i = 0; i < tot_tris_face; i++, corner_i += 3) {
     corner_verts[corner_i + 0] = r_tris[i][0] + tot_screen_points;
     corner_verts[corner_i + 1] = r_tris[i][1] + tot_screen_points;
     corner_verts[corner_i + 2] = r_tris[i][2] + tot_screen_points;
@@ -1244,9 +1241,7 @@ static void sculpt_gesture_trim_geometry_generate(SculptGestureContext *sgcontex
   MEM_freeN(r_tris);
 
   /* Write the indices for the lateral triangles. */
-  for (int i = 0; i < tot_screen_points; i++, mp++, corner_i += 3) {
-    mp->loopstart = corner_i;
-    mp->totloop = 3;
+  for (int i = 0; i < tot_screen_points; i++, corner_i += 3) {
     int current_index = i;
     int next_index = current_index + 1;
     if (next_index >= tot_screen_points) {
@@ -1257,9 +1252,7 @@ static void sculpt_gesture_trim_geometry_generate(SculptGestureContext *sgcontex
     corner_verts[corner_i + 2] = current_index;
   }
 
-  for (int i = 0; i < tot_screen_points; i++, mp++, corner_i += 3) {
-    mp->loopstart = corner_i;
-    mp->totloop = 3;
+  for (int i = 0; i < tot_screen_points; i++, corner_i += 3) {
     int current_index = i;
     int next_index = current_index + 1;
     if (next_index >= tot_screen_points) {

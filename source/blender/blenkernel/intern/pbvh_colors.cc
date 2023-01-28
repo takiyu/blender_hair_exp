@@ -94,11 +94,12 @@ static void pbvh_vertex_color_get(const PBVH &pbvh, PBVHVertRef vertex, float r_
     int count = 0;
     zero_v4(r_color);
     for (const int i_poly : Span(melem.indices, melem.count)) {
-      const MPoly &mp = pbvh.mpoly[i_poly];
-      Span<T> colors{static_cast<const T *>(pbvh.color_layer->data) + mp.loopstart, mp.totloop};
-      Span<int> poly_verts{pbvh.corner_verts + mp.loopstart, mp.totloop};
+      const IndexRange poly(pbvh.poly_offsets[i_poly],
+                            pbvh.poly_offsets[i_poly + 1] - pbvh.poly_offsets[i_poly]);
+      Span<T> colors{static_cast<const T *>(pbvh.color_layer->data) + poly.start(), poly.size()};
+      Span<int> poly_verts{pbvh.corner_verts + poly.start(), poly.size()};
 
-      for (const int i : IndexRange(mp.totloop)) {
+      for (const int i : IndexRange(poly.size())) {
         if (poly_verts[i] == index) {
           float temp[4];
           to_float(colors[i], temp);
@@ -127,11 +128,12 @@ static void pbvh_vertex_color_set(PBVH &pbvh, PBVHVertRef vertex, const float co
     const MeshElemMap &melem = pbvh.pmap[index];
 
     for (const int i_poly : Span(melem.indices, melem.count)) {
-      const MPoly &mp = pbvh.mpoly[i_poly];
-      MutableSpan<T> colors{static_cast<T *>(pbvh.color_layer->data) + mp.loopstart, mp.totloop};
-      Span<int> poly_verts{pbvh.corner_verts + mp.loopstart, mp.totloop};
+      const IndexRange poly(pbvh.poly_offsets[i_poly],
+                            pbvh.poly_offsets[i_poly + 1] - pbvh.poly_offsets[i_poly]);
+      MutableSpan<T> colors{static_cast<T *>(pbvh.color_layer->data) + poly.start(), poly.size()};
+      Span<int> poly_verts{pbvh.corner_verts + poly.start(), poly.size()};
 
-      for (const int i : IndexRange(mp.totloop)) {
+      for (const int i : IndexRange(poly.size())) {
         if (poly_verts[i] == index) {
           from_float(color, colors[i]);
         }

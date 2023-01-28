@@ -44,39 +44,39 @@ struct BKEMeshToTangent {
 
   uint GetNumVerticesOfFace(const uint face_num)
   {
-    return uint(mpolys[face_num].totloop);
+    return uint(polys[face_num].size());
   }
 
   mikk::float3 GetPosition(const uint face_num, const uint vert_num)
   {
-    const uint loop_idx = uint(mpolys[face_num].loopstart) + vert_num;
+    const uint loop_idx = uint(polys[face_num].start()) + vert_num;
     return mikk::float3(positions[corner_verts[loop_idx]]);
   }
 
   mikk::float3 GetTexCoord(const uint face_num, const uint vert_num)
   {
-    const float *uv = luvs[uint(mpolys[face_num].loopstart) + vert_num];
+    const float *uv = luvs[uint(polys[face_num].start()) + vert_num];
     return mikk::float3(uv[0], uv[1], 1.0f);
   }
 
   mikk::float3 GetNormal(const uint face_num, const uint vert_num)
   {
-    return mikk::float3(loop_normals[uint(mpolys[face_num].loopstart) + vert_num]);
+    return mikk::float3(loop_normals[uint(polys[face_num].start()) + vert_num]);
   }
 
   void SetTangentSpace(const uint face_num, const uint vert_num, mikk::float3 T, bool orientation)
   {
-    float *p_res = tangents[uint(mpolys[face_num].loopstart) + vert_num];
+    float *p_res = tangents[uint(polys[face_num].start()) + vert_num];
     copy_v4_fl4(p_res, T.x, T.y, T.z, orientation ? 1.0f : -1.0f);
   }
 
-  const MPoly *mpolys;            /* faces */
-  const int *corner_verts;        /* faces vertices */
-  const float (*positions)[3];    /* vertices */
-  const float (*luvs)[2];         /* texture coordinates */
-  const float (*loop_normals)[3]; /* loops' normals */
-  float (*tangents)[4];           /* output tangents */
-  int num_polys;                  /* number of polygons */
+  blender::OffsetIndices<int> polys; /* faces */
+  const int *corner_verts;           /* faces vertices */
+  const float (*positions)[3];       /* vertices */
+  const float (*luvs)[2];            /* texture coordinates */
+  const float (*loop_normals)[3];    /* loops' normals */
+  float (*tangents)[4];              /* output tangents */
+  int num_polys;                     /* number of polygons */
 };
 
 void BKE_mesh_calc_loop_tangent_single_ex(const float (*vert_positions)[3],
@@ -86,13 +86,13 @@ void BKE_mesh_calc_loop_tangent_single_ex(const float (*vert_positions)[3],
                                           const float (*loop_normals)[3],
                                           const float (*loop_uvs)[2],
                                           const int /*numLoops*/,
-                                          const MPoly *mpolys,
+                                          const blender::OffsetIndices<int> polys,
                                           const int numPolys,
                                           ReportList *reports)
 {
   /* Compute Mikktspace's tangent normals. */
   BKEMeshToTangent mesh_to_tangent;
-  mesh_to_tangent.mpolys = mpolys;
+  mesh_to_tangent.polys = polys;
   mesh_to_tangent.corner_verts = corner_verts;
   mesh_to_tangent.positions = vert_positions;
   mesh_to_tangent.luvs = loop_uvs;
@@ -104,7 +104,7 @@ void BKE_mesh_calc_loop_tangent_single_ex(const float (*vert_positions)[3],
 
   /* First check we do have a tris/quads only mesh. */
   for (int i = 0; i < numPolys; i++) {
-    if (mpolys[i].totloop > 4) {
+    if (polys[i].size() > 4) {
       BKE_report(
           reports, RPT_ERROR, "Tangent space can only be computed for tris/quads, aborting");
       return;
@@ -151,8 +151,7 @@ void BKE_mesh_calc_loop_tangent_single(Mesh *mesh,
                                        loop_normals,
                                        reinterpret_cast<const float(*)[2]>(uv_map.data()),
                                        mesh->totloop,
-                                       BKE_mesh_polys(mesh),
-                                       mesh->totpoly,
+                                       mesh->polys(),
                                        reports);
 }
 
@@ -180,8 +179,7 @@ struct SGLSLMeshToTangent {
 #ifdef USE_LOOPTRI_DETECT_QUADS
     if (face_as_quad_map) {
       const MLoopTri *lt = &looptri[face_as_quad_map[face_num]];
-      const MPoly *mp = &mpoly[lt->poly];
-      if (mp->totloop == 4) {
+      if (polys[lt->poly].size() == 4) {
         return 4;
       }
     }
@@ -197,9 +195,8 @@ struct SGLSLMeshToTangent {
 #ifdef USE_LOOPTRI_DETECT_QUADS
     if (face_as_quad_map) {
       lt = &looptri[face_as_quad_map[face_num]];
-      const MPoly *mp = &mpoly[lt->poly];
-      if (mp->totloop == 4) {
-        return (uint(mp->loopstart) + vert_num);
+      if (polys[lt->poly].size() == 4) {
+        return polys[lt->poly][vert_num];
       }
       /* fall through to regular triangle */
     }
@@ -245,14 +242,14 @@ struct SGLSLMeshToTangent {
         return mikk::float3(precomputedFaceNormals[lt->poly]);
       }
 #ifdef USE_LOOPTRI_DETECT_QUADS
-      const MPoly *mp = &mpoly[lt->poly];
+      const blender::IndexRange poly = polys[lt->poly];
       float normal[3];
-      if (mp->totloop == 4) {
+      if (poly.size() == 4) {
         normal_quad_v3(normal,
-                       positions[corner_verts[mp->loopstart + 0]],
-                       positions[corner_verts[mp->loopstart + 1]],
-                       positions[corner_verts[mp->loopstart + 2]],
-                       positions[corner_verts[mp->loopstart + 3]]);
+                       positions[corner_verts[poly[0]]],
+                       positions[corner_verts[poly[1]]],
+                       positions[corner_verts[poly[2]]],
+                       positions[corner_verts[poly[3]]]);
       }
       else
 #endif
@@ -278,8 +275,8 @@ struct SGLSLMeshToTangent {
   const float (*precomputedFaceNormals)[3];
   const float (*precomputedLoopNormals)[3];
   const MLoopTri *looptri;
-  const float2 *mloopuv;       /* texture coordinates */
-  const MPoly *mpoly;          /* indices */
+  const float2 *mloopuv; /* texture coordinates */
+  blender::OffsetIndices<int> polys;
   const int *corner_verts;     /* indices */
   const float (*positions)[3]; /* vertex coordinates */
   const float (*vert_normals)[3];
@@ -390,7 +387,7 @@ void BKE_mesh_calc_loop_tangent_step_0(const CustomData *loopData,
 }
 
 void BKE_mesh_calc_loop_tangent_ex(const float (*vert_positions)[3],
-                                   const MPoly *mpoly,
+                                   const blender::OffsetIndices<int> polys,
                                    const uint mpoly_len,
                                    const int *corner_verts,
                                    const MLoopTri *looptri,
@@ -467,7 +464,7 @@ void BKE_mesh_calc_loop_tangent_ex(const float (*vert_positions)[3],
       for (k = 0, j = 0; j < int(looptri_len); k++, j++) {
         face_as_quad_map[k] = j;
         /* step over all quads */
-        if (mpoly[looptri[j].poly].totloop == 4) {
+        if (polys[looptri[j].poly].size() == 4) {
           j++; /* skips the nest looptri */
         }
       }
@@ -497,7 +494,7 @@ void BKE_mesh_calc_loop_tangent_ex(const float (*vert_positions)[3],
 #endif
         mesh2tangent->positions = vert_positions;
         mesh2tangent->vert_normals = vert_normals;
-        mesh2tangent->mpoly = mpoly;
+        mesh2tangent->polys = polys;
         mesh2tangent->corner_verts = corner_verts;
         mesh2tangent->looptri = looptri;
         mesh2tangent->sharp_faces = sharp_faces;
@@ -580,7 +577,7 @@ void BKE_mesh_calc_loop_tangents(Mesh *me_eval,
   short tangent_mask = 0;
   BKE_mesh_calc_loop_tangent_ex(
       BKE_mesh_vert_positions(me_eval),
-      BKE_mesh_polys(me_eval),
+      me_eval->polys(),
       uint(me_eval->totpoly),
       me_eval->corner_verts().data(),
       BKE_mesh_runtime_looptri_ensure(me_eval),

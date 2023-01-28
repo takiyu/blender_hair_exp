@@ -145,7 +145,7 @@ blender::Span<MLoopTri> Mesh::looptris() const
 {
   this->runtime->looptris_cache.ensure([&](blender::Array<MLoopTri> &r_data) {
     const Span<float3> positions = this->vert_positions();
-    const Span<MPoly> polys = this->polys();
+    const OffsetIndices polys = this->polys();
     const Span<int> corner_verts = this->corner_verts();
 
     r_data.reinitialize(poly_to_tri_count(polys.size(), corner_verts.size()));
@@ -324,7 +324,7 @@ bool BKE_mesh_runtime_is_valid(Mesh *me_eval)
 
   MutableSpan<float3> positions = me_eval->vert_positions_for_write();
   MutableSpan<MEdge> edges = me_eval->edges_for_write();
-  MutableSpan<MPoly> polys = me_eval->polys_for_write();
+  MutableSpan<int> polys = me_eval->poly_offsets_for_write();
 
   is_valid &= BKE_mesh_validate_all_customdata(
       &me_eval->vdata,

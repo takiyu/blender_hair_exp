@@ -1289,7 +1289,7 @@ void cloth_parallel_transport_hair_frame(float mat[3][3],
 static bool cloth_add_shear_bend_spring(ClothModifierData *clmd,
                                         LinkNodePair *edgelist,
                                         const int *corner_verts,
-                                        const MPoly *mpoly,
+                                        const blender::OffsetIndices<int> polys,
                                         int i,
                                         int j,
                                         int k)
@@ -1308,7 +1308,7 @@ static bool cloth_add_shear_bend_spring(ClothModifierData *clmd,
   }
 
   spring_verts_ordered_set(
-      spring, corner_verts[mpoly[i].loopstart + j], corner_verts[mpoly[i].loopstart + k]);
+      spring, corner_verts[polys[i].start() + j], corner_verts[polys[i].start() + k]);
 
   shrink_factor = cloth_shrink_factor(clmd, cloth->verts, spring->ij, spring->kl);
   spring->restlen = len_v3v3(cloth->verts[spring->kl].xrest, cloth->verts[spring->ij].xrest) *
@@ -1328,7 +1328,7 @@ static bool cloth_add_shear_bend_spring(ClothModifierData *clmd,
     spring->type |= CLOTH_SPRING_TYPE_BENDING;
 
     spring->la = k - j + 1;
-    spring->lb = mpoly[i].totloop - k + j + 1;
+    spring->lb = polys[i].size() - k + j + 1;
 
     spring->pa = static_cast<int *>(MEM_mallocN(sizeof(*spring->pa) * spring->la, "spring poly"));
     if (!spring->pa) {
@@ -1340,7 +1340,7 @@ static bool cloth_add_shear_bend_spring(ClothModifierData *clmd,
       return false;
     }
 
-    tmp_corner = corner_verts + mpoly[i].loopstart;
+    tmp_corner = corner_verts + polys[i].start();
 
     for (x = 0; x < spring->la; x++) {
       spring->pa[x] = tmp_corner[j + x];
@@ -1350,7 +1350,7 @@ static bool cloth_add_shear_bend_spring(ClothModifierData *clmd,
       spring->pb[x] = tmp_corner[x];
     }
 
-    for (y = k; y < mpoly[i].totloop; x++, y++) {
+    for (y = k; y < polys[i].size(); x++, y++) {
       spring->pb[x] = tmp_corner[y];
     }
 
@@ -1476,7 +1476,7 @@ static bool cloth_build_springs(ClothModifierData *clmd, Mesh *mesh)
   uint numpolys = uint(mesh->totpoly);
   float shrink_factor;
   const MEdge *medge = BKE_mesh_edges(mesh);
-  const MPoly *mpoly = BKE_mesh_polys(mesh);
+  const OffsetIndices polys = mesh->polys();
   const Span<int> corner_verts = mesh->corner_verts();
   const Span<int> corner_edges = mesh->corner_edges();
   int index2 = 0; /* our second vertex index */
@@ -1670,10 +1670,10 @@ static bool cloth_build_springs(ClothModifierData *clmd, Mesh *mesh)
     for (int i = 0; i < numpolys; i++) {
       /* Shear springs. */
       /* Triangle faces already have shear springs due to structural geometry. */
-      if (mpoly[i].totloop > 3) {
-        for (int j = 1; j < mpoly[i].totloop - 1; j++) {
+      if (polys.size(i) > 3) {
+        for (int j = 1; j < polys.size(i) - 1; j++) {
           if (j > 1) {
-            if (cloth_add_shear_bend_spring(clmd, edgelist, corner_verts.data(), mpoly, i, 0, j)) {
+            if (cloth_add_shear_bend_spring(clmd, edgelist, corner_verts.data(), polys, i, 0, j)) {
               shear_springs++;
 
               if (clmd->sim_parms->bending_model == CLOTH_BENDING_ANGULAR) {
@@ -1686,8 +1686,8 @@ static bool cloth_build_springs(ClothModifierData *clmd, Mesh *mesh)
             }
           }
 
-          for (int k = j + 2; k < mpoly[i].totloop; k++) {
-            if (cloth_add_shear_bend_spring(clmd, edgelist, corner_verts.data(), mpoly, i, j, k)) {
+          for (int k = j + 2; k < polys.size(i); k++) {
+            if (cloth_add_shear_bend_spring(clmd, edgelist, corner_verts.data(), polys, i, j, k)) {
               shear_springs++;
 
               if (clmd->sim_parms->bending_model == CLOTH_BENDING_ANGULAR) {
@@ -1704,8 +1704,8 @@ static bool cloth_build_springs(ClothModifierData *clmd, Mesh *mesh)
 
       /* Angular bending springs along struct springs. */
       if (clmd->sim_parms->bending_model == CLOTH_BENDING_ANGULAR) {
-        for (int j = 0; j < mpoly[i].totloop; j++) {
-          const int edge_i = corner_edges[mpoly[i].loopstart + j];
+        for (int j = 0; j < polys.size(i); j++) {
+          const int edge_i = corner_edges[polys[i][j]];
           BendSpringRef *curr_ref = &spring_ref[edge_i];
           curr_ref->polys++;
 
@@ -1719,13 +1719,13 @@ static bool cloth_build_springs(ClothModifierData *clmd, Mesh *mesh)
 
             spring->type |= CLOTH_SPRING_TYPE_BENDING;
 
-            spring->la = mpoly[curr_ref->index].totloop;
-            spring->lb = mpoly[i].totloop;
+            spring->la = polys[curr_ref->index].size();
+            spring->lb = polys.size(i);
 
             if (!cloth_bend_set_poly_vert_array(
-                    &spring->pa, spring->la, &corner_verts[mpoly[curr_ref->index].loopstart]) ||
+                    &spring->pa, spring->la, &corner_verts[polys[curr_ref->index].start()]) ||
                 !cloth_bend_set_poly_vert_array(
-                    &spring->pb, spring->lb, &corner_verts[mpoly[i].loopstart])) {
+                    &spring->pb, spring->lb, &corner_verts[polys[i].start()])) {
               cloth_free_errorsprings(cloth, edgelist, spring_ref);
               return false;
             }
@@ -1895,11 +1895,11 @@ static bool cloth_build_springs(ClothModifierData *clmd, Mesh *mesh)
   }
 
   for (int i = 0; i < numpolys; i++) { /* edge springs */
-    if (mpoly[i].totloop == 4) {
+    if (polys[i].size() == 4) {
       BLI_edgeset_add(
-          edgeset, corner_verts[mpoly[i].loopstart + 0], corner_verts[mpoly[i].loopstart + 2]);
+          edgeset, corner_verts[polys[i].start() + 0], corner_verts[polys[i].start() + 2]);
       BLI_edgeset_add(
-          edgeset, corner_verts[mpoly[i].loopstart + 1], corner_verts[mpoly[i].loopstart + 3]);
+          edgeset, corner_verts[polys[i].start() + 1], corner_verts[polys[i].start() + 3]);
     }
   }
 

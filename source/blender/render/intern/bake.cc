@@ -463,7 +463,7 @@ static TriTessFace *mesh_calc_tri_tessface(Mesh *me, bool tangent, Mesh *me_eval
   float no[3];
 
   const float(*positions)[3] = BKE_mesh_vert_positions(me);
-  const MPoly *polys = BKE_mesh_polys(me);
+  const OffsetIndices polys = me->polys();
   const blender::Span<int> corner_verts = me->corner_verts();
   const bke::AttributeAccessor attributes = me->attributes();
   const VArray<bool> sharp_faces = attributes.lookup_or_default<bool>(
@@ -479,7 +479,7 @@ static TriTessFace *mesh_calc_tri_tessface(Mesh *me, bool tangent, Mesh *me_eval
 
   if (precomputed_normals != nullptr) {
     BKE_mesh_recalc_looptri_with_normals(corner_verts.data(),
-                                         polys,
+                                         polys.data(),
                                          positions,
                                          me->totloop,
                                          me->totpoly,
@@ -488,7 +488,7 @@ static TriTessFace *mesh_calc_tri_tessface(Mesh *me, bool tangent, Mesh *me_eval
   }
   else {
     BKE_mesh_recalc_looptri(
-        corner_verts.data(), polys, positions, me->totloop, me->totpoly, looptri);
+        corner_verts.data(), polys.data(), positions, me->totloop, me->totpoly, looptri);
   }
 
   const TSpace *tspace = nullptr;
@@ -508,7 +508,6 @@ static TriTessFace *mesh_calc_tri_tessface(Mesh *me, bool tangent, Mesh *me_eval
   const float(*vert_normals)[3] = BKE_mesh_vertex_normals_ensure(me);
   for (i = 0; i < tottri; i++) {
     const MLoopTri *lt = &looptri[i];
-    const MPoly *mp = &polys[lt->poly];
 
     triangles[i].positions[0] = positions[corner_verts[lt->tri[0]]];
     triangles[i].positions[1] = positions[corner_verts[lt->tri[1]]];
@@ -532,7 +531,7 @@ static TriTessFace *mesh_calc_tri_tessface(Mesh *me, bool tangent, Mesh *me_eval
 
     if (calculate_normal) {
       if (lt->poly != mpoly_prev) {
-        BKE_mesh_calc_poly_normal(mp, &corner_verts[mp->loopstart], positions, no);
+        BKE_mesh_calc_poly_normal(corner_verts.slice(polys[lt->poly]), positions, no);
         mpoly_prev = lt->poly;
       }
       copy_v3_v3(triangles[i].normal, no);
@@ -757,10 +756,10 @@ void RE_bake_pixels_populate(Mesh *me,
   MLoopTri *looptri = static_cast<MLoopTri *>(MEM_mallocN(sizeof(*looptri) * tottri, __func__));
 
   const float(*positions)[3] = BKE_mesh_vert_positions(me);
-  const MPoly *polys = BKE_mesh_polys(me);
+  const OffsetIndices polys = me->polys();
   const blender::Span<int> corner_verts = me->corner_verts();
   BKE_mesh_recalc_looptri(
-      corner_verts.data(), polys, positions, me->totloop, me->totpoly, looptri);
+      corner_verts.data(), polys.data(), positions, me->totloop, me->totpoly, looptri);
 
   const int *material_indices = BKE_mesh_material_indices(me);
   const int materials_num = targets->materials_num;

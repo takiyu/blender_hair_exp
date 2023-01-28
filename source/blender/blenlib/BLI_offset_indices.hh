@@ -24,6 +24,7 @@ template<typename T> class OffsetIndices {
   Span<T> offsets_;
 
  public:
+  OffsetIndices() = default;
   OffsetIndices(const Span<T> offsets) : offsets_(offsets)
   {
     BLI_assert(std::is_sorted(offsets_.begin(), offsets_.end()));
@@ -39,10 +40,20 @@ template<typename T> class OffsetIndices {
     return size;
   }
 
+  const T *data() const
+  {
+    return offsets_.data();
+  }
+
   /** Return the total number of elements in the the referenced arrays. */
   T total_size() const
   {
     return offsets_.last();
+  }
+
+  IndexRange index_range() const
+  {
+    return offsets_.index_range().drop_back(1);
   }
 
   /** Return the number of ranges encoded by the offsets. */

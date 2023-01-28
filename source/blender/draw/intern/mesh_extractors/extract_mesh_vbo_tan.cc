@@ -115,8 +115,7 @@ static void extract_tan_init_common(const MeshRenderData *mr,
     }
     else {
       BKE_mesh_calc_loop_tangent_ex(reinterpret_cast<const float(*)[3]>(mr->vert_positions),
-                                    mr->mpoly,
-                                    mr->poly_len,
+                                    mr->polys,
                                     mr->corner_verts,
                                     mr->mlooptri,
                                     mr->tri_len,

@@ -127,7 +127,6 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
 
   Mesh *result;
   MEdge *me;
-  MPoly *mp;
   float mtx[4][4];
   float plane_co[3], plane_no[3];
   int i;
@@ -214,7 +213,6 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
   if (!CustomData_has_layer(&mesh->pdata, CD_MPOLY)) {
     result->corner_verts_for_write().copy_from(mesh->corner_verts());
     result->corner_edges_for_write().copy_from(mesh->corner_edges());
-    memcpy(BKE_mesh_polys_for_write(result), BKE_mesh_polys(mesh), sizeof(MPoly) * mesh->totpoly);
   }
 
   /* Copy custom-data to new geometry,
@@ -311,8 +309,9 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
     me->v2 += maxVerts;
   }
 
+  blender::MutableSpan<int> result_polys = result->poly_offsets_for_write();
+
   /* adjust mirrored poly loopstart indices, and reverse loop order (normals) */
-  mp = BKE_mesh_polys_for_write(result) + maxPolys;
   blender::MutableSpan<int> corner_edges = result->corner_edges_for_write();
   for (i = 0; i < maxPolys; i++, mp++) {
     int j, e;
@@ -421,9 +420,8 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
                                 result->corner_edges().data(),
                                 loop_normals,
                                 totloop,
-                                BKE_mesh_polys(result),
+                                result->polys(),
                                 BKE_mesh_poly_normals_ensure(result),
-                                totpoly,
                                 true,
                                 mesh->smoothresh,
                                 sharp_edges,
@@ -433,7 +431,6 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
                                 clnors);
 
     /* mirroring has to account for loops being reversed in polys in second half */
-    MPoly *result_polys = BKE_mesh_polys_for_write(result);
     mp = result_polys;
     for (i = 0; i < maxPolys; i++, mp++) {
       MPoly *mpmirror = result_polys + maxPolys + i;

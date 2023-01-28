@@ -711,9 +711,11 @@ static bool sculpt_check_unique_face_set_for_edge_in_base_mesh(SculptSession *ss
   const MeshElemMap *vert_map = &ss->pmap[v1];
   int p1 = -1, p2 = -1;
   for (int i = 0; i < vert_map->count; i++) {
-    const MPoly *p = &ss->mpoly[vert_map->indices[i]];
-    for (int l = 0; l < p->totloop; l++) {
-      if (ss->corner_verts[p->loopstart + l] == v2) {
+    const int poly_i = vert_map->indices[i];
+    const blender::IndexRange poly(ss->poly_offsets[poly_i],
+                                   ss->poly_offsets[poly_i + 1] - ss->poly_offsets[poly_i]);
+    for (const corner : poly) {
+      if (ss->corner_verts[corner] == v2) {
         if (p1 == -1) {
           p1 = vert_map->indices[i];
           break;
@@ -754,7 +756,7 @@ bool SCULPT_vertex_has_unique_face_set(SculptSession *ss, PBVHVertRef vertex)
       coord.y = vertex_index / key->grid_size;
       int v1, v2;
       const SubdivCCGAdjacencyType adjacency = BKE_subdiv_ccg_coarse_mesh_adjacency_info_get(
-          ss->subdiv_ccg, &coord, ss->corner_verts, ss->mpoly, &v1, &v2);
+          ss->subdiv_ccg, &coord, ss->corner_verts, ss->poly_offsets, &v1, &v2);
       switch (adjacency) {
         case SUBDIV_CCG_ADJACENT_VERTEX:
           return sculpt_check_unique_face_set_in_base_mesh(ss, v1);
@@ -873,9 +875,12 @@ static void sculpt_vertex_neighbors_get_faces(SculptSession *ss,
       /* Skip connectivity from hidden faces. */
       continue;
     }
-    const MPoly *p = &ss->mpoly[vert_map->indices[i]];
+    const int poly_i = vert_map->indices[i];
+    const blender::IndexRange poly(ss->poly_offsets[poly_i],
+                                   ss->poly_offsets[poly_i + 1] - ss->poly_offsets[poly_i]);
     int f_adj_v[2];
-    if (poly_get_adj_loops_from_vert(p, ss->corner_verts, vertex.i, f_adj_v) != -1) {
+    if (poly_get_adj_loops_from_vert(
+            {ss->corner_verts + poly.start(), poly.size()}, vertex.i, f_adj_v) != -1) {
       for (int j = 0; j < ARRAY_SIZE(f_adj_v); j += 1) {
         if (f_adj_v[j] != vertex.i) {
           sculpt_vertex_neighbor_add(iter, BKE_pbvh_make_vref(f_adj_v[j]), f_adj_v[j]);
@@ -989,7 +994,7 @@ bool SCULPT_vertex_is_boundary(const SculptSession *ss, const PBVHVertRef vertex
       coord.y = vertex_index / key->grid_size;
       int v1, v2;
       const SubdivCCGAdjacencyType adjacency = BKE_subdiv_ccg_coarse_mesh_adjacency_info_get(
-          ss->subdiv_ccg, &coord, ss->corner_verts, ss->mpoly, &v1, &v2);
+          ss->subdiv_ccg, &coord, ss->corner_verts, ss->poly_offsets, &v1, &v2);
       switch (adjacency) {
         case SUBDIV_CCG_ADJACENT_VERTEX:
           return sculpt_check_boundary_vertex_in_base_mesh(ss, v1);
@@ -6094,7 +6099,7 @@ struct SculptTopologyIDFloodFillData {
 
 void SCULPT_boundary_info_ensure(Object *object)
 {
-using namespace blender;
+  using namespace blender;
   SculptSession *ss = object->sculpt;
   if (ss->vertex_info.boundary) {
     return;
@@ -6102,7 +6107,7 @@ using namespace blender;
 
   Mesh *base_mesh = BKE_mesh_from_object(object);
   const MEdge *edges = BKE_mesh_edges(base_mesh);
-  const MPoly *polys = BKE_mesh_polys(base_mesh);
+  const OffsetIndices polys = base_mesh->polys();
   const Span<int> corner_edges = base_mesh->corner_edges();
 
   ss->vertex_info.boundary = BLI_BITMAP_NEW(base_mesh->totvert, "Boundary info");

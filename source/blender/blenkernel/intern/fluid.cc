@@ -3209,7 +3209,6 @@ static Mesh *create_liquid_geometry(FluidDomainSettings *fds,
                                     Object *ob)
 {
   Mesh *me;
-  MPoly *mpolys;
   int *corner_verts;
   float min[3];
   float max[3];
@@ -3243,7 +3242,7 @@ static Mesh *create_liquid_geometry(FluidDomainSettings *fds,
     return nullptr;
   }
   float(*positions)[3] = BKE_mesh_vert_positions_for_write(me);
-  mpolys = BKE_mesh_polys_for_write(me);
+  blender::MutableSpan<int> poly_offsets = me->poly_offsets_for_write();
   corner_verts = me->corner_verts_for_write().data();
 
   const bool is_sharp = orgmesh->attributes().lookup_or_default<bool>(
@@ -3334,12 +3333,11 @@ static Mesh *create_liquid_geometry(FluidDomainSettings *fds,
   int *material_indices = BKE_mesh_material_indices_for_write(me);
 
   /* Loop for triangles. */
-  for (i = 0; i < num_faces; i++, mpolys++, corner_verts += 3) {
+  for (i = 0; i < num_faces; i++, corner_verts += 3) {
     /* Initialize from existing face. */
     material_indices[i] = mp_mat_nr;
 
-    mpolys->loopstart = i * 3;
-    mpolys->totloop = 3;
+    poly_offsets[i] = i * 3;
 
     corner_verts[0] = manta_liquid_get_triangle_x_at(fds->fluid, i);
     corner_verts[1] = manta_liquid_get_triangle_y_at(fds->fluid, i);
@@ -3361,12 +3359,10 @@ static Mesh *create_liquid_geometry(FluidDomainSettings *fds,
 static Mesh *create_smoke_geometry(FluidDomainSettings *fds, Mesh *orgmesh, Object *ob)
 {
   Mesh *result;
-  MPoly *mpolys;
   int *corner_verts;
   float min[3];
   float max[3];
   float *co;
-  MPoly *mp;
   int *corner_vert;
 
   int num_verts = 8;
@@ -3381,7 +3377,7 @@ static Mesh *create_smoke_geometry(FluidDomainSettings *fds, Mesh *orgmesh, Obje
 
   result = BKE_mesh_new_nomain(num_verts, 0, 0, num_faces * 4, num_faces);
   float(*positions)[3] = BKE_mesh_vert_positions_for_write(result);
-  mpolys = BKE_mesh_polys_for_write(result);
+  blender::MutableSpan<int> poly_offsets = me->poly_offsets_for_write();
   corner_verts = result->corner_verts_for_write().data();
 
   if (num_verts) {
@@ -3425,57 +3421,43 @@ static Mesh *create_smoke_geometry(FluidDomainSettings *fds, Mesh *orgmesh, Obje
     co[1] = max[1];
     co[2] = min[2];
 
+    blender::MutableSpan<int> poly_offsets = me->poly_offsets_for_write();
+    poly_offsets.fill(4);
+    offset_indices::accumulate_counts_to_offsets(poly_offsets);
+
     /* Create faces. */
     /* Top side. */
-    mp = &mpolys[0];
     corner_vert = &corner_verts[0 * 4];
-    mp->loopstart = 0 * 4;
-    mp->totloop = 4;
     corner_vert[0] = 0;
     corner_vert[1] = 1;
     corner_vert[2] = 2;
     corner_vert[3] = 3;
     /* Right side. */
-    mp = &mpolys[1];
     corner_vert = &corner_verts[1 * 4];
-    mp->loopstart = 1 * 4;
-    mp->totloop = 4;
     corner_vert[0] = 2;
     corner_vert[1] = 1;
     corner_vert[2] = 5;
     corner_vert[3] = 6;
     /* Bottom side. */
-    mp = &mpolys[2];
     corner_vert = &corner_verts[2 * 4];
-    mp->loopstart = 2 * 4;
-    mp->totloop = 4;
     corner_vert[0] = 7;
     corner_vert[1] = 6;
     corner_vert[2] = 5;
     corner_vert[3] = 4;
     /* Left side. */
-    mp = &mpolys[3];
     corner_vert = &corner_verts[3 * 4];
-    mp->loopstart = 3 * 4;
-    mp->totloop = 4;
     corner_vert[0] = 0;
     corner_vert[1] = 3;
     corner_vert[2] = 7;
     corner_vert[3] = 4;
     /* Front side. */
-    mp = &mpolys[4];
     corner_vert = &corner_verts[4 * 4];
-    mp->loopstart = 4 * 4;
-    mp->totloop = 4;
     corner_vert[0] = 3;
     corner_vert[1] = 2;
     corner_vert[2] = 6;
     corner_vert[3] = 7;
     /* Back side. */
-    mp = &mpolys[5];
     corner_vert = &corner_verts[5 * 4];
-    mp->loopstart = 5 * 4;
-    mp->totloop = 4;
     corner_vert[0] = 1;
     corner_vert[1] = 0;
     corner_vert[2] = 4;

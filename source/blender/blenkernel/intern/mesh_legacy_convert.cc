@@ -213,7 +213,7 @@ void BKE_mesh_calc_edges_legacy(Mesh *me, const bool use_old)
   int totedge = 0;
   const Span<MVert> verts(static_cast<const MVert *>(CustomData_get_layer(&me->vdata, CD_MVERT)),
                           me->totvert);
-  const Span<MPoly> polys = me->polys();
+  MutableSpan<int> poly_offsets(me->mpoly, me->totvert);
 
   mesh_calc_edges_mdata(
       verts.data(),
@@ -1234,7 +1234,7 @@ void BKE_mesh_tessface_ensure(struct Mesh *mesh)
 void BKE_mesh_legacy_sharp_faces_to_flags(Mesh *mesh)
 {
   using namespace blender;
-  MutableSpan<MPoly> polys = mesh->polys_for_write();
+  MutableSpan<int> poly_offsets(mesh->mpoly, mesh->totvert);
   if (const bool *sharp_faces = static_cast<const bool *>(
           CustomData_get_layer_named(&mesh->pdata, CD_PROP_BOOL, "sharp_face"))) {
     threading::parallel_for(polys.index_range(), 4096, [&](const IndexRange range) {
@@ -1254,11 +1254,11 @@ void BKE_mesh_legacy_sharp_faces_from_flags(Mesh *mesh)
 {
   using namespace blender;
   using namespace blender::bke;
-  const Span<MPoly> polys = mesh->polys();
   MutableAttributeAccessor attributes = mesh->attributes_for_write();
   if (attributes.contains("sharp_face")) {
     return;
   }
+  const Span<MPoly> polys(mesh->mpoly, mesh->totvert);
   if (std::any_of(polys.begin(), polys.end(), [](const MPoly &poly) {
         return !(poly.flag_legacy & ME_SMOOTH);
       })) {
@@ -1490,7 +1490,7 @@ void BKE_mesh_legacy_convert_hide_layers_to_flags(Mesh *mesh)
     }
   });
 
-  MutableSpan<MPoly> polys = mesh->polys_for_write();
+  MutableSpan<int> poly_offsets(mesh->mpoly, mesh->totvert);
   const VArray<bool> hide_poly = attributes.lookup_or_default<bool>(
       ".hide_poly", ATTR_DOMAIN_FACE, false);
   threading::parallel_for(polys.index_range(), 4096, [&](IndexRange range) {
@@ -1536,7 +1536,7 @@ void BKE_mesh_legacy_convert_flags_to_hide_layers(Mesh *mesh)
     hide_edge.finish();
   }
 
-  const Span<MPoly> polys = mesh->polys();
+  const Span<MPoly> polys(mesh->mpoly, mesh->totvert);
   if (std::any_of(polys.begin(), polys.end(), [](const MPoly &poly) {
         return poly.flag_legacy & ME_HIDE;
       })) {
@@ -1562,7 +1562,7 @@ void BKE_mesh_legacy_convert_material_indices_to_mpoly(Mesh *mesh)
   using namespace blender;
   using namespace blender::bke;
   const AttributeAccessor attributes = mesh->attributes();
-  MutableSpan<MPoly> polys = mesh->polys_for_write();
+  MutableSpan<int> poly_offsets(mesh->mpoly, mesh->totvert);
   const VArray<int> material_indices = attributes.lookup_or_default<int>(
       "material_index", ATTR_DOMAIN_FACE, 0);
   threading::parallel_for(polys.index_range(), 4096, [&](IndexRange range) {
@@ -1577,10 +1577,10 @@ void BKE_mesh_legacy_convert_mpoly_to_material_indices(Mesh *mesh)
   using namespace blender;
   using namespace blender::bke;
   MutableAttributeAccessor attributes = mesh->attributes_for_write();
-  if (attributes.contains("material_index")) {
+  if (!mesh->mpoly || attributes.contains("material_index")) {
     return;
   }
-  const Span<MPoly> polys = mesh->polys();
+  const Span<MPoly> polys(mesh->mpoly, mesh->totvert);
   if (std::any_of(
           polys.begin(), polys.end(), [](const MPoly &poly) { return poly.mat_nr_legacy != 0; })) {
     SpanAttributeWriter<int> material_indices = attributes.lookup_or_add_for_write_only_span<int>(
@@ -1803,7 +1803,7 @@ void BKE_mesh_legacy_convert_selection_layers_to_flags(Mesh *mesh)
     }
   });
 
-  MutableSpan<MPoly> polys = mesh->polys_for_write();
+  MutableSpan<int> poly_offsets(mesh->mpoly, mesh->totvert);
   const VArray<bool> select_poly = attributes.lookup_or_default<bool>(
       ".select_poly", ATTR_DOMAIN_FACE, false);
   threading::parallel_for(polys.index_range(), 4096, [&](IndexRange range) {
@@ -1850,7 +1850,7 @@ void BKE_mesh_legacy_convert_flags_to_selection_layers(Mesh *mesh)
     select_edge.finish();
   }
 
-  const Span<MPoly> polys = mesh->polys();
+  const Span<MPoly> polys(mesh->mpoly, mesh->totvert);
   if (std::any_of(polys.begin(), polys.end(), [](const MPoly &poly) {
         return poly.flag_legacy & ME_FACE_SEL;
       })) {

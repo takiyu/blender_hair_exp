@@ -56,10 +56,13 @@ Mesh *create_grid_mesh(const int verts_x,
                                    edges_x * edges_y);
   MutableSpan<float3> positions = mesh->vert_positions_for_write();
   MutableSpan<MEdge> edges = mesh->edges_for_write();
-  MutableSpan<MPoly> polys = mesh->polys_for_write();
+  MutableSpan<int> poly_offsets = mesh->poly_offsets_for_write();
   MutableSpan<int> corner_verts = mesh->corner_verts_for_write();
   MutableSpan<int> corner_edges = mesh->corner_edges_for_write();
   BKE_mesh_smooth_flag_set(mesh, false);
+
+  poly_offsets.fill(4);
+  offset_indices::accumulate_counts_to_offsets(poly_offsets);
 
   {
     const float dx = edges_x == 0 ? 0.0f : size_x / edges_x;
@@ -124,9 +127,6 @@ Mesh *create_grid_mesh(const int verts_x,
         for (const int y : y_range) {
           const int poly_index = y_offset + y;
           const int loop_index = poly_index * 4;
-          MPoly &poly = polys[poly_index];
-          poly.loopstart = loop_index;
-          poly.totloop = 4;
           const int vert_index = x * verts_y + y;
 
           corner_verts[loop_index] = vert_index;

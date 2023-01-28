@@ -1477,7 +1477,7 @@ struct EdgeFeatData {
   blender::Span<MEdge> edges;
   blender::Span<int> corner_verts;
   blender::Span<int> corner_edges;
-  blender::Span<MPoly> polys;
+  blender::OffsetIndices<int> polys;
   LineartTriangle *tri_array;
   blender::VArray<bool> sharp_edges;
   blender::VArray<bool> sharp_faces;

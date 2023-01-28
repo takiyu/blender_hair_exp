@@ -305,10 +305,9 @@ static void extract_range_iter_poly_mesh(void *__restrict userdata,
 
   const ExtractorIterData *data = static_cast<ExtractorIterData *>(userdata);
   const MeshRenderData *mr = data->mr;
-  const MPoly *mp = &((const MPoly *)data->elems)[iter];
   for (const ExtractorRunData &run_data : data->extractors) {
     run_data.extractor->iter_poly_mesh(
-        mr, mp, iter, POINTER_OFFSET(extract_data, run_data.data_offset));
+        mr, iter, POINTER_OFFSET(extract_data, run_data.data_offset));
   }
 }
 
@@ -885,8 +884,7 @@ void mesh_buffer_cache_create_requested_subdiv(MeshBatchCache *cache,
           /* Multiply by 4 to have the start index of the quad's loop, as subdiv_loop_poly_index is
            * based on the subdivision loops. */
           const int poly_origindex = subdiv_loop_poly_index[i * 4];
-          const MPoly *mp = &mr->mpoly[poly_origindex];
-          extractor->iter_subdiv_mesh(subdiv_cache, mr, data, i, mp);
+          extractor->iter_subdiv_mesh(subdiv_cache, mr, data, i, poly_origindex);
         }
       }
     }

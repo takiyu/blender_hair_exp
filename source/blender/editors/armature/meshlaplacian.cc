@@ -651,14 +651,13 @@ void heat_bone_weighting(Object *ob,
 {
   LaplacianSystem *sys;
   MLoopTri *mlooptri;
-  const MPoly *mp;
   float solution, weight;
   int *vertsflipped = nullptr, *mask = nullptr;
   int a, tris_num, j, bbone, firstsegment, lastsegment;
   bool use_topology = (me->editflag & ME_EDIT_MIRROR_TOPO) != 0;
 
   const float(*vert_positions)[3] = BKE_mesh_vert_positions(me);
-  const MPoly *polys = BKE_mesh_polys(me);
+  const blender::OffsetIndices polys = me->polys();
   const blender::Span<int> corner_verts = me->corner_verts();
   bool use_vert_sel = (me->editflag & ME_EDIT_PAINT_VERT_SEL) != 0;
   bool use_face_sel = (me->editflag & ME_EDIT_PAINT_FACE_SEL) != 0;
@@ -677,10 +676,9 @@ void heat_bone_weighting(Object *ob,
       const bool *select_vert = (const bool *)CustomData_get_layer_named(
           &me->vdata, CD_PROP_BOOL, ".select_vert");
       if (select_vert) {
-        for (a = 0, mp = polys; a < me->totpoly; mp++, a++) {
-          for (j = 0; j < mp->totloop; j++) {
-            const int vert_i = corner_verts[mp->loopstart + j];
-            mask[vert_i] = select_vert[vert_i];
+        for (const int i : polys.index_range()) {
+          for (const int vert : corner_verts.slice(polys[i])) {
+            mask[vert] = select_vert[vert];
           }
         }
       }
@@ -689,11 +687,10 @@ void heat_bone_weighting(Object *ob,
       const bool *select_poly = (const bool *)CustomData_get_layer_named(
           &me->pdata, CD_PROP_BOOL, ".select_poly");
       if (select_poly) {
-        for (a = 0, mp = polys; a < me->totpoly; mp++, a++) {
-          if (select_poly[a]) {
-            for (j = 0; j < mp->totloop; j++) {
-              const int vert_i = corner_verts[mp->loopstart + j];
-              mask[vert_i] = 1;
+        for (const int i : polys.index_range()) {
+          if (select_poly[i]) {
+            for (const int vert : corner_verts.slice(polys[i])) {
+              mask[vert] = 1;
             }
           }
         }
@@ -709,7 +706,7 @@ void heat_bone_weighting(Object *ob,
       MEM_mallocN(sizeof(*sys->heat.mlooptri) * sys->heat.tris_num, __func__));
 
   BKE_mesh_recalc_looptri(
-      corner_verts.data(), polys, vert_positions, me->totloop, me->totpoly, mlooptri);
+      corner_verts.data(), polys.data(), vert_positions, me->totloop, me->totpoly, mlooptri);
 
   sys->heat.mlooptri = mlooptri;
   sys->heat.corner_verts = corner_verts.data();
@@ -882,11 +879,11 @@ typedef struct MDefBoundIsect {
   float co[3];
   /* non-facing intersections are considered interior */
   bool facing;
-  /* ray-cast index aligned with MPoly (ray-hit-triangle isn't needed) */
+  /* ray-cast index aligned with polygons (ray-hit-triangle isn't needed) */
   int poly_index;
   /* distance from 'co' to the ray-cast start (clamped to avoid zero division) */
   float len;
-  /* weights aligned with the MPoly's loop indices */
+  /* weights aligned with the polygons's loop indices */
   float poly_weights[0];
 } MDefBoundIsect;
 
@@ -1633,7 +1630,7 @@ static void harmonic_coordinates_bind(MeshDeformModifierData *mmd, MeshDeformBin
   /* initialize data from 'cagedm' for reuse */
   {
     Mesh *me = mdb->cagemesh;
-    mdb->cagemesh_cache.mpoly = BKE_mesh_polys(me);
+    mdb->cagemesh_cache.mpoly = BKE_mesh_poly_offsets(me);
     mdb->cagemesh_cache.corner_verts = me->corner_verts().data();
     mdb->cagemesh_cache.looptri = BKE_mesh_runtime_looptri_ensure(me);
     mdb->cagemesh_cache.poly_nors = BKE_mesh_poly_normals_ensure(me);

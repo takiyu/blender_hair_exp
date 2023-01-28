@@ -25,7 +25,6 @@ struct Scene;
 struct SubdivCCG;
 
 struct MLoopTri;
-struct MPoly;
 
 /**
  * Delete mesh mdisps and grid paint masks.

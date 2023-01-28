@@ -82,17 +82,14 @@ static void extract_pos_nor_iter_poly_bm(const MeshRenderData *mr,
 }
 
 static void extract_pos_nor_iter_poly_mesh(const MeshRenderData *mr,
-                                           const MPoly *mp,
                                            const int mp_index,
                                            void *_data)
 {
   MeshExtract_PosNor_Data *data = static_cast<MeshExtract_PosNor_Data *>(_data);
   const bool poly_hidden = mr->hide_poly && mr->hide_poly[mp_index];
 
-  const int ml_index_end = mp->loopstart + mp->totloop;
-  for (int ml_index = mp->loopstart; ml_index < ml_index_end; ml_index += 1) {
+  for (const int ml_index : mr->polys[mp_index]) {
     const int vert_i = mr->corner_verts[ml_index];
-
     PosNorLoop *vert = &data->vbo_data[ml_index];
     const bool vert_hidden = mr->hide_vert && mr->hide_vert[vert_i];
     copy_v3_v3(vert->pos, mr->vert_positions[vert_i]);
@@ -457,15 +454,13 @@ static void extract_pos_nor_hq_iter_poly_bm(const MeshRenderData *mr,
 }
 
 static void extract_pos_nor_hq_iter_poly_mesh(const MeshRenderData *mr,
-                                              const MPoly *mp,
-                                              const int /*mp_index*/,
+                                              const int mp_index,
                                               void *_data)
 {
   MeshExtract_PosNorHQ_Data *data = static_cast<MeshExtract_PosNorHQ_Data *>(_data);
-  const bool poly_hidden = mr->hide_poly && mr->hide_poly[mp - mr->mpoly];
+  const bool poly_hidden = mr->hide_poly && mr->hide_poly[mp_index];
 
-  const int ml_index_end = mp->loopstart + mp->totloop;
-  for (int ml_index = mp->loopstart; ml_index < ml_index_end; ml_index += 1) {
+  for (const int ml_index : mr->polys[mp_index]) {
     const int vert_i = mr->corner_verts[ml_index];
 
     const bool vert_hidden = mr->hide_vert && mr->hide_vert[vert_i];

@@ -1415,7 +1415,7 @@ static void dynamicPaint_initAdjacencyData(DynamicPaintSurface *surface, const b
     int numOfEdges = mesh->totedge;
     int numOfPolys = mesh->totpoly;
     const MEdge *edges = BKE_mesh_edges(mesh);
-    const MPoly *polys = BKE_mesh_polys(mesh);
+    const OffsetIndices polys = mesh->polys();
     const blender::Span<int> corner_verts = mesh->corner_verts();
 
     /* count number of edges per vertex */
@@ -1430,8 +1430,8 @@ static void dynamicPaint_initAdjacencyData(DynamicPaintSurface *surface, const b
     /* also add number of vertices to temp_data
      * to locate points on "mesh edge" */
     for (int i = 0; i < numOfPolys; i++) {
-      for (int j = 0; j < polys[i].totloop; j++) {
-        temp_data[corner_verts[polys[i].loopstart + j]]++;
+      for (const int corner : polys[i]) {
+        temp_data[corner_verts[corner]]++;
       }
     }
 
@@ -1793,7 +1793,7 @@ struct DynamicPaintModifierApplyData {
   float (*vert_positions)[3];
   const float (*vert_normals)[3];
   const int *corner_verts;
-  const MPoly *mpoly;
+  blender::OffsetIndices<int> polys;
 
   float (*fcolor)[4];
   MLoopCol *mloopcol;
@@ -1826,7 +1826,7 @@ static void dynamicPaint_applySurfaceDisplace(DynamicPaintSurface *surface, Mesh
 
   /* displace paint */
   if (surface->type == MOD_DPAINT_SURFACE_T_DISPLACE) {
-    DynamicPaintModifierApplyData data{};
+    DynamicPaintModifierApplyData data;
     data.surface = surface;
     data.vert_positions = BKE_mesh_vert_positions_for_write(result);
     data.vert_normals = BKE_mesh_vertex_normals_ensure(result);
@@ -1862,7 +1862,6 @@ static void dynamic_paint_apply_surface_vpaint_cb(void *__restrict userdata,
       userdata);
 
   const int *corner_verts = data->corner_verts;
-  const MPoly *mpoly = data->mpoly;
 
   const DynamicPaintSurface *surface = data->surface;
   PaintPoint *pPoint = (PaintPoint *)surface->data->type_data;
@@ -1871,8 +1870,7 @@ static void dynamic_paint_apply_surface_vpaint_cb(void *__restrict userdata,
   MLoopCol *mloopcol = data->mloopcol;
   MLoopCol *mloopcol_wet = data->mloopcol_wet;
 
-  for (int j = 0; j < mpoly[p_index].totloop; j++) {
-    const int l_index = mpoly[p_index].loopstart + j;
+  for (const int l_index : data->polys[p_index]) {
     const int v_index = corner_verts[l_index];
 
     /* save layer data to output layer */
@@ -1932,7 +1930,6 @@ static Mesh *dynamicPaint_Modifier_apply(DynamicPaintModifierData *pmd, Object *
           if (surface->type == MOD_DPAINT_SURFACE_T_PAINT) {
             const blender::Span<int> corner_verts = mesh->corner_verts();
             const int totloop = result->totloop;
-            const MPoly *mpoly = BKE_mesh_polys(result);
             const int totpoly = result->totpoly;
 
             /* paint is stored on dry and wet layers, so mix final color first */
@@ -1983,7 +1980,7 @@ static Mesh *dynamicPaint_Modifier_apply(DynamicPaintModifierData *pmd, Object *
 
             data.ob = ob;
             data.corner_verts = corner_verts.data();
-            data.mpoly = mpoly;
+            data.polys = result->polys();
             data.mloopcol = mloopcol;
             data.mloopcol_wet = mloopcol_wet;
 

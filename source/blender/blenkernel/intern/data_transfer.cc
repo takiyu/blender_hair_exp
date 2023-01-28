@@ -264,7 +264,7 @@ static void data_transfer_dtdata_type_preprocess(Mesh *me_src,
     const int num_verts_dst = me_dst->totvert;
     const MEdge *edges_dst = BKE_mesh_edges(me_dst);
     const int num_edges_dst = me_dst->totedge;
-    const MPoly *polys_dst = BKE_mesh_polys(me_dst);
+    const OffsetIndices polys_dst = me_dst->polys();
     const int num_polys_dst = me_dst->totpoly;
     const int num_loops_dst = me_dst->totloop;
     CustomData *ldata_dst = &me_dst->ldata;
@@ -335,7 +335,7 @@ static void data_transfer_dtdata_type_postprocess(Object * /*ob_src*/,
     const int num_verts_dst = me_dst->totvert;
     MEdge *edges_dst = BKE_mesh_edges_for_write(me_dst);
     const int num_edges_dst = me_dst->totedge;
-    MPoly *polys_dst = BKE_mesh_polys_for_write(me_dst);
+    const OffsetIndices polys_dst = me_dst->polys();
     const int num_polys_dst = me_dst->totpoly;
     const int num_loops_dst = me_dst->totloop;
     CustomData *ldata_dst = &me_dst->ldata;
@@ -1482,7 +1482,7 @@ bool BKE_object_data_transfer_ex(struct Depsgraph *depsgraph,
       const int num_verts_dst = me_dst->totvert;
       const MEdge *edges_dst = BKE_mesh_edges(me_dst);
       const int num_edges_dst = me_dst->totedge;
-      const MPoly *polys_dst = BKE_mesh_polys(me_dst);
+      const OffsetIndices polys_dst = me_dst->polys();
       const int num_polys_dst = me_dst->totpoly;
       const int *corner_verts_dst = me_dst->corner_verts().data();
       const int *corner_edges_dst = me_dst->corner_edges().data();
@@ -1584,7 +1584,7 @@ bool BKE_object_data_transfer_ex(struct Depsgraph *depsgraph,
     if (DT_DATATYPE_IS_POLY(dtdata_type)) {
       const float(*positions_dst)[3] = BKE_mesh_vert_positions(me_dst);
       const int num_verts_dst = me_dst->totvert;
-      const MPoly *polys_dst = BKE_mesh_polys(me_dst);
+      const OffsetIndices polys_dst = me_dst->polys();
       const int num_polys_dst = me_dst->totpoly;
       const int *corner_verts_dst = me_dst->corner_verts().data();
       const int num_loops_dst = me_dst->totloop;

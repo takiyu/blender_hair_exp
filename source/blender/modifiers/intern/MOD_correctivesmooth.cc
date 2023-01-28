@@ -128,22 +128,18 @@ static void mesh_get_weights(const MDeformVert *dvert,
 static void mesh_get_boundaries(Mesh *mesh, float *smooth_weights)
 {
   const MEdge *medge = BKE_mesh_edges(mesh);
-  const MPoly *mpoly = BKE_mesh_polys(mesh);
+  const blender::OffsetIndices polys = mesh->polys();
   const blender::Span<int> corner_edges = mesh->corner_edges();
 
-  const uint mpoly_num = uint(mesh->totpoly);
   const uint medge_num = uint(mesh->totedge);
 
   /* Flag boundary edges so only boundaries are set to 1. */
   uint8_t *boundaries = static_cast<uint8_t *>(
       MEM_calloc_arrayN(medge_num, sizeof(*boundaries), __func__));
 
-  for (uint i = 0; i < mpoly_num; i++) {
-    const MPoly *p = &mpoly[i];
-    const int totloop = p->totloop;
-    int j;
-    for (j = 0; j < totloop; j++) {
-      uint8_t *e_value = &boundaries[corner_edges[p->loopstart + j]];
+  for (const int i : polys.index_range()) {
+    for (const int edge : corner_edges.slice(polys[i])) {
+      uint8_t *e_value = &boundaries[edge];
       *e_value |= uint8_t((*e_value) + 1);
     }
   }
@@ -439,7 +435,7 @@ static void calc_tangent_spaces(const Mesh *mesh,
 {
   const uint mpoly_num = uint(mesh->totpoly);
   const uint mvert_num = uint(mesh->totvert);
-  const MPoly *mpoly = BKE_mesh_polys(mesh);
+  const blender::OffsetIndices mpoly = mesh->polys();
   blender::Span<int> corner_verts = mesh->corner_verts();
   uint i;
 
@@ -448,9 +444,9 @@ static void calc_tangent_spaces(const Mesh *mesh,
   }
 
   for (i = 0; i < mpoly_num; i++) {
-    const MPoly *mp = &mpoly[i];
-    int next_corner = mp->loopstart;
-    int term_corner = next_corner + mp->totloop;
+    const blender::IndexRange poly = mpoly[i];
+    int next_corner = poly.start();
+    int term_corner = next_corner + poly.size();
     int prev_corner = term_corner - 2;
     int curr_corner = term_corner - 1;
 

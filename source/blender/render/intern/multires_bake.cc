@@ -62,10 +62,10 @@ struct MultiresBakeResult {
 struct MResolvePixelData {
   const float (*vert_positions)[3];
   const float (*vert_normals)[3];
-  MPoly *mpoly;
+  blender::OffsetIndices<int> polys;
   const int *material_indices;
   const bool *sharp_faces;
-  const int *corner_verts;
+  blender::Span<int> corner_verts;
   float (*mloopuv)[2];
   float uv_offset[2];
   const MLoopTri *mlooptri;
@@ -114,7 +114,6 @@ static void multiresbake_get_normal(const MResolvePixelData *data,
                                     float r_normal[3])
 {
   const int poly_index = data->mlooptri[tri_num].poly;
-  const MPoly *mp = &data->mpoly[poly_index];
   const bool smoothnormal = !(data->sharp_faces && data->sharp_faces[poly_index]);
 
   if (smoothnormal) {
@@ -127,7 +126,7 @@ static void multiresbake_get_normal(const MResolvePixelData *data,
     }
     else {
       BKE_mesh_calc_poly_normal(
-          mp, &data->corner_verts[mp->loopstart], data->vert_positions, r_normal);
+          data->corner_verts.slice(data->polys[poly_index]), data->vert_positions, r_normal);
     }
   }
 }
@@ -475,7 +474,7 @@ static void do_multires_bake(MultiresBakeRender *bkr,
   MultiresBakeQueue queue;
 
   const float(*positions)[3] = (float(*)[3])dm->getVertArray(dm);
-  MPoly *mpoly = dm->getPolyArray(dm);
+  const blender::OffsetIndices polys(blender::Span(dm->getPolyArray(dm), dm->getNumPolys(dm)));
   float(*mloopuv)[2] = static_cast<float(*)[2]>(dm->getLoopDataArray(dm, CD_PROP_FLOAT2));
   float *pvtangent = NULL;
 
@@ -492,9 +491,9 @@ static void do_multires_bake(MultiresBakeRender *bkr,
   memcpy(BKE_mesh_edges_for_write(temp_mesh),
          dm->getEdgeArray(dm),
          temp_mesh->totedge * sizeof(MEdge));
-  memcpy(BKE_mesh_polys_for_write(temp_mesh),
+  memcpy(temp_mesh->poly_offsets_for_write().data(),
          dm->getPolyArray(dm),
-         temp_mesh->totpoly * sizeof(MPoly));
+         (temp_mesh->totpoly + 1) * sizeof(int));
   memcpy(temp_mesh->corner_verts_for_write().data(),
          dm->getCornerVertArray(dm),
          temp_mesh->totloop * sizeof(int));
@@ -508,8 +507,7 @@ static void do_multires_bake(MultiresBakeRender *bkr,
     if (CustomData_get_layer_index(&dm->loopData, CD_TANGENT) == -1) {
       BKE_mesh_calc_loop_tangent_ex(
           positions,
-          dm->getPolyArray(dm),
-          dm->getNumPolys(dm),
+          polys,
           dm->getCornerVertArray(dm),
           dm->getLoopTriArray(dm),
           dm->getNumLoopTri(dm),
@@ -558,7 +556,7 @@ static void do_multires_bake(MultiresBakeRender *bkr,
     handle->image = ima;
     handle->queue = &queue;
 
-    handle->data.mpoly = mpoly;
+    handle->data.polys = polys;
     handle->data.material_indices = static_cast<const int *>(
         CustomData_get_layer_named(&dm->polyData, CD_PROP_INT32, "material_index"));
     handle->data.sharp_faces = static_cast<const bool *>(
@@ -726,7 +724,7 @@ static void get_ccgdm_data(DerivedMesh *lodm,
 
 static void interp_bilinear_mpoly(DerivedMesh *dm,
                                   const int *corner_verts,
-                                  MPoly *mpoly,
+                                  const blender::IndexRange poly,
                                   const float u,
                                   const float v,
                                   const int mode,
@@ -735,16 +733,16 @@ static void interp_bilinear_mpoly(DerivedMesh *dm,
   float data[4][3];
 
   if (mode == 0) {
-    dm->getVertNo(dm, corner_verts[mpoly->loopstart], data[0]);
-    dm->getVertNo(dm, corner_verts[mpoly->loopstart + 1], data[1]);
-    dm->getVertNo(dm, corner_verts[mpoly->loopstart + 2], data[2]);
-    dm->getVertNo(dm, corner_verts[mpoly->loopstart + 3], data[3]);
+    dm->getVertNo(dm, corner_verts[poly.start()], data[0]);
+    dm->getVertNo(dm, corner_verts[poly.start() + 1], data[1]);
+    dm->getVertNo(dm, corner_verts[poly.start() + 2], data[2]);
+    dm->getVertNo(dm, corner_verts[poly.start() + 3], data[3]);
   }
   else {
-    dm->getVertCo(dm, corner_verts[mpoly->loopstart], data[0]);
-    dm->getVertCo(dm, corner_verts[mpoly->loopstart + 1], data[1]);
-    dm->getVertCo(dm, corner_verts[mpoly->loopstart + 2], data[2]);
-    dm->getVertCo(dm, corner_verts[mpoly->loopstart + 3], data[3]);
+    dm->getVertCo(dm, corner_verts[poly.start()], data[0]);
+    dm->getVertCo(dm, corner_verts[poly.start() + 1], data[1]);
+    dm->getVertCo(dm, corner_verts[poly.start() + 2], data[2]);
+    dm->getVertCo(dm, corner_verts[poly.start() + 3], data[3]);
   }
 
   interp_bilinear_quad_v3(data, u, v, res);

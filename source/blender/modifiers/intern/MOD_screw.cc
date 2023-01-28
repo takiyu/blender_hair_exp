@@ -240,7 +240,6 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
 
   uint edge_offset;
 
-  MPoly *mp_new;
   MEdge *med_new, *med_new_firstloop;
   Object *ob_axis = ltmd->ob_axis;
 
@@ -383,13 +382,13 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
 
   const float(*vert_positions_orig)[3] = BKE_mesh_vert_positions(mesh);
   const MEdge *medge_orig = BKE_mesh_edges(mesh);
-  const MPoly *mpoly_orig = BKE_mesh_polys(mesh);
+  const OffsetIndices polys_orig = mesh->polys();
   const blender::Span<int> corner_verts_orig = mesh->corner_verts();
   const blender::Span<int> corner_edges_orig = mesh->corner_edges();
 
   float(*vert_positions_new)[3] = BKE_mesh_vert_positions_for_write(result);
   MEdge *medge_new = BKE_mesh_edges_for_write(result);
-  MPoly *mpoly_new = BKE_mesh_polys_for_write(result);
+  MutableSpan<int> poly_offests_new = result->poly_offsets_for_write();
   blender::MutableSpan<int> corner_verts_new = result->corner_verts_for_write();
   blender::MutableSpan<int> corner_edges_new = result->corner_edges_for_write();
   bke::MutableAttributeAccessor attributes = result->attributes_for_write();
@@ -444,8 +443,6 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
 
   /* build polygon -> edge map */
   if (totpoly) {
-    const MPoly *mp_orig;
-
     edge_poly_map = static_cast<uint *>(
         MEM_malloc_arrayN(totedge, sizeof(*edge_poly_map), __func__));
     memset(edge_poly_map, 0xff, sizeof(*edge_poly_map) * totedge);
@@ -454,15 +451,12 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
         MEM_malloc_arrayN(totvert, sizeof(*vert_loop_map), __func__));
     memset(vert_loop_map, 0xff, sizeof(*vert_loop_map) * totvert);
 
-    for (i = 0, mp_orig = mpoly_orig; i < totpoly; i++, mp_orig++) {
-      uint loopstart = uint(mp_orig->loopstart);
-      uint loopend = loopstart + uint(mp_orig->totloop);
-
-      for (uint k = loopstart; k < loopend; k++) {
-        const uint vert_i = uint(corner_verts_orig[k]);
-        const uint edge_i = uint(corner_edges_orig[k]);
+    for (const int i : polys_orig.index_range()) {
+      for (const int corner : polys_orig[i]) {
+        const uint vert_i = uint(corner_verts_orig[corner]);
+        const uint edge_i = uint(corner_edges_orig[corner]);
         edge_poly_map[edge_i] = i;
-        vert_loop_map[vert_i] = k;
+        vert_loop_map[vert_i] = corner;
 
         /* also order edges based on faces */
         if (medge_new[edge_i].v1 != vert_i) {
@@ -815,7 +809,6 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
     }
   }
 
-  mp_new = mpoly_new;
   int new_loop_index = 0;
   med_new_firstloop = medge_new;
 
@@ -873,8 +866,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
         dst_material_index[mpoly_index] = mat_nr;
         sharp_faces.span[i] = use_flat_shading;
       }
-      mp_new->loopstart = mpoly_index * 4;
-      mp_new->totloop = 4;
+      poly_offests_new[mpoly_index] = mpoly_index * 4;
 
       /* Loop-Custom-Data */
       if (has_mloop_orig) {
@@ -957,7 +949,6 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
         corner_edges_new[new_loop_index + quad_ord_ofs[3]] = int(totedge + i1);
       }
 
-      mp_new++;
       new_loop_index += 4;
       mpoly_index++;
     }

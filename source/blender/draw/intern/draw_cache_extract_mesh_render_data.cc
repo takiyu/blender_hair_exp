@@ -238,10 +238,9 @@ static void mesh_render_data_polys_sorted_build(MeshRenderData *mr, MeshBufferCa
   else {
     for (int i = 0; i < mr->poly_len; i++) {
       if (!(mr->use_hide && mr->hide_poly && mr->hide_poly[i])) {
-        const MPoly *mp = &mr->mpoly[i];
         const int mat = min_ii(mr->material_indices ? mr->material_indices[i] : 0, mat_last);
         tri_first_index[i] = mat_tri_offs[mat];
-        mat_tri_offs[mat] += mp->totloop - 2;
+        mat_tri_offs[mat] += mr->polys[i].size() - 2;
       }
       else {
         tri_first_index[i] = -1;
@@ -276,10 +275,9 @@ static void mesh_render_data_mat_tri_len_mesh_range_fn(void *__restrict userdata
   MeshRenderData *mr = static_cast<MeshRenderData *>(userdata);
   int *mat_tri_len = static_cast<int *>(tls->userdata_chunk);
 
-  const MPoly *mp = &mr->mpoly[iter];
   if (!(mr->use_hide && mr->hide_poly && mr->hide_poly[iter])) {
     int mat = min_ii(mr->material_indices ? mr->material_indices[iter] : 0, mr->mat_len - 1);
-    mat_tri_len[mat] += mp->totloop - 2;
+    mat_tri_len[mat] += mr->polys[iter].size() - 2;
   }
 }
 
@@ -379,9 +377,8 @@ void mesh_render_data_update_normals(MeshRenderData *mr, const eMRDataType data_
                                   mr->corner_edges,
                                   mr->loop_normals,
                                   mr->loop_len,
-                                  mr->mpoly,
+                                  mr->polys,
                                   mr->poly_normals,
-                                  mr->poly_len,
                                   is_auto_smooth,
                                   split_angle,
                                   sharp_edges,
@@ -549,7 +546,7 @@ MeshRenderData *mesh_render_data_create(Object *object,
 
     mr->vert_positions = mr->me->vert_positions().data();
     mr->medge = BKE_mesh_edges(mr->me);
-    mr->mpoly = BKE_mesh_polys(mr->me);
+    mr->polys = mr->me->polys();
     mr->corner_verts = mr->me->corner_verts().data();
     mr->corner_edges = mr->me->corner_edges().data();
 

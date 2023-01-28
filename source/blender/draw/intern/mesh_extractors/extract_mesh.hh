@@ -78,7 +78,7 @@ struct MeshRenderData {
   const MEdge *medge;
   const int *corner_verts;
   const int *corner_edges;
-  const MPoly *mpoly;
+  blender::OffsetIndices<int> polys;
   BMVert *eve_act;
   BMEdge *eed_act;
   BMFace *efa_act;
@@ -255,10 +255,7 @@ using ExtractPolyBMeshFn = void(const MeshRenderData *mr,
                                 const BMFace *f,
                                 int f_index,
                                 void *data);
-using ExtractPolyMeshFn = void(const MeshRenderData *mr,
-                               const MPoly *mp,
-                               int mp_index,
-                               void *data);
+using ExtractPolyMeshFn = void(const MeshRenderData *mr, int mp_index, void *data);
 using ExtractLEdgeBMeshFn = void(const MeshRenderData *mr,
                                  const BMEdge *eed,
                                  int ledge_index,
@@ -300,7 +297,7 @@ using ExtractIterSubdivMeshFn = void(const DRWSubdivCache *subdiv_cache,
                                      const MeshRenderData *mr,
                                      void *data,
                                      uint subdiv_quad_index,
-                                     const MPoly *coarse_quad);
+                                     int coarse_quad_index);
 using ExtractFinishSubdivFn = void(const DRWSubdivCache *subdiv_cache,
                                    const MeshRenderData *mr,
                                    MeshBatchCache *cache,

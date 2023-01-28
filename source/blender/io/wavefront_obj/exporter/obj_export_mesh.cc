@@ -285,8 +285,7 @@ float3 OBJMesh::calc_vertex_coords(const int vert_index, const float global_scal
 
 Span<int> OBJMesh::calc_poly_vertex_indices(const int poly_index) const
 {
-  const MPoly &mpoly = mesh_polys_[poly_index];
-  return mesh_corner_verts_.slice(mpoly.loopstart, mpoly.totloop);
+  return mesh_corner_verts_.slice(mesh_polys_[poly_index]);
 }
 
 void OBJMesh::store_uv_coords_and_indices()
@@ -304,18 +303,18 @@ void OBJMesh::store_uv_coords_and_indices()
   const float limit[2] = {STD_UV_CONNECT_LIMIT, STD_UV_CONNECT_LIMIT};
 
   UvVertMap *uv_vert_map = BKE_mesh_uv_vert_map_create(
-      mesh_polys_.data(),
+      mesh_polys_,
       nullptr,
       nullptr,
       mesh_corner_verts_.data(),
       reinterpret_cast<const float(*)[2]>(uv_map.data()),
-      mesh_polys_.size(),
+      mesh_polys_.ranges_num(),
       totvert,
       limit,
       false,
       false);
 
-  uv_indices_.resize(mesh_polys_.size());
+  uv_indices_.resize(mesh_polys_.ranges_num());
   /* At least total vertices of a mesh will be present in its texture map. So
    * reserve minimum space early. */
   uv_coords_.reserve(totvert);
@@ -327,11 +326,11 @@ void OBJMesh::store_uv_coords_and_indices()
       if (uv_vert->separate) {
         tot_uv_vertices_ += 1;
       }
-      const int verts_in_poly = mesh_polys_[uv_vert->poly_index].totloop;
+      const int verts_in_poly = mesh_polys_[uv_vert->poly_index].size();
 
       /* Store UV vertex coordinates. */
       uv_coords_.resize(tot_uv_vertices_);
-      const int loopstart = mesh_polys_[uv_vert->poly_index].loopstart;
+      const int loopstart = mesh_polys_[uv_vert->poly_index].start();
       Span<float> vert_uv_coords(uv_map[loopstart + uv_vert->loop_of_poly_index], 2);
       uv_coords_[tot_uv_vertices_ - 1] = float2(vert_uv_coords[0], vert_uv_coords[1]);
 
@@ -357,9 +356,7 @@ Span<int> OBJMesh::calc_poly_uv_indices(const int poly_index) const
 float3 OBJMesh::calc_poly_normal(const int poly_index) const
 {
   float3 r_poly_normal;
-  const MPoly &poly = mesh_polys_[poly_index];
-  BKE_mesh_calc_poly_normal(&poly,
-                            &mesh_corner_verts_[poly.loopstart],
+  BKE_mesh_calc_poly_normal(mesh_corner_verts_.slice(mesh_polys_[poly_index]),
                             reinterpret_cast<const float(*)[3]>(mesh_positions_.data()),
                             r_poly_normal);
   mul_m3_v3(world_and_axes_normal_transform_, r_poly_normal);
@@ -400,14 +397,13 @@ void OBJMesh::store_normal_coords_and_indices()
   const float(*lnors)[3] = static_cast<const float(*)[3]>(
       CustomData_get_layer(&export_mesh_->ldata, CD_NORMAL));
   for (int poly_index = 0; poly_index < export_mesh_->totpoly; ++poly_index) {
-    const MPoly &mpoly = mesh_polys_[poly_index];
+    const IndexRange poly = mesh_polys_[poly_index];
     bool need_per_loop_normals = lnors != nullptr || !(sharp_faces_[poly_index]);
     if (need_per_loop_normals) {
-      for (int loop_of_poly = 0; loop_of_poly < mpoly.totloop; ++loop_of_poly) {
+      for (const int corner : poly) {
         float3 loop_normal;
-        int loop_index = mpoly.loopstart + loop_of_poly;
-        BLI_assert(loop_index < export_mesh_->totloop);
-        copy_v3_v3(loop_normal, lnors[loop_index]);
+        BLI_assert(corner < export_mesh_->totloop);
+        copy_v3_v3(loop_normal, lnors[corner]);
         mul_m3_v3(world_and_axes_normal_transform_, loop_normal);
         normalize_v3(loop_normal);
         float3 rounded_loop_normal = round_float3_to_n_digits(loop_normal, round_digits);
@@ -417,7 +413,7 @@ void OBJMesh::store_normal_coords_and_indices()
           normal_to_index.add(rounded_loop_normal, loop_norm_index);
           normal_coords_.append(rounded_loop_normal);
         }
-        loop_to_normal_index_[loop_index] = loop_norm_index;
+        loop_to_normal_index_[corner] = loop_norm_index;
       }
     }
     else {
@@ -429,10 +425,9 @@ void OBJMesh::store_normal_coords_and_indices()
         normal_to_index.add(rounded_poly_normal, poly_norm_index);
         normal_coords_.append(rounded_poly_normal);
       }
-      for (int i = 0; i < mpoly.totloop; ++i) {
-        int loop_index = mpoly.loopstart + i;
-        BLI_assert(loop_index < export_mesh_->totloop);
-        loop_to_normal_index_[loop_index] = poly_norm_index;
+      for (const int corner : poly) {
+        BLI_assert(corner < export_mesh_->totloop);
+        loop_to_normal_index_[corner] = poly_norm_index;
       }
     }
   }
@@ -444,12 +439,10 @@ Vector<int> OBJMesh::calc_poly_normal_indices(const int poly_index) const
   if (loop_to_normal_index_.is_empty()) {
     return {};
   }
-  const MPoly &mpoly = mesh_polys_[poly_index];
-  const int totloop = mpoly.totloop;
-  Vector<int> r_poly_normal_indices(totloop);
-  for (int poly_loop_index = 0; poly_loop_index < totloop; poly_loop_index++) {
-    int loop_index = mpoly.loopstart + poly_loop_index;
-    r_poly_normal_indices[poly_loop_index] = loop_to_normal_index_[loop_index];
+  const IndexRange poly = mesh_polys_[poly_index];
+  Vector<int> r_poly_normal_indices(poly.size());
+  for (const int i : IndexRange(poly.size())) {
+    r_poly_normal_indices[i] = loop_to_normal_index_[poly[i]];
   }
   return r_poly_normal_indices;
 }
@@ -474,8 +467,7 @@ int16_t OBJMesh::get_poly_deform_group_index(const int poly_index,
 
   group_weights.fill(0);
   bool found_any_group = false;
-  const MPoly &mpoly = mesh_polys_[poly_index];
-  for (const int vert : mesh_corner_verts_.slice(mpoly.loopstart, mpoly.totloop)) {
+  for (const int vert : mesh_corner_verts_.slice(mesh_polys_[poly_index])) {
     const MDeformVert &dv = dverts[vert];
     for (int weight_i = 0; weight_i < dv.totweight; ++weight_i) {
       const auto group = dv.dw[weight_i].def_nr;

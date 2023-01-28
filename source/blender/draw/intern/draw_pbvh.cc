@@ -336,6 +336,8 @@ struct PBVHBatches {
     float fno[3];
     short no[3];
     int last_poly = -1;
+    const blender::OffsetIndices<int> polys(
+        blender::Span(args->poly_offsets, args->mesh_faces_num));
     const bool *sharp_faces = static_cast<const bool *>(
         CustomData_get_layer_named(args->pdata, CD_PROP_BOOL, "sharp_face"));
 
@@ -346,9 +348,10 @@ struct PBVHBatches {
 
         if (sharp_faces && sharp_faces[tri->poly]) {
           smooth = true;
-          const MPoly *mp = args->mpoly + tri->poly;
-          BKE_mesh_calc_poly_normal(
-              mp, &args->corner_verts[mp->loopstart], args->vert_positions, fno);
+          const IndexRange poly = polys[tri->poly];
+          BKE_mesh_calc_poly_normal(blender::Span(&args->corner_verts[poly.start()], poly.size()),
+                                    args->vert_positions,
+                                    fno);
           normal_float_to_short_v3(no, fno);
         }
         else {

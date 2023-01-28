@@ -93,8 +93,7 @@ void MOD_get_texture_coords(MappingInfoModifierData *dmd,
   /* UVs need special handling, since they come from faces */
   if (texmapping == MOD_DISP_MAP_UV) {
     if (CustomData_has_layer(&mesh->ldata, CD_PROP_FLOAT2)) {
-      const MPoly *mpoly = BKE_mesh_polys(mesh);
-      const MPoly *mp;
+      const OffsetIndices polys = mesh->polys();
       const Span<int> corner_verts = mesh->corner_verts();
       BLI_bitmap *done = BLI_BITMAP_NEW(verts_num, __func__);
       const int polys_num = mesh->totpoly;
@@ -104,11 +103,12 @@ void MOD_get_texture_coords(MappingInfoModifierData *dmd,
           CustomData_get_layer_named(&mesh->ldata, CD_PROP_FLOAT2, uvname));
 
       /* verts are given the UV from the first face that uses them */
-      for (i = 0, mp = mpoly; i < polys_num; i++, mp++) {
-        uint fidx = mp->totloop - 1;
+      for (i = 0; i < polys_num; i++) {
+        const IndexRange poly = polys[i];
+        uint fidx = poly.size() - 1;
 
         do {
-          uint lidx = mp->loopstart + fidx;
+          uint lidx = poly.start() + fidx;
           const int vidx = corner_verts[lidx];
 
           if (!BLI_BITMAP_TEST(done, vidx)) {

@@ -38,18 +38,16 @@ static void extract_fdots_iter_poly_bm(const MeshRenderData * /*mr*/,
 }
 
 static void extract_fdots_iter_poly_mesh(const MeshRenderData *mr,
-                                         const MPoly *mp,
                                          const int mp_index,
                                          void *_userdata)
 {
-  const bool hidden = mr->use_hide && mr->hide_poly && mr->hide_poly[mp - mr->mpoly];
+  const bool hidden = mr->use_hide && mr->hide_poly && mr->hide_poly[mp_index];
 
   GPUIndexBufBuilder *elb = static_cast<GPUIndexBufBuilder *>(_userdata);
   if (mr->use_subsurf_fdots) {
     const BLI_bitmap *facedot_tags = mr->me->runtime->subsurf_face_dot_tags;
 
-    const int ml_index_end = mp->loopstart + mp->totloop;
-    for (int ml_index = mp->loopstart; ml_index < ml_index_end; ml_index += 1) {
+    for (const int ml_index : mr->polys[mp_index]) {
       const int vert_i = mr->corner_verts[ml_index];
       if (BLI_BITMAP_TEST(facedot_tags, vert_i) && !hidden) {
         GPU_indexbuf_set_point_vert(elb, mp_index, mp_index);

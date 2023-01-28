@@ -209,7 +209,7 @@ static void calc_boundaries(const Mesh &mesh,
   BLI_assert(r_vertex_types.size() == mesh.totvert);
   BLI_assert(r_edge_types.size() == mesh.totedge);
   const Span<MEdge> edges = mesh.edges();
-  const Span<MPoly> polys = mesh.polys();
+  const OffsetIndices polys = mesh.polys();
   const Span<int> corner_edges = mesh.corner_edges();
 
   r_vertex_types.fill(VertexType::Loose);
@@ -217,8 +217,7 @@ static void calc_boundaries(const Mesh &mesh,
 
   /* Add up the number of polys connected to each edge. */
   for (const int i : IndexRange(mesh.totpoly)) {
-    const MPoly &poly = polys[i];
-    for (const int edge_i : corner_edges.slice(poly.loopstart, poly.totloop)) {
+    for (const int edge_i : corner_edges.slice(polys[i])) {
       r_edge_types[edge_i] = get_edge_type_with_added_neighbor(r_edge_types[edge_i]);
     }
   }
@@ -311,7 +310,7 @@ static void calc_boundaries(const Mesh &mesh,
  *   loop.
  */
 static bool sort_vertex_polys(const Span<MEdge> edges,
-                              const Span<MPoly> polys,
+                              const OffsetIndices<int> polys,
                               const Span<int> corner_verts,
                               const Span<int> corner_edges,
                               const int vertex_index,
@@ -328,9 +327,8 @@ static bool sort_vertex_polys(const Span<MEdge> edges,
   /* For each polygon store the two corners whose edge contains the vertex. */
   Array<std::pair<int, int>> poly_vertex_corners(connected_polys.size());
   for (const int i : connected_polys.index_range()) {
-    const MPoly &poly = polys[connected_polys[i]];
     bool first_edge_done = false;
-    for (const int corner : IndexRange(poly.loopstart, poly.totloop)) {
+    for (const int corner : polys[connected_polys[i]]) {
       const int edge = corner_edges[corner];
       if (edges[edge].v1 == vertex_index || edges[edge].v2 == vertex_index) {
         if (!first_edge_done) {
@@ -449,14 +447,13 @@ static bool sort_vertex_polys(const Span<MEdge> edges,
 /**
  * Get the edge on the poly that contains the given vertex and is a boundary edge.
  */
-static void boundary_edge_on_poly(const MPoly &poly,
-                                  const Span<MEdge> edges,
-                                  const Span<int> corner_edges,
+static void boundary_edge_on_poly(const Span<MEdge> edges,
+                                  const Span<int> poly_edges,
                                   const int vertex_index,
                                   const Span<EdgeType> edge_types,
                                   int &r_edge)
 {
-  for (const int edge_i : corner_edges.slice(poly.loopstart, poly.totloop)) {
+  for (const int edge_i : poly_edges) {
     if (edge_types[edge_i] == EdgeType::Boundary) {
       const MEdge &edge = edges[edge_i];
       if (edge.v1 == vertex_index || edge.v2 == vertex_index) {
@@ -471,7 +468,7 @@ static void boundary_edge_on_poly(const MPoly &poly,
  * Get the two edges on the poly that contain the given vertex and are boundary edges. The
  * orientation of the poly is taken into account.
  */
-static void boundary_edges_on_poly(const MPoly &poly,
+static void boundary_edges_on_poly(const IndexRange poly,
                                    const Span<MEdge> edges,
                                    const Span<int> corner_verts,
                                    const Span<int> corner_edges,
@@ -484,7 +481,7 @@ static void boundary_edges_on_poly(const MPoly &poly,
   /* This is set to true if the order in which we encounter the two edges is inconsistent with the
    * orientation of the polygon. */
   bool needs_swap = false;
-  for (const int corner : IndexRange(poly.loopstart, poly.totloop)) {
+  for (const int corner : poly) {
     const int edge_i = corner_edges[corner];
     if (edge_types[edge_i] == EdgeType::Boundary) {
       const MEdge &edge = edges[edge_i];
@@ -548,7 +545,7 @@ static bool vertex_needs_dissolving(const int vertex,
  * edges being created. (See T94144)
  */
 static void dissolve_redundant_verts(const Span<MEdge> edges,
-                                     const Span<MPoly> polys,
+                                     const OffsetIndices<int> polys,
                                      const Span<int> corner_edges,
                                      const Span<Vector<int>> vert_to_poly_map,
                                      MutableSpan<VertexType> vertex_types,
@@ -565,8 +562,7 @@ static void dissolve_redundant_verts(const Span<MEdge> edges,
     const int second_poly_index = vert_to_poly_map[vert_i][1];
     const int new_edge_index = new_edges.size();
     bool edge_created = false;
-    const MPoly &poly = polys[first_poly_index];
-    for (const int edge_i : corner_edges.slice(poly.loopstart, poly.totloop)) {
+    for (const int edge_i : corner_edges.slice(polys[first_poly_index])) {
       const MEdge &edge = edges[edge_i];
       const int v1 = edge.v1;
       const int v2 = edge.v2;
@@ -619,7 +615,7 @@ static Mesh *calc_dual_mesh(const Mesh &src_mesh,
 {
   const Span<float3> src_positions = src_mesh.vert_positions();
   const Span<MEdge> src_edges = src_mesh.edges();
-  const Span<MPoly> src_polys = src_mesh.polys();
+  const OffsetIndices src_polys = src_mesh.polys();
   const Span<int> src_corner_verts = src_mesh.corner_verts();
   const Span<int> src_corner_edges = src_mesh.corner_edges();
 
@@ -683,9 +679,7 @@ static Mesh *calc_dual_mesh(const Mesh &src_mesh,
 
   Vector<float3> vertex_positions(src_mesh.totpoly);
   for (const int i : IndexRange(src_mesh.totpoly)) {
-    const MPoly &poly = src_polys[i];
-    BKE_mesh_calc_poly_center(&poly,
-                              &src_corner_verts[poly.loopstart],
+    BKE_mesh_calc_poly_center(src_corner_verts.slice(src_polys[i]),
                               reinterpret_cast<const float(*)[3]>(src_positions.data()),
                               vertex_positions[i]);
   }
@@ -815,10 +809,16 @@ static Mesh *calc_dual_mesh(const Mesh &src_mesh,
       int edge2;
       if (loop_indices.size() >= 2) {
         /* The first boundary edge is at the end of the chain of polygons. */
-        boundary_edge_on_poly(
-            src_polys[loop_indices.last()], src_edges, src_corner_edges, i, edge_types, edge1);
-        boundary_edge_on_poly(
-            src_polys[loop_indices.first()], src_edges, src_corner_edges, i, edge_types, edge2);
+        boundary_edge_on_poly(src_edges,
+                              src_corner_edges.slice(src_polys[loop_indices.last()]),
+                              i,
+                              edge_types,
+                              edge1);
+        boundary_edge_on_poly(src_edges,
+                              src_corner_edges.slice(src_polys[loop_indices.first()]),
+                              i,
+                              edge_types,
+                              edge2);
       }
       else {
         /* If there is only one polygon both edges are in that polygon. */
@@ -913,14 +913,11 @@ static Mesh *calc_dual_mesh(const Mesh &src_mesh,
 
   mesh_out->vert_positions_for_write().copy_from(vertex_positions);
   MutableSpan<MEdge> dst_edges = mesh_out->edges_for_write();
-  MutableSpan<MPoly> dst_polys = mesh_out->polys_for_write();
+  MutableSpan<int> dst_poly_offsets = mesh_out->poly_offsets_for_write();
 
-  int loop_start = 0;
-  for (const int i : IndexRange(mesh_out->totpoly)) {
-    dst_polys[i].loopstart = loop_start;
-    dst_polys[i].totloop = loop_lengths[i];
-    loop_start += loop_lengths[i];
-  }
+  dst_poly_offsets.drop_back(1).copy_from(loop_lengths);
+  offset_indices::accumulate_counts_to_offsets(dst_poly_offsets);
+
   mesh_out->corner_verts_for_write().copy_from(loops);
   mesh_out->corner_edges_for_write().copy_from(loop_edges);
 

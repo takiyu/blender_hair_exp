@@ -158,7 +158,7 @@ static int *dm_getCornerEdgeArray(DerivedMesh *dm)
   return corner_edges;
 }
 
-static MPoly *dm_getPolyArray(DerivedMesh *dm)
+static int *dm_getPolyArray(DerivedMesh *dm)
 {
   MPoly *mpoly = (MPoly *)CustomData_get_layer_for_write(
       &dm->polyData, CD_MPOLY, dm->getNumPolys(dm));
@@ -1966,19 +1966,19 @@ static void mesh_init_origspace(Mesh *mesh)
   const int numpoly = mesh->totpoly;
   // const int numloop = mesh->totloop;
   const Span<float3> positions = mesh->vert_positions();
-  const Span<MPoly> polys = mesh->polys();
+  const blender::OffsetIndices polys = mesh->polys();
   const Span<int> corner_verts = mesh->corner_verts();
 
-  const MPoly *mp = polys.data();
   int i, j, k;
 
   blender::Vector<blender::float2, 64> vcos_2d;
 
-  for (i = 0; i < numpoly; i++, mp++) {
-    OrigSpaceLoop *lof = lof_array + mp->loopstart;
+  for (const int i : polys.index_range()) {
+    const blender::IndexRange poly = polys[i];
+    OrigSpaceLoop *lof = lof_array + poly.start();
 
-    if (ELEM(mp->totloop, 3, 4)) {
-      for (j = 0; j < mp->totloop; j++, lof++) {
+    if (ELEM(poly.size(), 3, 4)) {
+      for (j = 0; j < poly.size(); j++, lof++) {
         copy_v2_v2(lof->uv, default_osf[j]);
       }
     }
@@ -1989,15 +1989,13 @@ static void mesh_init_origspace(Mesh *mesh)
       float min[2] = {FLT_MAX, FLT_MAX}, max[2] = {-FLT_MAX, -FLT_MAX};
       float translate[2], scale[2];
 
-      BKE_mesh_calc_poly_normal(mp,
-                                &corner_verts[mp->loopstart],
-                                reinterpret_cast<const float(*)[3]>(positions.data()),
-                                p_nor);
+      BKE_mesh_calc_poly_normal(
+          corner_verts.slice(poly), reinterpret_cast<const float(*)[3]>(positions.data()), p_nor);
       axis_dominant_v3_to_m3(mat, p_nor);
 
-      vcos_2d.resize(mp->totloop);
-      for (j = 0; j < mp->totloop; j++) {
-        mul_v3_m3v3(co, mat, positions[corner_verts[mp->loopstart + j]]);
+      vcos_2d.resize(poly.size());
+      for (j = 0; j < poly.size(); j++) {
+        mul_v3_m3v3(co, mat, positions[corner_verts[poly[j]]]);
         copy_v2_v2(vcos_2d[j], co);
 
         for (k = 0; k < 2; k++) {

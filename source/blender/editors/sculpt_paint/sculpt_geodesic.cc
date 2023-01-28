@@ -88,7 +88,7 @@ static float *SCULPT_geodesic_mesh_create(Object *ob,
 
   float(*vert_positions)[3] = SCULPT_mesh_deformed_positions_get(ss);
   const MEdge *edges = BKE_mesh_edges(mesh);
-  const MPoly *polys = BKE_mesh_polys(mesh);
+  const blender::OffsetIndices polys = mesh->polys();
   const blender::Span<int> corner_verts = mesh->corner_verts();
   const blender::Span<int> corner_edges = mesh->corner_edges();
 
@@ -101,7 +101,6 @@ static float *SCULPT_geodesic_mesh_create(Object *ob,
                                   edges,
                                   mesh->totedge,
                                   polys,
-                                  mesh->totpoly,
                                   corner_edges.data(),
                                   mesh->totloop);
   }
@@ -182,10 +181,7 @@ static float *SCULPT_geodesic_mesh_create(Object *ob,
           if (ss->hide_poly && ss->hide_poly[poly]) {
             continue;
           }
-          const MPoly *mpoly = &polys[poly];
-
-          for (int loop_index = 0; loop_index < mpoly->totloop; loop_index++) {
-            const int v_other = corner_verts[loop_index + mpoly->loopstart];
+          for (const int v_other : corner_verts.slice(polys[poly])) {
             if (ELEM(v_other, v1, v2)) {
               continue;
             }

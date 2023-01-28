@@ -542,7 +542,7 @@ static void sculpt_face_sets_init_flood_fill(Object *ob, const FaceSetsFloodFill
   int *face_sets = ss->face_sets;
 
   const Span<MEdge> edges = mesh->edges();
-  const Span<MPoly> polys = mesh->polys();
+  const OffsetIndices polys = mesh->polys();
   const Span<int> corner_edges = mesh->corner_edges();
 
   if (!ss->epmap) {
@@ -1103,7 +1103,7 @@ static void sculpt_face_set_grow(Object *ob,
 {
   using namespace blender;
   Mesh *mesh = BKE_mesh_from_object(ob);
-  const MPoly *polys = BKE_mesh_polys(mesh);
+  const OffsetIndices polys = mesh->polys();
   const Span<int> corner_verts = mesh->corner_verts();
 
   for (int p = 0; p < mesh->totpoly; p++) {
@@ -1134,7 +1134,7 @@ static void sculpt_face_set_shrink(Object *ob,
 {
   using namespace blender;
   Mesh *mesh = BKE_mesh_from_object(ob);
-  const MPoly *polys = BKE_mesh_polys(mesh);
+  const OffsetIndices polys = mesh->polys();
   const Span<int> corner_verts = mesh->corner_verts();
   for (int p = 0; p < mesh->totpoly; p++) {
     if (!modify_hidden && prev_face_sets[p] <= 0) {

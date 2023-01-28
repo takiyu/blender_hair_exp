@@ -631,7 +631,7 @@ static ParamHandle *construct_param_handle_subsurfed(const Scene *scene,
 
   const float(*subsurfedPositions)[3] = BKE_mesh_vert_positions(subdiv_mesh);
   const MEdge *subsurfedEdges = BKE_mesh_edges(subdiv_mesh);
-  const MPoly *subsurfedPolys = BKE_mesh_polys(subdiv_mesh);
+  const OffsetIndices subsurfedPolys = subdiv_mesh->polys();
   const int *subsurfedCornerVerts = subdiv_mesh->corner_verts().data();
 
   const int *origVertIndices = static_cast<const int *>(

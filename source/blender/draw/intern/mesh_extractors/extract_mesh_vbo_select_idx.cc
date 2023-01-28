@@ -110,35 +110,29 @@ static void extract_vert_idx_iter_lvert_bm(const MeshRenderData *mr,
 }
 
 static void extract_poly_idx_iter_poly_mesh(const MeshRenderData *mr,
-                                            const MPoly *mp,
                                             const int mp_index,
                                             void *data)
 {
-  const int ml_index_end = mp->loopstart + mp->totloop;
-  for (int ml_index = mp->loopstart; ml_index < ml_index_end; ml_index += 1) {
+  for (const int ml_index : mr->polys[mp_index]) {
     (*(int32_t **)data)[ml_index] = (mr->p_origindex) ? mr->p_origindex[mp_index] : mp_index;
   }
 }
 
 static void extract_edge_idx_iter_poly_mesh(const MeshRenderData *mr,
-                                            const MPoly *mp,
-                                            const int /*mp_index*/,
+                                            const int mp_index,
                                             void *data)
 {
-  const int ml_index_end = mp->loopstart + mp->totloop;
-  for (int ml_index = mp->loopstart; ml_index < ml_index_end; ml_index += 1) {
+  for (const int ml_index : mr->polys[mp_index]) {
     const int edge = mr->corner_edges[ml_index];
     (*(int32_t **)data)[ml_index] = (mr->e_origindex) ? mr->e_origindex[edge] : edge;
   }
 }
 
 static void extract_vert_idx_iter_poly_mesh(const MeshRenderData *mr,
-                                            const MPoly *mp,
-                                            const int /*mp_index*/,
+                                            const int mp_index,
                                             void *data)
 {
-  const int ml_index_end = mp->loopstart + mp->totloop;
-  for (int ml_index = mp->loopstart; ml_index < ml_index_end; ml_index += 1) {
+  for (const int ml_index : mr->polys[mp_index]) {
     const int vert = mr->corner_verts[ml_index];
     (*(int32_t **)data)[ml_index] = (mr->v_origindex) ? mr->v_origindex[vert] : vert;
   }
@@ -379,7 +373,6 @@ static void extract_fdot_idx_iter_poly_bm(const MeshRenderData * /*mr*/,
 }
 
 static void extract_fdot_idx_iter_poly_mesh(const MeshRenderData *mr,
-                                            const MPoly * /*mp*/,
                                             const int mp_index,
                                             void *data)
 {

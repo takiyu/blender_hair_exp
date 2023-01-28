@@ -1035,7 +1035,7 @@ static void bake_targets_populate_pixels_color_attributes(BakeTargets *targets,
 
   const blender::Span<int> corner_verts = me_eval->corner_verts();
   BKE_mesh_recalc_looptri(corner_verts.data(),
-                          BKE_mesh_polys(me_eval),
+                          BKE_mesh_poly_offsets(me_eval),
                           BKE_mesh_vert_positions(me_eval),
                           me_eval->totloop,
                           me_eval->totpoly,
@@ -1046,7 +1046,7 @@ static void bake_targets_populate_pixels_color_attributes(BakeTargets *targets,
       CustomData_get_layer(&me_eval->vdata, CD_ORIGINDEX));
   const int *poly_origindex = static_cast<const int *>(
       CustomData_get_layer(&me_eval->pdata, CD_ORIGINDEX));
-  const MPoly *orig_polys = BKE_mesh_polys(me);
+  const OffsetIndices orig_polys = me->polys();
   const blender::Span<int> orig_corner_verts = me->corner_verts();
 
   for (int i = 0; i < tottri; i++) {

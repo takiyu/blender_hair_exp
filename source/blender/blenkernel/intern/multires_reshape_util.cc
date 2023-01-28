@@ -157,7 +157,7 @@ bool multires_reshape_context_create_from_base_mesh(MultiresReshapeContext *resh
   reshape_context->base_mesh = base_mesh;
   reshape_context->base_positions = BKE_mesh_vert_positions(base_mesh);
   reshape_context->base_edges = BKE_mesh_edges(base_mesh);
-  reshape_context->base_polys = BKE_mesh_polys(base_mesh);
+  reshape_context->base_polys = BKE_mesh_poly_offsets(base_mesh);
   reshape_context->base_corner_verts = base_mesh->corner_verts().data();
   reshape_context->base_corner_edges = base_mesh->corner_edges().data();
 
@@ -195,7 +195,7 @@ bool multires_reshape_context_create_from_object(MultiresReshapeContext *reshape
   reshape_context->base_mesh = base_mesh;
   reshape_context->base_positions = BKE_mesh_vert_positions(base_mesh);
   reshape_context->base_edges = BKE_mesh_edges(base_mesh);
-  reshape_context->base_polys = BKE_mesh_polys(base_mesh);
+  reshape_context->base_polys = BKE_mesh_poly_offsets(base_mesh);
   reshape_context->base_corner_verts = base_mesh->corner_verts().data();
   reshape_context->base_corner_edges = base_mesh->corner_edges().data();
 
@@ -230,7 +230,7 @@ bool multires_reshape_context_create_from_ccg(MultiresReshapeContext *reshape_co
   reshape_context->base_mesh = base_mesh;
   reshape_context->base_positions = BKE_mesh_vert_positions(base_mesh);
   reshape_context->base_edges = BKE_mesh_edges(base_mesh);
-  reshape_context->base_polys = BKE_mesh_polys(base_mesh);
+  reshape_context->base_polys = BKE_mesh_poly_offsets(base_mesh);
   reshape_context->base_corner_verts = base_mesh->corner_verts().data();
   reshape_context->base_corner_edges = base_mesh->corner_edges().data();
 
@@ -278,7 +278,7 @@ bool multires_reshape_context_create_from_subdiv(MultiresReshapeContext *reshape
   reshape_context->base_mesh = base_mesh;
   reshape_context->base_positions = BKE_mesh_vert_positions(base_mesh);
   reshape_context->base_edges = BKE_mesh_edges(base_mesh);
-  reshape_context->base_polys = BKE_mesh_polys(base_mesh);
+  reshape_context->base_polys = BKE_mesh_poly_offsets(base_mesh);
   reshape_context->base_corner_verts = base_mesh->corner_verts().data();
   reshape_context->base_corner_edges = base_mesh->corner_edges().data();
   reshape_context->cd_vertex_crease = (const float *)CustomData_get_layer(&base_mesh->edata,

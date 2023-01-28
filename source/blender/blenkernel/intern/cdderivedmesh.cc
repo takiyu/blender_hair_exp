@@ -44,7 +44,7 @@ struct CDDerivedMesh {
   MFace *mface;
   int *corner_verts;
   int *corner_edges;
-  MPoly *mpoly;
+  int *poly_offsets;
 
   /* Cached */
   struct PBVH *pbvh;

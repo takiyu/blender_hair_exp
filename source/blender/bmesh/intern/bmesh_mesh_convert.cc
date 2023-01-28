@@ -407,7 +407,7 @@ void BM_mesh_bm_from_me(BMesh *bm, const Mesh *me, const struct BMeshFromMeshPar
     bm->elem_index_dirty &= ~BM_EDGE; /* Added in order, clear dirty flag. */
   }
 
-  const Span<MPoly> mpoly = me->polys();
+  const OffsetIndices polys = me->polys();
   const Span<int> corner_verts = me->corner_verts();
   const Span<int> corner_edges = me->corner_edges();
 
@@ -419,12 +419,10 @@ void BM_mesh_bm_from_me(BMesh *bm, const Mesh *me, const struct BMeshFromMeshPar
   }
 
   int totloops = 0;
-  for (const int i : mpoly.index_range()) {
-    BMFace *f = bm_face_create_from_mpoly(*bm,
-                                          corner_verts.slice(mpoly[i].loopstart, mpoly[i].totloop),
-                                          corner_edges.slice(mpoly[i].loopstart, mpoly[i].totloop),
-                                          vtable,
-                                          etable);
+  for (const int i : polys.index_range()) {
+    const IndexRange poly = polys[i];
+    BMFace *f = bm_face_create_from_mpoly(
+        *bm, corner_verts.slice(poly), corner_edges.slice(poly), vtable, etable);
     if (!ftable.is_empty()) {
       ftable[i] = f;
     }
@@ -458,7 +456,7 @@ void BM_mesh_bm_from_me(BMesh *bm, const Mesh *me, const struct BMeshFromMeshPar
       bm->act_face = f;
     }
 
-    int j = mpoly[i].loopstart;
+    int j = poly.start();
     BMLoop *l_first = BM_FACE_FIRST_LOOP(f);
     BMLoop *l_iter = l_first;
     do {
@@ -1073,7 +1071,7 @@ void BM_mesh_bm_to_me(Main *bmain, BMesh *bm, Mesh *me, const struct BMeshToMesh
   CustomData_add_layer(&me->pdata, CD_MPOLY, CD_SET_DEFAULT, nullptr, me->totpoly);
   MutableSpan<float3> positions = me->vert_positions_for_write();
   MutableSpan<MEdge> medge = me->edges_for_write();
-  MutableSpan<MPoly> mpoly = me->polys_for_write();
+  MutableSpan<int> poly_offsets = me->poly_offsets_for_write();
   MutableSpan<int> corner_verts = me->corner_verts_for_write();
   MutableSpan<int> corner_edges = me->corner_edges_for_write();
 
@@ -1139,8 +1137,7 @@ void BM_mesh_bm_to_me(Main *bmain, BMesh *bm, Mesh *me, const struct BMeshToMesh
   j = 0;
   BM_ITER_MESH (f, &iter, bm, BM_FACES_OF_MESH) {
     BMLoop *l_iter, *l_first;
-    mpoly[i].loopstart = j;
-    mpoly[i].totloop = f->len;
+    poly_offsets[i] = j;
     if (f->mat_nr != 0) {
       need_material_index = true;
     }
@@ -1364,7 +1361,7 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
   BMFace *efa;
   MutableSpan<float3> positions = me->vert_positions_for_write();
   MutableSpan<MEdge> medge = me->edges_for_write();
-  MutableSpan<MPoly> mpoly = me->polys_for_write();
+  MutableSpan<int> poly_offsets = me->poly_offsets_for_write();
   MutableSpan<int> corner_verts = me->corner_verts_for_write();
   MutableSpan<int> corner_edges = me->corner_edges_for_write();
   uint i, j;
@@ -1445,11 +1442,9 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
   BM_ITER_MESH_INDEX (efa, &iter, bm, BM_FACES_OF_MESH, i) {
     BMLoop *l_iter;
     BMLoop *l_first;
-    MPoly *mp = &mpoly[i];
 
     BM_elem_index_set(efa, i); /* set_inline */
 
-    mp->totloop = efa->len;
     if (!BM_elem_flag_test(efa, BM_ELEM_SMOOTH)) {
       if (!sharp_face_attribute) {
         sharp_face_attribute = mesh_attributes.lookup_or_add_for_write_span<bool>(
@@ -1472,7 +1467,7 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
       select_poly_attribute.span[i] = true;
     }
 
-    mp->loopstart = j;
+    poly_offsets[i] = j;
     if (efa->mat_nr != 0) {
       if (!material_index_attribute) {
         material_index_attribute = mesh_attributes.lookup_or_add_for_write_span<int>(

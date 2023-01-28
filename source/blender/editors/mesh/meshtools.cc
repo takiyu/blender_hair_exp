@@ -1276,7 +1276,7 @@ bool ED_mesh_pick_face_vert(
     float len_best = FLT_MAX;
 
     const Span<float3> vert_positions = me_eval->vert_positions();
-    const Span<MPoly> polys = me_eval->polys();
+    const OffsetIndices polys = me_eval->polys();
     const Span<int> corner_verts = me_eval->corner_verts();
 
     const int *index_mp_to_orig = (const int *)CustomData_get_layer(&me_eval->pdata, CD_ORIGINDEX);

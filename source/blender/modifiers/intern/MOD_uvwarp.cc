@@ -80,7 +80,7 @@ static void matrix_from_obj_pchan(float mat[4][4], Object *ob, const char *bonen
 }
 
 struct UVWarpData {
-  const MPoly *mpoly;
+  blender::OffsetIndices<int> polys;
   blender::Span<int> corner_verts;
   float (*mloopuv)[2];
 
@@ -96,10 +96,10 @@ static void uv_warp_compute(void *__restrict userdata,
                             const TaskParallelTLS *__restrict /*tls*/)
 {
   const UVWarpData *data = static_cast<const UVWarpData *>(userdata);
+  const blender::IndexRange poly = data->polys[i];
+  const blender::Span<int> poly_verts = data->corner_verts.slice(poly);
 
-  const MPoly *mp = &data->mpoly[i];
-  const int *poly_verts = &data->corner_verts[mp->loopstart];
-  float(*mluv)[2] = &data->mloopuv[mp->loopstart];
+  float(*mluv)[2] = &data->mloopuv[poly.start()];
 
   const MDeformVert *dvert = data->dvert;
   const int defgrp_index = data->defgrp_index;
@@ -109,7 +109,7 @@ static void uv_warp_compute(void *__restrict userdata,
   int l;
 
   if (dvert) {
-    for (l = 0; l < mp->totloop; l++, mluv++) {
+    for (l = 0; l < poly.size(); l++, mluv++) {
       const int vert_i = poly_verts[l];
       float uv[2];
       const float weight = data->invert_vgroup ?
@@ -121,7 +121,7 @@ static void uv_warp_compute(void *__restrict userdata,
     }
   }
   else {
-    for (l = 0; l < mp->totloop; l++, mluv++) {
+    for (l = 0; l < poly.size(); l++, mluv++) {
       uv_warp_from_mat4_pair(*mluv, *mluv, warp_mat);
     }
   }
@@ -193,7 +193,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
   /* make sure we're using an existing layer */
   CustomData_validate_layer_name(&mesh->ldata, CD_PROP_FLOAT2, umd->uvlayer_name, uvname);
 
-  const MPoly *polys = BKE_mesh_polys(mesh);
+  const blender::OffsetIndices polys = mesh->polys();
   polys_num = mesh->totpoly;
   loops_num = mesh->totloop;
 
@@ -202,7 +202,7 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
   MOD_get_vgroup(ctx->object, mesh, umd->vgroup_name, &dvert, &defgrp_index);
 
   UVWarpData data{};
-  data.mpoly = polys;
+  data.polys = polys;
   data.corner_verts = mesh->corner_verts();
   data.mloopuv = mloopuv;
   data.dvert = dvert;

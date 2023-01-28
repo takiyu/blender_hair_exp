@@ -1103,11 +1103,12 @@ void BKE_defvert_extract_vgroup_to_polyweights(const MDeformVert *dvert,
                                                const int verts_num,
                                                const int *corner_verts,
                                                const int /*loops_num*/,
-                                               const MPoly *polys,
+                                               const int *poly_offsets,
                                                const int polys_num,
                                                const bool invert_vgroup,
                                                float *r_weights)
 {
+  const blender::OffsetIndices polys(blender::Span(poly_offsets, polys_num));
   if (dvert && defgroup != -1) {
     int i = polys_num;
     float *tmp_weights = static_cast<float *>(
@@ -1117,15 +1118,15 @@ void BKE_defvert_extract_vgroup_to_polyweights(const MDeformVert *dvert,
         dvert, defgroup, verts_num, invert_vgroup, tmp_weights);
 
     while (i--) {
-      const MPoly *mp = &polys[i];
-      const int *corner_vert = &corner_verts[mp->loopstart];
-      int j = mp->totloop;
+      const blender::IndexRange poly = polys[i];
+      const int *corner_vert = &corner_verts[poly.start()];
+      int j = poly.size();
       float w = 0.0f;
 
       for (; j--; corner_vert++) {
         w += tmp_weights[*corner_vert];
       }
-      r_weights[i] = w / float(mp->totloop);
+      r_weights[i] = w / float(poly.size());
     }
 
     MEM_freeN(tmp_weights);

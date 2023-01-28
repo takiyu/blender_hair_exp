@@ -277,10 +277,9 @@ static void mesh_merge_transform(Mesh *result,
   int *index_orig;
   int i;
   MEdge *me;
-  MPoly *mp;
   float(*result_positions)[3] = BKE_mesh_vert_positions_for_write(result);
   MEdge *result_edges = BKE_mesh_edges_for_write(result);
-  MPoly *result_polys = BKE_mesh_polys_for_write(result);
+  blender::MutableSpan<int> result_poly_offsets = result->poly_offsets_for_write();
   blender::MutableSpan<int> result_corner_verts = result->corner_verts_for_write();
   blender::MutableSpan<int> result_corner_edges = result->corner_edges_for_write();
 
@@ -316,9 +315,8 @@ static void mesh_merge_transform(Mesh *result,
   }
 
   /* adjust cap poly loopstart indices */
-  mp = result_polys + cap_polys_index;
-  for (i = 0; i < cap_npolys; i++, mp++) {
-    mp->loopstart += cap_loops_index;
+  for (i = 0; i < cap_npolys; i++) {
+    result_poly_offsets[cap_polys_index + i] += cap_loops_index;
   }
 
   /* adjust cap loop vertex and edge indices */
@@ -358,7 +356,6 @@ static Mesh *arrayModifier_doArray(ArrayModifierData *amd,
                                    const Mesh *mesh)
 {
   MEdge *me;
-  MPoly *mp;
   int i, j, c, count;
   float length = amd->length;
   /* offset matrix */
@@ -429,7 +426,7 @@ static Mesh *arrayModifier_doArray(ArrayModifierData *amd,
 
   unit_m4(offset);
   const MEdge *src_edges = BKE_mesh_edges(mesh);
-  const MPoly *src_polys = BKE_mesh_polys(mesh);
+  const blender::OffsetIndices src_polys = mesh->polys();
 
   if (amd->offset_type & MOD_ARR_OFF_CONST) {
     add_v3_v3(offset[3], amd->offset);
@@ -537,7 +534,7 @@ static Mesh *arrayModifier_doArray(ArrayModifierData *amd,
       mesh, result_nverts, result_nedges, 0, result_nloops, result_npolys);
   float(*result_positions)[3] = BKE_mesh_vert_positions_for_write(result);
   MEdge *result_edges = BKE_mesh_edges_for_write(result);
-  MPoly *result_polys = BKE_mesh_polys_for_write(result);
+  blender::MutableSpan<int> result_poly_offsets = result->poly_offsets_for_write();
   blender::MutableSpan<int> result_corner_verts = result->corner_verts_for_write();
   blender::MutableSpan<int> result_corner_edges = result->corner_edges_for_write();
 
@@ -554,13 +551,11 @@ static Mesh *arrayModifier_doArray(ArrayModifierData *amd,
   CustomData_copy_data(&mesh->pdata, &result->pdata, 0, 0, chunk_npolys);
 
   /* Subdivision-surface for eg won't have mesh data in the custom-data arrays.
-   * Now add #position/#MEdge/#MPoly layers. */
+   * Now add #position/#MEdge layers. */
   if (!CustomData_has_layer(&mesh->edata, CD_MEDGE)) {
     memcpy(result_edges, src_edges, sizeof(MEdge) * mesh->totedge);
   }
-  if (!CustomData_has_layer(&mesh->pdata, CD_MPOLY)) {
-    memcpy(result_polys, src_polys, sizeof(MPoly) * mesh->totpoly);
-  }
+  result_poly_offsets.take_front(mesh->totpoly).copy_from(mesh->poly_offsets());
 
   /* Remember first chunk, in case of cap merge */
   first_chunk_start = 0;
@@ -607,9 +602,8 @@ static Mesh *arrayModifier_doArray(ArrayModifierData *amd,
       me->v2 += c * chunk_nverts;
     }
 
-    mp = result_polys + c * chunk_npolys;
-    for (i = 0; i < chunk_npolys; i++, mp++) {
-      mp->loopstart += c * chunk_nloops;
+    for (i = 0; i < chunk_npolys; i++) {
+      result_poly_offsets[c * chunk_npolys + i] += c * chunk_nloops;
     }
 
     /* adjust loop vertex and edge indices */

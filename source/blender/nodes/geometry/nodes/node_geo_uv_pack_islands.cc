@@ -38,7 +38,7 @@ static VArray<float3> construct_uv_gvarray(const Mesh &mesh,
                                            const eAttrDomain domain)
 {
   const Span<float3> positions = mesh.vert_positions();
-  const Span<MPoly> polys = mesh.polys();
+  const OffsetIndices polys = mesh.polys();
   const Span<int> corner_verts = mesh.corner_verts();
 
   bke::MeshFieldContext face_context{mesh, ATTR_DOMAIN_FACE};
@@ -58,14 +58,14 @@ static VArray<float3> construct_uv_gvarray(const Mesh &mesh,
 
   ParamHandle *handle = GEO_uv_parametrizer_construct_begin();
   for (const int mp_index : selection) {
-    const MPoly &mp = polys[mp_index];
-    Array<ParamKey, 16> mp_vkeys(mp.totloop);
-    Array<bool, 16> mp_pin(mp.totloop);
-    Array<bool, 16> mp_select(mp.totloop);
-    Array<const float *, 16> mp_co(mp.totloop);
-    Array<float *, 16> mp_uv(mp.totloop);
-    for (const int i : IndexRange(mp.totloop)) {
-      const int corner = mp.loopstart + i;
+    const IndexRange poly = polys[mp_index];
+    Array<ParamKey, 16> mp_vkeys(poly.size());
+    Array<bool, 16> mp_pin(poly.size());
+    Array<bool, 16> mp_select(poly.size());
+    Array<const float *, 16> mp_co(poly.size());
+    Array<float *, 16> mp_uv(poly.size());
+    for (const int i : IndexRange(poly.size())) {
+      const int corner = poly[i];
       const int vert = corner_verts[corner];
       mp_vkeys[i] = vert;
       mp_co[i] = positions[vert];
@@ -75,7 +75,7 @@ static VArray<float3> construct_uv_gvarray(const Mesh &mesh,
     }
     GEO_uv_parametrizer_face_add(handle,
                                  mp_index,
-                                 mp.totloop,
+                                 poly.size(),
                                  mp_vkeys.data(),
                                  mp_co.data(),
                                  mp_uv.data(),

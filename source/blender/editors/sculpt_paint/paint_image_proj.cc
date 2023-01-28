@@ -415,7 +415,7 @@ struct ProjPaintState {
   const float (*vert_positions_eval)[3];
   const float (*vert_normals)[3];
   const MEdge *medge_eval;
-  const MPoly *mpoly_eval;
+  blender::OffsetIndices<int> polys_eval;
   const bool *select_poly_eval;
   const int *material_indices;
   const bool *sharp_faces_eval;
@@ -508,11 +508,6 @@ struct VertSeam {
 /* -------------------------------------------------------------------- */
 /** \name MLoopTri accessor functions.
  * \{ */
-
-BLI_INLINE const MPoly *ps_tri_index_to_mpoly(const ProjPaintState *ps, int tri_index)
-{
-  return &ps->mpoly_eval[ps->mlooptri_eval[tri_index].poly];
-}
 
 #define PS_LOOPTRI_AS_VERT_INDEX_3(ps, lt) \
   ps->corner_verts_eval[lt->tri[0]], ps->corner_verts_eval[lt->tri[1]], \
@@ -4079,7 +4074,7 @@ static bool proj_paint_state_mesh_eval_init(const bContext *C, ProjPaintState *p
     ps->medge_eval = BKE_mesh_edges(ps->me_eval);
   }
   ps->corner_verts_eval = ps->me_eval->corner_verts().data();
-  ps->mpoly_eval = BKE_mesh_polys(ps->me_eval);
+  ps->polys_eval = ps->me_eval->polys();
   ps->sharp_faces_eval = static_cast<const bool *>(
       CustomData_get_layer_named(&ps->me_eval->pdata, CD_PROP_BOOL, "sharp_face"));
   ps->select_poly_eval = (const bool *)CustomData_get_layer_named(
@@ -4396,12 +4391,9 @@ static void project_paint_prepare_all_faces(ProjPaintState *ps,
             if (prev_poly != lt->poly) {
               int iloop;
               bool culled = true;
-              const MPoly *poly = ps->mpoly_eval + lt->poly;
-              int poly_loops = poly->totloop;
               prev_poly = lt->poly;
-              for (iloop = 0; iloop < poly_loops; iloop++) {
-                if (!(ps->vertFlags[ps->corner_verts_eval[poly->loopstart + iloop]] &
-                      PROJ_VERT_CULL)) {
+              for (const int corner : ps->polys_eval[lt->poly]) {
+                if (!(ps->vertFlags[ps->corner_verts_eval[corner]] & PROJ_VERT_CULL)) {
                   culled = false;
                   break;
                 }
@@ -4410,7 +4402,7 @@ static void project_paint_prepare_all_faces(ProjPaintState *ps,
               if (culled) {
                 /* poly loops - 2 is number of triangles for poly,
                  * but counter gets incremented when continuing, so decrease by 3 */
-                int poly_tri = poly_loops - 3;
+                int poly_tri = ps->polys_eval[lt->poly].size() - 3;
                 tri_index += poly_tri;
                 lt += poly_tri;
                 continue;

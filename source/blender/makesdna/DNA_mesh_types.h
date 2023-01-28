@@ -17,6 +17,7 @@
 #ifdef __cplusplus
 
 #  include "BLI_math_vector_types.hh"
+#  include "BLI_offset_indices.hh"
 
 namespace blender {
 template<typename T> class Span;
@@ -68,10 +69,12 @@ typedef struct Mesh {
   int totvert;
   /** The number of edges (#MEdge) in the mesh, and the size of #edata. */
   int totedge;
-  /** The number of polygons/faces (#MPoly) in the mesh, and the size of #pdata. */
+  /** The number of polygons/faces in the mesh, and the size of #pdata. */
   int totpoly;
   /** The number of face corners in the mesh, and the size of #ldata. */
   int totloop;
+
+  int *poly_offsets_data;
 
   CustomData vdata, edata, pdata, ldata;
 
@@ -225,8 +228,9 @@ typedef struct Mesh {
   blender::MutableSpan<blender::float3> vert_positions_for_write();
   /**
    * Array of edges, containing vertex indices. For simple triangle or quad meshes, edges could be
-   * calculated from the #MPoly and "corner edge" arrays, however, edges need to be stored explicitly to
-   * edge domain attributes and to support loose edges that aren't connected to faces.
+   * calculated from the polygon and "corner edge" arrays, however, edges need to be stored
+   * explicitly to edge domain attributes and to support loose edges that aren't connected to
+   * faces.
    */
   blender::Span<MEdge> edges() const;
   /** Write access to edge data. */
@@ -234,9 +238,10 @@ typedef struct Mesh {
   /**
    * Face topology storage of the size and offset of each face's section of the face corners.
    */
-  blender::Span<MPoly> polys() const;
+  blender::OffsetIndices<int> polys() const;
+  blender::Span<int> poly_offsets() const;
   /** Write access to polygon data. */
-  blender::MutableSpan<MPoly> polys_for_write();
+  blender::MutableSpan<int> poly_offsets_for_write();
 
   blender::Span<int> corner_verts() const;
   blender::MutableSpan<int> corner_verts_for_write();

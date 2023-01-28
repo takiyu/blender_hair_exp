@@ -817,7 +817,7 @@ void blo_do_versions_290(FileData *fd, Library * /*lib*/, Main *bmain)
   if (MAIN_VERSION_ATLEAST(bmain, 290, 2) && MAIN_VERSION_OLDER(bmain, 291, 1)) {
     /* In this range, the extrude manifold could generate meshes with degenerated face. */
     LISTBASE_FOREACH (Mesh *, me, &bmain->meshes) {
-      for (const MPoly *mp = BKE_mesh_polys(me), *mp_end = mp + me->totpoly; mp < mp_end; mp++) {
+      for (const MPoly *mp = me->mpoly, *mp_end = mp + me->totpoly; mp < mp_end; mp++) {
         if (mp->totloop == 2) {
           bool changed;
           BKE_mesh_legacy_convert_loops_to_corners(me);
@@ -832,7 +832,7 @@ void blo_do_versions_290(FileData *fd, Library * /*lib*/, Main *bmain)
               me->corner_verts_for_write().data(),
               me->corner_edges_for_write().data(),
               me->totloop,
-              BKE_mesh_polys_for_write(me),
+              BKE_mesh_poly_offsets_for_write(me),
               me->totpoly,
               BKE_mesh_deform_verts_for_write(me),
               false,

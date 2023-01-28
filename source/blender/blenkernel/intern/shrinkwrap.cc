@@ -114,7 +114,7 @@ bool BKE_shrinkwrap_init_tree(
   }
 
   data->mesh = mesh;
-  data->polys = BKE_mesh_polys(mesh);
+  data->poly_offsets = mesh->poly_offsets().data();
   data->corner_edges = mesh->corner_edges().data();
   data->vert_normals = BKE_mesh_vertex_normals_ensure(mesh);
   data->sharp_faces = static_cast<const bool *>(

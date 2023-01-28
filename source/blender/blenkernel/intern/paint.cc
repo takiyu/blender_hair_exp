@@ -1695,7 +1695,7 @@ static void sculpt_update_object(
     /* These are assigned to the base mesh in Multires. This is needed because Face Sets operators
      * and tools use the Face Sets data from the base mesh when Multires is active. */
     ss->vert_positions = BKE_mesh_vert_positions_for_write(me);
-    ss->mpoly = BKE_mesh_polys(me);
+    ss->poly_offsets = me->poly_offsets().data();
     ss->corner_verts = me->corner_verts().data();
   }
   else {
@@ -1703,7 +1703,7 @@ static void sculpt_update_object(
     ss->totpoly = me->totpoly;
     ss->totfaces = me->totpoly;
     ss->vert_positions = BKE_mesh_vert_positions_for_write(me);
-    ss->mpoly = BKE_mesh_polys(me);
+    ss->poly_offsets = me->poly_offsets().data();
     ss->corner_verts = me->corner_verts().data();
     ss->multires.active = false;
     ss->multires.modifier = nullptr;
@@ -1764,10 +1764,9 @@ static void sculpt_update_object(
   if (need_pmap && ob->type == OB_MESH && !ss->pmap) {
     BKE_mesh_vert_poly_map_create(&ss->pmap,
                                   &ss->pmap_mem,
-                                  BKE_mesh_polys(me),
+                                  me->polys(),
                                   me->corner_verts().data(),
                                   me->totvert,
-                                  me->totpoly,
                                   me->totloop);
 
     if (ss->pbvh) {
@@ -1984,7 +1983,7 @@ int BKE_sculpt_mask_layers_ensure(Depsgraph *depsgraph,
                                   MultiresModifierData *mmd)
 {
   Mesh *me = static_cast<Mesh *>(ob->data);
-  const Span<MPoly> polys = me->polys();
+  const OffsetIndices polys = me->polys();
   const Span<int> corner_verts = me->corner_verts();
   int ret = 0;
 
@@ -2014,22 +2013,22 @@ int BKE_sculpt_mask_layers_ensure(Depsgraph *depsgraph,
     /* if vertices already have mask, copy into multires data */
     if (paint_mask) {
       for (i = 0; i < me->totpoly; i++) {
-        const MPoly *p = &polys[i];
+        const blender::IndexRange poly = polys[i];
         float avg = 0;
 
         /* mask center */
-        for (j = 0; j < p->totloop; j++) {
-          const int vert_i = corner_verts[p->loopstart + j];
+        for (j = 0; j < poly.size(); j++) {
+          const int vert_i = corner_verts[poly.start() + j];
           avg += paint_mask[vert_i];
         }
-        avg /= float(p->totloop);
+        avg /= float(poly.size());
 
         /* fill in multires mask corner */
-        for (j = 0; j < p->totloop; j++) {
-          GridPaintMask *gpm = &gmask[p->loopstart + j];
-          const int vert_i = corner_verts[p->loopstart + j];
-          const int prev = ME_POLY_LOOP_PREV(p, j);
-          const int next = ME_POLY_LOOP_NEXT(p, j);
+        for (j = 0; j < poly.size(); j++) {
+          GridPaintMask *gpm = &gmask[poly.start() + j];
+          const int vert_i = corner_verts[poly.start() + j];
+          const int prev = ME_POLY_LOOP_PREV(poly, j);
+          const int next = ME_POLY_LOOP_NEXT(poly, j);
 
           gpm->data[0] = avg;
           gpm->data[1] = (paint_mask[vert_i] + paint_mask[corner_verts[next]]) * 0.5f;
@@ -2181,7 +2180,7 @@ static PBVH *build_pbvh_from_regular_mesh(Object *ob, Mesh *me_eval_deform, bool
   BKE_pbvh_respect_hide_set(pbvh, respect_hide);
 
   MutableSpan<float3> positions = me->vert_positions_for_write();
-  const Span<MPoly> polys = me->polys();
+  const OffsetIndices polys = me->polys();
   const Span<int> corner_verts = me->corner_verts();
 
   MLoopTri *looptri = static_cast<MLoopTri *>(

@@ -207,7 +207,7 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
   const int totloop = mesh->totloop;
   const int totpoly = mesh->totpoly;
   const MEdge *src_edges = BKE_mesh_edges(mesh);
-  const MPoly *src_polys = BKE_mesh_polys(mesh);
+  const MPoly *src_polys = BKE_mesh_poly_offsets(mesh);
   const int *src_corner_verts = BKE_mesh_corner_verts(mesh);
   const int *src_corner_edges = BKE_mesh_corner_edges(mesh);
 
@@ -630,7 +630,7 @@ Mesh *BKE_mesh_merge_verts(Mesh *mesh,
            sizeof(int) * STACK_SIZE(corner_edges));
   }
   if (STACK_SIZE(mpoly)) {
-    memcpy(BKE_mesh_polys_for_write(result), mpoly, sizeof(MPoly) * STACK_SIZE(mpoly));
+    memcpy(BKE_mesh_poly_offsets_for_write(result), mpoly, sizeof(MPoly) * STACK_SIZE(mpoly));
   }
 
   MEM_freeN(medge);

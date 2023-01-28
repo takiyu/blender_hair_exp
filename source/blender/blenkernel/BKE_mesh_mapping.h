@@ -16,7 +16,6 @@ extern "C" {
 
 struct MEdge;
 struct MLoopTri;
-struct MPoly;
 
 /* UvVertMap */
 #define STD_UV_CONNECT_LIMIT 0.0001f
@@ -98,8 +97,10 @@ typedef struct MeshElemMap {
   int count;
 } MeshElemMap;
 
+#ifdef __cplusplus
+
 /* mapping */
-UvVertMap *BKE_mesh_uv_vert_map_create(const struct MPoly *mpoly,
+UvVertMap *BKE_mesh_uv_vert_map_create(blender::OffsetIndices<int> polys,
                                        const bool *hide_poly,
                                        const bool *select_poly,
                                        const int *corner_verts,
@@ -119,10 +120,9 @@ void BKE_mesh_uv_vert_map_free(UvVertMap *vmap);
  */
 void BKE_mesh_vert_poly_map_create(MeshElemMap **r_map,
                                    int **r_mem,
-                                   const struct MPoly *mpoly,
+                                   blender::OffsetIndices<int> polys,
                                    const int *corner_verts,
                                    int totvert,
-                                   int totpoly,
                                    int totloop);
 /**
  * Generates a map where the key is the vertex and the value
@@ -131,10 +131,9 @@ void BKE_mesh_vert_poly_map_create(MeshElemMap **r_map,
  */
 void BKE_mesh_vert_loop_map_create(MeshElemMap **r_map,
                                    int **r_mem,
-                                   const struct MPoly *mpoly,
+                                   blender::OffsetIndices<int> polys,
                                    const int *corner_verts,
                                    int totvert,
-                                   int totpoly,
                                    int totloop);
 /**
  * Generates a map where the key is the edge and the value
@@ -170,8 +169,7 @@ void BKE_mesh_edge_loop_map_create(MeshElemMap **r_map,
                                    int **r_mem,
                                    const struct MEdge *medge,
                                    int totedge,
-                                   const struct MPoly *mpoly,
-                                   int totpoly,
+                                   blender::OffsetIndices<int> polys,
                                    const int *corner_edges,
                                    int totloop);
 /**
@@ -183,8 +181,7 @@ void BKE_mesh_edge_poly_map_create(MeshElemMap **r_map,
                                    int **r_mem,
                                    const struct MEdge *medge,
                                    int totedge,
-                                   const struct MPoly *mpoly,
-                                   int totpoly,
+                                   blender::OffsetIndices<int> polys,
                                    const int *corner_edges,
                                    int totloop);
 /**
@@ -199,7 +196,7 @@ void BKE_mesh_edge_poly_map_create(MeshElemMap **r_map,
  *
  * \note `totsource` could be `totpoly`,
  *       `totfinal` could be `tottessface` and `final_origindex` its ORIGINDEX custom-data.
- *       This would allow an MPoly to loop over its tessfaces.
+ *       This would allow a poly to loop over its tessfaces.
  */
 void BKE_mesh_origindex_map_create(
     MeshElemMap **r_map, int **r_mem, int totsource, const int *final_origindex, int totfinal);
@@ -209,8 +206,7 @@ void BKE_mesh_origindex_map_create(
  */
 void BKE_mesh_origindex_map_create_looptri(MeshElemMap **r_map,
                                            int **r_mem,
-                                           const struct MPoly *mpoly,
-                                           int mpoly_num,
+                                           blender::OffsetIndices<int> polys,
                                            const struct MLoopTri *looptri,
                                            int looptri_num);
 
@@ -260,7 +256,7 @@ typedef bool (*MeshRemapIslandsCalc)(const float (*vert_positions)[3],
                                      int totvert,
                                      const struct MEdge *edges,
                                      int totedge,
-                                     const struct MPoly *polys,
+                                     blender::OffsetIndices<int> polys,
                                      int totpoly,
                                      const int *corner_verts,
                                      const int *corner_edges,
@@ -278,7 +274,7 @@ bool BKE_mesh_calc_islands_loop_poly_edgeseam(const float (*vert_positions)[3],
                                               int totvert,
                                               const struct MEdge *edges,
                                               int totedge,
-                                              const struct MPoly *polys,
+                                              blender::OffsetIndices<int> polys,
                                               int totpoly,
                                               const int *corner_verts,
                                               const int *corner_edges,
@@ -302,13 +298,15 @@ bool BKE_mesh_calc_islands_loop_poly_uvmap(float (*vert_positions)[3],
                                            int totvert,
                                            struct MEdge *edges,
                                            int totedge,
-                                           struct MPoly *polys,
+                                           blender::OffsetIndices<int> polys,
                                            int totpoly,
                                            const int *corner_verts,
                                            const int *corner_edges,
                                            int totloop,
                                            const float (*luvs)[2],
                                            MeshIslandStore *r_island_store);
+
+#endif
 
 /**
  * Calculate smooth groups from sharp edges.
@@ -320,7 +318,7 @@ bool BKE_mesh_calc_islands_loop_poly_uvmap(float (*vert_positions)[3],
  */
 int *BKE_mesh_calc_smoothgroups(const struct MEdge *medge,
                                 int totedge,
-                                const struct MPoly *mpoly,
+                                const int *poly_offsets,
                                 int totpoly,
                                 const int *corner_edges,
                                 int totloop,
@@ -345,29 +343,27 @@ int *BKE_mesh_calc_smoothgroups(const struct MEdge *medge,
 
 #ifdef __cplusplus
 
-#  include "DNA_meshdata_types.h" /* MPoly */
-
 namespace blender::bke::mesh_topology {
 
-Array<int> build_loop_to_poly_map(Span<MPoly> polys, int loops_num);
+Array<int> build_loop_to_poly_map(OffsetIndices<int> polys);
 
 Array<Vector<int>> build_vert_to_edge_map(Span<MEdge> edges, int verts_num);
-Array<Vector<int>> build_vert_to_poly_map(Span<MPoly> polys,
+Array<Vector<int>> build_vert_to_poly_map(OffsetIndices<int> polys,
                                           Span<int> corner_verts,
                                           int verts_num);
 Array<Vector<int>> build_vert_to_loop_map(Span<int> corner_verts, int verts_num);
 Array<Vector<int>> build_edge_to_loop_map(Span<int> corner_edges, int edges_num);
 Vector<Vector<int>> build_edge_to_loop_map_resizable(Span<int> corner_edges, int edges_num);
 
-inline int poly_loop_prev(const MPoly &poly, int loop_i)
+inline int poly_loop_prev(const IndexRange poly, int loop_i)
 {
-  return loop_i - 1 + (loop_i == poly.loopstart) * poly.totloop;
+  return loop_i - 1 + (loop_i == poly.start()) * poly.size();
 }
 
-inline int poly_loop_next(const MPoly &poly, int loop_i)
+inline int poly_loop_next(const IndexRange poly, int loop_i)
 {
-  if (loop_i == poly.loopstart + poly.totloop - 1) {
-    return poly.loopstart;
+  if (loop_i == poly.start() + poly.size() - 1) {
+    return poly.start();
   }
   return loop_i + 1;
 }

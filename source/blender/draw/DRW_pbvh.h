@@ -25,7 +25,6 @@ struct DMFlagMat;
 struct Mesh;
 struct MLoopTri;
 struct CustomData;
-struct MPoly;
 struct SubdivCCG;
 struct BMesh;
 
@@ -39,7 +38,7 @@ typedef struct PBVH_GPU_Args {
   const float (*vert_positions)[3];
   const int *corner_verts;
   const int *corner_edges;
-  const struct MPoly *mpoly;
+  const int *poly_offsets;
   int mesh_verts_num, mesh_faces_num, mesh_grids_num;
   struct CustomData *vdata, *ldata, *pdata;
   const float (*vert_normals)[3];

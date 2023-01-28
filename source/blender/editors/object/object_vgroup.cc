@@ -1224,16 +1224,18 @@ static bool vgroup_normalize(Object *ob)
  * count is an int passed by reference so it can be assigned the value of the length here. */
 static blender::Vector<int> getSurroundingVerts(Mesh *me, int vert)
 {
-  const MPoly *mp = me->polys().data();
+  int poly_index = 0;
+  const OffsetIndices polys = me->polys();
   const Span<int> corner_verts = me->corner_verts();
   int i = me->totpoly;
 
   blender::Vector<int> verts;
 
   while (i--) {
-    int j = mp->totloop;
-    int first_l = mp->totloop - 1;
-    const int *corner_vert = &corner_verts[mp->loopstart];
+    const blender::IndexRange poly = polys[poly_index];
+    int j = poly.size();
+    int first_l = poly.size() - 1;
+    const int *corner_vert = &corner_verts[poly.start()];
     while (j--) {
       /* XXX This assume a vert can only be once in a poly, even though
        *     it seems logical to me, not totally sure of that. */
@@ -1247,7 +1249,7 @@ static blender::Vector<int> getSurroundingVerts(Mesh *me, int vert)
         else if (!j) {
           /* We are on the last corner. */
           a = *(corner_vert - 1);
-          b = corner_verts[mp->loopstart];
+          b = corner_verts[poly.start()];
         }
         else {
           a = *(corner_vert - 1);
@@ -1277,7 +1279,7 @@ static blender::Vector<int> getSurroundingVerts(Mesh *me, int vert)
       }
       corner_vert++;
     }
-    mp++;
+    poly_index++;
   }
 
   return verts;
