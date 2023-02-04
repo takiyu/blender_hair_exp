@@ -123,6 +123,7 @@ void ED_operatortypes_mesh(void)
   WM_operatortype_append(MESH_OT_rip);
   WM_operatortype_append(MESH_OT_rip_edge);
   WM_operatortype_append(MESH_OT_blend_from_shape);
+  WM_operatortype_append(MESH_OT_smooth_shape);
   WM_operatortype_append(MESH_OT_shape_propagate_to_all);
 
   /* editmesh_polybuild */

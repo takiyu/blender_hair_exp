@@ -4068,6 +4068,470 @@ void MESH_OT_blend_from_shape(wmOperatorType *ot)
 /** \} */
 
 /* -------------------------------------------------------------------- */
+/** \name Smooth Shape Operator
+ * \{ */
+
+enum {
+  MESH_SHAPE_RELATIVE_OWN,
+  MESH_SHAPE_RELATIVE_INCLUDE,
+  MESH_SHAPE_RELATIVE_EXCLUDE,
+  MESH_SHAPE_RELATIVE_BASIS
+};
+
+struct ShapeKeyRelativeInfo {
+  int mode;
+  int active_basis;
+  int ref_key, ref_basis;
+};
+
+static bool edbm_shape_relative_info_validate(BMesh *bm, struct ShapeKeyRelativeInfo *info)
+{
+  int totshape_ref = CustomData_number_of_layers(&bm->vdata, CD_SHAPEKEY);
+  int active_key = bm->shapenr - 1;
+
+  switch (info->mode) {
+    case MESH_SHAPE_RELATIVE_OWN:
+      return info->active_basis >= 0 && info->active_basis < totshape_ref;
+    case MESH_SHAPE_RELATIVE_BASIS:
+      return info->ref_key >= 0 && info->ref_key < totshape_ref && info->ref_key != active_key;
+    case MESH_SHAPE_RELATIVE_INCLUDE:
+    case MESH_SHAPE_RELATIVE_EXCLUDE:
+      if (info->ref_key == 0) {
+        /* Including or excluding the basis is a no-op. */
+        info->mode = MESH_SHAPE_RELATIVE_OWN;
+        return info->active_basis >= 0 && info->active_basis < totshape_ref;
+      }
+      return info->active_basis >= 0 && info->active_basis < totshape_ref && info->ref_key > 0 &&
+             info->ref_key < totshape_ref && info->ref_basis >= 0 &&
+             info->ref_basis < totshape_ref && info->ref_key != active_key;
+    default:
+      return false;
+  }
+}
+
+static void edbm_shape_get_relative_offset(BMesh *bm,
+                                           BMVert *eve,
+                                           const struct ShapeKeyRelativeInfo *info,
+                                           float *r_offset)
+{
+  const float *sco_basis;
+  const int base = CustomData_get_layer_index(&bm->vdata, CD_SHAPEKEY);
+
+  BLI_assert(base >= 0);
+
+  if (info->mode == MESH_SHAPE_RELATIVE_BASIS) {
+    sco_basis = CustomData_bmesh_get_layer_n(&bm->vdata, eve->head.data, base + info->ref_key);
+  }
+  else {
+    sco_basis = CustomData_bmesh_get_layer_n(
+        &bm->vdata, eve->head.data, base + info->active_basis);
+  }
+
+  sub_v3_v3v3(r_offset, eve->co, sco_basis);
+
+  if (ELEM(info->mode, MESH_SHAPE_RELATIVE_INCLUDE, MESH_SHAPE_RELATIVE_EXCLUDE)) {
+    float ref[3];
+
+    const float *sco_ref = CustomData_bmesh_get_layer_n(
+        &bm->vdata, eve->head.data, base + info->ref_key);
+    const float *sco_ref_basis = CustomData_bmesh_get_layer_n(
+        &bm->vdata, eve->head.data, base + info->ref_basis);
+
+    sub_v3_v3v3(ref, sco_ref, sco_ref_basis);
+
+    if (info->mode == MESH_SHAPE_RELATIVE_INCLUDE) {
+      add_v3_v3(r_offset, ref);
+    }
+    else {
+      sub_v3_v3(r_offset, ref);
+    }
+  }
+}
+
+static BMPartialUpdate *edbm_partial_from_selected_verts(BMesh *bm,
+                                                         const BMPartialUpdate_Params *params)
+{
+  BMIter iter;
+  BMVert *vert;
+  int i;
+
+  BLI_bitmap *verts_mask = BLI_BITMAP_NEW(bm->totvert, __func__);
+  int verts_mask_count = 0; /* Number of elements enabled in `verts_mask`. */
+
+  BM_ITER_MESH_INDEX (vert, &iter, bm, BM_VERTS_OF_MESH, i) {
+    if (!BM_elem_flag_test(vert, BM_ELEM_SELECT) || BM_elem_flag_test(vert, BM_ELEM_HIDDEN)) {
+      continue;
+    }
+
+    BLI_BITMAP_ENABLE(verts_mask, i);
+    verts_mask_count++;
+  }
+
+  BMPartialUpdate *partial = BM_mesh_partial_create_from_verts(
+      bm, params, verts_mask, verts_mask_count);
+
+  MEM_freeN(verts_mask);
+  return partial;
+}
+
+static void edbm_smooth_shape_pass(BMesh *bm,
+                                   const struct ShapeKeyRelativeInfo *info,
+                                   float fac,
+                                   bool xaxis,
+                                   bool yaxis,
+                                   bool zaxis,
+                                   bool normal,
+                                   bool tangent)
+{
+  BMVert *vert;
+  BMEdge *edge;
+  BMIter iter, eiter;
+  int i;
+
+  /* Perform blending on selected vertices. */
+  float(*offsets)[3] = MEM_callocN(sizeof(float[3]) * bm->totvert, __func__);
+
+  BM_ITER_MESH_INDEX (vert, &iter, bm, BM_VERTS_OF_MESH, i) {
+    if (!BM_elem_flag_test(vert, BM_ELEM_SELECT) || BM_elem_flag_test(vert, BM_ELEM_HIDDEN)) {
+      continue;
+    }
+
+    /* Get shapekey offset of the current vertex. */
+    float cur_offset[3];
+    edbm_shape_get_relative_offset(bm, vert, info, cur_offset);
+
+    /* Compute the average offset of the neigbor vertices. */
+    float avg_offset[3] = {0, 0, 0};
+    int count = 0;
+
+    BM_ITER_ELEM (edge, &eiter, vert, BM_EDGES_OF_VERT) {
+      float tmp_offset[3];
+      BMVert *vert2 = BM_edge_other_vert(edge, vert);
+      edbm_shape_get_relative_offset(bm, vert2, info, tmp_offset);
+      add_v3_v3(avg_offset, tmp_offset);
+      count++;
+    }
+
+    if (count == 0) {
+      continue;
+    }
+
+    mul_v3_fl(avg_offset, 1.0f / (float)count);
+
+    /* Blend the difference between current and average. */
+    sub_v3_v3(avg_offset, cur_offset);
+    mul_v3_fl(avg_offset, fac);
+
+    if (!normal) {
+      project_plane_v3_v3v3(avg_offset, avg_offset, vert->no);
+    }
+    if (!tangent) {
+      project_v3_v3v3(avg_offset, avg_offset, vert->no);
+    }
+
+    if (!xaxis) {
+      avg_offset[0] = 0;
+    }
+    if (!yaxis) {
+      avg_offset[1] = 0;
+    }
+    if (!zaxis) {
+      avg_offset[2] = 0;
+    }
+
+    copy_v3_v3(offsets[i], avg_offset);
+  }
+
+  /* Apply changes. */
+  BM_ITER_MESH_INDEX (vert, &iter, bm, BM_VERTS_OF_MESH, i) {
+    if (!BM_elem_flag_test(vert, BM_ELEM_SELECT) || BM_elem_flag_test(vert, BM_ELEM_HIDDEN)) {
+      continue;
+    }
+
+    add_v3_v3(vert->co, offsets[i]);
+  }
+
+  MEM_freeN(offsets);
+}
+
+/* BMESH_TODO this should be properly encapsulated in a bmop.  but later. */
+static int edbm_smooth_shape_exec(bContext *C, wmOperator *op)
+{
+  Object *obedit_ref = CTX_data_edit_object(C);
+  Mesh *me_ref = obedit_ref->data;
+  Key *key_ref = me_ref->key;
+  KeyBlock *kb_ref = NULL;
+  BMEditMesh *em_ref = me_ref->edit_mesh;
+  const Scene *scene = CTX_data_scene(C);
+  ViewLayer *view_layer = CTX_data_view_layer(C);
+
+  int mode = RNA_enum_get(op->ptr, "mode");
+  int shape_ref = RNA_enum_get(op->ptr, "shape");
+
+  const float fac = RNA_float_get(op->ptr, "factor");
+
+  const bool xaxis = RNA_boolean_get(op->ptr, "xaxis");
+  const bool yaxis = RNA_boolean_get(op->ptr, "yaxis");
+  const bool zaxis = RNA_boolean_get(op->ptr, "zaxis");
+  const bool normal = RNA_boolean_get(op->ptr, "normal");
+  const bool tangent = RNA_boolean_get(op->ptr, "tangent");
+
+  int repeat = RNA_int_get(op->ptr, "repeat");
+
+  if (!repeat) {
+    repeat = 1;
+  }
+
+  const bool use_normal = !(normal && tangent);
+
+  /* Sanity check. */
+  int totshape_ref = CustomData_number_of_layers(&em_ref->bm->vdata, CD_SHAPEKEY);
+
+  if (totshape_ref == 0 || shape_ref < 0) {
+    BKE_report(op->reports, RPT_ERROR, "Active mesh does not have shape keys");
+    return OPERATOR_CANCELLED;
+  }
+  if (shape_ref >= totshape_ref) {
+    /* This case occurs if operator was used before on object with more keys than current one. */
+    shape_ref = 0; /* default to basis */
+  }
+
+  /* Get shape key - needed for finding reference shape in some modes. */
+  if (key_ref) {
+    kb_ref = BLI_findlink(&key_ref->block, shape_ref);
+  }
+
+  /* Iterate over selected objects in Edit mode. */
+  int tot_selected_verts_objects = 0, tot_locked = 0, tot_noshape = 0, tot_badshape = 0,
+      tot_same = 0;
+  uint objects_len = 0;
+  Object **objects = BKE_view_layer_array_from_objects_in_edit_mode_unique_data(
+      scene, view_layer, CTX_wm_view3d(C), &objects_len);
+
+  for (uint ob_index = 0; ob_index < objects_len; ob_index++) {
+    Object *obedit = objects[ob_index];
+    Mesh *me = obedit->data;
+    Key *key = me->key;
+    BMEditMesh *em = me->edit_mesh;
+
+    /* Check that the object has selected vertices. */
+    if (em->bm->totvertsel == 0) {
+      continue;
+    }
+
+    /* Verify shape key configuration. */
+    KeyBlock *kb_active = BKE_keyblock_find_index(key, em->bm->shapenr - 1);
+
+    if (!key || !kb_active || em->bm->shapenr <= 1) {
+      tot_noshape++;
+      continue;
+    }
+
+    if (ED_mesh_has_locked_shape_key(me)) {
+      tot_locked++;
+      continue;
+    }
+
+    KeyBlock *kb = kb_ref ? BKE_keyblock_find_name(key, kb_ref->name) : NULL;
+
+    if (mode != MESH_SHAPE_RELATIVE_OWN && kb == kb_active) {
+      tot_same++;
+      continue;
+    }
+
+    struct ShapeKeyRelativeInfo info = {
+        .mode = mode,
+        .active_basis = kb_active->relative,
+        .ref_key = kb ? BLI_findindex(&key->block, kb) : -1,
+        .ref_basis = kb ? kb->relative : -1,
+    };
+
+    if (!edbm_shape_relative_info_validate(em->bm, &info)) {
+      tot_badshape++;
+      continue;
+    }
+
+    tot_selected_verts_objects++;
+
+    /* Prepare for smoothing. */
+    const bool use_symmetry = (me->symmetry & ME_SYMMETRY_X) != 0;
+
+    if (use_symmetry) {
+      const bool use_topology = (me->editflag & ME_EDIT_MIRROR_TOPO) != 0;
+
+      EDBM_verts_mirror_cache_begin(em, 0, false, true, false, use_topology);
+    }
+
+    BMPartialUpdate *partial = NULL;
+
+    if (use_normal) {
+      partial = edbm_partial_from_selected_verts(em->bm,
+                                                 &(BMPartialUpdate_Params){
+                                                     .do_tessellate = false,
+                                                     .do_normals = true,
+                                                 });
+    }
+
+    /* Run smoothing iterations. */
+    for (int i = 0; i < repeat; i++) {
+      if (use_normal) {
+        BM_mesh_normals_update_with_partial(em->bm, partial);
+      }
+
+      edbm_smooth_shape_pass(em->bm, &info, fac, xaxis, yaxis, zaxis, normal, tangent);
+
+      if (use_symmetry) {
+        EDBM_verts_mirror_apply(em, BM_ELEM_SELECT, 0);
+      }
+    }
+
+    /* Clean up and recalculate derived data. */
+    if (use_normal) {
+      BM_mesh_partial_destroy(partial);
+    }
+
+    if (use_symmetry) {
+      EDBM_verts_mirror_cache_end(em);
+    }
+
+    EDBM_update(me,
+                &(const struct EDBMUpdate_Params){
+                    .calc_looptri = true,
+                    .calc_normals = true,
+                    .is_destructive = false,
+                });
+  }
+
+  MEM_freeN(objects);
+
+  /* Report errors. */
+  if (tot_locked > 0) {
+    BKE_report(op->reports, RPT_ERROR, "The active shape key is locked");
+    return tot_selected_verts_objects ? OPERATOR_FINISHED : OPERATOR_CANCELLED;
+  }
+  if (tot_noshape > 0) {
+    BKE_report(op->reports, RPT_ERROR, "No active non-basis shape key");
+    return tot_selected_verts_objects ? OPERATOR_FINISHED : OPERATOR_CANCELLED;
+  }
+  if (tot_same > 0) {
+    BKE_report(op->reports, RPT_ERROR, "Cannot smooth key relative to itself");
+    return tot_selected_verts_objects ? OPERATOR_FINISHED : OPERATOR_CANCELLED;
+  }
+  if (tot_badshape > 0) {
+    BKE_report(op->reports, RPT_ERROR, "Invalid reference shape key or basis");
+    return tot_selected_verts_objects ? OPERATOR_FINISHED : OPERATOR_CANCELLED;
+  }
+  if (tot_selected_verts_objects == 0) {
+    BKE_report(op->reports, RPT_ERROR, "No selected vertex");
+    return OPERATOR_CANCELLED;
+  }
+
+  return OPERATOR_FINISHED;
+}
+
+static void edbm_smooth_shape_ui(bContext *C, wmOperator *op)
+{
+  uiLayout *layout = op->layout, *row;
+  Object *obedit = CTX_data_edit_object(C);
+  Mesh *me = obedit->data;
+  PointerRNA ptr_key;
+
+  RNA_id_pointer_create((ID *)me->key, &ptr_key);
+
+  uiLayoutSetPropSep(layout, true);
+  uiLayoutSetPropDecorate(layout, false);
+
+  uiItemR(layout, op->ptr, "mode", 0, NULL, ICON_NONE);
+
+  row = uiLayoutRow(layout, false);
+  uiLayoutSetActive(row, RNA_enum_get(op->ptr, "mode") != MESH_SHAPE_RELATIVE_OWN);
+  uiItemPointerR(row, op->ptr, "shape", &ptr_key, "key_blocks", NULL, ICON_SHAPEKEY_DATA);
+
+  uiItemR(layout, op->ptr, "factor", 0, NULL, ICON_NONE);
+  uiItemR(layout, op->ptr, "repeat", 0, NULL, ICON_NONE);
+
+  uiItemR(layout, op->ptr, "xaxis", 0, NULL, ICON_NONE);
+  uiItemR(layout, op->ptr, "yaxis", 0, NULL, ICON_NONE);
+  uiItemR(layout, op->ptr, "zaxis", 0, NULL, ICON_NONE);
+
+  uiItemR(layout, op->ptr, "normal", 0, NULL, ICON_NONE);
+  uiItemR(layout, op->ptr, "tangent", 0, NULL, ICON_NONE);
+}
+
+void MESH_OT_smooth_shape(wmOperatorType *ot)
+{
+  PropertyRNA *prop;
+
+  static const EnumPropertyItem prop_shape_relative[] = {
+      {MESH_SHAPE_RELATIVE_OWN,
+       "ACTIVE",
+       0,
+       "Only Active Key",
+       "Smooth the deformation defined only by the active shape key itself"},
+      {MESH_SHAPE_RELATIVE_INCLUDE,
+       "INCLUDE",
+       0,
+       "Include Key",
+       "Smooth the combined deformation of the active and selected keys"},
+      {MESH_SHAPE_RELATIVE_EXCLUDE,
+       "EXCLUDE",
+       0,
+       "Exclude Key",
+       "Smooth the difference between the deformations of the active and selected keys"},
+      {MESH_SHAPE_RELATIVE_BASIS,
+       "RELATIVE",
+       0,
+       "Relative To Key",
+       "Smooth the difference between the shapes of the active and selected keys, "
+       "evaluated against the root basis rather than their Relative To shape key setting"},
+      {0, NULL, 0, NULL, NULL},
+  };
+
+  /* identifiers */
+  ot->name = "Smooth Shape";
+  ot->description = "Smooth the deformation defined by the active shape key";
+  ot->idname = "MESH_OT_smooth_shape";
+
+  /* api callbacks */
+  ot->exec = edbm_smooth_shape_exec;
+  /* disable because search popup closes too easily */
+  //  ot->invoke = WM_operator_props_popup_call;
+  ot->ui = edbm_smooth_shape_ui;
+  ot->poll = ED_operator_editmesh;
+
+  /* flags */
+  ot->flag = OPTYPE_REGISTER | OPTYPE_UNDO;
+
+  /* properties */
+
+  RNA_def_enum(ot->srna,
+               "mode",
+               prop_shape_relative,
+               MESH_SHAPE_RELATIVE_OWN,
+               "Mode",
+               "How to define the deformation to be smoothed based on comparing shape keys");
+
+  prop = RNA_def_enum(
+      ot->srna, "shape", DummyRNA_NULL_items, 0, "Shape", "Shape key to smooth relative to");
+  RNA_def_enum_funcs(prop, shape_itemf);
+  RNA_def_property_flag(prop, PROP_ENUM_NO_TRANSLATE | PROP_NEVER_UNLINK);
+
+  RNA_def_float_factor(
+      ot->srna, "factor", 0.5f, -10.0f, 10.0f, "Smoothing", "Smoothing factor", 0.0f, 1.0f);
+  RNA_def_int(
+      ot->srna, "repeat", 1, 1, 1000, "Repeat", "Number of times to smooth the mesh", 1, 100);
+
+  RNA_def_boolean(ot->srna, "xaxis", true, "X-Axis", "Smooth along the X axis");
+  RNA_def_boolean(ot->srna, "yaxis", true, "Y-Axis", "Smooth along the Y axis");
+  RNA_def_boolean(ot->srna, "zaxis", true, "Z-Axis", "Smooth along the Z axis");
+  RNA_def_boolean(ot->srna, "normal", true, "Normal", "Smooth along the vertex normal");
+  RNA_def_boolean(
+      ot->srna, "tangent", true, "Tangent", "Smooth perpendicular to the vertex normal");
+}
+
+/** \} */
+
+/* -------------------------------------------------------------------- */
 /** \name Solidify Mesh Operator
  * \{ */
 
