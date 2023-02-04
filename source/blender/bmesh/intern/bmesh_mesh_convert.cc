@@ -1506,13 +1506,13 @@ static void bm_to_mesh_faces(const BMesh &bm,
 
 static void bm_to_mesh_loops(const BMesh &bm, const Span<const BMLoop *> bm_loops, Mesh &mesh)
 {
-  MutableSpan<MLoop> dst_loops = mesh.loops_for_write();
-  threading::parallel_for(dst_loops.index_range(), 1024, [&](const IndexRange range) {
+  MutableSpan<int> dst_corner_verts = mesh.corner_verts_for_write();
+  MutableSpan<int> dst_corner_edges = mesh.corner_edges_for_write();
+  threading::parallel_for(bm_loops.index_range(), 1024, [&](const IndexRange range) {
     for (const int loop_i : range) {
       const BMLoop &src_loop = *bm_loops[loop_i];
-      MLoop &dst_loop = dst_loops[loop_i];
-      dst_loop.v = BM_elem_index_get(src_loop.v);
-      dst_loop.e = BM_elem_index_get(src_loop.e);
+      dst_corner_verts[loop_i] = BM_elem_index_get(src_loop.v);
+      dst_corner_edges[loop_i] = BM_elem_index_get(src_loop.e);
       CustomData_from_bmesh_block(&bm.ldata, &mesh.ldata, src_loop.head.data, loop_i);
     }
   });
@@ -1543,8 +1543,14 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
         &me->vdata, CD_PROP_FLOAT3, CD_CONSTRUCT, nullptr, bm->totvert, "position");
   }
   CustomData_add_layer(&me->edata, CD_MEDGE, CD_CONSTRUCT, nullptr, bm->totedge);
-  CustomData_add_layer(&me->ldata, CD_MLOOP, CD_CONSTRUCT, nullptr, bm->totloop);
-  CustomData_add_layer(&me->pdata, CD_MPOLY, CD_CONSTRUCT, nullptr, bm->totface);
+  if (!CustomData_get_layer_named(&me->ldata, CD_PROP_INT32, ".corner_vert")) {
+    CustomData_add_layer_named(
+        &me->ldata, CD_PROP_INT32, CD_CONSTRUCT, nullptr, bm->totloop, ".corner_vert");
+  }
+  if (!CustomData_get_layer_named(&me->ldata, CD_PROP_INT32, ".corner_edge")) {
+    CustomData_add_layer_named(
+        &me->ldata, CD_PROP_INT32, CD_CONSTRUCT, nullptr, bm->totloop, ".corner_edge");
+  }
 
   /* Don't process shape-keys, we only feed them through the modifier stack as needed,
    * e.g. for applying modifiers or the like. */
