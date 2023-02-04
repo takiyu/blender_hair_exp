@@ -1535,7 +1535,7 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
         &me->vdata, CD_PROP_FLOAT3, CD_CONSTRUCT, nullptr, bm->totvert, "position");
   }
   CustomData_add_layer(&me->edata, CD_MEDGE, CD_CONSTRUCT, nullptr, bm->totedge);
-  CustomData_add_layer(&me->ldata, CD_MLOOP, CD_CONSTRUCT, nullptr, bm->totloop);
+  CustomData_add_layer(&me->pdata, CD_MPOLY, CD_CONSTRUCT, nullptr, bm->totface);
   if (!CustomData_get_layer_named(&me->ldata, CD_PROP_INT32, ".corner_vert")) {
     CustomData_add_layer_named(
         &me->ldata, CD_PROP_INT32, CD_CONSTRUCT, nullptr, bm->totloop, ".corner_vert");
