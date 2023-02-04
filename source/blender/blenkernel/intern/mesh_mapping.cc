@@ -30,7 +30,6 @@
 /** \name Mesh Connectivity Mapping
  * \{ */
 
-/* ngon version wip, based on BM_uv_vert_map_create */
 UvVertMap *BKE_mesh_uv_vert_map_createconst(blender::OffsetIndices<int> polys,
                                             const bool *hide_poly,
                                             const bool *select_poly,
@@ -42,12 +41,13 @@ UvVertMap *BKE_mesh_uv_vert_map_createconst(blender::OffsetIndices<int> polys,
                                             const bool selected,
                                             const bool use_winding)
 {
+  /* NOTE: N-gon version WIP, based on #BM_uv_vert_map_create. */
+
   UvVertMap *vmap;
   UvMapVert *buf;
   uint a;
   int i, totuv, nverts;
 
-  bool *winding = nullptr;
   BLI_buffer_declare_static(vec2f, tf_uv_buf, BLI_BUFFER_NOP, 32);
 
   totuv = 0;
@@ -66,13 +66,15 @@ UvVertMap *BKE_mesh_uv_vert_map_createconst(blender::OffsetIndices<int> polys,
   vmap = (UvVertMap *)MEM_callocN(sizeof(*vmap), "UvVertMap");
   buf = vmap->buf = (UvMapVert *)MEM_callocN(sizeof(*vmap->buf) * size_t(totuv), "UvMapVert");
   vmap->vert = (UvMapVert **)MEM_callocN(sizeof(*vmap->vert) * totvert, "UvMapVert*");
-  if (use_winding) {
-    winding = static_cast<bool *>(MEM_callocN(sizeof(*winding) * totpoly, "winding"));
-  }
 
   if (!vmap->vert || !vmap->buf) {
     BKE_mesh_uv_vert_map_free(vmap);
     return nullptr;
+  }
+
+  bool *winding = nullptr;
+  if (use_winding) {
+    winding = static_cast<bool *>(MEM_callocN(sizeof(*winding) * totpoly, "winding"));
   }
 
   for (a = 0; a < totpoly; a++) {

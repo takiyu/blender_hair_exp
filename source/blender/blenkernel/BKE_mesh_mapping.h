@@ -100,6 +100,7 @@ typedef struct MeshElemMap {
 #ifdef __cplusplus
 
 /* mapping */
+
 UvVertMap *BKE_mesh_uv_vert_map_create(blender::OffsetIndices<int> polys,
                                        const bool *hide_poly,
                                        const bool *select_poly,
