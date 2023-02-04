@@ -1358,8 +1358,8 @@ static void bm_face_loop_table_build(BMesh &bm,
                                      MutableSpan<const BMLoop *> loop_table,
                                      bool &need_select_poly,
                                      bool &need_hide_poly,
-                                     bool &need_material_index,
-                                     bool &need_sharp_face)
+                                     bool &need_sharp_face,
+                                     bool &need_material_index)
 {
   char hflag = 0;
   BMIter iter;
@@ -1370,6 +1370,7 @@ static void bm_face_loop_table_build(BMesh &bm,
     BM_elem_index_set(face, face_i); /* set_inline */
     face_table[face_i] = face;
     hflag |= face->head.hflag;
+    need_sharp_face |= (face->head.hflag & BM_ELEM_SMOOTH) == 0;
     need_material_index |= face->mat_nr != 0;
 
     BMLoop *loop = BM_FACE_FIRST_LOOP(face);
@@ -1382,7 +1383,6 @@ static void bm_face_loop_table_build(BMesh &bm,
   }
   need_select_poly = (hflag & BM_ELEM_SELECT) != 0;
   need_hide_poly = (hflag & BM_ELEM_HIDDEN) != 0;
-  need_sharp_face = (hflag & BM_ELEM_SMOOTH);
 }
 
 static void bm_to_mesh_verts(const BMesh &bm,
@@ -1585,8 +1585,8 @@ void BM_mesh_bm_to_me_for_eval(BMesh *bm, Mesh *me, const CustomData_MeshMasks *
                                  loop_table,
                                  need_select_poly,
                                  need_hide_poly,
-                                 need_material_index,
-                                 need_sharp_face);
+                                 need_sharp_face,
+                                 need_material_index);
       });
   bm->elem_index_dirty &= ~(BM_VERT | BM_EDGE | BM_FACE | BM_LOOP);
 
