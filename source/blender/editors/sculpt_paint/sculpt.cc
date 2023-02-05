@@ -3327,7 +3327,7 @@ void SCULPT_vertcos_to_key(Object *ob, KeyBlock *kb, const float (*vertCos)[3])
   const int kb_act_idx = ob->shapenr - 1;
 
   /* For relative keys editing of base should update other keys. */
-  if (BKE_keyblock_is_basis(me->key, kb_act_idx)) {
+  if (bool *dependent = BKE_keyblock_get_dependent_keys(me->key, kb_act_idx)) {
     ofs = BKE_keyblock_convert_to_vertcos(ob, kb);
 
     /* Calculate key coord offsets (from previous location). */
@@ -3336,13 +3336,14 @@ void SCULPT_vertcos_to_key(Object *ob, KeyBlock *kb, const float (*vertCos)[3])
     }
 
     /* Apply offsets on other keys. */
-    LISTBASE_FOREACH (KeyBlock *, currkey, &me->key->block) {
-      if ((currkey != kb) && (currkey->relative == kb_act_idx)) {
+    LISTBASE_FOREACH_INDEX (KeyBlock *, currkey, &me->key->block, a) {
+      if ((currkey != kb) && dependent[a]) {
         BKE_keyblock_update_from_offset(ob, currkey, ofs);
       }
     }
 
     MEM_freeN(ofs);
+    MEM_freeN(dependent);
   }
 
   /* Modifying of basis key should update mesh. */

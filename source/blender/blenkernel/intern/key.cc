@@ -2592,3 +2592,50 @@ bool BKE_keyblock_is_basis(const Key *key, const int index)
 
   return false;
 }
+
+bool *BKE_keyblock_get_dependent_keys(const struct Key *key, int index)
+{
+  /* Simple checks. */
+  if (key->type != KEY_RELATIVE) {
+    return nullptr;
+  }
+
+  const int count = BLI_listbase_count(&key->block);
+
+  if (index < 0 || index >= count) {
+    return nullptr;
+  }
+
+  /* Seed the table with the specified key. */
+  bool *marked = static_cast<bool *>(MEM_callocN(sizeof(bool) * count, __func__));
+
+  marked[index] = true;
+
+  /* Iterative breadth-first search through the key list. */
+  int updated, total = 0;
+
+  do {
+    const KeyBlock *kb;
+    int i;
+
+    updated = 0;
+
+    for (i = 0, kb = static_cast<const KeyBlock *>(key->block.first); kb; i++, kb = kb->next) {
+      if (!marked[i] && kb->relative >= 0 && kb->relative < count && marked[kb->relative]) {
+        marked[i] = true;
+        updated++;
+        total++;
+      }
+    }
+  } while (updated > 0);
+
+  if (total == 0) {
+    MEM_freeN(marked);
+    return nullptr;
+  }
+  else {
+    /* After the search is complete, exclude the original key. */
+    marked[index] = false;
+    return marked;
+  }
+}

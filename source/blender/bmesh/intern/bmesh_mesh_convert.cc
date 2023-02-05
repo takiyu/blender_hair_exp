@@ -721,6 +721,7 @@ static void bm_to_mesh_shape(BMesh *bm,
   BMIter iter;
   BMVert *eve;
   float(*ofs)[3] = nullptr;
+  bool *dependent = nullptr;
 
   /* Editing the basis key updates others. */
   if ((key->type == KEY_RELATIVE) &&
@@ -729,7 +730,7 @@ static void bm_to_mesh_shape(BMesh *bm,
       /* Original key-indices are only used to check the vertex existed when entering edit-mode. */
       (cd_shape_keyindex_offset != -1) &&
       /* Offsets are only needed if the current shape is a basis for others. */
-      BKE_keyblock_is_basis(key, bm->shapenr - 1)) {
+      (dependent = BKE_keyblock_get_dependent_keys(key, bm->shapenr - 1)) != nullptr) {
 
     BLI_assert(actkey != nullptr); /* Assured by `actkey_has_layer` check. */
     const int actkey_uuid = bm_to_mesh_shape_layer_index_from_kb(bm, actkey);
@@ -755,6 +756,8 @@ static void bm_to_mesh_shape(BMesh *bm,
          * ones, creating a mess when doing e.g. subdivide + translate. */
         MEM_freeN(ofs);
         ofs = nullptr;
+        MEM_freeN(dependent);
+        dependent = nullptr;
         break;
       }
     }
@@ -781,7 +784,9 @@ static void bm_to_mesh_shape(BMesh *bm,
     }
   }
 
-  LISTBASE_FOREACH (KeyBlock *, currkey, &key->block) {
+  int currkey_i;
+
+  LISTBASE_FOREACH_INDEX (KeyBlock *, currkey, &key->block, currkey_i) {
     int keyi;
     float(*currkey_data)[3];
 
@@ -792,8 +797,7 @@ static void bm_to_mesh_shape(BMesh *bm,
 
     /* Common case, the layer data is available, use it where possible. */
     if (cd_shape_offset != -1) {
-      const bool apply_offset = (ofs != nullptr) && (currkey != actkey) &&
-                                (bm->shapenr - 1 == currkey->relative);
+      const bool apply_offset = (ofs != nullptr) && (currkey != actkey) && dependent[currkey_i];
 
       if (currkey->data && (currkey->totelem == bm->totvert)) {
         /* Use memory in-place. */
@@ -882,6 +886,7 @@ static void bm_to_mesh_shape(BMesh *bm,
 
   if (ofs) {
     MEM_freeN(ofs);
+    MEM_freeN(dependent);
   }
 }
 
