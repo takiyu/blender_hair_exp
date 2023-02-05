@@ -926,7 +926,7 @@ typedef struct MeshDeformBind {
 
   /* avoid DM function calls during intersections */
   struct {
-    const MPoly *mpoly;
+    blender::OffsetIndices<int> polys;
     const int *corner_verts;
     const MLoopTri *looptri;
     const float (*poly_nors)[3];
@@ -1035,16 +1035,16 @@ static MDefBoundIsect *meshdeform_ray_tree_intersect(MeshDeformBind *mdb,
                               BVH_RAYCAST_WATERTIGHT) != -1) {
     const int *corner_verts = mdb->cagemesh_cache.corner_verts;
     const MLoopTri *lt = &mdb->cagemesh_cache.looptri[hit.index];
-    const MPoly *mp = &mdb->cagemesh_cache.mpoly[lt->poly];
+    const blender::IndexRange poly = mdb->cagemesh_cache.polys[lt->poly];
     const float(*cagecos)[3] = mdb->cagecos;
     const float len = isect_mdef.lambda;
     MDefBoundIsect *isect;
 
-    blender::Array<blender::float3, 64> mp_cagecos(mp->totloop);
+    blender::Array<blender::float3, 64> mp_cagecos(poly.size());
 
     /* create MDefBoundIsect, and extra for 'poly_weights[]' */
     isect = static_cast<MDefBoundIsect *>(
-        BLI_memarena_alloc(mdb->memarena, sizeof(*isect) + (sizeof(float) * mp->totloop)));
+        BLI_memarena_alloc(mdb->memarena, sizeof(*isect) + (sizeof(float) * poly.size())));
 
     /* compute intersection coordinate */
     madd_v3_v3v3fl(isect->co, co1, isect_mdef.vec, len);
@@ -1056,13 +1056,13 @@ static MDefBoundIsect *meshdeform_ray_tree_intersect(MeshDeformBind *mdb,
     isect->len = max_ff(len_v3v3(co1, isect->co), MESHDEFORM_LEN_THRESHOLD);
 
     /* compute mean value coordinates for interpolation */
-    for (int i = 0; i < mp->totloop; i++) {
-      copy_v3_v3(mp_cagecos[i], cagecos[corner_verts[mp->loopstart + i]]);
+    for (int i = 0; i < poly.size(); i++) {
+      copy_v3_v3(mp_cagecos[i], cagecos[corner_verts[poly[i]]]);
     }
 
     interp_weights_poly_v3(isect->poly_weights,
                            reinterpret_cast<float(*)[3]>(mp_cagecos.data()),
-                           mp->totloop,
+                           poly.size(),
                            isect->co);
 
     return isect;
@@ -1227,10 +1227,10 @@ static float meshdeform_boundary_phi(const MeshDeformBind *mdb,
                                      int cagevert)
 {
   const int *corner_verts = mdb->cagemesh_cache.corner_verts;
-  const MPoly *mp = &mdb->cagemesh_cache.mpoly[isect->poly_index];
+  const blender::IndexRange poly = mdb->cagemesh_cache.polys[isect->poly_index];
 
-  for (int i = 0; i < mp->totloop; i++) {
-    if (corner_verts[mp->loopstart + i] == cagevert) {
+  for (int i = 0; i < poly.size(); i++) {
+    if (corner_verts[poly[i]] == cagevert) {
       return isect->poly_weights[i];
     }
   }
@@ -1630,7 +1630,7 @@ static void harmonic_coordinates_bind(MeshDeformModifierData *mmd, MeshDeformBin
   /* initialize data from 'cagedm' for reuse */
   {
     Mesh *me = mdb->cagemesh;
-    mdb->cagemesh_cache.mpoly = BKE_mesh_poly_offsets(me);
+    mdb->cagemesh_cache.polys = me->polys();
     mdb->cagemesh_cache.corner_verts = me->corner_verts().data();
     mdb->cagemesh_cache.looptri = BKE_mesh_runtime_looptri_ensure(me);
     mdb->cagemesh_cache.poly_nors = BKE_mesh_poly_normals_ensure(me);

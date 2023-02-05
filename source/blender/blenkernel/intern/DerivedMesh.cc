@@ -160,17 +160,10 @@ static int *dm_getCornerEdgeArray(DerivedMesh *dm)
 
 static int *dm_getPolyArray(DerivedMesh *dm)
 {
-  MPoly *mpoly = (MPoly *)CustomData_get_layer_for_write(
-      &dm->polyData, CD_MPOLY, dm->getNumPolys(dm));
-
-  if (!mpoly) {
-    mpoly = (MPoly *)CustomData_add_layer(
-        &dm->polyData, CD_MPOLY, CD_SET_DEFAULT, nullptr, dm->getNumPolys(dm));
-    CustomData_set_layer_flag(&dm->polyData, CD_MPOLY, CD_FLAG_TEMPORARY);
-    dm->copyPolyArray(dm, mpoly);
+  if (!dm->poly_offsets) {
+    dm->poly_offsets = MEM_cnew_array<int>(dm->getNumPolys(dm) + 1, __func__);
   }
-
-  return mpoly;
+  return dm->poly_offsets;
 }
 
 static int dm_getNumLoopTri(DerivedMesh *dm)

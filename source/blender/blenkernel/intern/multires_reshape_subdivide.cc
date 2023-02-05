@@ -29,25 +29,25 @@
 static void multires_subdivide_create_object_space_linear_grids(Mesh *mesh)
 {
   const float(*positions)[3] = BKE_mesh_vert_positions(mesh);
-  const OffsetIndices polys = mesh->polys();
+  const blender::OffsetIndices polys = mesh->polys();
   const blender::Span<int> corner_verts = mesh->corner_verts();
 
   MDisps *mdisps = static_cast<MDisps *>(
       CustomData_get_layer_for_write(&mesh->ldata, CD_MDISPS, mesh->totloop));
   const int totpoly = mesh->totpoly;
   for (int p = 0; p < totpoly; p++) {
-    const MPoly *poly = &polys[p];
+    const blender::IndexRange poly = polys[p];
     float poly_center[3];
-    BKE_mesh_calc_poly_center(poly, &corner_verts[poly->loopstart], positions, poly_center);
-    for (int l = 0; l < poly->totloop; l++) {
-      const int loop_index = poly->loopstart + l;
+    BKE_mesh_calc_poly_center(corner_verts.slice(poly), positions, poly_center);
+    for (int l = 0; l < poly.size(); l++) {
+      const int loop_index = poly.start() + l;
 
       float(*disps)[3] = mdisps[loop_index].disps;
       mdisps[loop_index].totdisp = 4;
       mdisps[loop_index].level = 1;
 
-      int prev_loop_index = l - 1 >= 0 ? loop_index - 1 : loop_index + poly->totloop - 1;
-      int next_loop_index = l + 1 < poly->totloop ? loop_index + 1 : poly->loopstart;
+      int prev_loop_index = l - 1 >= 0 ? loop_index - 1 : loop_index + poly.size() - 1;
+      int next_loop_index = l + 1 < poly.size() ? loop_index + 1 : poly.start();
 
       const int vert = corner_verts[loop_index];
       const int vert_next = corner_verts[next_loop_index];

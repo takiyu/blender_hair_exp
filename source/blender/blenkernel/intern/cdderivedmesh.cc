@@ -237,8 +237,7 @@ static DerivedMesh *cdDM_from_mesh_ex(Mesh *mesh,
       &dm->loopData, CD_PROP_INT32, ".corner_vert", mesh->totloop));
   cddm->corner_edges = static_cast<int *>(CustomData_get_layer_named_for_write(
       &dm->loopData, CD_PROP_INT32, ".corner_edge", mesh->totloop));
-  cddm->mpoly = static_cast<MPoly *>(
-      CustomData_get_layer_for_write(&dm->polyData, CD_MPOLY, mesh->totpoly));
+  cddm->poly_offsets = static_cast<MPoly *>(nullptr) /* TODO. */;
 #if 0
   cddm->mface = CustomData_get_layer(&dm->faceData, CD_MFACE);
 #else

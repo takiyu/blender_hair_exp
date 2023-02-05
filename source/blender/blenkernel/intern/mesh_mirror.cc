@@ -201,7 +201,7 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
   CustomData_copy_data(&mesh->pdata, &result->pdata, 0, 0, maxPolys);
 
   /* Subdivision-surface for eg won't have mesh data in the custom-data arrays.
-   * Now add position/#MEdge/#MPoly layers. */
+   * Now add position/#MEdge layers. */
   if (BKE_mesh_vert_positions(mesh) != NULL) {
     memcpy(BKE_mesh_vert_positions_for_write(result),
            BKE_mesh_vert_positions(mesh),
@@ -210,9 +210,10 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
   if (!CustomData_has_layer(&mesh->edata, CD_MEDGE)) {
     memcpy(BKE_mesh_edges_for_write(result), BKE_mesh_edges(mesh), sizeof(MEdge) * mesh->totedge);
   }
-  if (!CustomData_has_layer(&mesh->pdata, CD_MPOLY)) {
-    result->corner_verts_for_write().copy_from(mesh->corner_verts());
-    result->corner_edges_for_write().copy_from(mesh->corner_edges());
+  blender::MutableSpan<int> poly_offsets = result->poly_offsets_for_write();
+  poly_offsets.take_front(maxPolys).copy_from(mesh->poly_offsets().drop_back(1));
+  for (const int i : blender::IndexRange(maxPolys)) {
+    poly_offsets[maxPolys + i] = poly_offsets[i] + maxLoops;
   }
 
   /* Copy custom-data to new geometry,
@@ -309,34 +310,31 @@ Mesh *BKE_mesh_mirror_apply_mirror_on_axis_for_modifier(MirrorModifierData *mmd,
     me->v2 += maxVerts;
   }
 
-  blender::MutableSpan<int> result_polys = result->poly_offsets_for_write();
-
   /* adjust mirrored poly loopstart indices, and reverse loop order (normals) */
   blender::MutableSpan<int> corner_edges = result->corner_edges_for_write();
-  for (i = 0; i < maxPolys; i++, mp++) {
+  for (i = 0; i < maxPolys; i++) {
     int j, e;
+    const int poly_start = poly_offsets[maxPolys + i];
+    const int poly_size = poly_offsets[maxPolys + i + 1] - poly_start;
 
     /* reverse the loop, but we keep the first vertex in the face the same,
      * to ensure that quads are split the same way as on the other side */
-    CustomData_copy_data(
-        &result->ldata, &result->ldata, mp->loopstart, mp->loopstart + maxLoops, 1);
+    CustomData_copy_data(&result->ldata, &result->ldata, poly_start, poly_start + maxLoops, 1);
 
     for (j = 1; j < mp->totloop; j++) {
       CustomData_copy_data(&result->ldata,
                            &result->ldata,
-                           mp->loopstart + j,
-                           mp->loopstart + maxLoops + mp->totloop - j,
+                           poly_start + j,
+                           poly_start + maxLoops + mp->totloop - j,
                            1);
     }
 
-    int *corner_edge_2 = &corner_edges[mp->loopstart + maxLoops];
+    int *corner_edge_2 = &corner_edges[poly_start + maxLoops];
     e = corner_edge_2[0];
     for (j = 0; j < mp->totloop - 1; j++) {
       corner_edge_2[j] = corner_edge_2[j + 1];
     }
     corner_edge_2[mp->totloop - 1] = e;
-
-    mp->loopstart += maxLoops;
   }
 
   /* adjust mirrored loop vertex and edge indices */

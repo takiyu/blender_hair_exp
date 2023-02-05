@@ -183,7 +183,7 @@ static BLI_bitmap *multires_mdisps_downsample_hidden(const BLI_bitmap *old_hidde
 
 static void multires_output_hidden_to_ccgdm(CCGDerivedMesh *ccgdm, Mesh *me, int level)
 {
-  const OffsetIndices polys = me->polys();
+  const blender::OffsetIndices polys = me->polys();
   const MDisps *mdisps = static_cast<const MDisps *>(CustomData_get_layer(&me->ldata, CD_MDISPS));
   BLI_bitmap **grid_hidden = ccgdm->gridHidden;
   int *gridOffset;
@@ -192,7 +192,7 @@ static void multires_output_hidden_to_ccgdm(CCGDerivedMesh *ccgdm, Mesh *me, int
   gridOffset = ccgdm->dm.getGridOffset(&ccgdm->dm);
 
   for (i = 0; i < me->totpoly; i++) {
-    for (j = 0; j < polys[i].totloop; j++) {
+    for (j = 0; j < polys[i].size(); j++) {
       int g = gridOffset[i] + j;
       const MDisps *md = &mdisps[g];
       BLI_bitmap *gh = md->hidden;
@@ -487,15 +487,15 @@ void multires_force_external_reload(Object *object)
 static int get_levels_from_disps(Object *ob)
 {
   Mesh *me = static_cast<Mesh *>(ob->data);
-  const OffsetIndices polys = me->polys();
+  const blender::OffsetIndices polys = me->polys();
   int i, j, totlvl = 0;
 
   const MDisps *mdisp = static_cast<const MDisps *>(CustomData_get_layer(&me->ldata, CD_MDISPS));
 
   for (i = 0; i < me->totpoly; i++) {
-    const MDisps *md = mdisp + polys[i].loopstart;
+    const MDisps *md = mdisp + polys[i].start();
 
-    for (j = 0; j < polys[i].totloop; j++, md++) {
+    for (j = 0; j < polys[i].size(); j++, md++) {
       if (md->totdisp == 0) {
         continue;
       }
@@ -657,7 +657,7 @@ static void multires_grid_paint_mask_downsample(GridPaintMask *gpm, int level)
 static void multires_del_higher(MultiresModifierData *mmd, Object *ob, int lvl)
 {
   Mesh *me = (Mesh *)ob->data;
-  const OffsetIndices polys = me->polys();
+  const blender::OffsetIndices polys = me->polys();
   int levels = mmd->totlvl - lvl;
   MDisps *mdisps;
   GridPaintMask *gpm;
@@ -678,8 +678,8 @@ static void multires_del_higher(MultiresModifierData *mmd, Object *ob, int lvl)
       int i, j;
 
       for (i = 0; i < me->totpoly; i++) {
-        for (j = 0; j < polys[i].totloop; j++) {
-          int g = polys[i].loopstart + j;
+        for (j = 0; j < polys[i].size(); j++) {
+          int g = polys[i].start() + j;
           MDisps *mdisp = &mdisps[g];
           float(*disps)[3], (*ndisps)[3], (*hdisps)[3];
           int totdisp = multires_grid_tot[lvl];
@@ -855,7 +855,7 @@ struct MultiresThreadedData {
   CCGElem **gridData, **subGridData;
   CCGKey *key;
   CCGKey *sub_key;
-  const MPoly *mpoly;
+  blender::OffsetIndices<int> polys;
   MDisps *mdisps;
   GridPaintMask *grid_paint_mask;
   int *gridOffset;
@@ -873,7 +873,7 @@ static void multires_disp_run_cb(void *__restrict userdata,
   CCGElem **gridData = tdata->gridData;
   CCGElem **subGridData = tdata->subGridData;
   CCGKey *key = tdata->key;
-  const MPoly *mpoly = tdata->mpoly;
+  blender::OffsetIndices<int> polys = tdata->polys;
   MDisps *mdisps = tdata->mdisps;
   GridPaintMask *grid_paint_mask = tdata->grid_paint_mask;
   int *gridOffset = tdata->gridOffset;
@@ -881,12 +881,12 @@ static void multires_disp_run_cb(void *__restrict userdata,
   int dGridSize = tdata->dGridSize;
   int dSkip = tdata->dSkip;
 
-  const int numVerts = mpoly[pidx].totloop;
+  const int numVerts = polys[pidx].size();
   int S, x, y, gIndex = gridOffset[pidx];
 
   for (S = 0; S < numVerts; S++, gIndex++) {
     GridPaintMask *gpm = grid_paint_mask ? &grid_paint_mask[gIndex] : nullptr;
-    MDisps *mdisp = &mdisps[mpoly[pidx].loopstart + S];
+    MDisps *mdisp = &mdisps[polys[pidx][S]];
     CCGElem *grid = gridData[gIndex];
     CCGElem *subgrid = subGridData[gIndex];
     float(*dispgrid)[3] = nullptr;
@@ -967,7 +967,7 @@ static void multiresModifier_disp_run(
   CCGDerivedMesh *ccgdm = (CCGDerivedMesh *)dm;
   CCGElem **gridData, **subGridData;
   CCGKey key;
-  const OffsetIndices mpoly = me->polys();
+  blender::OffsetIndices polys = me->polys();
   MDisps *mdisps = static_cast<MDisps *>(
       CustomData_get_layer_for_write(&me->ldata, CD_MDISPS, me->totloop));
   GridPaintMask *grid_paint_mask = nullptr;
@@ -977,8 +977,8 @@ static void multiresModifier_disp_run(
 
   /* this happens in the dm made by bmesh_mdisps_space_set */
   if (dm2 && CustomData_has_layer(&dm2->loopData, CD_MDISPS)) {
-    mpoly = static_cast<const MPoly *>(
-        CustomData_get_layer_for_write(&dm2->polyData, CD_MPOLY, dm2->getNumPolys(dm)));
+    polys = blender::OffsetIndices(
+        blender::Span(dm2->getPolyArray(dm2), dm2->getNumPolys(dm2) + 1));
     mdisps = static_cast<MDisps *>(
         CustomData_get_layer_for_write(&dm2->loopData, CD_MDISPS, dm2->getNumLoops(dm)));
     totloop = dm2->numLoopData;
@@ -1032,7 +1032,7 @@ static void multiresModifier_disp_run(
   data.gridData = gridData;
   data.subGridData = subGridData;
   data.key = &key;
-  data.mpoly = mpoly;
+  data.polys = polys;
   data.mdisps = mdisps;
   data.grid_paint_mask = grid_paint_mask;
   data.gridOffset = gridOffset;
@@ -1554,13 +1554,13 @@ void multiresModifier_ensure_external_read(struct Mesh *mesh, const MultiresModi
 
 /***************** Multires interpolation stuff *****************/
 
-int mdisp_rot_face_to_crn(
-    MPoly *mpoly, const int face_side, const float u, const float v, float *x, float *y)
+int mdisp_rot_face_to_crn(const int face_size,
+     const int face_side, const float u, const float v, float *x, float *y)
 {
   const float offset = face_side * 0.5f - 0.5f;
   int S = 0;
 
-  if (mpoly->totloop == 4) {
+  if (face_size == 4) {
     if (u <= offset && v <= offset) {
       S = 0;
     }
@@ -1591,7 +1591,7 @@ int mdisp_rot_face_to_crn(
       *y = v - offset;
     }
   }
-  else if (mpoly->totloop == 3) {
+  else if (face_size == 3) {
     int grid_size = offset;
     float w = (face_side - 1) - u - v;
     float W1, W2;

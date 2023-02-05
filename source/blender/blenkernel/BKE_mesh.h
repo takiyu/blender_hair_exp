@@ -920,7 +920,7 @@ bool BKE_mesh_validate_arrays(struct Mesh *me,
                               int *corner_verts,
                               int *corner_edges,
                               unsigned int totloop,
-                              const int *poly_offsets,
+                              int *poly_offsets,
                               unsigned int totpoly,
                               struct MDeformVert *dverts, /* assume totvert length */
                               bool do_verbose,

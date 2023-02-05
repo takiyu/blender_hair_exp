@@ -76,7 +76,6 @@ void multires_reshape_apply_base_refit_base_mesh(MultiresReshapeContext *reshape
                                 reshape_context->base_polys,
                                 reshape_context->base_corner_verts,
                                 base_mesh->totvert,
-                                base_mesh->totpoly,
                                 base_mesh->totloop);
 
   float(*origco)[3] = static_cast<float(*)[3]>(
@@ -96,11 +95,11 @@ void multires_reshape_apply_base_refit_base_mesh(MultiresReshapeContext *reshape
     /* Find center. */
     int tot = 0;
     for (int j = 0; j < pmap[i].count; j++) {
-      const MPoly *p = &reshape_context->base_polys[pmap[i].indices[j]];
+      const blender::IndexRange poly = reshape_context->base_polys[pmap[i].indices[j]];
 
       /* This double counts, not sure if that's bad or good. */
-      for (int k = 0; k < p->totloop; k++) {
-        const int vndx = reshape_context->base_corner_verts[p->loopstart + k];
+      for (const int corner : poly) {
+        const int vndx = reshape_context->base_corner_verts[corner];
         if (vndx != i) {
           add_v3_v3(center, origco[vndx]);
           tot++;
@@ -111,19 +110,17 @@ void multires_reshape_apply_base_refit_base_mesh(MultiresReshapeContext *reshape
 
     /* Find normal. */
     for (int j = 0; j < pmap[i].count; j++) {
-      const MPoly *p = &reshape_context->base_polys[pmap[i].indices[j]];
-      MPoly fake_poly;
+      const blender::IndexRange poly = reshape_context->base_polys[pmap[i].indices[j]];
       float no[3];
 
       /* Set up poly, loops, and coords in order to call BKE_mesh_calc_poly_normal(). */
-      fake_poly.totloop = p->totloop;
-      fake_poly.loopstart = 0;
-      int *poly_verts = static_cast<int *>(MEM_malloc_arrayN(p->totloop, sizeof(int), __func__));
+      blender::Array<int> poly_verts(poly.size());
+      int *poly_verts = static_cast<int *>(MEM_malloc_arrayN(poly.size(), sizeof(int), __func__));
       float(*fake_co)[3] = static_cast<float(*)[3]>(
-          MEM_malloc_arrayN(p->totloop, sizeof(float[3]), __func__));
+          MEM_malloc_arrayN(poly.size(), sizeof(float[3]), __func__));
 
-      for (int k = 0; k < p->totloop; k++) {
-        const int vndx = reshape_context->base_corner_verts[p->loopstart + k];
+      for (int k = 0; k < poly.size(); k++) {
+        const int vndx = reshape_context->base_corner_verts[poly[k]];
 
         poly_verts[k] = k;
 
@@ -135,8 +132,7 @@ void multires_reshape_apply_base_refit_base_mesh(MultiresReshapeContext *reshape
         }
       }
 
-      BKE_mesh_calc_poly_normal(&fake_poly, poly_verts, (const float(*)[3])fake_co, no);
-      MEM_freeN(poly_verts);
+      BKE_mesh_calc_poly_normal(poly_verts, (const float(*)[3])fake_co, no);
       MEM_freeN(fake_co);
 
       add_v3_v3(avg_no, no);

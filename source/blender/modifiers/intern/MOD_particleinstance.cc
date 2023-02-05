@@ -314,12 +314,12 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
 
   result = BKE_mesh_new_nomain_from_template(mesh, maxvert, maxedge, 0, maxloop, maxpoly);
 
-  const OffsetIndices orig_mpoly = mesh->polys();
+  const blender::OffsetIndices orig_polys = mesh->polys();
   const blender::Span<int> orig_corner_verts = mesh->corner_verts();
   const blender::Span<int> orig_corner_edges = mesh->corner_edges();
   float(*positions)[3] = BKE_mesh_vert_positions_for_write(result);
   MEdge *edges = BKE_mesh_edges_for_write(result);
-  MutableSpan<int> mpoly = result->poly_offsets_for_write();
+  blender::MutableSpan<int> poly_offsets = result->poly_offsets_for_write();
   blender::MutableSpan<int> corner_verts = result->corner_verts_for_write();
   blender::MutableSpan<int> corner_edges = result->corner_edges_for_write();
 
@@ -478,20 +478,18 @@ static Mesh *modifyMesh(ModifierData *md, const ModifierEvalContext *ctx, Mesh *
 
     /* create polys and loops */
     for (k = 0; k < totpoly; k++) {
-
-      const MPoly *inMP = orig_mpoly + k;
-      MPoly *mp = mpoly + p_skip * totpoly + k;
+      const blender::IndexRange in_poly = orig_polys[k];
 
       CustomData_copy_data(&mesh->pdata, &result->pdata, k, p_skip * totpoly + k, 1);
-      *mp = *inMP;
-      mp->loopstart += p_skip * totloop;
+      poly_offsets[p_skip * totpoly + k] += p_skip * totloop;
+      const int dst_poly_offset = poly_offsets[p_skip * totpoly + k];
 
       {
-        int orig_corner_i = inMP->loopstart;
-        int dst_corner_i = mp->loopstart;
-        int j = mp->totloop;
+        int orig_corner_i = in_poly.start();
+        int dst_corner_i = dst_poly_offset;
+        int j = in_poly.size();
 
-        CustomData_copy_data(&mesh->ldata, &result->ldata, inMP->loopstart, mp->loopstart, j);
+        CustomData_copy_data(&mesh->ldata, &result->ldata, in_poly.start(), dst_poly_offset, j);
         for (; j; j--, orig_corner_i++, dst_corner_i++) {
           corner_verts[dst_corner_i] = orig_corner_verts[orig_corner_i] + (p_skip * totvert);
           corner_edges[dst_corner_i] = orig_corner_edges[orig_corner_i] + (p_skip * totedge);

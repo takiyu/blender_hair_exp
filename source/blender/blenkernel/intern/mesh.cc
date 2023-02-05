@@ -268,7 +268,7 @@ static void mesh_blend_write(BlendWriter *writer, ID *id, const void *id_address
           mesh, temp_arrays_for_legacy_format, vert_layers);
       mesh->mloop = BKE_mesh_legacy_convert_corners_to_loops(
           mesh, temp_arrays_for_legacy_format, loop_layers);
-      mesh->mpoly = BKE_mesh_legacy_convert_offsets_to_polys(
+      mesh->mpoly = BKE_mesh_legacy_convert_offsets_to_mpolys(
           mesh, temp_arrays_for_legacy_format, mesh.polys());
       BKE_mesh_legacy_convert_hide_layers_to_flags(mesh);
       BKE_mesh_legacy_convert_selection_layers_to_flags(mesh);
@@ -955,6 +955,7 @@ static void mesh_ensure_cdlayers_primary(Mesh *mesh, bool do_tessface)
       mesh->poly_offsets_data = static_cast<int *>(
           MEM_malloc_arrayN(mesh->totpoly + 1, sizeof(int), __func__));
     }
+    mesh->poly_offsets_for_write().last() = mesh->totloop;
   }
   if (do_tessface && !CustomData_get_layer(&mesh->fdata, CD_MFACE)) {
     CustomData_add_layer(&mesh->fdata, CD_MFACE, CD_SET_DEFAULT, nullptr, mesh->totface);
@@ -1518,8 +1519,8 @@ int poly_get_adj_loops_from_vert(const blender::Span<int> poly_verts, int vert, 
 
   if (corner != -1) {
     /* vertex was found */
-    r_adj[0] = corner_verts[ME_POLY_LOOP_PREV(poly, corner)];
-    r_adj[1] = corner_verts[ME_POLY_LOOP_NEXT(poly, corner)];
+    r_adj[0] = poly_verts[mod_i(corner - 1, poly_verts.size())];
+    r_adj[1] = poly_verts[mod_i(corner + 1, poly_verts.size())];
   }
 
   return corner;
@@ -1840,7 +1841,7 @@ void BKE_mesh_calc_normals_split_ex(Mesh *mesh,
       CustomData_get_layer_named(&mesh->pdata, CD_PROP_BOOL, "sharp_face"));
   const Span<float3> positions = mesh->vert_positions();
   const Span<MEdge> edges = mesh->edges();
-  const OffsetIndices polys = mesh->polys();
+  const blender::OffsetIndices polys = mesh->polys();
 
   BKE_mesh_normals_loop_split(reinterpret_cast<const float(*)[3]>(positions.data()),
                               BKE_mesh_vertex_normals_ensure(mesh),
@@ -1853,7 +1854,6 @@ void BKE_mesh_calc_normals_split_ex(Mesh *mesh,
                               mesh->totloop,
                               polys,
                               BKE_mesh_poly_normals_ensure(mesh),
-                              polys.size(),
                               use_split_normals,
                               split_angle,
                               sharp_edges,

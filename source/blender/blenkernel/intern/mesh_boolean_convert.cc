@@ -98,10 +98,10 @@ class MeshesToIMeshInfo {
   int input_mesh_for_imesh_vert(int imesh_v) const;
   int input_mesh_for_imesh_edge(int imesh_e) const;
   int input_mesh_for_imesh_face(int imesh_f) const;
-  const MPoly *input_mpoly_for_orig_index(int orig_index,
-                                          const Mesh **r_orig_mesh,
-                                          int *r_orig_mesh_index,
-                                          int *r_index_in_orig_mesh) const;
+  const IndexRange input_mpoly_for_orig_index(int orig_index,
+                                              const Mesh **r_orig_mesh,
+                                              int *r_orig_mesh_index,
+                                              int *r_index_in_orig_mesh) const;
   void input_mvert_for_orig_index(int orig_index,
                                   const Mesh **r_orig_mesh,
                                   int *r_index_in_orig_mesh) const;
@@ -137,7 +137,7 @@ int MeshesToIMeshInfo::input_mesh_for_imesh_edge(int imesh_e) const
 }
 
 /* Given an index `imesh_f` in the `IMesh`, return the index of the
- * input `Mesh` that contained the `MPoly` that it came from. */
+ * input `Mesh` that contained the polygon that it came from. */
 int MeshesToIMeshInfo::input_mesh_for_imesh_face(int imesh_f) const
 {
   int n = int(mesh_poly_offset.size());
@@ -152,12 +152,12 @@ int MeshesToIMeshInfo::input_mesh_for_imesh_face(int imesh_f) const
 /* Given an index of an original face in the `IMesh`, find out the input
  * `Mesh` that it came from and return it in `*r_orig_mesh`,
  * and also return the index of that `Mesh` in  `*r_orig_mesh_index`.
- * Finally, return the index of the corresponding `MPoly` in that `Mesh`
+ * Finally, return the index of the corresponding polygon in that `Mesh`
  * in `*r_index_in_orig_mesh`. */
-const MPoly *MeshesToIMeshInfo::input_mpoly_for_orig_index(int orig_index,
-                                                           const Mesh **r_orig_mesh,
-                                                           int *r_orig_mesh_index,
-                                                           int *r_index_in_orig_mesh) const
+const IndexRange MeshesToIMeshInfo::input_mpoly_for_orig_index(int orig_index,
+                                                               const Mesh **r_orig_mesh,
+                                                               int *r_orig_mesh_index,
+                                                               int *r_index_in_orig_mesh) const
 {
   int orig_mesh_index = input_mesh_for_imesh_face(orig_index);
   BLI_assert(0 <= orig_mesh_index && orig_mesh_index < meshes.size());
@@ -165,7 +165,6 @@ const MPoly *MeshesToIMeshInfo::input_mpoly_for_orig_index(int orig_index,
   const OffsetIndices polys = me->polys();
   int index_in_mesh = orig_index - mesh_poly_offset[orig_mesh_index];
   BLI_assert(0 <= index_in_mesh && index_in_mesh < me->totpoly);
-  const MPoly *mp = &polys[index_in_mesh];
   if (r_orig_mesh) {
     *r_orig_mesh = me;
   }
@@ -175,7 +174,7 @@ const MPoly *MeshesToIMeshInfo::input_mpoly_for_orig_index(int orig_index,
   if (r_index_in_orig_mesh) {
     *r_index_in_orig_mesh = index_in_mesh;
   }
-  return mp;
+  return polys[index_in_mesh];
 }
 
 /* Given an index of an original vertex in the `IMesh`, find out the input
@@ -226,7 +225,7 @@ const MEdge *MeshesToIMeshInfo::input_medge_for_orig_index(int orig_index,
  * first Mesh. To do this transformation, we also need the transformation
  * obmats corresponding to the Meshes, so they are in the `obmats` argument.
  * The 'original' indexes in the IMesh are the indexes you get by
- * a scheme that offsets each vertex, MEdge, and MPoly index by the sum of the
+ * a scheme that offsets each vertex, MEdge, and polygon index by the sum of the
  * vertices, edges, and polys in the preceding Meshes in the mesh span.
  * The `*r_info class` is filled in with information needed to make the
  * correspondence between the Mesh MVerts/MPolys and the IMesh Verts/Faces.
@@ -284,10 +283,10 @@ static IMesh meshes_to_imesh(Span<const Mesh *> meshes,
   const float4x4 inv_target_mat = clean_transform(target_transform).inverted();
 
   /* For each input `Mesh`, make `Vert`s and `Face`s for the corresponding
-   * vertices and `MPoly`s, and keep track of the original indices (using the
+   * vertices and polygons, and keep track of the original indices (using the
    * concatenating offset scheme) inside the `Vert`s and `Face`s.
    * When making `Face`s, we also put in the original indices for `MEdge`s that
-   * make up the `MPoly`s using the same scheme. */
+   * make up the polygons using the same scheme. */
   for (int mi : meshes.index_range()) {
     const Mesh *me = meshes[mi];
     r_info->mesh_vert_offset[mi] = v;
@@ -340,12 +339,13 @@ static IMesh meshes_to_imesh(Span<const Mesh *> meshes,
       ++v;
     }
 
-    for (const MPoly &poly : polys) {
-      int flen = poly.totloop;
+    for (const int poly_i : polys.index_range()) {
+      const IndexRange poly = polys[poly_i];
+      int flen = poly.size();
       face_vert.resize(flen);
       face_edge_orig.resize(flen);
       for (int i = 0; i < flen; ++i) {
-        const int corner_i = poly.loopstart + i;
+        const int corner_i = poly[i];
         int mverti = r_info->mesh_vert_offset[mi] + corner_verts[corner_i];
         const Vert *fv = r_info->mesh_to_imesh_vert[mverti];
         if (need_face_flip) {
@@ -457,16 +457,16 @@ static void copy_edge_attributes(Mesh *dest_mesh,
 
 /**
  * For #IMesh face `f`, with corresponding output Mesh poly `mp`,
- * where the original Mesh poly is `orig_mp`, coming from the Mesh
+ * where the original Mesh poly is `orig_poly`, coming from the Mesh
  * `orig_me`, which has index `orig_me_index` in `mim`:
  * fill in the `orig_loops` Array with corresponding indices of MLoops from `orig_me`
  * where they have the same start and end vertices; for cases where that is
  * not true, put -1 in the `orig_loops` slot.
- * For now, we only try to do this if `mp` and `orig_mp` have the same size.
+ * For now, we only try to do this if `mp` and `orig_poly` have the same size.
  * Return the number of non-null MLoops filled in.
  */
 static int fill_orig_loops(const Face *f,
-                           const MPoly *orig_mp,
+                           const IndexRange orig_poly,
                            const Mesh *orig_me,
                            int orig_me_index,
                            MeshesToIMeshInfo &mim,
@@ -475,7 +475,7 @@ static int fill_orig_loops(const Face *f,
   r_orig_loops.fill(-1);
   const Span<int> orig_corner_verts = orig_me->corner_verts();
 
-  int orig_mplen = orig_mp->totloop;
+  int orig_mplen = orig_poly.size();
   if (f->size() != orig_mplen) {
     return 0;
   }
@@ -500,7 +500,7 @@ static int fill_orig_loops(const Face *f,
   /* Assume all vertices in an mpoly are unique. */
   int offset = -1;
   for (int i = 0; i < orig_mplen; ++i) {
-    int loop_i = i + orig_mp->loopstart;
+    int loop_i = i + orig_poly.start();
     if (orig_corner_verts[loop_i] == first_orig_v_in_orig_me) {
       offset = i;
       break;
@@ -512,7 +512,7 @@ static int fill_orig_loops(const Face *f,
   int num_orig_loops_found = 0;
   for (int mp_loop_index = 0; mp_loop_index < orig_mplen; ++mp_loop_index) {
     int orig_mp_loop_index = (mp_loop_index + offset) % orig_mplen;
-    const int vert_i = orig_corner_verts[orig_mp->loopstart + orig_mp_loop_index];
+    const int vert_i = orig_corner_verts[orig_poly.start() + orig_mp_loop_index];
     int fv_orig = f->vert[mp_loop_index]->orig;
     if (fv_orig != NO_INDEX) {
       fv_orig -= orig_me_vert_offset;
@@ -522,7 +522,7 @@ static int fill_orig_loops(const Face *f,
     }
     if (vert_i == fv_orig) {
       const int vert_next =
-          orig_corner_verts[orig_mp->loopstart + ((orig_mp_loop_index + 1) % orig_mplen)];
+          orig_corner_verts[orig_poly.start() + ((orig_mp_loop_index + 1) % orig_mplen)];
       int fvnext_orig = f->vert[(mp_loop_index + 1) % orig_mplen]->orig;
       if (fvnext_orig != NO_INDEX) {
         fvnext_orig -= orig_me_vert_offset;
@@ -531,7 +531,7 @@ static int fill_orig_loops(const Face *f,
         }
       }
       if (vert_next == fvnext_orig) {
-        r_orig_loops[mp_loop_index] = orig_mp->loopstart + orig_mp_loop_index;
+        r_orig_loops[mp_loop_index] = orig_poly.start() + orig_mp_loop_index;
         ++num_orig_loops_found;
       }
     }
@@ -539,26 +539,24 @@ static int fill_orig_loops(const Face *f,
   return num_orig_loops_found;
 }
 
-/* Fill `cos_2d` with the 2d coordinates found by projection MPoly `mp` along
+/* Fill `cos_2d` with the 2d coordinates found by projection polygon `poly` along
  * its normal. Also fill in r_axis_mat with the matrix that does that projection.
  * But before projecting, also transform the 3d coordinate by multiplying by trans_mat.
- * `cos_2d` should have room for `mp->totloop` entries. */
+ * `cos_2d` should have room for `poly.size()` entries. */
 static void get_poly2d_cos(const Mesh *me,
-                           const MPoly *mp,
+                           const IndexRange poly,
                            float (*cos_2d)[2],
                            const float4x4 &trans_mat,
                            float r_axis_mat[3][3])
 {
   const Span<float3> positions = me->vert_positions();
   const Span<int> corner_verts = me->corner_verts();
-  const Span<int> poly_verts = corner_verts.slice(mp->loopstart, mp->totloop);
+  const Span<int> poly_verts = corner_verts.slice(poly);
 
   /* Project coordinates to 2d in cos_2d, using normal as projection axis. */
   float axis_dominant[3];
-  BKE_mesh_calc_poly_normal(mp,
-                            &corner_verts[mp->loopstart],
-                            reinterpret_cast<const float(*)[3]>(positions.data()),
-                            axis_dominant);
+  BKE_mesh_calc_poly_normal(
+      poly_verts, reinterpret_cast<const float(*)[3]>(positions.data()), axis_dominant);
   axis_dominant_v3_to_m3(r_axis_mat, axis_dominant);
   for (const int i : poly_verts.index_range()) {
     float3 co = positions[poly_verts[i]];
@@ -567,41 +565,41 @@ static void get_poly2d_cos(const Mesh *me,
   }
 }
 
-/* For the loops of `mp`, see if the face is unchanged from `orig_mp`, and if so,
+/* For the loops of `mp`, see if the face is unchanged from `orig_poly`, and if so,
  * copy the Loop attributes from corresponding loops to corresponding loops.
- * Otherwise, interpolate the Loop attributes in the face `orig_mp`. */
+ * Otherwise, interpolate the Loop attributes in the face `orig_poly`. */
 static void copy_or_interp_loop_attributes(Mesh *dest_mesh,
                                            const Face *f,
-                                           MPoly *mp,
-                                           const MPoly *orig_mp,
+                                           const IndexRange poly,
+                                           const IndexRange orig_poly,
                                            const Mesh *orig_me,
                                            int orig_me_index,
                                            MeshesToIMeshInfo &mim)
 {
-  Array<int> orig_loops(mp->totloop);
-  int norig = fill_orig_loops(f, orig_mp, orig_me, orig_me_index, mim, orig_loops);
+  Array<int> orig_loops(poly.size());
+  int norig = fill_orig_loops(f, orig_poly, orig_me, orig_me_index, mim, orig_loops);
   /* We may need these arrays if we have to interpolate Loop attributes rather than just copy.
    * Right now, trying Array<float[2]> complains, so declare cos_2d a different way. */
   float(*cos_2d)[2];
   Array<float> weights;
   Array<const void *> src_blocks_ofs;
   float axis_mat[3][3];
-  if (norig != mp->totloop) {
-    /* We will need to interpolate. Make `cos_2d` hold 2d-projected coordinates of `orig_mp`,
+  if (norig != poly.size()) {
+    /* We will need to interpolate. Make `cos_2d` hold 2d-projected coordinates of `orig_poly`,
      * which are transformed into object 0's local space before projecting.
      * At this point we cannot yet calculate the interpolation weights, as they depend on
      * the coordinate where interpolation is to happen, but we can allocate the needed arrays,
      * so they don't have to be allocated per-layer. */
-    cos_2d = (float(*)[2])BLI_array_alloca(cos_2d, orig_mp->totloop);
-    weights = Array<float>(orig_mp->totloop);
-    src_blocks_ofs = Array<const void *>(orig_mp->totloop);
-    get_poly2d_cos(orig_me, orig_mp, cos_2d, mim.to_target_transform[orig_me_index], axis_mat);
+    cos_2d = (float(*)[2])BLI_array_alloca(cos_2d, orig_poly.size());
+    weights = Array<float>(orig_poly.size());
+    src_blocks_ofs = Array<const void *>(orig_poly.size());
+    get_poly2d_cos(orig_me, orig_poly, cos_2d, mim.to_target_transform[orig_me_index], axis_mat);
   }
   CustomData *target_cd = &dest_mesh->ldata;
   const Span<float3> dst_positions = dest_mesh->vert_positions();
   const Span<int> dst_corner_verts = dest_mesh->corner_verts();
-  for (int i = 0; i < mp->totloop; ++i) {
-    int loop_index = mp->loopstart + i;
+  for (int i = 0; i < poly.size(); ++i) {
+    int loop_index = poly[i];
     int orig_loop_index = norig > 0 ? orig_loops[i] : -1;
     const CustomData *source_cd = &orig_me->ldata;
     if (orig_loop_index == -1) {
@@ -610,7 +608,7 @@ static void copy_or_interp_loop_attributes(Mesh *dest_mesh,
        * coordinates were. The `dest_mesh` coordinates are already in object 0 local space. */
       float co[2];
       mul_v2_m3v3(co, axis_mat, dst_positions[dst_corner_verts[loop_index]]);
-      interp_weights_poly_v2(weights.data(), cos_2d, orig_mp->totloop, co);
+      interp_weights_poly_v2(weights.data(), cos_2d, orig_poly.size(), co);
     }
     for (int source_layer_i = 0; source_layer_i < source_cd->totlayer; ++source_layer_i) {
       int ty = source_cd->layers[source_layer_i].type;
@@ -640,9 +638,9 @@ static void copy_or_interp_loop_attributes(Mesh *dest_mesh,
         int source_layer_type_index = source_layer_i - source_cd->typemap[ty];
         BLI_assert(target_layer_type_index != -1 && source_layer_type_index >= 0);
         const int size = CustomData_sizeof(ty);
-        for (int j = 0; j < orig_mp->totloop; ++j) {
+        for (int j = 0; j < orig_poly.size(); ++j) {
           const void *layer = CustomData_get_layer_n(source_cd, ty, source_layer_type_index);
-          src_blocks_ofs[j] = POINTER_OFFSET(layer, size * (orig_mp->loopstart + j));
+          src_blocks_ofs[j] = POINTER_OFFSET(layer, size * (orig_poly[j]));
         }
         void *dst_layer = CustomData_get_layer_n_for_write(
             target_cd, ty, target_layer_type_index, dest_mesh->totloop);
@@ -651,7 +649,7 @@ static void copy_or_interp_loop_attributes(Mesh *dest_mesh,
                                   src_blocks_ofs.data(),
                                   weights.data(),
                                   nullptr,
-                                  orig_mp->totloop,
+                                  orig_poly.size(),
                                   dst_block_ofs,
                                   target_layer_i);
       }
@@ -735,17 +733,15 @@ static Mesh *imesh_to_mesh(IMesh *im, MeshesToIMeshInfo &mim)
                                                                             ATTR_DOMAIN_FACE);
   int cur_loop_index = 0;
   MutableSpan<int> dst_corner_verts = result->corner_verts_for_write();
-  MutableSpan<MPoly> dst_polys = result->poly_offsets_for_write();
+  MutableSpan<int> dst_poly_offsets = result->poly_offsets_for_write();
   for (int fi : im->face_index_range()) {
     const Face *f = im->face(fi);
     const Mesh *orig_me;
     int index_in_orig_me;
     int orig_me_index;
-    const MPoly *orig_mp = mim.input_mpoly_for_orig_index(
+    const IndexRange orig_poly = mim.input_mpoly_for_orig_index(
         f->orig, &orig_me, &orig_me_index, &index_in_orig_me);
-    MPoly *mp = &dst_polys[fi];
-    mp->totloop = f->size();
-    mp->loopstart = cur_loop_index;
+    dst_poly_offsets[fi] = cur_loop_index;
     for (int j : f->index_range()) {
       const Vert *vf = f->vert[j];
       const int vfi = im->lookup_vert(vf);
@@ -761,7 +757,13 @@ static Mesh *imesh_to_mesh(IMesh *im, MeshesToIMeshInfo &mim)
                              mim.material_remaps[orig_me_index].as_span() :
                              Span<short>(),
                          dst_material_indices.span);
-    copy_or_interp_loop_attributes(result, f, mp, orig_mp, orig_me, orig_me_index, mim);
+    copy_or_interp_loop_attributes(result,
+                                   f,
+                                   IndexRange(dst_poly_offsets[fi], orig_poly.size()),
+                                   orig_poly,
+                                   orig_me,
+                                   orig_me_index,
+                                   mim);
   }
   dst_material_indices.finish();
 
@@ -770,20 +772,22 @@ static Mesh *imesh_to_mesh(IMesh *im, MeshesToIMeshInfo &mim)
   BKE_mesh_calc_edges(result, false, false);
   merge_edge_customdata_layers(result, mim);
 
+  const OffsetIndices dst_polys = result->polys();
+
   /* Now that the MEdges are populated, we can copy over the required attributes and custom layers.
    */
   MutableSpan<MEdge> edges = result->edges_for_write();
   const Span<int> dst_corner_edges = result->corner_edges();
   for (int fi : im->face_index_range()) {
     const Face *f = im->face(fi);
-    const MPoly *mp = &dst_polys[fi];
+    const IndexRange poly = dst_polys[fi];
     for (int j : f->index_range()) {
       if (f->edge_orig[j] != NO_INDEX) {
         const Mesh *orig_me;
         int index_in_orig_me;
         const MEdge *orig_medge = mim.input_medge_for_orig_index(
             f->edge_orig[j], &orig_me, &index_in_orig_me);
-        int e_index = dst_corner_edges[mp->loopstart + j];
+        int e_index = dst_corner_edges[poly[j]];
         MEdge *medge = &edges[e_index];
         copy_edge_attributes(result, medge, orig_medge, orig_me, e_index, index_in_orig_me);
       }
@@ -850,10 +854,10 @@ Mesh *direct_mesh_boolean(Span<const Mesh *> meshes,
     const Span<int> corner_edges = result->corner_edges();
     for (int fi : m_out.face_index_range()) {
       const Face &face = *m_out.face(fi);
-      const MPoly &poly = polys[fi];
-      for (int corner_i : face.index_range()) {
-        if (face.is_intersect[corner_i]) {
-          int e_index = corner_edges[poly.loopstart + corner_i];
+      const IndexRange poly = polys[fi];
+      for (int i : face.index_range()) {
+        if (face.is_intersect[i]) {
+          int e_index = corner_edges[poly[i]];
           r_intersecting_edges->append(e_index);
         }
       }

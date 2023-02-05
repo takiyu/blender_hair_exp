@@ -345,7 +345,6 @@ bool BKE_mesh_center_of_surface(const Mesh *me, float r_cent[3])
 bool BKE_mesh_center_of_volume(const Mesh *me, float r_cent[3])
 {
   int i = me->totpoly;
-  const MPoly *mpoly;
   float poly_volume;
   float total_volume = 0.0f;
   float poly_cent[3];

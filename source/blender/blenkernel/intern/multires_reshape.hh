@@ -8,6 +8,7 @@
 #pragma once
 
 #include "BLI_sys_types.h"
+#include "BLI_offset_indices.hh"
 
 #include "BKE_multires.h"
 
@@ -16,7 +17,6 @@ struct GridPaintMask;
 struct MDisps;
 struct MEdge;
 struct Mesh;
-struct MPoly;
 struct MultiresModifierData;
 struct Object;
 struct Subdiv;
@@ -34,7 +34,7 @@ struct MultiresReshapeContext {
   Mesh *base_mesh;
   const float (*base_positions)[3];
   const MEdge *base_edges;
-  const MPoly *base_polys;
+  blender::OffsetIndices<int> base_polys;
   const int *base_corner_verts;
   const int *base_corner_edges;
 

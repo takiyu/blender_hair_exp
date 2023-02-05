@@ -6114,11 +6114,9 @@ void SCULPT_boundary_info_ensure(Object *object)
   int *adjacent_faces_edge_count = static_cast<int *>(
       MEM_calloc_arrayN(base_mesh->totedge, sizeof(int), "Adjacent face edge count"));
 
-  for (int p = 0; p < base_mesh->totpoly; p++) {
-    const MPoly *poly = &polys[p];
-    for (int l = 0; l < poly->totloop; l++) {
-      const int edge_i = corner_edges[poly->loopstart + l];
-      adjacent_faces_edge_count[edge_i]++;
+  for (const int i : polys.index_range()) {
+    for (const int edge : corner_edges.slice(polys[i])) {
+      adjacent_faces_edge_count[edge]++;
     }
   }
 

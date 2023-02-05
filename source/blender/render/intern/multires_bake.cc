@@ -65,7 +65,7 @@ struct MResolvePixelData {
   blender::OffsetIndices<int> polys;
   const int *material_indices;
   const bool *sharp_faces;
-  blender::Span<int> corner_verts;
+  const int *corner_verts;
   float (*mloopuv)[2];
   float uv_offset[2];
   const MLoopTri *mlooptri;
@@ -675,13 +675,17 @@ static void get_ccgdm_data(DerivedMesh *lodm,
   hidm->getGridKey(hidm, &key);
 
   if (lvl == 0) {
-    MPoly *mpoly;
     face_side = (grid_size << 1) - 1;
+    const blender::OffsetIndices<int> polys(
+        blender::Span(lodm->getPolyArray(lodm), lodm->getNumPolys(lodm) + 1));
 
-    mpoly = lodm->getPolyArray(lodm) + poly_index;
     g_index = grid_offset[poly_index];
-    S = mdisp_rot_face_to_crn(
-        mpoly, face_side, u * (face_side - 1), v * (face_side - 1), &crn_x, &crn_y);
+    S = mdisp_rot_face_to_crn(polys[poly_index].size(),
+                              face_side,
+                              u * (face_side - 1),
+                              v * (face_side - 1),
+                              &crn_x,
+                              &crn_y);
   }
   else {
     /* number of faces per grid side */
@@ -843,7 +847,9 @@ static void apply_heights_callback(DerivedMesh *lores_dm,
 {
   const MLoopTri *lt = lores_dm->getLoopTriArray(lores_dm) + tri_index;
   const int *corner_verts = lores_dm->getCornerVertArray(lores_dm);
-  MPoly *mpoly = lores_dm->getPolyArray(lores_dm) + lt->poly;
+  const blender::OffsetIndices<int> polys(
+      blender::Span(lores_dm->getPolyArray(lores_dm), lores_dm->getNumPolys(lores_dm) + 1));
+  const blender::IndexRange poly = polys[lt->poly];
   float(*mloopuv)[2] = static_cast<float(*)[2]>(
       lores_dm->getLoopDataArray(lores_dm, CD_PROP_FLOAT2));
   MHeightBakeData *height_data = (MHeightBakeData *)bake_data;
@@ -854,11 +860,11 @@ static void apply_heights_callback(DerivedMesh *lores_dm,
 
   /* ideally we would work on triangles only, however, we rely on quads to get orthogonal
    * coordinates for use in grid space (triangle barycentric is not orthogonal) */
-  if (mpoly->totloop == 4) {
-    st0 = mloopuv[mpoly->loopstart];
-    st1 = mloopuv[mpoly->loopstart + 1];
-    st2 = mloopuv[mpoly->loopstart + 2];
-    st3 = mloopuv[mpoly->loopstart + 3];
+  if (poly.size() == 4) {
+    st0 = mloopuv[poly[0]];
+    st1 = mloopuv[poly[1]];
+    st2 = mloopuv[poly[2]];
+    st3 = mloopuv[poly[3]];
     resolve_quad_uv_v2(uv, st, st0, st1, st2, st3);
   }
   else {
@@ -885,9 +891,9 @@ static void apply_heights_callback(DerivedMesh *lores_dm,
                    n);
   }
   else {
-    if (mpoly->totloop == 4) {
-      interp_bilinear_mpoly(lores_dm, corner_verts, mpoly, uv[0], uv[1], 1, p0);
-      interp_bilinear_mpoly(lores_dm, corner_verts, mpoly, uv[0], uv[1], 0, n);
+    if (poly.size() == 4) {
+      interp_bilinear_mpoly(lores_dm, corner_verts, poly, uv[0], uv[1], 1, p0);
+      interp_bilinear_mpoly(lores_dm, corner_verts, poly, uv[0], uv[1], 0, n);
     }
     else {
       interp_barycentric_mlooptri(lores_dm, corner_verts, lt, uv[0], uv[1], 1, p0);
@@ -958,7 +964,9 @@ static void apply_tangmat_callback(DerivedMesh *lores_dm,
                                    const int y)
 {
   const MLoopTri *lt = lores_dm->getLoopTriArray(lores_dm) + tri_index;
-  MPoly *mpoly = lores_dm->getPolyArray(lores_dm) + lt->poly;
+  const blender::OffsetIndices<int> polys(
+      blender::Span(lores_dm->getPolyArray(lores_dm), lores_dm->getNumPolys(lores_dm) + 1));
+  const blender::IndexRange poly = polys[lt->poly];
   float(*mloopuv)[2] = static_cast<float(*)[2]>(
       lores_dm->getLoopDataArray(lores_dm, CD_PROP_FLOAT2));
   MNormalBakeData *normal_data = (MNormalBakeData *)bake_data;
@@ -968,11 +976,11 @@ static void apply_tangmat_callback(DerivedMesh *lores_dm,
 
   /* ideally we would work on triangles only, however, we rely on quads to get orthogonal
    * coordinates for use in grid space (triangle barycentric is not orthogonal) */
-  if (mpoly->totloop == 4) {
-    st0 = mloopuv[mpoly->loopstart];
-    st1 = mloopuv[mpoly->loopstart + 1];
-    st2 = mloopuv[mpoly->loopstart + 2];
-    st3 = mloopuv[mpoly->loopstart + 3];
+  if (poly.size() == 4) {
+    st0 = mloopuv[poly[0]];
+    st1 = mloopuv[poly[1]];
+    st2 = mloopuv[poly[2]];
+    st3 = mloopuv[poly[3]];
     resolve_quad_uv_v2(uv, st, st0, st1, st2, st3);
   }
   else {
@@ -1235,7 +1243,7 @@ static void apply_ao_callback(DerivedMesh *lores_dm,
 
   /* ideally we would work on triangles only, however, we rely on quads to get orthogonal
    * coordinates for use in grid space (triangle barycentric is not orthogonal) */
-  if (mpoly->totloop == 4) {
+  if (poly.size() == 4) {
     st0 = mloopuv[mpoly->loopstart];
     st1 = mloopuv[mpoly->loopstart + 1];
     st2 = mloopuv[mpoly->loopstart + 2];
