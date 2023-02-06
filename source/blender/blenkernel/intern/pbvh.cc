@@ -823,7 +823,7 @@ static void pbvh_validate_node_prims(PBVH *pbvh)
 
 void BKE_pbvh_build_mesh(PBVH *pbvh,
                          Mesh *mesh,
-                         const int *poly_offsets,
+                         const blender::OffsetIndices<int> polys,
                          const int *corner_verts,
                          float (*vert_positions)[3],
                          int totvert,
@@ -838,7 +838,7 @@ void BKE_pbvh_build_mesh(PBVH *pbvh,
 
   pbvh->mesh = mesh;
   pbvh->header.type = PBVH_FACES;
-  pbvh->poly_offsets = poly_offsets;
+  pbvh->polys = polys;
   pbvh->hide_poly = static_cast<bool *>(CustomData_get_layer_named_for_write(
       &mesh->pdata, CD_PROP_BOOL, ".hide_poly", mesh->totpoly));
   pbvh->material_indices = static_cast<const int *>(
@@ -938,10 +938,10 @@ void BKE_pbvh_build_grids(PBVH *pbvh,
 
   /* Find maximum number of grids per face. */
   int max_grids = 1;
-  const int *poly_offsets = BKE_mesh_poly_offsets(me);
+  const blender::OffsetIndices polys = me->polys();
 
   for (int i = 0; i < me->totpoly; i++) {
-    max_grids = max_ii(max_grids, poly_offsets[i].totloop);
+    max_grids = max_ii(max_grids, polys[i].size());
   }
 
   /* Ensure leaf limit is at least 4 so there's room
@@ -955,7 +955,7 @@ void BKE_pbvh_build_grids(PBVH *pbvh,
   pbvh->ldata = &me->ldata;
   pbvh->pdata = &me->pdata;
 
-  pbvh->poly_offsets = poly_offsets;
+  pbvh->polys = polys;
   pbvh->corner_verts = BKE_mesh_corner_verts(me);
 
   /* We also need the base mesh for PBVH draw. */
@@ -1427,9 +1427,9 @@ static void pbvh_update_normals_accum_task_cb(void *__restrict userdata,
 
       /* Face normal and mask */
       if (lt->poly != mpoly_prev) {
-        const MPoly *mp = &pbvh->mpoly[lt->poly];
+        const blender::IndexRange poly = pbvh->polys[lt->poly];
         BKE_mesh_calc_poly_normal(
-            mp, &pbvh->corner_verts[mp->loopstart], pbvh->vert_positions, fn);
+            {&pbvh->corner_verts[poly.start()], poly.size()}, pbvh->vert_positions, fn);
         mpoly_prev = lt->poly;
       }
 

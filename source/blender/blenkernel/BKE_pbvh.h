@@ -278,6 +278,9 @@ typedef void (*BKE_pbvh_SearchNearestCallback)(PBVHNode *node, void *data, float
 /* Building */
 
 PBVH *BKE_pbvh_new(PBVHType type);
+
+#ifdef __cplusplus
+
 /**
  * Do a full rebuild with on Mesh data structure.
  *
@@ -286,7 +289,7 @@ PBVH *BKE_pbvh_new(PBVHType type);
  */
 void BKE_pbvh_build_mesh(PBVH *pbvh,
                          struct Mesh *mesh,
-                         const int *poly_offsets,
+                         blender::OffsetIndices<int> polys,
                          const int *corner_verts,
                          float (*vert_positions)[3],
                          int totvert,
@@ -295,6 +298,9 @@ void BKE_pbvh_build_mesh(PBVH *pbvh,
                          struct CustomData *pdata,
                          const struct MLoopTri *looptri,
                          int looptri_num);
+
+#endif
+
 /**
  * Do a full rebuild with on Grids data structure.
  */
@@ -307,6 +313,7 @@ void BKE_pbvh_build_grids(PBVH *pbvh,
                           unsigned int **grid_hidden,
                           struct Mesh *me,
                           struct SubdivCCG *subdiv_ccg);
+
 /**
  * Build a PBVH from a BMesh.
  */

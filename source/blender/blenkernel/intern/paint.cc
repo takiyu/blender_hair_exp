@@ -2180,7 +2180,7 @@ static PBVH *build_pbvh_from_regular_mesh(Object *ob, Mesh *me_eval_deform, bool
   BKE_pbvh_respect_hide_set(pbvh, respect_hide);
 
   MutableSpan<float3> positions = me->vert_positions_for_write();
-  const OffsetIndices polys = me->polys();
+  const blender::OffsetIndices polys = me->polys();
   const Span<int> corner_verts = me->corner_verts();
 
   MLoopTri *looptri = static_cast<MLoopTri *>(
@@ -2195,7 +2195,7 @@ static PBVH *build_pbvh_from_regular_mesh(Object *ob, Mesh *me_eval_deform, bool
 
   BKE_pbvh_build_mesh(pbvh,
                       me,
-                      polys.data(),
+                      polys,
                       corner_verts.data(),
                       reinterpret_cast<float(*)[3]>(positions.data()),
                       me->totvert,
