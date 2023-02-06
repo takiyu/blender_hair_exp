@@ -26,7 +26,7 @@
 #include "BKE_pbvh.h"
 #include "BKE_subdiv_ccg.h"
 
-#include "DRW_pbvh.h"
+#include "DRW_pbvh.hh"
 
 #include "PIL_time.h"
 
@@ -401,8 +401,8 @@ int BKE_pbvh_count_grid_quads(BLI_bitmap **grid_hidden,
   /* grid hidden layer is present, so have to check each grid for
    * visibility */
 
-  int depth1 = int(log2((double)gridsize - 1.0) + DBL_EPSILON);
-  int depth2 = int(log2((double)display_gridsize - 1.0) + DBL_EPSILON);
+  int depth1 = int(log2(double(gridsize) - 1.0) + DBL_EPSILON);
+  int depth2 = int(log2(double(display_gridsize) - 1.0) + DBL_EPSILON);
 
   int skip = depth2 < depth1 ? 1 << (depth1 - depth2 - 1) : 1;
 
@@ -688,8 +688,8 @@ static void pbvh_draw_args_init(PBVH *pbvh, PBVH_GPU_Args *args, PBVHNode *node)
   args->face_sets_color_default = pbvh->face_sets_color_default;
   args->face_sets_color_seed = pbvh->face_sets_color_seed;
   args->vert_positions = pbvh->vert_positions;
-  args->corner_verts = pbvh->corner_verts;
-  args->corner_edges = pbvh->mesh ? BKE_mesh_corner_edges(pbvh->mesh) : NULL;
+  args->corner_verts = {pbvh->corner_verts, pbvh->mesh->totloop};
+  args->corner_edges = pbvh->mesh ? pbvh->mesh->corner_edges() : blender::Span<int>();
   args->mpoly = pbvh->mpoly;
   args->mlooptri = pbvh->looptri;
 
@@ -3684,7 +3684,7 @@ static void pbvh_face_iter_step(PBVHFaceIter *fd, bool do_step)
       }
 
       BMFace *f = (BMFace *)BLI_gsetIterator_getKey(&fd->bm_faces_iter_);
-      fd->face.i = (intptr_t)f;
+      fd->face.i = intptr_t(f);
       fd->index = f->head.index;
 
       if (fd->cd_face_set_ != -1) {
@@ -3700,7 +3700,7 @@ static void pbvh_face_iter_step(PBVHFaceIter *fd, bool do_step)
 
       BMLoop *l = f->l_first;
       do {
-        fd->verts[vertex_i++].i = (intptr_t)l->v;
+        fd->verts[vertex_i++].i = intptr_t(l->v);
       } while ((l = l->next) != f->l_first);
 
       break;

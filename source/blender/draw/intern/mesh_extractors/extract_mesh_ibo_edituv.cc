@@ -550,13 +550,13 @@ static void extract_edituv_fdots_iter_poly_mesh(const MeshRenderData *mr,
   const bool mp_select = (efa) ? BM_elem_flag_test_bool(efa, BM_ELEM_SELECT) : false;
 
   if (mr->use_subsurf_fdots) {
-    const BLI_bitmap *facedot_tags = mr->me->runtime->subsurf_face_dot_tags;
+    const BitVector<> &facedot_tags = mr->me->runtime->subsurf_face_dot_tags;
 
     for (const int ml_index : mr->polys[mp_index]) {
-      const int vert_i = mr->corner_verts[ml_index];
+      const int vert = mr->corner_verts[ml_index];
 
       const bool real_fdot = !mr->p_origindex || (mr->p_origindex[mp_index] != ORIGINDEX_NONE);
-      const bool subd_fdot = BLI_BITMAP_TEST(facedot_tags, vert_i);
+      const bool subd_fdot = facedot_tags[vert];
       edituv_facedot_add(data, mp_hidden || !real_fdot || !subd_fdot, mp_select, mp_index);
     }
   }

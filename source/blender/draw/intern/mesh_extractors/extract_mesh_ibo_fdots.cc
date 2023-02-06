@@ -45,11 +45,11 @@ static void extract_fdots_iter_poly_mesh(const MeshRenderData *mr,
 
   GPUIndexBufBuilder *elb = static_cast<GPUIndexBufBuilder *>(_userdata);
   if (mr->use_subsurf_fdots) {
-    const BLI_bitmap *facedot_tags = mr->me->runtime->subsurf_face_dot_tags;
+    const BitVector<> &facedot_tags = mr->me->runtime->subsurf_face_dot_tags;
 
     for (const int ml_index : mr->polys[mp_index]) {
-      const int vert_i = mr->corner_verts[ml_index];
-      if (BLI_BITMAP_TEST(facedot_tags, vert_i) && !hidden) {
+      const int vert = mr->corner_verts[ml_index];
+      if (facedot_tags[vert] && !hidden) {
         GPU_indexbuf_set_point_vert(elb, mp_index, mp_index);
         return;
       }

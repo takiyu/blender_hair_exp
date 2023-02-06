@@ -44,7 +44,7 @@
 #include "GPU_batch.h"
 
 #include "DRW_engine.h"
-#include "DRW_pbvh.h"
+#include "DRW_pbvh.hh"
 
 #include "bmesh.h"
 #include "draw_pbvh.h"
@@ -553,10 +553,10 @@ struct PBVHBatches {
 
   void fill_vbo_faces(PBVHVbo &vbo, PBVH_GPU_Args *args)
   {
+    const blender::Span<int> corner_verts = args->corner_verts;
     auto foreach_faces =
         [&](std::function<void(int buffer_i, int tri_i, int vertex_i, const MLoopTri *tri)> func) {
           int buffer_i = 0;
-          const int *corner_verts = args->corner_verts;
 
           for (int i : IndexRange(args->totprim)) {
             int face_index = args->mlooptri[args->prim_indices[i]].poly;
@@ -998,7 +998,7 @@ struct PBVHBatches {
 
       int r_edges[3];
       BKE_mesh_looptri_get_real_edges(
-          edges.data(), args->corner_verts, args->corner_edges, lt, r_edges);
+          edges.data(), args->corner_verts.data(), args->corner_edges.data(), lt, r_edges);
 
       if (r_edges[0] != -1) {
         edge_count++;
@@ -1024,7 +1024,7 @@ struct PBVHBatches {
 
       int r_edges[3];
       BKE_mesh_looptri_get_real_edges(
-          edges.data(), args->corner_verts, args->corner_edges, lt, r_edges);
+          edges.data(), args->corner_verts.data(), args->corner_edges.data(), lt, r_edges);
 
       if (r_edges[0] != -1) {
         GPU_indexbuf_add_line_verts(&elb_lines, vertex_i, vertex_i + 1);
