@@ -158,6 +158,8 @@ ShadowSample shadow_punctual_sample_get(
   samp.bias = shadow_slope_bias_get(atlas_size, light, lNg, lP, samp.uv, samp.tile.lod);
 
   float occluder_ndc = shadow_tile_depth_get(atlas_tx, samp.tile, samp.uv);
+  /* Depth is cleared to FLT_MAX, we clamp it to 1 in punctual shadows for better precission */
+  occluder_ndc = clamp(occluder_ndc, 0, 1);
 
   /* NOTE: Given to be both positive, so can use intBitsToFloat instead of orderedInt version. */
   float near = intBitsToFloat(light.clip_near);
