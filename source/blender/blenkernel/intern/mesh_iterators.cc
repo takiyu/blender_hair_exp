@@ -314,8 +314,7 @@ void BKE_mesh_foreach_mapped_subdiv_face_center(
                                       BKE_mesh_vertex_normals_ensure(mesh) :
                                       nullptr;
   const int *index = static_cast<const int *>(CustomData_get_layer(&mesh->pdata, CD_ORIGINDEX));
-  const BLI_bitmap *facedot_tags = mesh->runtime->subsurf_face_dot_tags;
-  BLI_assert(facedot_tags != nullptr);
+  const blender::BitVector<> &facedot_tags = mesh->runtime->subsurf_face_dot_tags;
 
   if (index) {
     for (int i = 0; i < mesh->totpoly; i++, mp++) {
@@ -325,7 +324,7 @@ void BKE_mesh_foreach_mapped_subdiv_face_center(
       }
       for (int j = 0; j < mp->totloop; j++) {
         const int vert = corner_verts[mp->loopstart + j];
-        if (BLI_BITMAP_TEST(facedot_tags, vert)) {
+        if (facedot_tags[vert]) {
           func(userData,
                orig,
                positions[vert],
@@ -338,7 +337,7 @@ void BKE_mesh_foreach_mapped_subdiv_face_center(
     for (int i = 0; i < mesh->totpoly; i++, mp++) {
       for (int j = 0; j < mp->totloop; j++) {
         const int vert = corner_verts[mp->loopstart + j];
-        if (BLI_BITMAP_TEST(facedot_tags, vert)) {
+        if (facedot_tags[vert]) {
           func(userData,
                i,
                positions[vert],
