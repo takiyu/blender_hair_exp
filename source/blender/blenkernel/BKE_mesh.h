@@ -161,6 +161,8 @@ void BKE_mesh_ensure_skin_customdata(struct Mesh *me);
 
 struct Mesh *BKE_mesh_new_nomain(
     int verts_len, int edges_len, int tessface_len, int loops_len, int polys_len);
+/** Add poly offsets to describe faces to a new mesh. */
+void BKE_mesh_ensure_poly_offsets(struct Mesh *mesh);
 struct Mesh *BKE_mesh_new_nomain_from_template(const struct Mesh *me_src,
                                                int verts_len,
                                                int edges_len,

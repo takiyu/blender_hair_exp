@@ -404,9 +404,6 @@ static void copy_poly_attributes(Mesh *dest_mesh,
   const CustomData *source_cd = &orig_me->pdata;
   for (int source_layer_i = 0; source_layer_i < source_cd->totlayer; ++source_layer_i) {
     int ty = source_cd->layers[source_layer_i].type;
-    if (ty == CD_MPOLY) {
-      continue;
-    }
     const char *name = source_cd->layers[source_layer_i].name;
     int target_layer_i = CustomData_get_named_layer_index(target_cd, ty, name);
     if (target_layer_i != -1) {

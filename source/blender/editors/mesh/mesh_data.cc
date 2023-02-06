@@ -234,7 +234,7 @@ void ED_mesh_uv_loop_reset_ex(Mesh *me, const int layernum)
     float2 *mloopuv = static_cast<float2 *>(
         CustomData_get_layer_n_for_write(&me->ldata, CD_PROP_FLOAT2, layernum, me->totloop));
 
-    const OffsetIndices polys = me->polys();
+    const blender::OffsetIndices polys = me->polys();
     for (int i = 0; i < me->totpoly; i++) {
       mesh_uv_reset_mface(polys[i], mloopuv);
     }
@@ -1322,9 +1322,8 @@ static void mesh_add_polys(Mesh *mesh, int len)
   CustomData_copy(&mesh->pdata, &pdata, CD_MASK_MESH.pmask, CD_SET_DEFAULT, totpoly);
   CustomData_copy_data(&mesh->pdata, &pdata, 0, 0, mesh->totpoly);
 
-  if (!CustomData_has_layer(&pdata, CD_MPOLY)) {
-    CustomData_add_layer(&pdata, CD_MPOLY, CD_SET_DEFAULT, nullptr, totpoly);
-  }
+  /* TODO: Fill new data and make sure RNA API can deal set enough things. */
+  mesh->poly_offsets_data = static_cast<int *>(MEM_reallocN(mesh->poly_offsets_data, totpoly + 1));
 
   CustomData_free(&mesh->pdata, mesh->totpoly);
   mesh->pdata = pdata;

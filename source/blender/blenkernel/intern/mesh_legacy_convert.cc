@@ -975,7 +975,6 @@ static int mesh_tessface_calc(Mesh &mesh,
 
   const int looptri_num = poly_to_tri_count(totpoly, totloop);
 
-  const MPoly *mp, *mpoly;
   MFace *mface, *mf;
   MemArena *arena = nullptr;
   int *mface_to_poly_map;
@@ -983,7 +982,7 @@ static int mesh_tessface_calc(Mesh &mesh,
   int poly_index, mface_index;
   uint j;
 
-  mpoly = (const MPoly *)CustomData_get_layer(pdata, CD_MPOLY);
+  const blender::OffsetIndices polys = mesh.polys();
   const Span<int> corner_verts = mesh.corner_verts();
   const int *material_indices = static_cast<const int *>(
       CustomData_get_layer_named(pdata, CD_PROP_INT32, "material_index"));
@@ -999,10 +998,9 @@ static int mesh_tessface_calc(Mesh &mesh,
   lindices = (uint(*)[4])MEM_malloc_arrayN(size_t(looptri_num), sizeof(*lindices), __func__);
 
   mface_index = 0;
-  mp = mpoly;
-  for (poly_index = 0; poly_index < totpoly; poly_index++, mp++) {
-    const uint mp_loopstart = uint(mp->loopstart);
-    const uint mp_totloop = uint(mp->totloop);
+  for (poly_index = 0; poly_index < totpoly; poly_index++) {
+    const uint mp_loopstart = uint(polys[poly_index].start());
+    const uint mp_totloop = uint(polys[poly_index].size());
     uint l1, l2, l3, l4;
     uint *lidx;
     if (mp_totloop < 3) {
@@ -1234,7 +1232,7 @@ void BKE_mesh_tessface_ensure(struct Mesh *mesh)
 void BKE_mesh_legacy_sharp_faces_to_flags(Mesh *mesh)
 {
   using namespace blender;
-  MutableSpan<int> poly_offsets(mesh->mpoly, mesh->totvert);
+  MutableSpan<MPoly> polys(mesh->mpoly, mesh->totvert);
   if (const bool *sharp_faces = static_cast<const bool *>(
           CustomData_get_layer_named(&mesh->pdata, CD_PROP_BOOL, "sharp_face"))) {
     threading::parallel_for(polys.index_range(), 4096, [&](const IndexRange range) {
@@ -1506,7 +1504,7 @@ void BKE_mesh_legacy_convert_hide_layers_to_flags(Mesh *mesh)
     }
   });
 
-  MutableSpan<int> poly_offsets(mesh->mpoly, mesh->totvert);
+  MutableSpan<MPoly> polys(mesh->mpoly, mesh->totvert);
   const VArray<bool> hide_poly = attributes.lookup_or_default<bool>(
       ".hide_poly", ATTR_DOMAIN_FACE, false);
   threading::parallel_for(polys.index_range(), 4096, [&](IndexRange range) {
@@ -1578,7 +1576,7 @@ void BKE_mesh_legacy_convert_material_indices_to_mpoly(Mesh *mesh)
   using namespace blender;
   using namespace blender::bke;
   const AttributeAccessor attributes = mesh->attributes();
-  MutableSpan<int> poly_offsets(mesh->mpoly, mesh->totvert);
+  MutableSpan<MPoly> polys(mesh->mpoly, mesh->totvert);
   const VArray<int> material_indices = attributes.lookup_or_default<int>(
       "material_index", ATTR_DOMAIN_FACE, 0);
   threading::parallel_for(polys.index_range(), 4096, [&](IndexRange range) {
@@ -1819,7 +1817,7 @@ void BKE_mesh_legacy_convert_selection_layers_to_flags(Mesh *mesh)
     }
   });
 
-  MutableSpan<int> poly_offsets(mesh->mpoly, mesh->totvert);
+  MutableSpan<MPoly> polys(mesh->mpoly, mesh->totvert);
   const VArray<bool> select_poly = attributes.lookup_or_default<bool>(
       ".select_poly", ATTR_DOMAIN_FACE, false);
   threading::parallel_for(polys.index_range(), 4096, [&](IndexRange range) {

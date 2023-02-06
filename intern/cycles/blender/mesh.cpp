@@ -246,11 +246,12 @@ static void fill_generic_attribute(BL::Mesh &b_mesh,
         if (polys_num == 0) {
           return;
         }
-        const MPoly *polys = static_cast<const MPoly *>(b_mesh.polygons[0].ptr.data);
+        const int *poly_offsets = static_cast<const int *>(b_mesh.polygons[0].ptr.data);
         for (int i = 0; i < polys_num; i++) {
-          const MPoly &b_poly = polys[i];
-          for (int j = 0; j < b_poly.totloop; j++) {
-            *data = get_value_at_index(b_poly.loopstart + j);
+          const int poly_start = poly_offsets[i];
+          const int poly_size = poly_offsets[i + 1] - poly_start;
+          for (int j = 0; j < poly_size; j++) {
+            *data = get_value_at_index(poly_start + j);
             data++;
           }
         }
@@ -578,7 +579,7 @@ static void attr_create_subd_uv_map(Scene *scene, Mesh *mesh, BL::Mesh &b_mesh, 
   if (polys_num == 0) {
     return;
   }
-  const MPoly *polys = static_cast<const MPoly *>(b_mesh.polygons[0].ptr.data);
+  const int *poly_offsets = static_cast<const int *>(b_mesh.polygons[0].ptr.data);
 
   if (!b_mesh.uv_layers.empty()) {
     BL::Mesh::uv_layers_iterator l;
@@ -614,9 +615,10 @@ static void attr_create_subd_uv_map(Scene *scene, Mesh *mesh, BL::Mesh &b_mesh, 
         float2 *fdata = uv_attr->data_float2();
 
         for (int i = 0; i < polys_num; i++) {
-          const MPoly &b_poly = polys[i];
-          for (int j = 0; j < b_poly.totloop; j++) {
-            *(fdata++) = get_float2(l->data[b_poly.loopstart + j].uv());
+          const int poly_start = poly_offsets[i];
+          const int poly_size = poly_offsets[i + 1] - poly_start;
+          for (int j = 0; j < poly_size; j++) {
+            *(fdata++) = get_float2(l->data[poly_start + j].uv());
           }
         }
       }
@@ -880,11 +882,12 @@ static void attr_create_random_per_island(Scene *scene,
   }
   else {
     if (polys_num != 0) {
-      const MPoly *polys = static_cast<const MPoly *>(b_mesh.polygons[0].ptr.data);
+      const int *poly_offsets = static_cast<const int *>(b_mesh.polygons[0].ptr.data);
       BL::IntAttribute corner_verts = *find_corner_vert_attribute(b_mesh);
       for (int i = 0; i < polys_num; i++) {
-        const MPoly &b_poly = polys[i];
-        const int vert = corner_verts.data[b_poly.loopstart].value();
+        const int poly_start = poly_offsets[i];
+        const int poly_size = poly_offsets[i + 1] - poly_start;
+        const int vert = corner_verts.data[poly_start].value();
         data[i] = hash_uint_to_float(vertices_sets.find(vert));
       }
     }
@@ -957,11 +960,12 @@ static void create_mesh(Scene *scene,
     numtris = numfaces;
   }
   else {
-    const MPoly *polys = static_cast<const MPoly *>(b_mesh.polygons[0].ptr.data);
+    const int *poly_offsets = static_cast<const int *>(b_mesh.polygons[0].ptr.data);
     for (int i = 0; i < polys_num; i++) {
-      const MPoly &b_poly = polys[i];
-      numngons += (b_poly.totloop == 4) ? 0 : 1;
-      numcorners += b_poly.totloop;
+      const int poly_start = poly_offsets[i];
+      const int poly_size = poly_offsets[i + 1] - poly_start;
+      numngons += (poly_size == 4) ? 0 : 1;
+      numcorners += poly_size;
     }
   }
 
@@ -1052,23 +1056,23 @@ static void create_mesh(Scene *scene,
   else {
     vector<int> vi;
 
-    const MPoly *polys = static_cast<const MPoly *>(b_mesh.polygons[0].ptr.data);
+    const int *poly_offsets = static_cast<const int *>(b_mesh.polygons[0].ptr.data);
     std::optional<BL::IntAttribute> corner_verts = find_corner_vert_attribute(b_mesh);
 
     for (int i = 0; i < numfaces; i++) {
-      const MPoly &b_poly = polys[i];
-      int n = b_poly.totloop;
+      const int poly_start = poly_offsets[i];
+      const int poly_size = poly_offsets[i + 1] - poly_start;
       int shader = get_material_index(i);
       bool smooth = !get_face_sharp(i) || use_loop_normals;
 
-      vi.resize(n);
-      for (int i = 0; i < n; i++) {
+      vi.resize(poly_size);
+      for (int i = 0; i < poly_size; i++) {
         /* NOTE: Autosmooth is already taken care about. */
-        vi[i] = corner_verts->data[b_poly.loopstart + i].value();
+        vi[i] = corner_verts->data[poly_start + i].value();
       }
 
       /* create subd faces */
-      mesh->add_subd_face(&vi[0], n, shader, smooth);
+      mesh->add_subd_face(&vi[0], poly_size, shader, smooth);
     }
   }
 

@@ -690,7 +690,7 @@ static void pbvh_draw_args_init(PBVH *pbvh, PBVH_GPU_Args *args, PBVHNode *node)
   args->vert_positions = pbvh->vert_positions;
   args->corner_verts = {pbvh->corner_verts, pbvh->mesh->totloop};
   args->corner_edges = pbvh->mesh ? pbvh->mesh->corner_edges() : blender::Span<int>();
-  args->mpoly = pbvh->mpoly;
+  args->polys = pbvh->polys;
   args->mlooptri = pbvh->looptri;
 
   if (ELEM(pbvh->header.type, PBVH_FACES, PBVH_GRIDS)) {
@@ -707,7 +707,7 @@ static void pbvh_draw_args_init(PBVH *pbvh, PBVH_GPU_Args *args, PBVHNode *node)
       args->pdata = pbvh->pdata;
       args->totprim = node->totprim;
       args->me = pbvh->mesh;
-      args->mpoly = pbvh->mpoly;
+      args->polys = pbvh->polys;
       args->vert_normals = pbvh->vert_normals;
 
       args->active_color = pbvh->mesh->active_color_attribute;
@@ -726,7 +726,7 @@ static void pbvh_draw_args_init(PBVH *pbvh, PBVH_GPU_Args *args, PBVHNode *node)
       args->grid_indices = node->prim_indices;
       args->subdiv_ccg = pbvh->subdiv_ccg;
       args->face_sets = pbvh->face_sets;
-      args->mpoly = pbvh->mpoly;
+      args->polys = pbvh->polys;
 
       args->active_color = pbvh->mesh->active_color_attribute;
       args->render_color = pbvh->mesh->default_color_attribute;
@@ -3731,7 +3731,8 @@ static void pbvh_face_iter_step(PBVHFaceIter *fd, bool do_step)
       }
 
       fd->last_face_index_ = face_index;
-      const MPoly *mp = fd->mpoly_ + face_index;
+      const int poly_start = fd->poly_offsets_[face_index];
+      const int poly_size = fd->poly_offsets_[face_index + 1] - poly_start;
 
       fd->face.i = fd->index = face_index;
 
@@ -3742,17 +3743,17 @@ static void pbvh_face_iter_step(PBVHFaceIter *fd, bool do_step)
         fd->hide = fd->hide_poly_ + face_index;
       }
 
-      pbvh_face_iter_verts_reserve(fd, mp->totloop);
+      pbvh_face_iter_verts_reserve(fd, poly_size);
 
       const int grid_area = fd->subdiv_key_.grid_area;
 
-      for (int i = 0; i < mp->totloop; i++) {
+      for (int i = 0; i < poly_size; i++) {
         if (fd->pbvh_type_ == PBVH_GRIDS) {
           /* Grid corners. */
-          fd->verts[i].i = (mp->loopstart + i) * grid_area + grid_area - 1;
+          fd->verts[i].i = (poly_start + i) * grid_area + grid_area - 1;
         }
         else {
-          fd->verts[i].i = fd->corner_verts_[mp->loopstart + i];
+          fd->verts[i].i = fd->corner_verts_[poly_start + i];
         }
       }
       break;
@@ -3780,7 +3781,7 @@ void BKE_pbvh_face_iter_init(PBVH *pbvh, PBVHNode *node, PBVHFaceIter *fd)
       fd->subdiv_key_ = pbvh->gridkey;
       ATTR_FALLTHROUGH;
     case PBVH_FACES:
-      fd->mpoly_ = pbvh->mpoly;
+      fd->poly_offsets_ = pbvh->polys.data();
       fd->corner_verts_ = pbvh->corner_verts;
       fd->looptri_ = pbvh->looptri;
       fd->hide_poly_ = pbvh->hide_poly;
@@ -3862,18 +3863,19 @@ void BKE_pbvh_sync_visibility_from_verts(PBVH *pbvh, Mesh *mesh)
       break;
     }
     case PBVH_GRIDS: {
-      const MPoly *mp = BKE_mesh_poly_offsets(mesh);
+      const blender::OffsetIndices polys = mesh->polys();
       CCGKey key = pbvh->gridkey;
 
       bool *hide_poly = static_cast<bool *>(CustomData_get_layer_named_for_write(
           &mesh->pdata, CD_PROP_BOOL, ".hide_poly", mesh->totpoly));
 
       bool delete_hide_poly = true;
-      for (int face_index = 0; face_index < mesh->totpoly; face_index++, mp++) {
+      for (int face_index = 0; face_index < mesh->totpoly; face_index++) {
+        const blender::IndexRange poly = polys[face_index];
         bool hidden = false;
 
-        for (int loop_index = 0; !hidden && loop_index < mp->totloop; loop_index++) {
-          int grid_index = mp->loopstart + loop_index;
+        for (int loop_index = 0; !hidden && loop_index < poly.size(); loop_index++) {
+          int grid_index = poly[loop_index];
 
           if (pbvh->grid_hidden[grid_index] &&
               BLI_BITMAP_TEST(pbvh->grid_hidden[grid_index], key.grid_area - 1)) {

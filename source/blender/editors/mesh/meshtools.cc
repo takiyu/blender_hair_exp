@@ -591,8 +591,7 @@ int ED_mesh_join_objects_exec(bContext *C, wmOperator *op)
       &ldata, CD_PROP_INT32, CD_CONSTRUCT, nullptr, totloop, ".corner_vert");
   int *corner_edges = (int *)CustomData_add_layer_named(
       &ldata, CD_PROP_INT32, CD_CONSTRUCT, nullptr, totloop, ".corner_edge");
-  int *poly_offsets = (MPoly *)CustomData_add_layer(
-      &pdata, CD_MPOLY, CD_SET_DEFAULT, nullptr, totpoly);
+  int *poly_offsets = static_cast<int *>(MEM_malloc_arrayN(totpoly + 1, sizeof(int), __func__));
 
   vertofs = 0;
   edgeofs = 0;

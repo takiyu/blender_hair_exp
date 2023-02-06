@@ -550,8 +550,7 @@ static void sculpt_face_sets_init_flood_fill(Object *ob, const FaceSetsFloodFill
                                   &ss->epmap_mem,
                                   edges.data(),
                                   edges.size(),
-                                  polys.data(),
-                                  polys.size(),
+                                  polys,
                                   corner_edges.data(),
                                   corner_edges.size());
   }
@@ -570,10 +569,9 @@ static void sculpt_face_sets_init_flood_fill(Object *ob, const FaceSetsFloodFill
 
     while (!queue.empty()) {
       const int poly_i = queue.front();
-      const MPoly &poly = polys[poly_i];
       queue.pop();
 
-      for (const int edge_i : corner_edges.slice(poly.loopstart, poly.totloop)) {
+      for (const int edge_i : corner_edges.slice(polys[poly_i])) {
         const Span<int> neighbor_polys(ss->epmap[edge_i].indices, ss->epmap[edge_i].count);
         for (const int neighbor_i : neighbor_polys) {
           if (neighbor_i == poly_i) {
@@ -1110,8 +1108,7 @@ static void sculpt_face_set_grow(Object *ob,
     if (!modify_hidden && prev_face_sets[p] <= 0) {
       continue;
     }
-    const MPoly *c_poly = &polys[p];
-    for (const int vert : corner_verts.slice(c_poly->loopstart, c_poly->totloop)) {
+    for (const int vert : corner_verts.slice(polys[p])) {
       const MeshElemMap *vert_map = &ss->pmap[vert];
       for (int i = 0; i < vert_map->count; i++) {
         const int neighbor_face_index = vert_map->indices[i];
@@ -1141,8 +1138,7 @@ static void sculpt_face_set_shrink(Object *ob,
       continue;
     }
     if (abs(prev_face_sets[p]) == active_face_set_id) {
-      const MPoly *c_poly = &polys[p];
-      for (const int vert_i : corner_verts.slice(c_poly->loopstart, c_poly->totloop)) {
+      for (const int vert_i : corner_verts.slice(polys[p])) {
         const MeshElemMap *vert_map = &ss->pmap[vert_i];
         for (int i = 0; i < vert_map->count; i++) {
           const int neighbor_face_index = vert_map->indices[i];

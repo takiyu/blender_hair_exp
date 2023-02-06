@@ -631,8 +631,8 @@ static ParamHandle *construct_param_handle_subsurfed(const Scene *scene,
 
   const float(*subsurfedPositions)[3] = BKE_mesh_vert_positions(subdiv_mesh);
   const MEdge *subsurfedEdges = BKE_mesh_edges(subdiv_mesh);
-  const OffsetIndices subsurfedPolys = subdiv_mesh->polys();
-  const int *subsurfedCornerVerts = subdiv_mesh->corner_verts().data();
+  const blender::OffsetIndices subsurfedPolys = subdiv_mesh->polys();
+  const blender::Span<int> subsurfedCornerVerts = subdiv_mesh->corner_verts();
 
   const int *origVertIndices = static_cast<const int *>(
       CustomData_get_layer(&subdiv_mesh->vdata, CD_ORIGINDEX));
@@ -665,7 +665,6 @@ static ParamHandle *construct_param_handle_subsurfed(const Scene *scene,
 
   /* Prepare and feed faces to the solver */
   for (int i = 0; i < subdiv_mesh->totpoly; i++) {
-    const MPoly *mpoly = &subsurfedPolys[i];
     ParamKey key, vkeys[4];
     bool pin[4], select[4];
     const float *co[4];
@@ -684,52 +683,32 @@ static ParamHandle *construct_param_handle_subsurfed(const Scene *scene,
       }
     }
 
-    const int *poly_corner_verts = &subsurfedCornerVerts[mpoly->loopstart];
+    const blender::Span<int> poly_verts = subsurfedCornerVerts.slice(subsurfedPolys[i]);
 
     /* We will not check for v4 here. Sub-surface faces always have 4 vertices. */
     BLI_assert(mpoly->totloop == 4);
     key = (ParamKey)i;
-    vkeys[0] = (ParamKey)poly_corner_verts[0];
-    vkeys[1] = (ParamKey)poly_corner_verts[1];
-    vkeys[2] = (ParamKey)poly_corner_verts[2];
-    vkeys[3] = (ParamKey)poly_corner_verts[3];
+    vkeys[0] = (ParamKey)poly_verts[0];
+    vkeys[1] = (ParamKey)poly_verts[1];
+    vkeys[2] = (ParamKey)poly_verts[2];
+    vkeys[3] = (ParamKey)poly_verts[3];
 
-    co[0] = subsurfedPositions[poly_corner_verts[0]];
-    co[1] = subsurfedPositions[poly_corner_verts[1]];
-    co[2] = subsurfedPositions[poly_corner_verts[2]];
-    co[3] = subsurfedPositions[poly_corner_verts[3]];
+    co[0] = subsurfedPositions[poly_verts[0]];
+    co[1] = subsurfedPositions[poly_verts[1]];
+    co[2] = subsurfedPositions[poly_verts[2]];
+    co[3] = subsurfedPositions[poly_verts[3]];
 
     /* This is where all the magic is done.
      * If the vertex exists in the, we pass the original uv pointer to the solver, thus
      * flushing the solution to the edit mesh. */
-    texface_from_original_index(scene,
-                                offsets,
-                                origFace,
-                                origVertIndices[poly_corner_verts[0]],
-                                &uv[0],
-                                &pin[0],
-                                &select[0]);
-    texface_from_original_index(scene,
-                                offsets,
-                                origFace,
-                                origVertIndices[poly_corner_verts[1]],
-                                &uv[1],
-                                &pin[1],
-                                &select[1]);
-    texface_from_original_index(scene,
-                                offsets,
-                                origFace,
-                                origVertIndices[poly_corner_verts[2]],
-                                &uv[2],
-                                &pin[2],
-                                &select[2]);
-    texface_from_original_index(scene,
-                                offsets,
-                                origFace,
-                                origVertIndices[poly_corner_verts[3]],
-                                &uv[3],
-                                &pin[3],
-                                &select[3]);
+    texface_from_original_index(
+        scene, offsets, origFace, origVertIndices[poly_verts[0]], &uv[0], &pin[0], &select[0]);
+    texface_from_original_index(
+        scene, offsets, origFace, origVertIndices[poly_verts[1]], &uv[1], &pin[1], &select[1]);
+    texface_from_original_index(
+        scene, offsets, origFace, origVertIndices[poly_verts[2]], &uv[2], &pin[2], &select[2]);
+    texface_from_original_index(
+        scene, offsets, origFace, origVertIndices[poly_verts[3]], &uv[3], &pin[3], &select[3]);
 
     GEO_uv_parametrizer_face_add(handle, key, 4, vkeys, co, uv, pin, select);
   }

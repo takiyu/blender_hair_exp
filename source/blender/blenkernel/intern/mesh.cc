@@ -520,7 +520,7 @@ static int customdata_compare(
 {
   CustomDataLayer *l1, *l2;
   int layer_count1 = 0, layer_count2 = 0, j;
-  const uint64_t cd_mask_non_generic = CD_MASK_MEDGE | CD_MASK_MPOLY | CD_MASK_MDEFORMVERT;
+  const uint64_t cd_mask_non_generic = CD_MASK_MEDGE | CD_MASK_MDEFORMVERT;
   const uint64_t cd_mask_all_attr = CD_MASK_PROP_ALL | cd_mask_non_generic;
 
   /* The uv selection / pin layers are ignored in the comparisons because
@@ -932,6 +932,22 @@ Mesh *BKE_mesh_add(Main *bmain, const char *name)
   return me;
 }
 
+void BKE_mesh_poly_offsets_ensure(Mesh *mesh)
+{
+  BLI_assert(mesh->poly_offsets_data == nullptr);
+  if (mesh->totpoly == 0) {
+    return;
+  }
+  if (!mesh->poly_offsets_data) {
+    mesh->poly_offsets_data = static_cast<int *>(
+        MEM_malloc_arrayN(mesh->totpoly + 1, sizeof(int), __func__));
+  }
+#ifdef DEBUG
+  mesh->poly_offsets_for_write().fill(-1);
+#endif
+  mesh->poly_offsets_for_write().last() = mesh->totloop;
+}
+
 /* Custom data layer functions; those assume that totXXX are set correctly. */
 static void mesh_ensure_cdlayers_primary(Mesh *mesh, bool do_tessface)
 {
@@ -949,13 +965,6 @@ static void mesh_ensure_cdlayers_primary(Mesh *mesh, bool do_tessface)
   if (!CustomData_get_layer_named(&mesh->ldata, CD_PROP_INT32, ".corner_edge")) {
     CustomData_add_layer_named(
         &mesh->ldata, CD_PROP_INT32, CD_SET_DEFAULT, nullptr, mesh->totloop, ".corner_edge");
-  }
-  if (mesh->totpoly != 0) {
-    if (!mesh->poly_offsets_data) {
-      mesh->poly_offsets_data = static_cast<int *>(
-          MEM_malloc_arrayN(mesh->totpoly + 1, sizeof(int), __func__));
-    }
-    mesh->poly_offsets_for_write().last() = mesh->totloop;
   }
   if (do_tessface && !CustomData_get_layer(&mesh->fdata, CD_MFACE)) {
     CustomData_add_layer(&mesh->fdata, CD_MFACE, CD_SET_DEFAULT, nullptr, mesh->totface);
@@ -982,12 +991,8 @@ Mesh *BKE_mesh_new_nomain(
   mesh->totloop = loops_len;
   mesh->totpoly = polys_len;
 
-#ifdef DEBUG
-  mesh->poly_offsets_for_write().fill(-1);
-#endif
-  mesh->poly_offsets_for_write().last() == loops_len;
-
   mesh_ensure_cdlayers_primary(mesh, true);
+  BKE_mesh_poly_offsets_ensure(mesh);
 
   return mesh;
 }
@@ -1084,6 +1089,7 @@ Mesh *BKE_mesh_new_nomain_from_template_ex(const Mesh *me_src,
   /* The destination mesh should at least have valid primary CD layers,
    * even in cases where the source mesh does not. */
   mesh_ensure_cdlayers_primary(me_dst, do_tessface);
+  BKE_mesh_poly_offsets_ensure(me_dst);
 
   /* Expect that normals aren't copied at all, since the destination mesh is new. */
   BLI_assert(BKE_mesh_vertex_normals_are_dirty(me_dst));
