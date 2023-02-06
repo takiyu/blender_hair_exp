@@ -1282,23 +1282,26 @@ void BKE_mesh_legacy_sharp_faces_from_flags(Mesh *mesh)
 /** \name Face Set Conversion
  * \{ */
 
-void BKE_mesh_legacy_face_set_from_generic(Mesh *mesh,
-                                           blender::MutableSpan<CustomDataLayer> poly_layers)
+void BKE_mesh_legacy_face_set_from_generic(blender::MutableSpan<CustomDataLayer> poly_layers)
 {
   using namespace blender;
-  void *faceset_data = nullptr;
+  bool changed = false;
   for (CustomDataLayer &layer : poly_layers) {
     if (StringRef(layer.name) == ".sculpt_face_set") {
-      faceset_data = layer.data;
-      layer.data = nullptr;
-      CustomData_free_layer_named(&mesh->pdata, ".sculpt_face_set", mesh->totpoly);
+      layer.type = CD_SCULPT_FACE_SETS;
+      layer.name[0] = '\0';
+      changed = true;
       break;
     }
   }
-  if (faceset_data != nullptr) {
-    CustomData_add_layer(
-        &mesh->pdata, CD_SCULPT_FACE_SETS, CD_ASSIGN, faceset_data, mesh->totpoly);
+  if (!changed) {
+    return;
   }
+  /* #CustomData expects the layers to be sorted in increasing order based on type. */
+  std::stable_sort(
+      poly_layers.begin(),
+      poly_layers.end(),
+      [](const CustomDataLayer &a, const CustomDataLayer &b) { return a.type < b.type; });
 }
 
 void BKE_mesh_legacy_face_set_to_generic(Mesh *mesh)
