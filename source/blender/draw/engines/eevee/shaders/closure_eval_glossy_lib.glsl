@@ -53,7 +53,9 @@ ClosureEvalGlossy closure_Glossy_eval_init(inout ClosureInputGlossy cl_in,
   cl_out.radiance = vec3(0.0);
 
 #ifndef STEP_RESOLVE /* SSR */
+#ifndef HAIR_SHADER
   cl_in.N = ensure_valid_reflection(cl_common.Ng, cl_common.V, cl_in.N);
+#endif
 #endif
 
   float NV = dot(cl_in.N, cl_common.V);
